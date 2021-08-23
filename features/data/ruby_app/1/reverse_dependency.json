@@ -1,0 +1,26 @@
+{
+  "/app/course.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/spec/course_spec.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/spec/spec_helper.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/app/student.rb": {
+    "example_count": 1,
+    "examples": {
+      "/spec/course_spec.rb": 1
+    }
+  }
+}

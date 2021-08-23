@@ -2,6 +2,8 @@
 *.rbc
 /.config
 /coverage/
+/rspec_tracer_cache/
+/rspec_tracer_coverage/
 /InstalledFiles
 /pkg/
 /spec/reports/
@@ -54,3 +56,5 @@ build-iPhoneSimulator/
 
 # Used by RuboCop. Remote config files pulled in from inherit_from directive.
 # .rubocop-https?--*
+
+.DS_Store
