@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.head_ref }}-rails-1
+  group: ${GITHUB_REF#refs/heads/}-rails-1
   cancel-in-progress: true
 
 jobs:
