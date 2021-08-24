@@ -1,0 +1,82 @@
+{
+  "58676715ecac734d527fbae5735e9938": {
+    "example_group": "RSpec::ExampleGroups::Student::Name::WithoutName",
+    "description": "does not set name",
+    "full_description": "Student#name= without name does not set name",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 13,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 13,
+    "example_id": "58676715ecac734d527fbae5735e9938"
+  },
+  "62794ad377b63a78ce9764f4638117a5": {
+    "example_group": "RSpec::ExampleGroups::Student::Name::WithName",
+    "description": "sets name",
+    "full_description": "Student#name= with name sets name",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 19,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 19,
+    "example_id": "62794ad377b63a78ce9764f4638117a5"
+  },
+  "94cd4d0e1d9ef63237421fe02085eb9a": {
+    "example_group": "RSpec::ExampleGroups::Student::Email::WithoutEmail",
+    "description": "does not set email",
+    "full_description": "Student#email= without email does not set email",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 28,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 28,
+    "example_id": "94cd4d0e1d9ef63237421fe02085eb9a"
+  },
+  "1204399c326afc25e7ac7b474fd091fb": {
+    "example_group": "RSpec::ExampleGroups::Student::Email::WithEmail",
+    "description": "sets email",
+    "full_description": "Student#email= with email sets email",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 34,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 34,
+    "example_id": "1204399c326afc25e7ac7b474fd091fb"
+  },
+  "2d117cea05919345e9dc40eb53c59467": {
+    "example_group": "RSpec::ExampleGroups::Student::Mobile::WithoutMobile",
+    "description": "does not set mobile",
+    "full_description": "Student#mobile= without mobile does not set mobile",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 43,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 43,
+    "example_id": "2d117cea05919345e9dc40eb53c59467"
+  },
+  "ba8b472d983d66597926aaccca337822": {
+    "example_group": "RSpec::ExampleGroups::Student::Mobile::WithMobile",
+    "description": "sets mobile",
+    "full_description": "Student#mobile= with mobile sets mobile",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 49,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 49,
+    "example_id": "ba8b472d983d66597926aaccca337822"
+  },
+  "3f99232fe4c4a761928e1f1931a24eea": {
+    "example_group": "RSpec::ExampleGroups::Student::Enroll::WithoutCourse",
+    "description": "does not enroll",
+    "full_description": "Student#enroll without course does not enroll",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 58,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 58,
+    "example_id": "3f99232fe4c4a761928e1f1931a24eea"
+  },
+  "5907b2dd7cda60bfc1c5dbd70707345b": {
+    "example_group": "RSpec::ExampleGroups::Student::Enroll::WithCourse",
+    "description": "enroll student",
+    "full_description": "Student#enroll with course enroll student",
+    "file_name": "/spec/student_spec.rb",
+    "line_number": 66,
+    "rerun_file_name": "/spec/student_spec.rb",
+    "rerun_line_number": 66,
+    "example_id": "5907b2dd7cda60bfc1c5dbd70707345b"
+  }
+}

@@ -1,0 +1,44 @@
+name: ruby-project-part-2
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.head_ref }}-ruby-2
+  cancel-in-progress: true
+
+jobs:
+  main:
+    name: ruby-${{ matrix.ruby }} rspec-${{ matrix.rspec }} simplecov-${{ matrix.simplecov }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        rspec: [ '3.6.0', '3.7.0', '3.8.0', '3.9.0', '3.10.0' ]
+        simplecov: [ '0.18.0', '0.19.0', '0.20.0', '0.21.0' ]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Install Dependencies
+        run:  bundle install --jobs 3 --retry 3
+
+      - name: Run Features for Ruby Project
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}"
+          SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
+          BRANCH_COVERAGE: true
+        run: |
+          echo RSPEC_RAILS=$RSPEC_VERSION
+          echo SIMPLECOV_VERSION=$SIMPLECOV_VERSION
+          echo BRANCH_COVERAGE=$BRANCH_COVERAGE
+          bundle exec cucumber --tags @ruby_app

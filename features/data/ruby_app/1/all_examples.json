@@ -1,0 +1,22 @@
+{
+  "b5963ecab8d95c1024a46117fce4e907": {
+    "example_group": "RSpec::ExampleGroups::Course::Enrolled::WithoutStudent",
+    "description": "does not enroll",
+    "full_description": "Course enrolled without student does not enroll",
+    "file_name": "/spec/course_spec.rb",
+    "line_number": 11,
+    "rerun_file_name": "/spec/course_spec.rb",
+    "rerun_line_number": 11,
+    "example_id": "b5963ecab8d95c1024a46117fce4e907"
+  },
+  "e295e625ca1afa091751bcc3d43e373c": {
+    "example_group": "RSpec::ExampleGroups::Course::Enrolled::WithStudent",
+    "description": "enrolls student",
+    "full_description": "Course enrolled with student enrolls student",
+    "file_name": "/spec/course_spec.rb",
+    "line_number": 25,
+    "rerun_file_name": "/spec/course_spec.rb",
+    "rerun_line_number": 25,
+    "example_id": "e295e625ca1afa091751bcc3d43e373c"
+  }
+}

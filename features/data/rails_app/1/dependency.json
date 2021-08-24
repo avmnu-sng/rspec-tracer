@@ -1,0 +1,13 @@
+{
+  "338f77315d8f7c01ea5551cd0759b110": [
+    "/spec/course_spec.rb",
+    "/app/models/course.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "2cd718fdc31fe32b1cecce0ffe8816a0": [
+    "/spec/course_spec.rb",
+    "/app/models/course.rb",
+    "/app/models/student.rb",
+    "/spec/spec_helper.rb"
+  ]
+}

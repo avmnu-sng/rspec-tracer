@@ -1,0 +1,52 @@
+{
+  "b5963ecab8d95c1024a46117fce4e907": [
+    "/spec/course_spec.rb",
+    "/app/course.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "e295e625ca1afa091751bcc3d43e373c": [
+    "/spec/course_spec.rb",
+    "/app/course.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "58676715ecac734d527fbae5735e9938": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "62794ad377b63a78ce9764f4638117a5": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "1204399c326afc25e7ac7b474fd091fb": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "2d117cea05919345e9dc40eb53c59467": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "ba8b472d983d66597926aaccca337822": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "3f99232fe4c4a761928e1f1931a24eea": [
+    "/spec/student_spec.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "5907b2dd7cda60bfc1c5dbd70707345b": [
+    "/spec/student_spec.rb",
+    "/app/course.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "94cd4d0e1d9ef63237421fe02085eb9a": [
+    "/spec/spec_helper.rb"
+  ]
+}

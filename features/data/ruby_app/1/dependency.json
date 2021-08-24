@@ -1,0 +1,13 @@
+{
+  "b5963ecab8d95c1024a46117fce4e907": [
+    "/spec/course_spec.rb",
+    "/app/course.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "e295e625ca1afa091751bcc3d43e373c": [
+    "/spec/course_spec.rb",
+    "/app/course.rb",
+    "/app/student.rb",
+    "/spec/spec_helper.rb"
+  ]
+}

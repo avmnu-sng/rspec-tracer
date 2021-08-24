@@ -1,0 +1,47 @@
+name: rails-6-project
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.head_ref }}-rails-2
+  cancel-in-progress: true
+
+jobs:
+  main:
+    name: ruby-${{ matrix.ruby }} rspec-rails-${{ matrix.rspec-rails }} simplecov-0.${{ matrix.simplecov }}.0
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        rails: [ '6.1.0' ]
+        rspec-rails: [ '4.1.0', '5.0.0' ]
+        simplecov: [ 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Install Dependencies
+        run:  bundle install --jobs 3 --retry 3
+
+      - name: Run Features for Rails Project
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}"
+          SIMPLECOV_VERSION: "~> 0.${{ matrix.simplecov }}.0"
+          BRANCH_COVERAGE: "${{ matrix.simplecov >= 18 && 'true' || 'false' }}"
+        run: |
+          echo RAILS_VERSION=$RAILS_VERSION
+          echo RSPEC_RAILS_VERSION=$RSPEC_RAILS_VERSION
+          echo SIMPLECOV_VERSION=$SIMPLECOV_VERSION
+          echo BRANCH_COVERAGE=$BRANCH_COVERAGE
+          bundle exec cucumber --tags @rails_app
