@@ -52,7 +52,9 @@ module RSpecTracer
           example.metadata[:rspec_tracer_example_id] = example_id
 
           if runner.run_example?(example_id)
-            example.metadata[:description] = formatted_example_description(example)
+            run_reason = runner.run_example_reason(example_id)
+            tracer_example[:run_reason] = run_reason
+            example.metadata[:description] = "#{example.description} (#{run_reason})"
 
             to_run[example_group] << example
             groups << example.example_group.parent_groups.last
@@ -169,13 +171,6 @@ module RSpecTracer
       @trace_point = TracePoint.new(:call) do |tp|
         RSpecTracer.traced_files << tp.path if tp.path.start_with?(RSpecTracer.root)
       end
-    end
-
-    def formatted_example_description(example)
-      example_id = example.metadata[:rspec_tracer_example_id]
-      run_reason = runner.run_example_reason(example_id)
-
-      "#{example.description} (#{run_reason})"
     end
 
     def run_exit_tasks

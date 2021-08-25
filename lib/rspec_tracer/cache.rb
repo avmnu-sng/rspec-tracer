@@ -56,6 +56,8 @@ module RSpecTracer
       @all_examples = JSON.parse(File.read(file_name)).transform_values do |examples|
         examples.transform_keys(&:to_sym)
       end
+
+      @all_examples.each_value { |example| example[:run_reason] = nil }
     end
 
     def load_failed_examples_cache

@@ -95,7 +95,7 @@ end
 
 When('I run specs using {string}') do |command|
   steps %(
-    When I successfully run `bundle install` for up to 120 seconds
+    When I successfully run `bundle install --jobs 3 --retry 3` for up to 120 seconds
     Then I validate simplecov version
     And I validate rspec or rspec rails version
     When I run `bundle exec #{command}`
