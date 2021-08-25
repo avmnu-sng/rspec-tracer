@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.head_ref }}-ruby-2
+  group: ${GITHUB_REF#refs/heads/}-ruby-2
   cancel-in-progress: true
 
 jobs:

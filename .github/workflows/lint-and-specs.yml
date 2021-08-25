@@ -6,12 +6,12 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.head_ref }}
+  group: ${GITHUB_REF#refs/heads/}
   cancel-in-progress: true
 
 jobs:
   main:
-    name: ruby-${{ matrix.ruby }}
+    name: ruby-${{ matrix.ruby }}-lint-and-specs
     runs-on: ubuntu-latest
 
     strategy:
