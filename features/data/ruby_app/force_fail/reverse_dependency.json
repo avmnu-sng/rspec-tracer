@@ -1,0 +1,35 @@
+{
+  "/spec/spec_helper.rb": {
+    "example_count": 10,
+    "examples": {
+      "/spec/student_spec.rb": 8,
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/spec/student_spec.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/student_spec.rb": 8
+    }
+  },
+  "/app/student.rb": {
+    "example_count": 6,
+    "examples": {
+      "/spec/student_spec.rb": 5,
+      "/spec/course_spec.rb": 1
+    }
+  },
+  "/app/course.rb": {
+    "example_count": 3,
+    "examples": {
+      "/spec/course_spec.rb": 2,
+      "/spec/student_spec.rb": 1
+    }
+  },
+  "/spec/course_spec.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  }
+}

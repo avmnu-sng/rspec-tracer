@@ -39,6 +39,10 @@ RSpec.describe Student do
   end
 
   describe '#mobile=' do
+    if ENV.fetch('FORCE_FAIL', 'false') == 'true'
+      before { expect(true).to eq(false) }
+    end
+
     context 'without mobile' do
       it 'does not set mobile' do
         expect { subject.mobile = nil }.not_to change(subject, :details)

@@ -14,9 +14,9 @@
     }
   },
   "/spec/student_spec.rb": {
-    "example_count": 7,
+    "example_count": 8,
     "examples": {
-      "/spec/student_spec.rb": 7
+      "/spec/student_spec.rb": 8
     }
   },
   "/app/course.rb": {

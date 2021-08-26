@@ -4,9 +4,12 @@ Then('The RSpecTracer should print the information') do |expected_output|
   output = last_command_started.output.lines
     .map(&:strip)
     .reject(&:empty?)
-    .map { |line| line.gsub(/\e\[\d+m/, '') }
+    .map { |line| line.sub(/\(FAILED(\s-\s\d+)\)$/, 'FAILED') }
 
-  expected = expected_output.lines.map(&:strip).reject(&:empty?)
+  expected = expected_output.lines
+    .map(&:strip)
+    .reject(&:empty?)
+    .map { |line| line.sub(/\(FAILED(\s-\s\d+)\)$/, 'FAILED') }
 
   expect(output & expected).to contain_exactly(*expected)
 end
@@ -73,7 +76,15 @@ Then('The failed example report should have correct details') do
               when 'rails_app'
                 ['338f77315d8f7c01ea5551cd0759b110']
               when 'ruby_app'
-                ['b5963ecab8d95c1024a46117fce4e907']
+                if @force_fail
+                  %w[
+                    b5963ecab8d95c1024a46117fce4e907
+                    c25a9aa240c4a72810d9ccfc0e2c10ad
+                    9479ac3d1030d06371c69081856ce7e0
+                  ]
+                else
+                  ['b5963ecab8d95c1024a46117fce4e907']
+                end
               end
 
     expect(report).to eq(example)

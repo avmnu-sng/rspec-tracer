@@ -9,7 +9,7 @@ Given('I am working on the project {string}') do |project|
             when 'rails_app'
               '6654a84c672a717904112cef7503d7a1'
             when 'ruby_app'
-              '35fdbfe849971451ec5d06879de976d5'
+              '63df6c782675a201fbef23140bd868e2'
             end
 
   project_dir = File.dirname(__FILE__)
@@ -61,6 +61,20 @@ Given('I reset explicit run') do
   delete_environment_variable('RSPEC_TRACER_NO_SKIP')
 end
 
+Given('I want to force fail some of the tests') do
+  set_environment_variable('FORCE_FAIL', 'true')
+
+  @force_fail = true
+  @data_dir = "data/#{@project}/force_fail"
+end
+
+Given('I reset force fail') do
+  delete_environment_variable('FORCE_FAIL')
+
+  @force_fail = false
+  @data_dir = "data/#{@project}"
+end
+
 Given('I use test suite id {int}') do |suite_id|
   @suite_id = suite_id
   @cache_dir = "rspec_tracer_cache/#{@suite_id}"
@@ -71,7 +85,9 @@ Given('I use test suite id {int}') do |suite_id|
               '9badef37e6a3dd45e4d0342956371b73'
             when ['rails_app', 1]
               'cf7e97dcafe77149bac34e2f6f35ff38'
-            when ['ruby_app', 2], ['rails_app', 2]
+            when ['ruby_app', 2]
+              '2c48486d4513ef0eeee4e7ab8c284419'
+            when ['rails_app', 2]
               'aa2c6f193206bf829ea3cb17f5c7672e'
             end
 
@@ -87,7 +103,7 @@ Given('I reset test suite id') do
             when 'rails_app'
               '6654a84c672a717904112cef7503d7a1'
             when 'ruby_app'
-              '35fdbfe849971451ec5d06879de976d5'
+              '63df6c782675a201fbef23140bd868e2'
             end
 
   delete_environment_variable('TEST_SUITE_ID')

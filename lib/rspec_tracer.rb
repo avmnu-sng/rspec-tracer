@@ -7,17 +7,16 @@ require 'docile'
 require 'fileutils'
 require 'forwardable'
 require 'json'
+require 'pry'
 require 'set'
 
-require 'pry'
-
 require_relative 'rspec_tracer/configuration'
-
 RSpecTracer.extend RSpecTracer::Configuration
 
 require_relative 'rspec_tracer/coverage_reporter'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/example'
+require_relative 'rspec_tracer/html_reporter/reporter'
 require_relative 'rspec_tracer/rspec_reporter'
 require_relative 'rspec_tracer/rspec_runner'
 require_relative 'rspec_tracer/ruby_coverage'
@@ -80,12 +79,12 @@ module RSpecTracer
       trace_point.enable if trace_example?
     end
 
-    def stop_example_trace(pending)
+    def stop_example_trace(success)
       return unless trace_example?
 
       trace_point.disable
 
-      if pending
+      unless success
         @traced_files = Set.new
 
         return
@@ -187,6 +186,7 @@ module RSpecTracer
       generate_tracer_reports
       generate_coverage_reports
       runner.generate_report
+      RSpecTracer::HTMLReporter::Reporter.new.generate_report
     end
 
     def generate_tracer_reports

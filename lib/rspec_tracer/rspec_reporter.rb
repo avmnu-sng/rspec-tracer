@@ -10,7 +10,8 @@ module RSpecTracer
     end
 
     def example_finished(example)
-      RSpecTracer.stop_example_trace(example.pending?) if RSpecTracer.trace_example?
+      passed = example.execution_result.status == :passed
+      RSpecTracer.stop_example_trace(passed) if RSpecTracer.trace_example?
 
       example_id = example.metadata[:rspec_tracer_example_id]
       RSpecTracer.coverage_reporter.compute_diff(example_id)
