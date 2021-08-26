@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+namespace :assets do
+  desc 'Compiles all assets'
+  task :precompile do
+    require 'sprockets'
+
+    assets = Sprockets::Environment.new do |env|
+      env.append_path 'assets/javascripts'
+      env.append_path 'assets/stylesheets'
+      env.js_compressor = :uglifier
+      env.css_compressor = :yui
+    end
+
+    assets['application.js'].write_to('public/application.js')
+    assets['application.css'].write_to('public/application.css')
+  end
+end

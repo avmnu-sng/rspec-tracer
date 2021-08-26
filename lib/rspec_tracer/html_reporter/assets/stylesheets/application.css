@@ -1,0 +1,196 @@
+//= require ./reset.css
+//= require_directory ./plugins/
+
+#content {
+  -moz-border-radius-bottomleft: 5px;
+  -moz-border-radius-bottomright: 5px;
+  -moz-border-radius-topright: 5px;
+  -webkit-border-bottom-left-radius: 5px;
+  -webkit-border-bottom-right-radius: 5px;
+  -webkit-border-top-right-radius: 5px;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-top: 8px solid #ddd;
+  border-top-right-radius: 5px;
+  clear: left;
+  padding: 18px;
+}
+
+#footer {
+  color: #ddd;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 12px;
+  text-align: right;
+}
+
+#footer a {
+  color: #eee;
+  text-decoration: underline;
+}
+
+#footer a:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+#loading {
+  left: 47%;
+  position: fixed;
+  top: 46%;
+}
+
+.blue {
+  color: blue;
+}
+
+.dataTables_filter,
+.dataTables_info {
+  padding: 2px 6px;
+}
+
+.green {
+  color: #090;
+}
+
+.group_tabs {
+  float: left;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.group_tabs li {
+  display: inline;
+  float: left;
+}
+
+.group_tabs li a {
+  -moz-border-radius-topleft: 2px;
+  -moz-border-radius-topright: 2px;
+  -webkit-border-top-left-radius: 2px;
+  -webkit-border-top-right-radius: 2px;
+  background: linear-gradient(#dddddd, #aaaaaa);
+  background-color: #aaa;
+  border-bottom: none;
+  border-top: 1px solid #efefef;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  color: #333;
+  display: block;
+  float: left;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  margin-right: 8px;
+  padding: 4px 8px;
+  text-decoration: none;
+  text-shadow: #e5e5e5 1px 1px 0;
+}
+
+.group_tabs li a:active {
+  padding-bottom: 3px;
+  padding-top: 5px;
+}
+
+.group_tabs li a:hover {
+  background: linear-gradient(#eeeeee, #aaaaaa);
+  background-color: #ccc;
+}
+
+.group_tabs li.active a {
+  background: linear-gradient(white, #dddddd);
+  background-color: #ddd;
+  color: #000;
+  text-shadow: #fff 1px 1px 0;
+}
+
+.number {
+  text-align: center;
+}
+
+.red {
+  color: #900;
+}
+
+.report-table {
+  margin-bottom: 18px;
+}
+
+.report-table--responsive {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.spec-files-table>tbody td.even {
+  background: #e5ecf9;
+}
+
+.spec-files-table>tbody td.odd {
+  background: #fff;
+}
+
+.yellow {
+  color: #da0;
+}
+
+a {
+  color: #333;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+body {
+  background-color: #333;
+  font-family: "Lucida Grande", Helvetica, "Helvetica Neue", Arial, sans-serif;
+  padding: 12px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: #1C2324;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+table {
+  width: 100%;
+}
+
+td {
+  padding: 4px 8px;
+  vertical-align: top;
+}
+
+td.strong {
+  font-weight: 700;
+}
+
+th {
+  white-space: nowrap;
+}
+
+th span.ui-icon {
+  float: left;
+}
+
+th.ui-state-default {
+  cursor: pointer;
+}
+
+thead th {
+  background: #fff;
+}
+
+tr,
+td {
+  margin: 0;
+  padding: 0;
+}

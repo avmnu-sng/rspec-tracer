@@ -5,13 +5,13 @@
       "/spec/student_spec.rb": 8
     }
   },
-  "/app/models/student.rb": {
-    "example_count": 7,
+  "/spec/student_spec.rb": {
+    "example_count": 8,
     "examples": {
-      "/spec/student_spec.rb": 7
+      "/spec/student_spec.rb": 8
     }
   },
-  "/spec/student_spec.rb": {
+  "/app/models/student.rb": {
     "example_count": 7,
     "examples": {
       "/spec/student_spec.rb": 7

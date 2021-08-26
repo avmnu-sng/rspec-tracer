@@ -2,7 +2,8 @@
 
 module RSpecTracer
   class Reporter
-    attr_reader :all_examples, :all_files, :dependency, :examples_coverage
+    attr_reader :all_examples, :pending_examples, :all_files, :dependency,
+                :reverse_dependency, :examples_coverage, :last_run
 
     def initialize
       initialize_examples
@@ -113,7 +114,6 @@ module RSpecTracer
     end
 
     def generate_last_run_report
-      @run_id = Digest::MD5.hexdigest(@all_examples.keys.sort.to_json)
       @last_run = {
         run_id: @run_id,
         pid: RSpecTracer.pid,
@@ -126,6 +126,7 @@ module RSpecTracer
     end
 
     def write_reports
+      @run_id = Digest::MD5.hexdigest(@all_examples.keys.sort.to_json)
       @cache_dir = File.join(RSpecTracer.cache_path, @run_id)
 
       FileUtils.mkdir_p(@cache_dir)
@@ -246,7 +247,7 @@ module RSpecTracer
 
     def write_last_run_report
       file_name = File.join(RSpecTracer.cache_path, 'last_run.json')
-      last_run_data = @last_run.merge(timestamp: Time.now.utc)
+      last_run_data = @last_run.merge(run_id: @run_id, timestamp: Time.now.utc)
 
       File.write(file_name, JSON.pretty_generate(last_run_data))
     end

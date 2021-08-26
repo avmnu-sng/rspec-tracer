@@ -13,6 +13,9 @@ group :development do
   gem 'rubocop-rake', '~> 0.6.0'
   gem 'rubocop-rspec', '~> 2.4.0'
   gem 'simplecov', '~> 0.21.0'
+  gem 'sprockets', '~> 4.0.0'
+  gem 'uglifier', '~> 4.2.0'
+  gem 'yui-compressor', '~> 0.12.0'
 end
 
 gemspec

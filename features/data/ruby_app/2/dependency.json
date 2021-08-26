@@ -14,27 +14,28 @@
     "/app/student.rb",
     "/spec/spec_helper.rb"
   ],
-  "2d117cea05919345e9dc40eb53c59467": [
+  "c25a9aa240c4a72810d9ccfc0e2c10ad": [
     "/spec/student_spec.rb",
     "/app/student.rb",
     "/spec/spec_helper.rb"
   ],
-  "ba8b472d983d66597926aaccca337822": [
+  "9479ac3d1030d06371c69081856ce7e0": [
     "/spec/student_spec.rb",
     "/app/student.rb",
     "/spec/spec_helper.rb"
   ],
-  "3f99232fe4c4a761928e1f1931a24eea": [
+  "b408de3af4e56603ad64fe2437096103": [
     "/spec/student_spec.rb",
     "/app/student.rb",
     "/spec/spec_helper.rb"
   ],
-  "5907b2dd7cda60bfc1c5dbd70707345b": [
+  "95f5a10aa098336083912eee9d6666cd": [
     "/spec/student_spec.rb",
     "/app/student.rb",
     "/spec/spec_helper.rb"
   ],
   "94cd4d0e1d9ef63237421fe02085eb9a": [
+    "/spec/student_spec.rb",
     "/spec/spec_helper.rb"
   ]
 }

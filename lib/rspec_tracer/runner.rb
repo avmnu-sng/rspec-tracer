@@ -99,6 +99,10 @@ module RSpecTracer
           @reporter.register_dependency(example_id, source_file[:file_name])
         end
       end
+
+      @reporter.pending_examples.each do |example_id|
+        register_example_files_dependency(example_id)
+      end
     end
 
     def register_untraced_dependency(trace_point_files)
@@ -122,21 +126,16 @@ module RSpecTracer
     end
 
     def generate_report
-      %i[
-        all_files
-        all_examples
-        dependency
-        examples_coverage
-      ].each do |report_type|
-        send("generate_#{report_type}_report")
-      end
-
-      @reporter.generate_reverse_dependency_report
       @reporter.generate_last_run_report
 
       generate_failed_examples_report
       generate_pending_examples_report
 
+      %i[all_files all_examples dependency examples_coverage].each do |report_type|
+        send("generate_#{report_type}_report")
+      end
+
+      @reporter.generate_reverse_dependency_report
       @reporter.write_reports
     end
 
@@ -257,7 +256,8 @@ module RSpecTracer
 
     def generate_failed_examples_report
       @cache.failed_examples.each do |example_id|
-        next if @reporter.example_deleted?(example_id)
+        next if @reporter.example_deleted?(example_id) ||
+          @reporter.all_examples.key?(example_id)
 
         @reporter.register_failed_example(example_id)
       end
@@ -265,7 +265,8 @@ module RSpecTracer
 
     def generate_pending_examples_report
       @cache.pending_examples.each do |example_id|
-        next if @reporter.example_deleted?(example_id)
+        next if @reporter.example_deleted?(example_id) ||
+          @reporter.all_examples.key?(example_id)
 
         @reporter.register_pending_example(example_id)
       end

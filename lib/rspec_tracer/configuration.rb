@@ -5,6 +5,7 @@ require_relative 'filter'
 module RSpecTracer
   module Configuration
     DEFAULT_CACHE_DIR = 'rspec_tracer_cache'
+    DEFAULT_REPORT_DIR = 'rspec_tracer_report'
     DEFAULT_COVERAGE_DIR = 'rspec_tracer_coverage'
 
     attr_writer :filters, :coverage_filters
@@ -14,6 +15,13 @@ module RSpecTracer
 
       @cache_path = nil
       @root = File.expand_path(root || Dir.getwd)
+    end
+
+    def project_name(proj_name = nil)
+      return @project_name if defined?(@project_name) && proj_name.nil?
+
+      @project_name = proj_name if proj_name.is_a?(String)
+      @project_name ||= File.basename(root).capitalize
     end
 
     def cache_dir(dir = nil)
@@ -31,6 +39,24 @@ module RSpecTracer
         FileUtils.mkdir_p(cache_path)
 
         cache_path
+      end
+    end
+
+    def report_dir(dir = nil)
+      return @report_dir if defined?(@report_dir) && dir.nil?
+
+      @report_path = nil
+      @report_dir = dir || DEFAULT_REPORT_DIR
+    end
+
+    def report_path
+      @report_path || begin
+        report_path = File.expand_path(report_dir, root)
+        report_path = File.join(report_path, ENV['TEST_SUITE_ID'].to_s)
+
+        FileUtils.mkdir_p(report_path)
+
+        report_path
       end
     end
 

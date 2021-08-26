@@ -4,6 +4,7 @@
 /coverage/
 /rspec_tracer_cache/
 /rspec_tracer_coverage/
+/rspec_tracer_report/
 /InstalledFiles
 /pkg/
 /spec/reports/

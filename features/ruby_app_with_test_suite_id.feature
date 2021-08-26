@@ -64,7 +64,7 @@ Feature: Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "aa2c6f193206bf829ea3cb17f5c7672e",
+        "run_id": "2c48486d4513ef0eeee4e7ab8c284419",
         "actual_count": 8,
         "example_count": 8,
         "skipped_examples": 0,
@@ -76,7 +76,7 @@ Feature: Ruby App with Test Suite ID
     And The all files report should have correct details
       | file_name             | file_digest                       |
       | /spec/spec_helper.rb  | 23dbc48fca7c1ef0cc63cd04f76977f8  |
-      | /spec/student_spec.rb | d8945cdf4cb0679d7c8b308a11713f08  |
+      | /spec/student_spec.rb | 822cf79c51add2d042df1e4a46ec98be  |
       | /app/student.rb       | 831c0dc99ff5690f98eb92af131931dd  |
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
@@ -132,7 +132,7 @@ Feature: Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "aa2c6f193206bf829ea3cb17f5c7672e",
+        "run_id": "2c48486d4513ef0eeee4e7ab8c284419",
         "actual_count": 8,
         "example_count": 2,
         "skipped_examples": 6,
@@ -144,7 +144,7 @@ Feature: Ruby App with Test Suite ID
     And The all files report should have correct details
       | file_name             | file_digest                       |
       | /spec/spec_helper.rb  | 23dbc48fca7c1ef0cc63cd04f76977f8  |
-      | /spec/student_spec.rb | d8945cdf4cb0679d7c8b308a11713f08  |
+      | /spec/student_spec.rb | 822cf79c51add2d042df1e4a46ec98be  |
       | /app/student.rb       | 831c0dc99ff5690f98eb92af131931dd  |
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
@@ -174,7 +174,7 @@ Feature: Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "35fdbfe849971451ec5d06879de976d5",
+        "run_id": "63df6c782675a201fbef23140bd868e2",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -187,7 +187,7 @@ Feature: Ruby App with Test Suite ID
       | file_name             | file_digest                       |
       | /spec/spec_helper.rb  | 23dbc48fca7c1ef0cc63cd04f76977f8  |
       | /spec/course_spec.rb  | 7564705d731dd1521626cc08baaca4ee  |
-      | /spec/student_spec.rb | d8945cdf4cb0679d7c8b308a11713f08  |
+      | /spec/student_spec.rb | 822cf79c51add2d042df1e4a46ec98be  |
       | /app/course.rb        | d70df28269ceb244b4a3620644990ffd  |
       | /app/student.rb       | 831c0dc99ff5690f98eb92af131931dd  |
     And The failed example report should have correct details

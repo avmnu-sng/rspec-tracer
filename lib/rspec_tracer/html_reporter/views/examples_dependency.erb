@@ -1,0 +1,36 @@
+<div class="report_container" id="<%= title_id %>">
+  <h2>
+    <span class="group_name"><%= title %></span>
+    (
+      <span class="blue">
+        <strong><%= examples_dependency.count %></strong>
+      </span> examples
+    )
+  </h2>
+
+  <a name="<%= title_id %>"></a>
+
+  <div class="report-table--responsive">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Example ID</th>
+          <th>Example</th>
+          <th>Files Count</th>
+          <th data-orderable="false">Files Name</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% examples_dependency.each do |example_dependency| %>
+          <tr>
+            <td><%= example_dependency[:example_id] %></td>
+            <td><%= example_dependency[:example] %></td>
+            <td class="number" width="8%"><strong><%= example_dependency[:files_count] %></strong></td>
+            <td><%= example_dependency[:files] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -57,7 +57,11 @@ module RSpecTracer
         examples.transform_keys(&:to_sym)
       end
 
-      @all_examples.each_value { |example| example[:run_reason] = nil }
+      @all_examples.each_value do |example|
+        example[:execution_result].transform_keys!(&:to_sym)
+
+        example[:run_reason] = nil
+      end
     end
 
     def load_failed_examples_cache
