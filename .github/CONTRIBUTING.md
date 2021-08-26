@@ -21,6 +21,8 @@ do so.
 - If your change has a corresponding open GitHub issue, 
 prefix the commit message with `[Fix #github-issue-number]`.
 - Make sure to add tests for it.
+- Make sure to run `bundle exec rake assets:precompile` in
+`lib/rspec_tracer/html_reporter` if changing `JavaScript` and `CSS` files.
 - Make sure to run `bundle exec rake`.
 - [Squash related commits together][4].
 - Open a [pull request][5] that relates to *only* one subject with a 
