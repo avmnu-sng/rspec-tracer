@@ -1,3 +1,2 @@
-*.feature linguist-language=Ruby
 *.js -linguist-detectable
 *.css -linguist-detectable
