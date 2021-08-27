@@ -58,7 +58,7 @@ SimpleCov, it is recommended to use **simplecov >= 0.12.0**.
         SimpleCov.start
 
         # Load RSpec Tracer
-        require 'rspec-tracer'
+        require 'rspec_tracer'
         RSpecTracer.start
         ```
 
@@ -74,7 +74,7 @@ SimpleCov, it is recommended to use **simplecov >= 0.12.0**.
 
         ```ruby
         # Load RSpec Tracer
-        require 'rspec-tracer'
+        require 'rspec_tracer'
         RSpecTracer.start
         ```
 
