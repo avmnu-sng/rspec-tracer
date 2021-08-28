@@ -208,10 +208,11 @@ module RSpecTracer
       rspec_root = RSpec::Core::RubyProject.root
       rspec_path = RSpec.configuration.default_path
 
-      RSpec.configuration.requires.map do |file_name|
+      RSpec.configuration.requires.each_with_object([]) do |file_name, required_files|
         file_name = "#{file_name}.rb" if File.extname(file_name).empty?
+        file_path = File.join(rspec_root, rspec_path, file_name)
 
-        File.join(rspec_root, rspec_path, file_name)
+        required_files << file_path if File.file?(file_path)
       end
     end
 
