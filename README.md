@@ -23,7 +23,7 @@ we can also analyze the coupling between different components and much more.
 ## Note
 
 **RSpec Tracer is currently available for use in the local development
-environment only.**
+environment only.** Support for CI is work in progress.
 
 ## Installation
 
@@ -41,8 +41,9 @@ And, add the followings to your `.gitignore`:
 
 ### Compatibility
 
-RSpec Tracer requires **Ruby 2.5+** and **rspec-core >= 3.6.0**. If you are using
-SimpleCov, it is recommended to use **simplecov >= 0.12.0**.
+RSpec Tracer requires **Ruby 2.5+** and **rspec-core >= 3.6.0**. To use with **Rails 5+**,
+make sure to use **rspec-rails >= 4.0.0**. If you are using SimpleCov, it is
+recommended to use **simplecov >= 0.12.0**.
 
 ## Getting Started
 
