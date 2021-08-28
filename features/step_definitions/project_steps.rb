@@ -24,6 +24,9 @@ Given('I am working on the project {string}') do |project|
       File.join(project_dir, "../../sample_projects/#{project}/"),
       'project'
     )
+
+    FileUtils.mkdir_p('/tmp/helpers')
+    FileUtils.touch('/tmp/helpers/test.rb')
   end
 end
 
