@@ -14,16 +14,24 @@ Knowing the examples and files dependency gives us a better insight into the cod
 and we have **a clear idea of what to test for when making any changes**. With this data,
 we can also analyze the coupling between different components and much more.
 
+Read more on the intention and the implementation idea [here](./RSPEC_TRACER.md).
+
+## Note
+
+**RSpec Tracer is currently available for use in the local development
+environment only.** Support for CI is work in progress.
+
+**If you find this gem could be a helpful addition to your project, give it a try
+on local and report any issues you encountered.**
+
+## Demo
+
 **First Run**
 ![](./readme_files/first_run.gif)
 
 **Next Run**
 ![](./readme_files/next_run.gif)
 
-## Note
-
-**RSpec Tracer is currently available for use in the local development
-environment only.** Support for CI is work in progress.
 
 ## Installation
 
