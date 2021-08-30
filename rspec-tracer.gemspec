@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 2.5.0'
 
-  spec.add_dependency 'docile', '~> 1.1.0'
+  spec.add_dependency 'docile', '~> 1.1', '>= 1.1.0'
   spec.add_dependency 'rspec-core', '~> 3.6', '>= 3.6.0'
 
   spec.files = Dir['{lib}/**/*.*', 'LICENSE', 'CHANGELOG.md', 'README.md', 'doc/*']

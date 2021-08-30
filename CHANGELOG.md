@@ -2,7 +2,13 @@
 
 **[WIP]** Support for CI
 
-## [0.1.1] - 2021-08-28
+## [0.3.0] - 2021-08-30
+
+### Fixed
+
+- `docile` version compatability with `simplecov`
+
+## [0.2.0] - 2021-08-28
 
 ### Fixed
 
