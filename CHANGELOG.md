@@ -1,6 +1,8 @@
-## [Unreleased]
+## [0.4.0] - 2021-09-03
 
-**[WIP]** Support for CI
+### Added
+
+- Support for CI
 
 ## [0.3.0] - 2021-08-30
 

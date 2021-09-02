@@ -14,15 +14,41 @@ Knowing the examples and files dependency gives us a better insight into the cod
 and we have **a clear idea of what to test for when making any changes**. With this data,
 we can also analyze the coupling between different components and much more.
 
-Read more on the intention and the implementation idea [here](./RSPEC_TRACER.md).
-
 ## Note
 
-**RSpec Tracer is currently available for use in the local development
-environment only.** Support for CI is work in progress.
+You should take some time and go through the [document](./RSPEC_TRACER.md) describing
+the **intention** and implementation details of **skipping tests**, **managing coverage**,
+and **caching on CI**, etc.
 
-**If you find this gem could be a helpful addition to your project, give it a try
-on local and report any issues you encountered.**
+## Table of Contents
+
+* [Demo](#demo)
+* [Installation](#installation)
+  * [Compatibility](#compatibility)
+  * [Additional Tools](#additional-tools)
+* [Getting Started](#getting-started)
+* [Environment Variables](#environment-variables)
+  * [CI](#ci)
+  * [LOCAL_AWS](#local_aws)
+  * [RSPEC_TRACER_NO_SKIP](#rspec_tracer_no_skip)
+  * [RSPEC_TRACER_S3_URI](#rspec_tracer_s3_uri)
+  * [RSPEC_TRACER_UPLOAD_LOCAL_CACHE](#rspec_tracer_upload_local_cache)
+  * [TEST_SUITE_ID](#test_suite_id)
+  * [TEST_SUITES](#test_suites)
+* [Sample Reports](#sample-reports)
+    * [Examples](#examples)
+    * [Examples Dependency](#examples-dependency)
+    * [Files Dependency](#files-dependency)
+* [Configuring RSpec Tracer](#configuring-rspec-tracer)
+* [Filters](#filters)
+  * [Defining Custom Filteres](#defining-custom-filteres)
+    * [String Filter](#string-filter)
+    * [Regex Filter](#regex-filter)
+    * [Block Filter](#block-filter)
+    * [Array Filter](#array-filter)
+* [Contributing](#contributing)
+* [License](#license)
+* [Code of Conduct](#code-of-conduct)
 
 ## Demo
 
@@ -52,6 +78,11 @@ And, add the followings to your `.gitignore`:
 RSpec Tracer requires **Ruby 2.5+** and **rspec-core >= 3.6.0**. To use with **Rails 5+**,
 make sure to use **rspec-rails >= 4.0.0**. If you are using SimpleCov, it is
 recommended to use **simplecov >= 0.12.0**.
+
+### Additional Tools
+
+To use RSpec Tracer on CI, you need to have an **S3 bucket** and
+**[AWS CLI](https://aws.amazon.com/cli/)** installed.
 
 ## Getting Started
 
@@ -87,13 +118,42 @@ recommended to use **simplecov >= 0.12.0**.
         RSpecTracer.start
         ```
 
-2. Run the tests with RSpec using `bundle exec rspec`.
-3. After running your tests, open `rspec_tracer_report/index.html` in the
+2. To enable RSpec Tracer to share cache between different builds on CI, update the
+Rakefile in your project to have the following:
+
+    ```ruby
+    spec = Gem::Specification.find_by_name('rspec-tracer')
+
+    load "#{spec.gem_dir}/lib/rspec_tracer/remote_cache/Rakefile"
+    ```
+3. Before running tests, download the remote cache using the following rake task:
+
+    ```ruby
+    bundle exec rake rspec_tracer:remote_cache:download
+    ```
+4. Run the tests with RSpec using `bundle exec rspec`.
+5. After running tests, upload the local cache using the following rake task:
+
+    ```ruby
+    bundle exec rake rspec_tracer:remote_cache:upload
+    ```
+6. After running your tests, open `rspec_tracer_report/index.html` in the
 browser of your choice.
 
 ## Environment Variables
 
 To get better control on execution, you can use the following two environment variables:
+
+### CI
+
+Mostly all the CI have `CI=true`. If not, you should explicitly set it to `true`.
+
+### LOCAL_AWS
+
+In case you want to test out the caching feature in the local development environment.
+You can install [localstack](https://github.com/localstack/localstack) and
+[awscli-local](https://github.com/localstack/awscli-local) and then invoke the
+rake tasks with `LOCAL_AWS=true`.
 
 ### RSPEC_TRACER_NO_SKIP
 
@@ -103,6 +163,19 @@ any tests. Note that it will continue to maintain cache files and generate repor
 ```ruby
 RSPEC_TRACER_NO_SKIP=true bundle exec rspec
 ```
+
+### RSPEC_TRACER_S3_URI
+
+You should provide the S3 bucket path to store the cache files.
+
+```ruby
+export RSPEC_TRACER_S3_URI=s3://ci-artifacts-bucket/rspec-tracer-cache
+```
+
+### RSPEC_TRACER_UPLOAD_LOCAL_CACHE
+
+By default, RSpec Tracer does not upload local cache files. You can set this
+environment variable to `true` to upload the local cache to S3.
 
 ### TEST_SUITE_ID
 
@@ -114,6 +187,15 @@ and not merge them.
 ```ruby
 TEST_SUITE_ID=1 bundle exec rspec spec/models
 TEST_SUITE_ID=2 bundle exec rspec spec/helpers
+```
+
+### TEST_SUITES
+
+Set this environment variable when using test suite id. It determines the total
+number of different test suites you are running.
+
+```ruby
+export TEST_SUITES=8
 ```
 
 ## Sample Reports
