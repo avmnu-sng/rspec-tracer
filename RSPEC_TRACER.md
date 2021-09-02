@@ -1,5 +1,22 @@
 ![](./readme_files/rspec_tracer.png)
 
+This document sheds some light on why RSpec Tracer might be helpful and talks
+about implementation details of **skipping tests**, **managing coverage**, and
+**caching on CI**.
+
+## Table of Contents
+
+* [Intention](#intention)
+* [Creating Dependency Map](#creating-dependency-map)
+* [Using Dependency Map](#using-dependency-map)
+* [Maintaining Coverage](#maintaining-coverage)
+* [Caching on CI](#caching-on-ci)
+  * [Handling History Rewrites](#handling-history-rewrites)
+  * [Handling Merge Commits](#handling-merge-commits)
+  * [Handling Shallow Clone](#handling-shallow-clone)
+    * [Recommendation](#recommendation)
+  * [Finding the Nearest Cache](#finding-the-nearest-cache)
+
 ## Intention
 
 It's just not about reducing the time taken to run tests but also getting answers
@@ -215,4 +232,139 @@ end
 
 # For all the tests we skipped
 skipped_tests.each { |test| final_cov.sum(cov[test]) }
+```
+
+## Caching on CI
+
+We can use the commit objects to refer to a previous run cache files set. We
+traverse the **Git ancestry** for each run to find the nearest commit SHA with the
+proper cache files. Assuming `BRANCH_REF` denotes the commit SHA to upload the
+cache files, i.e., the most accurate commit SHA on the PR branch. It will always
+be the `HEAD` ref on the **main** branch.
+
+The following command fetches the list of 25 commits starting from the branch ref:
+
+```sh
+$ git rev-list --max-count=25 --topo-order $BRANCH_REF
+```
+
+### Handling History Rewrites
+
+If you use `git commit --amend`, `git pull -r origin main`, and `git merge origin/main`,
+etc., then the commit SHA will change, and the last run remote cache reference is lost.
+Since Git uses the [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
+data structure, the previous commits refs are not entirely lost. We can use the
+current commit SHA to find these:
+
+```sh
+$ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
+  | awk '/commit/ { print $3 }' \
+  | head -n 25
+```
+
+### Handling Merge Commits
+
+For the case when we merge the main branch into the feature branch, nothing special
+is required. But mostly, all the CI use the `refs/pull/<number>/merge` reference
+created by GitHub to track what would happen if you merged the pull request. It
+references the merge commit between `refs/pull/<number>/head` and the target branch.
+Technically, it is a future commit, so it will not be part of the Git ancestry in
+the subsequent runs. Therefore, we cannot annotate cache files using this commit SHA.
+
+So, how to deal with such a case? We know that each merge commit has two immediate
+parents. You can use the following command to list both these:
+
+```sh
+$ git rev-parse HEAD^@
+```
+
+Note that in this case, the second parent, i.e., `git rev-parse HEAD^2` is the
+current branch HEAD, i.e., `refs/pull/<number>/head`. We need is to ignore
+all such commit SHA for referencing the cache files:
+
+```sh
+$ git rev-list $BRANCH_REF..origin/HEAD
+```
+
+### Handling Shallow Clone
+
+When we configure CI to shallow clone the repository (using `--depth` option),
+the root commit is marked as grafted. It works by letting users record fake ancestry
+information for commits. Consider the following Git graph:
+
+```sh
+$ git log --all --max-count=10 --decorate --oneline --graph
+
+*   b110b730b3 (HEAD) Merge a893fa0677 into 5b6cc57e74
+|\
+| * a893fa0677 grault
+| * fc3d894156 corge
+| * 6d45b211f8 quuz
+| * 8b4713af1f quux
+| * b6033a4f80 qux
+| * 0f7afab0b5 baz
+| * b6bec52e93 bar
+| * 64a913bc9a foo
+| * f1b476a9ed foobar
+```
+
+Notice that the commit `5b6cc57e74` is not part of the above graph.
+
+```sh
+$ git log --all --max-count=11 --oneline
+
+b110b730b3 (HEAD) Merge a893fa0677 into 5b6cc57e74
+5b6cc57e74 (grafted, origin/main, origin/HEAD, main) garply
+a893fa0677 grault
+fc3d894156 corge
+6d45b211f8 quuz
+8b4713af1f quux
+b6033a4f80 qux
+0f7afab0b5 baz
+b6bec52e93 bar
+64a913bc9a foo
+f1b476a9ed foobar
+```
+
+On the CI, it changes the following two things for us:
+
+- The unreachable commits list will always have **two entries**, `HEAD` and the
+`grafted` commit.
+    ```sh
+    $ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
+      | awk '/commit/ { print $3 }'
+
+    5b6cc57e74
+    b110b730b3
+    ```
+
+- The ignorable commit is always the `grafted` one:
+    ```sh
+    $ git rev-list $BRANCH_REF..origin/HEAD
+
+    5b6cc57e74
+    ```
+
+#### Recommendation
+
+To fully utilize the caching feature, you should make a complete clone, or at
+least `--depth=50` because the RSpec Tracer tries to find the nearest cache from
+the **25 unreachable** and **25 ancestry** commits.
+
+### Finding the Nearest Cache
+
+As we have the list of commit SHA, we need to validate and find the best one for
+us, i.e., sometimes, a few commits from the list will not be available, and some
+might not have finished yet. For example, consider pulling changes from the main
+branch the moment it started running build and creating a PR. In this case, the
+PR should not use the main branch SHA because it has incomplete cache files pushed
+to S3.
+
+RSpec Tracer generates **eight** files for each run, so if you run tests in different
+suites, say, **5**, then the full cache has **40** objects. Therefore, we can first
+find such a commit and then download the files.
+
+```sh
+$ TOTAL_OBJECTS=$(( TEST_SUITES * 8 ))
+$ aws s3 ls $S3_URI/$COMMIT_SHA --recursive --summarize | grep 'Total Objects'
 ```
