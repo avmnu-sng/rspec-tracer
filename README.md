@@ -33,8 +33,8 @@ and **caching on CI**, etc.
   * [RSPEC_TRACER_NO_SKIP](#rspec_tracer_no_skip)
   * [RSPEC_TRACER_S3_URI](#rspec_tracer_s3_uri)
   * [RSPEC_TRACER_UPLOAD_LOCAL_CACHE](#rspec_tracer_upload_local_cache)
-  * [TEST_SUITE_ID](#test_suite_id)
   * [TEST_SUITES](#test_suites)
+  * [TEST_SUITE_ID](#test_suite_id)
 * [Sample Reports](#sample-reports)
     * [Examples](#examples)
     * [Examples Dependency](#examples-dependency)
@@ -128,13 +128,13 @@ Rakefile in your project to have the following:
     ```
 3. Before running tests, download the remote cache using the following rake task:
 
-    ```ruby
+    ```sh
     bundle exec rake rspec_tracer:remote_cache:download
     ```
 4. Run the tests with RSpec using `bundle exec rspec`.
 5. After running tests, upload the local cache using the following rake task:
 
-    ```ruby
+    ```sh
     bundle exec rake rspec_tracer:remote_cache:upload
     ```
 6. After running your tests, open `rspec_tracer_report/index.html` in the
@@ -177,6 +177,15 @@ export RSPEC_TRACER_S3_URI=s3://ci-artifacts-bucket/rspec-tracer-cache
 By default, RSpec Tracer does not upload local cache files. You can set this
 environment variable to `true` to upload the local cache to S3.
 
+### TEST_SUITES
+
+Set this environment variable when using test suite id. It determines the total
+number of different test suites you are running.
+
+```ruby
+export TEST_SUITES=8
+```
+
 ### TEST_SUITE_ID
 
 If you have a large set of tests to run, it is recommended to run them in
@@ -189,13 +198,19 @@ TEST_SUITE_ID=1 bundle exec rspec spec/models
 TEST_SUITE_ID=2 bundle exec rspec spec/helpers
 ```
 
-### TEST_SUITES
+If you run parallel builds on the CI, you should specify the test suite ID and
+the total number of test suites when downloading the cache files.
 
-Set this environment variable when using test suite id. It determines the total
-number of different test suites you are running.
+```sh
+$ TEST_SUITES=5 TEST_SUITE_ID=1 bundle exec rake rspec_tracer:remote_cache:download
+```
 
-```ruby
-export TEST_SUITES=8
+In this case, the appropriate cache should have all the cache files available on
+the S3 for each test suite, not just for the current one. Also, while uploading,
+make sure to provide the test suite id.
+
+```sh
+$ TEST_SUITE_ID=1 bundle exec rake rspec_tracer:remote_cache:upload
 ```
 
 ## Sample Reports
