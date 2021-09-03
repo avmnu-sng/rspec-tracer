@@ -2,7 +2,7 @@
 
 ### Fixed
 
-- Limit number of cached files download
+- Limit number of cached files download (#16)
 
 ## [0.4.0] - 2021-09-03
 
