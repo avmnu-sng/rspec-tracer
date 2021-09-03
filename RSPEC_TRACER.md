@@ -329,13 +329,15 @@ f1b476a9ed foobar
 On the CI, it changes the following two things for us:
 
 - The unreachable commits list will always have **two entries**, `HEAD` and the
-`grafted` commit.
+`grafted` commit. It has all that Git can traverse from the current branch as well.
     ```sh
     $ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
       | awk '/commit/ { print $3 }'
 
     5b6cc57e74
     b110b730b3
+    3a438c2cc1
+    3d1019171c
     ```
 
 - The ignorable commit is always the `grafted` one:
@@ -363,8 +365,3 @@ to S3.
 RSpec Tracer generates **eight** files for each run, so if you run tests in different
 suites, say, **5**, then the full cache has **40** objects. Therefore, we can first
 find such a commit and then download the files.
-
-```sh
-$ TOTAL_OBJECTS=$(( TEST_SUITES * 8 ))
-$ aws s3 ls $S3_URI/$COMMIT_SHA --recursive --summarize | grep 'Total Objects'
-```

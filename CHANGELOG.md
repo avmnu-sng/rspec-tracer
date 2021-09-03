@@ -1,3 +1,9 @@
+## [0.5.0] - 2021-09-03
+
+### Fixed
+
+- Limit number of cached files download
+
 ## [0.4.0] - 2021-09-03
 
 ### Added
