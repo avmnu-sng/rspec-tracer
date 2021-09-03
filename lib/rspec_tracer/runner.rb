@@ -164,36 +164,29 @@ module RSpecTracer
     end
 
     def filter_by_files_changed
+      changed_files = fetch_changed_files
+
       @cache.dependency.each_pair do |example_id, files|
         next if @filtered_examples.key?(example_id)
+        next if (changed_files & files).empty?
 
-        files.each do |file_name|
-          break if filtered_by_file_changed?(example_id, file_name)
-        end
+        @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:files_changed]
       end
     end
 
-    def filtered_by_file_changed?(example_id, file_name)
-      if @reporter.file_changed?(file_name)
-        @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:files_changed]
+    def fetch_changed_files
+      @cache.all_files.each_value do |cached_file|
+        file_name = cached_file[:file_name]
+        source_file = RSpecTracer::SourceFile.from_name(file_name)
 
-        return true
+        if source_file.nil?
+          @reporter.on_file_deleted(file_name)
+        elsif cached_file[:digest] != source_file[:digest]
+          @reporter.on_file_modified(file_name)
+        end
       end
 
-      source_file = registered_source_file(file_name)
-
-      return false if source_file &&
-        @cache.all_files[file_name][:digest] == source_file[:digest]
-
-      @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:files_changed]
-
-      if source_file.nil?
-        @reporter.on_file_deleted(file_name)
-      else
-        @reporter.on_file_modified(file_name)
-      end
-
-      true
+      @reporter.modified_files | @reporter.deleted_files
     end
 
     def generate_untraced_files(trace_point_files)
@@ -227,14 +220,10 @@ module RSpecTracer
     end
 
     def register_example_file_dependency(example_id, file_name)
-      source_file = registered_source_file(file_name)
+      source_file = RSpecTracer::SourceFile.from_name(file_name)
 
       @reporter.register_source_file(source_file)
       @reporter.register_dependency(example_id, file_name)
-    end
-
-    def registered_source_file(file_name)
-      @reporter.all_files[file_name] || RSpecTracer::SourceFile.from_name(file_name)
     end
 
     def generate_all_files_report

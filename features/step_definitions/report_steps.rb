@@ -112,6 +112,13 @@ Then('The dependency report should have correct details') do
     report.each_pair do |example_id, dependency|
       expect(dependency).to contain_exactly(*data[example_id])
     end
+
+    dependency_files = Set.new
+    report.each_value { |files| dependency_files |= files }
+
+    all_files = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/all_files.json")).keys.to_set
+
+    expect(dependency_files).to eq(all_files)
   end
 end
 
@@ -128,5 +135,9 @@ Then('The reverse dependency report should have correct details') do
     report.each_pair do |example_id, dependency|
       expect(dependency).to eq(data[example_id])
     end
+
+    all_files = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/all_files.json")).keys.sort
+
+    expect(report.keys.sort).to eq(all_files)
   end
 end

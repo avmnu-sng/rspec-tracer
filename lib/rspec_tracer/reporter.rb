@@ -2,8 +2,9 @@
 
 module RSpecTracer
   class Reporter
-    attr_reader :all_examples, :pending_examples, :all_files, :dependency,
-                :reverse_dependency, :examples_coverage, :last_run
+    attr_reader :all_examples, :pending_examples, :all_files, :modified_files,
+                :deleted_files, :dependency, :reverse_dependency, :examples_coverage,
+                :last_run
 
     def initialize
       initialize_examples
