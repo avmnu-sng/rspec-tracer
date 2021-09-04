@@ -374,6 +374,7 @@ branch the moment it started running build and creating a PR. In this case, the
 PR should not use the main branch SHA because it has incomplete cache files pushed
 to S3.
 
-RSpec Tracer generates **eight** files for each run, so if you run tests in different
-suites, say, **5**, then the full cache has **40** objects. Therefore, we can first
+RSpec Tracer generates **nine** files for each run, so if you run tests in different
+suites, say, **5**, then the full cache has **45** objects. Therefore, we can first
 find such a commit and then download the files.
+
