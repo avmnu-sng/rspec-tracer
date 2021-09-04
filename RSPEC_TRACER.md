@@ -1,15 +1,17 @@
 ![](./readme_files/rspec_tracer.png)
 
 This document sheds some light on why RSpec Tracer might be helpful and talks
-about implementation details of **skipping tests**, **managing coverage**, and
-**caching on CI**.
+about implementation details of **managing dependency**, **managing flaky tests**,
+**skipping tests**, and **caching on CI**.
 
 ## Table of Contents
 
 * [Intention](#intention)
-* [Creating Dependency Map](#creating-dependency-map)
-* [Using Dependency Map](#using-dependency-map)
-* [Maintaining Coverage](#maintaining-coverage)
+* [Managing Dependency](#managing-dependency)
+  * [Creating Dependency Map](#creating-dependency-map)
+  * [Using Dependency Map](#using-dependency-map)
+  * [Maintaining Coverage](#maintaining-coverage)
+* [Flaky Tests](#flaky-tests)
 * [Caching on CI](#caching-on-ci)
   * [Handling History Rewrites](#handling-history-rewrites)
   * [Handling Merge Commits](#handling-merge-commits)
@@ -52,12 +54,14 @@ surprises.
 }
 ```
 
-Okay, now about the test execution time. There is an option to run tests parallel
-and save time, but it runs all the tests. If we know for a fact that in the
-current state, a given set of tests needs run, why run the entire suite? Earlier,
-we talked about maintaining a map of files to spec files, but it is not helpful here.
-What we need is a map of the test to source and spec files. With this, we can check
-if any of the files changed or not. If not, no need to run this particular test.
+## Managing Dependency
+
+There is an option to run tests parallel and save time, but it runs all the tests.
+If we know for a fact that in the current state, a given set of tests needs run,
+why run the entire suite? Earlier, we talked about maintaining a map of files to
+spec files, but it is not helpful here. What we need is a map of the test to source
+and spec files. With this, we can check if any of the files changed or not. If not,
+no need to run this particular test.
 
 ```json
 {
@@ -96,7 +100,7 @@ if any of the files changed or not. If not, no need to run this particular test.
 
 Let's see how we can create both these two maps.
 
-## Creating Dependency Map
+### Creating Dependency Map
 
 We will maintain reference coverage data, and then at the end of each test run,
 we find all such files which have coverage diff. These are the files on which
@@ -187,7 +191,7 @@ We get the following map:
 }
 ```
 
-## Using Dependency Map
+### Using Dependency Map
 
 As we have the test dependency map, we can use it to skip tests with no dependency
 changes.
@@ -204,7 +208,7 @@ tests.each do |test|
 end
 ```
 
-## Maintaining Coverage
+### Maintaining Coverage
 
 Since we are skipping tests, the coverage data will not include contributions
 from these tests. Note that we can store the coverage data for each test while
@@ -233,6 +237,14 @@ end
 # For all the tests we skipped
 skipped_tests.each { |test| final_cov.sum(cov[test]) }
 ```
+
+## Flaky Tests
+
+Sometimes we have flaky tests, and it is tough to find out such tests. No worries,
+RSpec Tracer will do it for you. It takes care of the scenarios when some previously
+failing tests pass in the current run without any dependency change and flag them
+as flaky. It would keep running these tests irrespective of the execution result
+unless you changed the dependent files.
 
 ## Caching on CI
 

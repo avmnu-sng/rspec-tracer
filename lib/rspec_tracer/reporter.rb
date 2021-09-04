@@ -2,9 +2,9 @@
 
 module RSpecTracer
   class Reporter
-    attr_reader :all_examples, :pending_examples, :all_files, :modified_files,
-                :deleted_files, :dependency, :reverse_dependency, :examples_coverage,
-                :last_run
+    attr_reader :all_examples, :possibly_flaky_examples, :flaky_examples, :pending_examples,
+                :all_files, :modified_files, :deleted_files, :dependency, :reverse_dependency,
+                :examples_coverage, :last_run
 
     def initialize
       initialize_examples
@@ -22,6 +22,7 @@ module RSpecTracer
     end
 
     def on_example_passed(example_id, result)
+      @passed_examples << example_id
       @all_examples[example_id][:execution_result] = formatted_execution_result(result)
     end
 
@@ -45,12 +46,24 @@ module RSpecTracer
       end
     end
 
+    def register_possibly_flaky_example(example_id)
+      @possibly_flaky_examples << example_id
+    end
+
+    def register_flaky_example(example_id)
+      @flaky_examples << example_id
+    end
+
     def register_failed_example(example_id)
       @failed_examples << example_id
     end
 
     def register_pending_example(example_id)
       @pending_examples << example_id
+    end
+
+    def example_passed?(example_id)
+      @passed_examples.include?(example_id)
     end
 
     def example_skipped?(example_id)
@@ -134,6 +147,7 @@ module RSpecTracer
 
       %i[
         all_examples
+        flaky_examples
         failed_examples
         pending_examples
         all_files
@@ -150,6 +164,9 @@ module RSpecTracer
 
     def initialize_examples
       @all_examples = {}
+      @passed_examples = Set.new
+      @possibly_flaky_examples = Set.new
+      @flaky_examples = Set.new
       @failed_examples = Set.new
       @skipped_examples = Set.new
       @pending_examples = Set.new
@@ -208,6 +225,12 @@ module RSpecTracer
       file_name = File.join(@cache_dir, 'all_examples.json')
 
       File.write(file_name, JSON.pretty_generate(@all_examples))
+    end
+
+    def write_flaky_examples_report
+      file_name = File.join(@cache_dir, 'flaky_examples.json')
+
+      File.write(file_name, JSON.pretty_generate(@flaky_examples.to_a))
     end
 
     def write_failed_examples_report

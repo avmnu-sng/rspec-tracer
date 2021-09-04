@@ -2,7 +2,8 @@
 
 module RSpecTracer
   class Cache
-    attr_reader :all_examples, :failed_examples, :pending_examples, :all_files, :dependency
+    attr_reader :all_examples, :flaky_examples, :failed_examples, :pending_examples,
+                :all_files, :dependency
 
     def initialize
       @run_id = last_run_id
@@ -11,6 +12,7 @@ module RSpecTracer
       @cached = false
 
       @all_examples = {}
+      @flaky_examples = Set.new
       @failed_examples = Set.new
       @pending_examples = Set.new
       @all_files = {}
@@ -21,6 +23,7 @@ module RSpecTracer
       return if @run_id.nil? || @cached
 
       load_all_examples_cache
+      load_flaky_examples_cache
       load_failed_examples_cache
       load_pending_examples_cache
       load_all_files_cache
@@ -62,6 +65,14 @@ module RSpecTracer
 
         example[:run_reason] = nil
       end
+    end
+
+    def load_flaky_examples_cache
+      file_name = File.join(@cache_dir, 'flaky_examples.json')
+
+      return unless File.file?(file_name)
+
+      @flaky_examples = JSON.parse(File.read(file_name)).to_set
     end
 
     def load_failed_examples_cache

@@ -8,7 +8,11 @@ It uses [Ruby's built-in coverage library](https://ruby-doc.org/stdlib/libdoc/co
 to keep track of the coverage for each test. For each test executed, the coverage
 diff provides the desired file list. RSpec Tracer takes care of reporting the
 **correct code coverage when skipping tests** by using the cached reports. Also,
-note that it will **never skip any tests which failed or were pending** in the last runs.
+note that it will **never skip**:
+
+- **Flaky examples**
+- **Failed examples**
+- **Pending examples**
 
 Knowing the examples and files dependency gives us a better insight into the codebase,
 and we have **a clear idea of what to test for when making any changes**. With this data,
@@ -17,8 +21,8 @@ we can also analyze the coupling between different components and much more.
 ## Note
 
 You should take some time and go through the [document](./RSPEC_TRACER.md) describing
-the **intention** and implementation details of **skipping tests**, **managing coverage**,
-and **caching on CI**, etc.
+the **intention** and implementation details of **managing dependency**, **managing flaky tests**,
+**skipping tests**, and **caching on CI**.
 
 ## Table of Contents
 
@@ -37,6 +41,7 @@ and **caching on CI**, etc.
   * [TEST_SUITE_ID](#test_suite_id)
 * [Sample Reports](#sample-reports)
     * [Examples](#examples)
+    * [Flaky Examples](#flaky-examples)
     * [Examples Dependency](#examples-dependency)
     * [Files Dependency](#files-dependency)
 * [Configuring RSpec Tracer](#configuring-rspec-tracer)
@@ -228,6 +233,19 @@ These reports provide basic test information:
 **Next Run**
 
 ![](./readme_files/examples_report_next_run.png)
+
+### Flaky Examples
+
+These reports provide flaky tests information. Assuming **the following two tests
+failed in the first run.**
+
+**Next Run**
+
+![](./readme_files/flaky_examples_report_first_run.png)
+
+**Another Run**
+
+![](./readme_files/flaky_examples_report_next_run.png)
 
 ### Examples Dependency
 
