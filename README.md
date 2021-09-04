@@ -20,9 +20,10 @@ we can also analyze the coupling between different components and much more.
 
 ## Note
 
-You should take some time and go through the [document](./RSPEC_TRACER.md) describing
+You should take some time and go through the **[document](./RSPEC_TRACER.md)** describing
 the **intention** and implementation details of **managing dependency**, **managing flaky tests**,
-**skipping tests**, and **caching on CI**.
+**skipping tests**, and **caching on CI**. You must go through the README file before
+integrating the gem into your project to better understand what is happening.
 
 ## Table of Contents
 
@@ -32,6 +33,7 @@ the **intention** and implementation details of **managing dependency**, **manag
   * [Additional Tools](#additional-tools)
 * [Getting Started](#getting-started)
 * [Environment Variables](#environment-variables)
+  * [BUNDLE_PATH](#bundle_path)
   * [CI](#ci)
   * [LOCAL_AWS](#local_aws)
   * [RSPEC_TRACER_NO_SKIP](#rspec_tracer_no_skip)
@@ -148,6 +150,13 @@ browser of your choice.
 ## Environment Variables
 
 To get better control on execution, you can use the following two environment variables:
+
+### BUNDLE_PATH
+
+Since the bundler uses a vendor directory inside the project, it might cause slowness
+depending on the vendor size. You can configure the bundle path outside of the project
+using `BUNDLE_PATH` environment variable, for example, `BUNDLE_PATH=$HOME/vendor/bundle`.
+Make sure to cache this directory in the CI configuration.
 
 ### CI
 
