@@ -2,7 +2,13 @@
 
 RSpecTracer.configure do
   add_filter '/vendor/bundle/'
-  add_coverage_filter %w[/autotest/ /features/ /spec/ /test/].freeze
+  add_coverage_filter %w[
+    /autotest/
+    /features/
+    /spec/
+    /test/
+    /vendor/bundle/
+  ].freeze
 end
 
 at_exit do
