@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'git'
+require 'msgpack'
 
 module RSpecTracer
   module RemoteCache
@@ -176,7 +177,7 @@ module RSpecTracer
 
         return unless File.file?(file_name)
 
-        run_id = JSON.parse(File.read(file_name))['run_id']
+        run_id = RSpecTracer.cache_serializer.deserialize(File.read(file_name))['run_id']
 
         raise LocalCacheNotFoundError, 'Could not find any local cache to upload' if run_id.nil?
 

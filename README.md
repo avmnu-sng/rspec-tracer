@@ -150,8 +150,7 @@ browser of your choice.
 
 ## Environment Variables
 
-To get better control on execution, you can use the following environment variables
-whenever required.
+To get better control on execution, you can use the following two environment variables:
 
 ### BUNDLE_PATH
 
@@ -214,7 +213,7 @@ export TEST_SUITES=8
 
 If you have a large set of tests to run, it is recommended to run them in
 separate groups. This way, RSpec Tracer is not overwhelmed with loading massive
-cached data in the memory. Also, it generates and uses cache for specific test suites
+cached data in the memory. Also, it generate and use cache for specific test suites
 and not merge them.
 
 ```ruby
@@ -236,6 +235,45 @@ make sure to provide the test suite id.
 ```sh
 $ TEST_SUITE_ID=1 bundle exec rake rspec_tracer:remote_cache:upload
 ```
+
+## Serializers
+
+You can configure the serialization for the cache using either the `cache_serializer` option or setting `CACHE_SERIALIZER` in your ENV
+
+### JSON
+
+This is the default serializer and uses `JSON.generate` and `JSON.parse`, it has the advantage of being human readable but it is also larger and slower to read from and write to than the other two serializers. If you want to explicitly enable this serializer the value you need to set `cache_serializer` to is `json`
+
+### MessagePack
+
+This uses `MessagePack.pack` and `MessagePack.unpack` to handle serialization. It is the sweetspot when it comes to size and performance. It is lighter than `JSON` and slightly faster too.
+
+### Adding new serializers
+
+If you wish to add a new serializer you need to create a new class which will inherit `RSpecTracer::Serializer` and the class name needs to end in `Serializer`. It will need to implement a `serialize` and `deserialize` method and also set both an `EXTENSION` and a `ENCODING` constant.
+
+```ruby
+module RSpecTracer
+  class MyCustomSerializer < Serializer
+    ENCODING = Encoding::BINARY
+    EXTENSION = 'my_ext'
+
+    class << self
+      def serialize(object)
+        # converting any given object to file content
+      end
+
+      def deserialize(input)
+        # converting any given file content back to an object
+      end
+    end
+  end
+end
+```
+
+You will want this to always be true `deserialize(serialize(object)) == object` for `RSpecTracer` to work with your serializer.
+
+Then to use your custom serializer you'll need to specify your serializer's name in `camel_case`. So in the given example I would set the `cache_serializer` to `my_custom`
 
 ## Sample Reports
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'msgpack'
+
 module RSpecTracer
   class Cache
     attr_reader :all_examples, :flaky_examples, :failed_examples, :pending_examples,
@@ -57,19 +59,19 @@ module RSpecTracer
     private
 
     def last_run_id
-      file_name = File.join(RSpecTracer.cache_path, 'last_run.json')
+      file_name = File.join(RSpecTracer.cache_path, "last_run.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      JSON.parse(File.read(file_name))['run_id']
+      RSpecTracer.cache_serializer.deserialize(File.read(file_name))['run_id']
     end
 
     def load_all_examples_cache
-      file_name = File.join(@cache_dir, 'all_examples.json')
+      file_name = File.join(@cache_dir, "all_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @all_examples = JSON.parse(File.read(file_name)).transform_values do |examples|
+      @all_examples = RSpecTracer.cache_serializer.deserialize(File.read(file_name)).transform_values do |examples|
         examples.transform_keys(&:to_sym)
       end
 
@@ -81,53 +83,53 @@ module RSpecTracer
     end
 
     def load_flaky_examples_cache
-      file_name = File.join(@cache_dir, 'flaky_examples.json')
+      file_name = File.join(@cache_dir, "flaky_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @flaky_examples = JSON.parse(File.read(file_name)).to_set
+      @flaky_examples = RSpecTracer.cache_serializer.deserialize(File.read(file_name))&.to_set || []
     end
 
     def load_failed_examples_cache
-      file_name = File.join(@cache_dir, 'failed_examples.json')
+      file_name = File.join(@cache_dir, "failed_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @failed_examples = JSON.parse(File.read(file_name)).to_set
+      @failed_examples = RSpecTracer.cache_serializer.deserialize(File.read(file_name))&.to_set || []
     end
 
     def load_pending_examples_cache
-      file_name = File.join(@cache_dir, 'pending_examples.json')
+      file_name = File.join(@cache_dir, "pending_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @pending_examples = JSON.parse(File.read(file_name)).to_set
+      @pending_examples = RSpecTracer.cache_serializer.deserialize(File.read(file_name))&.to_set || []
     end
 
     def load_all_files_cache
-      file_name = File.join(@cache_dir, 'all_files.json')
+      file_name = File.join(@cache_dir, "all_files.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @all_files = JSON.parse(File.read(file_name)).transform_values do |files|
+      @all_files = RSpecTracer.cache_serializer.deserialize(File.read(file_name)).transform_values do |files|
         files.transform_keys(&:to_sym)
       end
     end
 
     def load_dependency_cache
-      file_name = File.join(@cache_dir, 'dependency.json')
+      file_name = File.join(@cache_dir, "dependency.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @dependency = JSON.parse(File.read(file_name)).transform_values(&:to_set)
+      @dependency = RSpecTracer.cache_serializer.deserialize(File.read(file_name)).transform_values(&:to_set)
     end
 
     def load_examples_coverage_cache
-      file_name = File.join(@cache_dir, 'examples_coverage.json')
+      file_name = File.join(@cache_dir, "examples_coverage.#{RSpecTracer.cache_serializer::EXTENSION}")
 
       return unless File.file?(file_name)
 
-      @examples_coverage = JSON.parse(File.read(file_name))
+      @examples_coverage = RSpecTracer.cache_serializer.deserialize(File.read(file_name))
     end
   end
 end

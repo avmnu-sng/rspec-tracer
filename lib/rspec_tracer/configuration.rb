@@ -112,6 +112,22 @@ module RSpecTracer
       Docile.dsl_eval(self, &block)
     end
 
+    def cache_serializer
+      return @cache_serializer if @cache_serializer.is_a?(Serializer)
+
+      @cache_serializer = ENV['CACHE_SERIALIZER']
+      @cache_serializer = case @cache_serializer
+                          when nil, 'json' then JSONSerializer
+                          when 'message_pack' then MessagePackSerializer
+                          else
+                            if @cache_serializer.is_a? String
+                              "#{@cache_serializer.camelize}Serializer".constantize
+                            else
+                              JSONSerializer
+                            end
+                          end
+    end
+
     private
 
     def test_suite_id

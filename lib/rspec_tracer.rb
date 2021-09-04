@@ -10,6 +10,9 @@ require 'json'
 require 'pry'
 require 'set'
 
+require_relative 'rspec_tracer/messagepack/time_extension'
+
+require_relative 'rspec_tracer/serializer'
 require_relative 'rspec_tracer/configuration'
 RSpecTracer.extend RSpecTracer::Configuration
 

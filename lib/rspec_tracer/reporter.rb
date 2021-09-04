@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'msgpack'
+
 module RSpecTracer
   class Reporter
     attr_reader :all_examples, :possibly_flaky_examples, :flaky_examples, :pending_examples,
@@ -227,58 +229,67 @@ module RSpecTracer
     end
 
     def write_all_examples_report
-      file_name = File.join(@cache_dir, 'all_examples.json')
+      file_name = File.join(@cache_dir, "all_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@all_examples))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@all_examples),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_flaky_examples_report
-      file_name = File.join(@cache_dir, 'flaky_examples.json')
+      file_name = File.join(@cache_dir, "flaky_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@flaky_examples.to_a))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@flaky_examples.to_a),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_failed_examples_report
-      file_name = File.join(@cache_dir, 'failed_examples.json')
+      file_name = File.join(@cache_dir, "failed_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@failed_examples.to_a))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@failed_examples.to_a),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_pending_examples_report
-      file_name = File.join(@cache_dir, 'pending_examples.json')
+      file_name = File.join(@cache_dir, "pending_examples.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@pending_examples.to_a))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@pending_examples.to_a),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_all_files_report
-      file_name = File.join(@cache_dir, 'all_files.json')
+      file_name = File.join(@cache_dir, "all_files.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@all_files))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@all_files),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_dependency_report
-      file_name = File.join(@cache_dir, 'dependency.json')
+      file_name = File.join(@cache_dir, "dependency.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@dependency))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@dependency),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_reverse_dependency_report
-      file_name = File.join(@cache_dir, 'reverse_dependency.json')
+      file_name = File.join(@cache_dir, "reverse_dependency.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@reverse_dependency))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@reverse_dependency),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_examples_coverage_report
-      file_name = File.join(@cache_dir, 'examples_coverage.json')
+      file_name = File.join(@cache_dir, "examples_coverage.#{RSpecTracer.cache_serializer::EXTENSION}")
 
-      File.write(file_name, JSON.generate(@examples_coverage))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(@examples_coverage),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
 
     def write_last_run_report
-      file_name = File.join(RSpecTracer.cache_path, 'last_run.json')
+      file_name = File.join(RSpecTracer.cache_path, "last_run.#{RSpecTracer.cache_serializer::EXTENSION}")
       last_run_data = @last_run.merge(run_id: @run_id, timestamp: Time.now.utc)
 
-      File.write(file_name, JSON.generate(last_run_data))
+      File.write(file_name, RSpecTracer.cache_serializer.serialize(last_run_data),
+                 encoding: RSpecTracer.cache_serializer::ENCODING)
     end
   end
 end

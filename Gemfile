@@ -4,7 +4,9 @@ source 'https://rubygems.org'
 
 group :development do
   gem 'aruba', '~> 2.0.0'
+  gem 'contracts', '< 0.17'
   gem 'cucumber', '~> 7.0.0'
+  gem 'msgpack', '~> 1.3'
   gem 'pry', '~> 0.14.0'
   gem 'rake', '~> 13.0.0'
   gem 'rspec', '~> 3.10.0'
