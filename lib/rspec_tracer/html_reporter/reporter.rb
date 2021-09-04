@@ -6,13 +6,14 @@ require 'time'
 module RSpecTracer
   module HTMLReporter
     class Reporter
-      attr_reader :last_run, :examples, :examples_dependency, :files_dependency
+      attr_reader :last_run, :examples, :flaky_examples, :examples_dependency, :files_dependency
 
       def initialize
         @reporter = RSpecTracer.runner.reporter
 
         format_last_run
         format_examples
+        format_flaky_examples
         format_examples_dependency
         format_files_dependency
       end
@@ -55,6 +56,10 @@ module RSpecTracer
             last_run: example_run_local_time(example[:execution_result][:finished_at])
           }
         end
+      end
+
+      def format_flaky_examples
+        @flaky_examples = @examples.slice(*@reporter.flaky_examples).values
       end
 
       def example_run_local_time(utc_time)
@@ -128,6 +133,14 @@ module RSpecTracer
         template(title_id).result(current_binding)
       end
 
+      def formatted_flaky_examples(title, flaky_examples)
+        title_id = report_container_id(title)
+        current_binding = binding
+
+        current_binding.local_variable_set(:title_id, title_id)
+        template(title_id).result(current_binding)
+      end
+
       def formatted_examples_dependency(title, examples_dependency)
         title_id = report_container_id(title)
         current_binding = binding
@@ -154,7 +167,7 @@ module RSpecTracer
 
       def example_status_css_class(example_status)
         case example_status.split.first
-        when 'Failed'
+        when 'Failed', 'Flaky'
           'red'
         when 'Pending'
           'yellow'

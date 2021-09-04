@@ -11,7 +11,7 @@ module RSpecTracer
 
       class LocalCacheNotFoundError < StandardError; end
 
-      CACHE_FILES_PER_TEST_SUITE = 7
+      CACHE_FILES_PER_TEST_SUITE = 8
 
       def initialize
         @s3_uri = ENV['RSPEC_TRACER_S3_URI']

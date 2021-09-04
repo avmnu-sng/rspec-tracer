@@ -1,0 +1,38 @@
+<div class="report_container" id="<%= title_id %>">
+  <h2>
+    <span class="group_name"><%= title %></span>
+    (
+      <span class="blue">
+        <strong><%= flaky_examples.count %></strong>
+      </span> examples
+    )
+  </h2>
+
+  <a name="<%= title_id %>"></a>
+
+  <div class="report-table--responsive">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Description</th>
+          <th>Location</th>
+          <th>Result</th>
+          <th>Run At</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% flaky_examples.each do |example| %>
+          <tr>
+            <td><%= example[:id] %></td>
+            <td><%= example[:description] %></td>
+            <td><%= example[:location] %></td>
+            <td><strong class="<%= example_result_css_class(example[:result]) %>"><%= example[:result] %></strong></td>
+            <td width="8%"><%= example[:last_run] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

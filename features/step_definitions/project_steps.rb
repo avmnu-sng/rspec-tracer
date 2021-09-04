@@ -56,6 +56,17 @@ Given('I replace spec helper with {string}') do |spec_helper|
   end
 end
 
+Given('I update the spec file {string}') do |spec_file|
+  project_dir = File.dirname(__FILE__)
+
+  cd('.') do
+    FileUtils.cp(
+      File.join(project_dir, "../../sample_projects/updated_files/#{@project}/spec/#{spec_file}.rb"),
+      "spec/#{spec_file}.rb"
+    )
+  end
+end
+
 Given('I want to explicitly run all the tests') do
   set_environment_variable('RSPEC_TRACER_NO_SKIP', 'true')
 end

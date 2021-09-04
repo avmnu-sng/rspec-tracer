@@ -8,6 +8,7 @@ module RSpecTracer
     EXAMPLE_RUN_REASON = {
       explicit_run: 'Explicit run',
       no_cache: 'No cache',
+      flaky_example: 'Flaky example',
       failed_example: 'Failed previously',
       pending_example: 'Pending previously',
       files_changed: 'Files changed'
@@ -128,6 +129,7 @@ module RSpecTracer
     def generate_report
       @reporter.generate_last_run_report
 
+      generate_flaky_examples_report
       generate_failed_examples_report
       generate_pending_examples_report
 
@@ -146,31 +148,45 @@ module RSpecTracer
     end
 
     def filter_examples_to_run
+      @changed_files = fetch_changed_files
+
+      add_previously_flaky_examples
       add_previously_failed_examples
       add_previously_pending_examples
-      filter_by_files_changed
+
+      @cache.dependency.each_pair do |example_id, files|
+        next if @filtered_examples.key?(example_id)
+        next if (@changed_files & files).empty?
+
+        @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:files_changed]
+      end
+    end
+
+    def add_previously_flaky_examples
+      @cache.flaky_examples.each do |example_id|
+        @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:flaky_example]
+
+        next unless (@changed_files & @cache.dependency[example_id]).empty?
+
+        @reporter.register_possibly_flaky_example(example_id)
+      end
     end
 
     def add_previously_failed_examples
       @cache.failed_examples.each do |example_id|
+        next if @filtered_examples.key?(example_id)
+
         @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:failed_example]
+
+        next unless (@changed_files & @cache.dependency[example_id]).empty?
+
+        @reporter.register_possibly_flaky_example(example_id)
       end
     end
 
     def add_previously_pending_examples
       @cache.pending_examples.each do |example_id|
         @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:pending_example]
-      end
-    end
-
-    def filter_by_files_changed
-      changed_files = fetch_changed_files
-
-      @cache.dependency.each_pair do |example_id, files|
-        next if @filtered_examples.key?(example_id)
-        next if (changed_files & files).empty?
-
-        @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:files_changed]
       end
     end
 
@@ -241,6 +257,16 @@ module RSpecTracer
           @reporter.example_deleted?(example_id)
 
         @reporter.all_examples[example_id] = data
+      end
+    end
+
+    def generate_flaky_examples_report
+      @reporter.possibly_flaky_examples.each do |example_id|
+        next if @reporter.example_deleted?(example_id)
+        next unless @cache.flaky_examples.include?(example_id) ||
+          @reporter.example_passed?(example_id)
+
+        @reporter.register_flaky_example(example_id)
       end
     end
 

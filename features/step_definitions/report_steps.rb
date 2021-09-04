@@ -69,6 +69,22 @@ Then('The all files report should have correct details') do |table|
   end
 end
 
+Then('There should be no flaky examples') do
+  cd('.') do
+    report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/flaky_examples.json"))
+
+    expect(report).to eq([])
+  end
+end
+
+Then('The flaky example report should have correct details') do
+  cd('.') do
+    report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/flaky_examples.json"))
+
+    expect(report).to eq(%w[c25a9aa240c4a72810d9ccfc0e2c10ad 9479ac3d1030d06371c69081856ce7e0])
+  end
+end
+
 Then('The failed example report should have correct details') do
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/failed_examples.json"))
