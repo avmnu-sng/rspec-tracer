@@ -1,3 +1,17 @@
+## [0.6.0] - 2021-09-05
+
+### Added
+
+- Improved dependency change detection (#18)
+- Flaky tests detection (#19)
+- Exclude vendor files from analysis (#21)
+- Report elapsed time at various stages (#23)
+
+### Note
+
+The first run on this version will not use any cache on the CI because the number
+of files changed from eight to nine, so there will be no appropriate cache to use.
+
 ## [0.5.0] - 2021-09-03
 
 ### Fixed
