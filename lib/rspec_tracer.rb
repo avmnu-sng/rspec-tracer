@@ -23,6 +23,7 @@ require_relative 'rspec_tracer/rspec_runner'
 require_relative 'rspec_tracer/ruby_coverage'
 require_relative 'rspec_tracer/runner'
 require_relative 'rspec_tracer/source_file'
+require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
 
 module RSpecTracer
@@ -184,22 +185,36 @@ module RSpecTracer
     def generate_reports
       puts 'RSpec tracer is generating reports'
 
-      generate_tracer_reports
-      generate_coverage_reports
+      process_dependency
+      process_coverage
       runner.generate_report
       RSpecTracer::HTMLReporter::Reporter.new.generate_report
     end
 
-    def generate_tracer_reports
+    def process_dependency
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       runner.register_deleted_examples
       runner.register_dependency(coverage_reporter.examples_coverage)
       runner.register_untraced_dependency(@traced_files)
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer processed dependency (took #{elpased})"
     end
 
-    def generate_coverage_reports
+    def process_coverage
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       coverage_reporter.generate_final_examples_coverage
       coverage_reporter.merge_coverage(runner.generate_missed_coverage)
       runner.register_examples_coverage(coverage_reporter.examples_coverage)
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer processed coverage (took #{elpased})"
     end
 
     def run_simplecov_exit_task
@@ -213,12 +228,18 @@ module RSpecTracer
     end
 
     def run_coverage_exit_task
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       coverage_reporter.generate_final_coverage
 
       file_name = File.join(RSpecTracer.coverage_path, 'coverage.json')
 
       write_coverage_report(file_name)
-      print_coverage_stats(file_name)
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      print_coverage_stats(file_name, elpased)
     end
 
     def write_coverage_report(file_name)
@@ -229,15 +250,16 @@ module RSpecTracer
         }
       }
 
-      File.write(file_name, JSON.pretty_generate(report))
+      File.write(file_name, JSON.generate(report))
     end
 
-    def print_coverage_stats(file_name)
+    def print_coverage_stats(file_name, elpased)
       stat = coverage_reporter.coverage_stat
 
       puts <<-REPORT.strip.gsub(/\s+/, ' ')
         Coverage report generated for RSpecTracer to #{file_name}. #{stat[:covered_lines]}
         / #{stat[:total_lines]} LOC (#{stat[:covered_percent]}%) covered
+        (took #{elpased})
       REPORT
     end
   end

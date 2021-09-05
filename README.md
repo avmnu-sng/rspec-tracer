@@ -149,7 +149,8 @@ browser of your choice.
 
 ## Environment Variables
 
-To get better control on execution, you can use the following two environment variables:
+To get better control on execution, you can use the following environment variables
+whenever required.
 
 ### BUNDLE_PATH
 
@@ -204,7 +205,7 @@ export TEST_SUITES=8
 
 If you have a large set of tests to run, it is recommended to run them in
 separate groups. This way, RSpec Tracer is not overwhelmed with loading massive
-cached data in the memory. Also, it generate and use cache for specific test suites
+cached data in the memory. Also, it generates and uses cache for specific test suites
 and not merge them.
 
 ```ruby

@@ -3,7 +3,7 @@
 module RSpecTracer
   class Cache
     attr_reader :all_examples, :flaky_examples, :failed_examples, :pending_examples,
-                :all_files, :dependency
+                :all_files, :dependency, :run_id
 
     def initialize
       @run_id = last_run_id
@@ -22,6 +22,8 @@ module RSpecTracer
     def load_cache_for_run
       return if @run_id.nil? || @cached
 
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       load_all_examples_cache
       load_flaky_examples_cache
       load_failed_examples_cache
@@ -29,16 +31,27 @@ module RSpecTracer
       load_all_files_cache
       load_dependency_cache
 
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       @cached = true
 
-      puts "RSpec tracer loaded cache from #{@cache_dir}" if @run_id
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer loaded cache from #{@cache_dir} (took #{elpased})"
     end
 
     def cached_examples_coverage
       return @examples_coverage if defined?(@examples_coverage)
       return @examples_coverage = {} if @run_id.nil?
 
-      load_examples_coverage_cache
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      coverage = load_examples_coverage_cache
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer loaded cached examples coverage (took #{elpased})"
+
+      coverage
     end
 
     private

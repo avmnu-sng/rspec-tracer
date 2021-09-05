@@ -38,7 +38,7 @@ jobs:
           SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
           BRANCH_COVERAGE: true
         run: |
-          echo RSPEC_RAILS=$RSPEC_VERSION
+          echo RSPEC_VERSION=$RSPEC_VERSION
           echo SIMPLECOV_VERSION=$SIMPLECOV_VERSION
           echo BRANCH_COVERAGE=$BRANCH_COVERAGE
           bundle exec cucumber --tags @ruby_app
