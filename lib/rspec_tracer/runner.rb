@@ -21,6 +21,8 @@ module RSpecTracer
       @reporter = RSpecTracer::Reporter.new
       @filtered_examples = {}
 
+      return if @cache.run_id.nil?
+
       @cache.load_cache_for_run
       filter_examples_to_run
     end
@@ -128,16 +130,19 @@ module RSpecTracer
 
     def generate_report
       @reporter.generate_last_run_report
+      generate_examples_status_report
 
-      generate_flaky_examples_report
-      generate_failed_examples_report
-      generate_pending_examples_report
+      %i[all_files all_examples dependency examples_coverage reverse_dependency].each do |report_type|
+        starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-      %i[all_files all_examples dependency examples_coverage].each do |report_type|
         send("generate_#{report_type}_report")
+
+        ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+        puts "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elpased})"
       end
 
-      @reporter.generate_reverse_dependency_report
       @reporter.write_reports
     end
 
@@ -148,12 +153,25 @@ module RSpecTracer
     end
 
     def filter_examples_to_run
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       @changed_files = fetch_changed_files
 
+      filter_by_example_status
+      filter_by_files_changed
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer processed cache (took #{elpased})"
+    end
+
+    def filter_by_example_status
       add_previously_flaky_examples
       add_previously_failed_examples
       add_previously_pending_examples
+    end
 
+    def filter_by_files_changed
       @cache.dependency.each_pair do |example_id, files|
         next if @filtered_examples.key?(example_id)
         next if (@changed_files & files).empty?
@@ -242,6 +260,19 @@ module RSpecTracer
       @reporter.register_dependency(example_id, file_name)
     end
 
+    def generate_examples_status_report
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      generate_flaky_examples_report
+      generate_failed_examples_report
+      generate_pending_examples_report
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer generated flaky, failed, and pending examples report (took #{elpased})"
+    end
+
     def generate_all_files_report
       @cache.all_files.each_pair do |file_name, data|
         next if @reporter.all_files.key?(file_name) ||
@@ -310,6 +341,10 @@ module RSpecTracer
           @reporter.file_deleted?(file_name)
         end
       end
+    end
+
+    def generate_reverse_dependency_report
+      @reporter.generate_reverse_dependency_report
     end
   end
 end

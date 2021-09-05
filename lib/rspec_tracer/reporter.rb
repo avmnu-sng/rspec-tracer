@@ -140,6 +140,8 @@ module RSpecTracer
     end
 
     def write_reports
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
       @run_id = Digest::MD5.hexdigest(@all_examples.keys.sort.to_json)
       @cache_dir = File.join(RSpecTracer.cache_path, @run_id)
 
@@ -157,7 +159,10 @@ module RSpecTracer
         last_run
       ].each { |report_type| send("write_#{report_type}_report") }
 
-      puts "RSpec tracer reports generated to #{@cache_dir}"
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer reports written to #{@cache_dir} (took #{elpased})"
     end
 
     private
@@ -224,56 +229,56 @@ module RSpecTracer
     def write_all_examples_report
       file_name = File.join(@cache_dir, 'all_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@all_examples))
+      File.write(file_name, JSON.generate(@all_examples))
     end
 
     def write_flaky_examples_report
       file_name = File.join(@cache_dir, 'flaky_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@flaky_examples.to_a))
+      File.write(file_name, JSON.generate(@flaky_examples.to_a))
     end
 
     def write_failed_examples_report
       file_name = File.join(@cache_dir, 'failed_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@failed_examples.to_a))
+      File.write(file_name, JSON.generate(@failed_examples.to_a))
     end
 
     def write_pending_examples_report
       file_name = File.join(@cache_dir, 'pending_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@pending_examples.to_a))
+      File.write(file_name, JSON.generate(@pending_examples.to_a))
     end
 
     def write_all_files_report
       file_name = File.join(@cache_dir, 'all_files.json')
 
-      File.write(file_name, JSON.pretty_generate(@all_files))
+      File.write(file_name, JSON.generate(@all_files))
     end
 
     def write_dependency_report
       file_name = File.join(@cache_dir, 'dependency.json')
 
-      File.write(file_name, JSON.pretty_generate(@dependency))
+      File.write(file_name, JSON.generate(@dependency))
     end
 
     def write_reverse_dependency_report
       file_name = File.join(@cache_dir, 'reverse_dependency.json')
 
-      File.write(file_name, JSON.pretty_generate(@reverse_dependency))
+      File.write(file_name, JSON.generate(@reverse_dependency))
     end
 
     def write_examples_coverage_report
       file_name = File.join(@cache_dir, 'examples_coverage.json')
 
-      File.write(file_name, JSON.pretty_generate(@examples_coverage))
+      File.write(file_name, JSON.generate(@examples_coverage))
     end
 
     def write_last_run_report
       file_name = File.join(RSpecTracer.cache_path, 'last_run.json')
       last_run_data = @last_run.merge(run_id: @run_id, timestamp: Time.now.utc)
 
-      File.write(file_name, JSON.pretty_generate(last_run_data))
+      File.write(file_name, JSON.generate(last_run_data))
     end
   end
 end

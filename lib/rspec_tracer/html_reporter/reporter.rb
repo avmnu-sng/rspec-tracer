@@ -19,9 +19,9 @@ module RSpecTracer
       end
 
       def generate_report
-        Dir[File.join(File.dirname(__FILE__), 'public/*')].each do |path|
-          FileUtils.cp_r(path, asset_output_path)
-        end
+        starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        copy_assets
 
         file_name = File.join(RSpecTracer.report_path, 'index.html')
 
@@ -29,10 +29,19 @@ module RSpecTracer
           file.puts(template('layout').result(binding))
         end
 
-        puts "RSpecTracer generated HTML report to #{file_name}"
+        ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+        puts "RSpecTracer generated HTML report to #{file_name} (took #{elpased})"
       end
 
       private
+
+      def copy_assets
+        Dir[File.join(File.dirname(__FILE__), 'public/*')].each do |path|
+          FileUtils.cp_r(path, asset_output_path)
+        end
+      end
 
       def format_last_run
         @last_run = @reporter.last_run.slice(
