@@ -1,3 +1,13 @@
+## [0.6.1] - 2021-09-06
+
+### Fixed
+
+Bug in time formatter (#24)
+
+### Added
+
+Environment variable to control verbose output (#25)
+
 ## [0.6.0] - 2021-09-05
 
 ### Added
