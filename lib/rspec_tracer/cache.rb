@@ -49,7 +49,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer loaded cached examples coverage (took #{elpased})"
+      puts "RSpec tracer loaded cached examples coverage (took #{elpased})" if RSpecTracer.verbose?
 
       coverage
     end

@@ -201,7 +201,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed dependency (took #{elpased})"
+      puts "RSpec tracer processed dependency (took #{elpased})" if RSpecTracer.verbose?
     end
 
     def process_coverage
@@ -214,7 +214,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed coverage (took #{elpased})"
+      puts "RSpec tracer processed coverage (took #{elpased})" if RSpecTracer.verbose?
     end
 
     def run_simplecov_exit_task
