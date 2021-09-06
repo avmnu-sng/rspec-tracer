@@ -140,7 +140,7 @@ module RSpecTracer
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-        puts "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elpased})"
+        puts "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elpased})" if RSpecTracer.verbose?
       end
 
       @reporter.write_reports
@@ -162,7 +162,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed cache (took #{elpased})"
+      puts "RSpec tracer processed cache (took #{elpased})" if RSpecTracer.verbose?
     end
 
     def filter_by_example_status
@@ -270,7 +270,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer generated flaky, failed, and pending examples report (took #{elpased})"
+      puts "RSpec tracer generated flaky, failed, and pending examples report (took #{elpased})" if RSpecTracer.verbose?
     end
 
     def generate_all_files_report

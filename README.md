@@ -39,6 +39,7 @@ integrating the gem into your project to better understand what is happening.
   * [RSPEC_TRACER_NO_SKIP](#rspec_tracer_no_skip)
   * [RSPEC_TRACER_S3_URI](#rspec_tracer_s3_uri)
   * [RSPEC_TRACER_UPLOAD_LOCAL_CACHE](#rspec_tracer_upload_local_cache)
+  * [RSPEC_TRACER_VERBOSE](#rspec_tracer_verbose)
   * [TEST_SUITES](#test_suites)
   * [TEST_SUITE_ID](#test_suite_id)
 * [Sample Reports](#sample-reports)
@@ -191,6 +192,14 @@ export RSPEC_TRACER_S3_URI=s3://ci-artifacts-bucket/rspec-tracer-cache
 
 By default, RSpec Tracer does not upload local cache files. You can set this
 environment variable to `true` to upload the local cache to S3.
+
+### RSPEC_TRACER_VERBOSE
+
+To print the intermediate steps and time taken, use this environment variable:
+
+```sh
+export RSPEC_TRACER_VERBOSE=true
+```
 
 ### TEST_SUITES
 

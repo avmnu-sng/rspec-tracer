@@ -21,11 +21,10 @@ module RSpecTracer
         next unless seconds.positive?
 
         seconds, remainder = seconds.divmod(count)
-        remainder = format_duration(remainder)
 
         next if remainder.zero?
 
-        duration << pluralize(remainder, unit)
+        duration << pluralize(format_duration(remainder), unit)
       end
 
       formatted_duration.reverse.join(' ')
@@ -36,17 +35,21 @@ module RSpecTracer
 
       precision = duration < 1 ? SECONDS_PRECISION : DEFAULT_PRECISION
 
-      format("%<duration>0.#{precision}f", duration: duration)
+      strip_trailing_zeroes(format("%<duration>0.#{precision}f", duration: duration))
+    end
+
+    def strip_trailing_zeroes(formatted_duration)
+      formatted_duration.sub(/(?:(\..*[^0])0+|\.0+)$/, '\1')
     end
 
     def pluralize(duration, unit)
-      if duration == 1
+      if (duration.to_f - 1).abs < Float::EPSILON
         "#{duration} #{unit}"
       else
         "#{duration} #{unit}s"
       end
     end
 
-    private_class_method :format_duration, :pluralize
+    private_class_method :format_duration, :strip_trailing_zeroes, :pluralize
   end
 end

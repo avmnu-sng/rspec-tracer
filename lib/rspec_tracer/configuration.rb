@@ -102,6 +102,12 @@ module RSpecTracer
       @coverage_filters ||= []
     end
 
+    def verbose?
+      return @verbose if defined?(@verbose)
+
+      @verbose = ENV.fetch('RSPEC_TRACER_VERBOSE', 'false') == 'true'
+    end
+
     def configure(&block)
       Docile.dsl_eval(self, &block)
     end
