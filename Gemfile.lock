@@ -85,7 +85,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.10.0)
     rspec-support (3.10.2)
-    rubocop (1.19.1)
+    rubocop (1.20.0)
       parallel (~> 1.10)
       parser (>= 3.0.0.0)
       rainbow (>= 2.2.2, < 4.0)
@@ -126,20 +126,20 @@ PLATFORMS
   x86_64-darwin-19
 
 DEPENDENCIES
-  aruba (~> 2.0.0)
-  cucumber (~> 7.0.0)
-  pry (~> 0.14.0)
-  rake (~> 13.0.0)
-  rspec (~> 3.10.0)
+  aruba (~> 2.0)
+  cucumber (~> 7.0)
+  pry (~> 0.14)
+  rake (~> 13.0)
+  rspec (~> 3.10)
   rspec-tracer!
-  rubocop (~> 1.19.0)
-  rubocop-performance (~> 1.11.0)
-  rubocop-rake (~> 0.6.0)
-  rubocop-rspec (~> 2.4.0)
-  simplecov (~> 0.21.0)
-  sprockets (~> 4.0.0)
-  uglifier (~> 4.2.0)
-  yui-compressor (~> 0.12.0)
+  rubocop (~> 1.19)
+  rubocop-performance (~> 1.11)
+  rubocop-rake (~> 0.6)
+  rubocop-rspec (~> 2.4)
+  simplecov (~> 0.21)
+  sprockets (~> 4.0)
+  uglifier (~> 4.2)
+  yui-compressor (~> 0.12)
 
 BUNDLED WITH
    2.2.26
