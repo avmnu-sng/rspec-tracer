@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${GITHUB_REF#refs/heads/}-ruby-2
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby-2
   cancel-in-progress: true
 
 jobs:
@@ -22,7 +22,8 @@ jobs:
         simplecov: [ '0.18.0', '0.19.0', '0.20.0', '0.21.0' ]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -37,8 +38,4 @@ jobs:
           RSPEC_VERSION: "~> ${{ matrix.rspec }}"
           SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
           BRANCH_COVERAGE: true
-        run: |
-          echo RSPEC_VERSION=$RSPEC_VERSION
-          echo SIMPLECOV_VERSION=$SIMPLECOV_VERSION
-          echo BRANCH_COVERAGE=$BRANCH_COVERAGE
-          bundle exec cucumber --tags @ruby_app
+        run: bundle exec cucumber --tags @ruby-app

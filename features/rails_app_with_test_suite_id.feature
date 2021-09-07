@@ -1,4 +1,4 @@
-@rails_app @no_simplecov @test_suite @disable-bundler
+@rails-app @no-simplecov @test-suite @disable-bundler
 Feature: Rails App with Test Suite ID
 
   Adding rspec-tracer without simplecov should generate tracer reports and the
@@ -42,7 +42,7 @@ Feature: Rails App with Test Suite ID
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "66 / 84 LOC (78.57%) covered"
+    And The coverage percent stat is "66 / 84 LOC (78.57%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     Given I use test suite id 2
     When I run `bundle exec rspec spec/student_spec.rb`
@@ -84,7 +84,7 @@ Feature: Rails App with Test Suite ID
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "71 / 84 LOC (84.52%) covered"
+    And The coverage percent stat is "71 / 84 LOC (84.52%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     Given I use test suite id 1
     When I run specs using "rspec spec/course_spec.rb"
@@ -119,7 +119,7 @@ Feature: Rails App with Test Suite ID
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "66 / 84 LOC (78.57%) covered"
+    And The coverage percent stat is "66 / 84 LOC (78.57%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     Given I use test suite id 2
     When I run `bundle exec rspec spec/student_spec.rb`
@@ -154,7 +154,7 @@ Feature: Rails App with Test Suite ID
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "71 / 84 LOC (84.52%) covered"
+    And The coverage percent stat is "71 / 84 LOC (84.52%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     Given I reset test suite id
     When I run `bundle exec rspec spec`
@@ -201,5 +201,5 @@ Feature: Rails App with Test Suite ID
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "71 / 84 LOC (84.52%) covered"
+    And The coverage percent stat is "71 / 84 LOC (84.52%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"

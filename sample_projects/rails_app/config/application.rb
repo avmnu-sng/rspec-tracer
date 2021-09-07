@@ -22,7 +22,7 @@ Bundler.require(*Rails.groups)
 module RailsApp
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults `bundle show rails`.chomp.split('/').last.split('-').last.split('.').first(2).join('.').to_f
+    config.load_defaults ENV['RAILS_VERSION'].sub(/[^\d]*/, '').split('.').first(2).join('.').to_f
 
     # Configuration for the application, engines, and railties goes here.
     #

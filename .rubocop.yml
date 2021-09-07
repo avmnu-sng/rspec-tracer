@@ -37,6 +37,7 @@ Layout/MultilineOperationIndentation:
 
 Metrics/BlockLength:
   Exclude:
+    - "tasks/**/*"
     - "spec/**/*"
 
 Metrics/ClassLength:

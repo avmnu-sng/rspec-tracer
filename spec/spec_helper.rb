@@ -1,13 +1,19 @@
 # frozen_string_literal: true
 
 require 'simplecov'
+require 'simplecov_json_formatter'
+
+SimpleCov.formatters = [
+  SimpleCov::Formatter::HTMLFormatter,
+  SimpleCov::Formatter::JSONFormatter
+].freeze
+
 SimpleCov.start do
-  add_filter '/spec/'
-  add_filter '/vendor/bundle/'
   track_files 'lib/**/*.rb'
 end
 
 require 'rspec_tracer'
+
 RSpecTracer.start
 
 RSpec.configure do |config|

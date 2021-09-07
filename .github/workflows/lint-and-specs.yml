@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${GITHUB_REF#refs/heads/}
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-lint-and-specs
   cancel-in-progress: true
 
 jobs:
@@ -20,18 +20,83 @@ jobs:
         ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
 
+      - name: Setup Code Climate test-reporter
+        run: |
+          pip3 install awscli --user
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+          ./cc-test-reporter before-build
+
       - name: Install Dependencies
         run: bundle install --jobs 3 --retry 3
 
-      - name: Run Rubocop
-        run: bundle exec rake rubocop
+      - name: Run Tests
+        run: bundle exec rake
 
-      - name: Run Specs
-        run: bundle exec rake spec
+      - name: Configure AWS Credentials for Coverage Upload
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload Job Coverage
+        env:
+          GIT_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+          GIT_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          ./cc-test-reporter format-coverage coverage/coverage.json --output coverage/ruby-${{ matrix.ruby }}.simplecov.json --input-type simplecov
+          aws s3 cp coverage/ruby-${{ matrix.ruby }}.simplecov.json ${{ secrets.CI_ARTIFACTS_S3_URI }}/${{ github.repository }}/${{ github.run_number }}/ruby-${{ matrix.ruby }}.simplecov.json
+
+  coverage:
+    needs: [ 'main' ]
+    name: coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
+      - name: Setup Code Climate test-reporter
+        run: |
+          pip3 install awscli --user
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+          ./cc-test-reporter before-build
+
+      - name: Configure AWS Credentials for Coverage Upload
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Download Jobs Coverage
+        run: |
+          mkdir coverage
+          aws s3 cp --recursive ${{ secrets.CI_ARTIFACTS_S3_URI }}/${{ github.repository }}/${{ github.run_number }}/ coverage/
+
+      - name: Upload Coverage
+        env:
+          GIT_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        run: |
+          ./cc-test-reporter sum-coverage coverage/ruby-*.simplecov.json --parts 5 --output coverage/coverage.json
+          ./cc-test-reporter upload-coverage --input coverage/coverage.json

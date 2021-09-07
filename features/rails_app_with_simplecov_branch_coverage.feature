@@ -1,4 +1,4 @@
-@rails_app @simplecov @branch_coverage @disable-bundler
+@rails-app @simplecov @branch-coverage @disable-bundler
 Feature: Rails App with SimpleCov Branch Coverage
 
   Adding rspec-tracer with simplecov branch coverage should generate tracer
@@ -53,7 +53,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -92,7 +92,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I replace spec helper with "with_simplecov_with_branch_coverage_updated.rb"
     When I run `bundle exec rspec spec`
@@ -140,7 +140,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -179,7 +179,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec/course_spec.rb`
     Then The RSpecTracer should print the information
@@ -217,7 +217,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "57 / 72 LOC (79.17%) covered"
+    And The coverage percent stat is "57 / 72 LOC (79.17%) covered"
     When I run `bundle exec rspec spec/student_spec.rb`
     Then The RSpecTracer should print the information
       """
@@ -254,7 +254,7 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "57 / 72 LOC (79.17%) covered"
+    And The coverage percent stat is "64 / 72 LOC (88.89%) covered"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
       """
@@ -292,5 +292,5 @@ Feature: Rails App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"

@@ -1,4 +1,4 @@
-@ruby_app @simplecov @flaky_examples @force_fail @disable-bundler
+@ruby-app @simplecov @flaky-examples @force-fail @disable-bundler
 Feature: Ruby App With Flaky Examples
 
   Adding rspec-tracer with simplecov should generate tracer reports and the
@@ -54,7 +54,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "31 / 33 LOC (93.94%) covered"
+    And The coverage percent stat is "31 / 33 LOC (93.94%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -95,7 +95,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "31 / 33 LOC (93.94%) covered"
+    And The coverage percent stat is "31 / 33 LOC (93.94%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I reset force fail
     When I run `bundle exec rspec spec`
@@ -137,7 +137,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -178,7 +178,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -219,7 +219,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I want to force fail some of the tests
     When I run `bundle exec rspec spec`
@@ -261,7 +261,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "31 / 33 LOC (93.94%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I reset force fail
     When I run `bundle exec rspec spec`
@@ -303,7 +303,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I reset force fail
     When I update the spec file "student_spec"
@@ -351,7 +351,7 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -390,5 +390,5 @@ Feature: Ruby App With Flaky Examples
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"

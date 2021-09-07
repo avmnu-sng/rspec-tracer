@@ -1,4 +1,4 @@
-@ruby_app @no_simplecov @disable-bundler
+@ruby-app @no-simplecov @disable-bundler
 Feature: Ruby App without SimpleCov
 
   Adding rspec-tracer without simplecov should generate tracer reports and the
@@ -51,7 +51,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "32 / 41 LOC (78.05%) covered"
+    And The coverage percent stat is "32 / 41 LOC (78.05%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -88,7 +88,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "32 / 41 LOC (78.05%) covered"
+    And The coverage percent stat is "32 / 41 LOC (78.05%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     Given I replace spec helper with "without_simplecov_updated.rb"
     When I run `bundle exec rspec spec`
@@ -134,7 +134,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "32 / 41 LOC (78.05%) covered"
+    And The coverage percent stat is "32 / 41 LOC (78.05%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -171,7 +171,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "32 / 41 LOC (78.05%) covered"
+    And The coverage percent stat is "32 / 41 LOC (78.05%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
     When I run `bundle exec rspec spec/course_spec.rb`
     Then The RSpecTracer should print the information
@@ -207,7 +207,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "27 / 41 LOC (65.85%) covered"
+    And The coverage percent stat is "27 / 41 LOC (65.85%) covered"
     When I run `bundle exec rspec spec/student_spec.rb`
     Then The RSpecTracer should print the information
       """
@@ -242,7 +242,7 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "25 / 41 LOC (60.98%) covered"
+    And The coverage percent stat is "25 / 41 LOC (60.98%) covered"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
       """
@@ -278,5 +278,5 @@ Feature: Ruby App without SimpleCov
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpecTracer"
-    And the output should contain "32 / 41 LOC (78.05%) covered"
+    And The coverage percent stat is "32 / 41 LOC (78.05%) covered"
     And The JSON coverage report should have correct coverage for "RSpecTracer"
