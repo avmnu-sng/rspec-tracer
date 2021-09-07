@@ -250,7 +250,7 @@ module RSpecTracer
         }
       }
 
-      File.write(file_name, JSON.generate(report))
+      File.write(file_name, JSON.pretty_generate(report))
     end
 
     def print_coverage_stats(file_name, elpased)

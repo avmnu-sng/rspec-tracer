@@ -29,11 +29,15 @@ module RSpecTracer
 
     def compute_diff(example_id)
       peek_coverage.each_pair do |file_path, current_stats|
-        if @coverage.key?(file_path)
-          existing_file_diff_coverage(example_id, file_path, current_stats)
-        else
+        unless @coverage.key?(file_path)
           missing_file_diff_coverage(example_id, file_path, current_stats)
+
+          next
         end
+
+        next if current_stats == @coverage[file_path]
+
+        existing_file_diff_coverage(example_id, file_path, current_stats)
       end
     end
 

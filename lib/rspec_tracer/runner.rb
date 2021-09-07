@@ -90,16 +90,15 @@ module RSpecTracer
     # rubocop:enable Metrics/AbcSize
 
     def register_dependency(examples_coverage)
+      filtered_files = Set.new
+
       examples_coverage.each_pair do |example_id, example_coverage|
         register_example_files_dependency(example_id)
 
         example_coverage.each_key do |file_path|
-          source_file = RSpecTracer::SourceFile.from_path(file_path)
+          next if filtered_files.include?(file_path)
 
-          next if RSpecTracer.filters.any? { |filter| filter.match?(source_file) }
-
-          @reporter.register_source_file(source_file)
-          @reporter.register_dependency(example_id, source_file[:file_name])
+          filtered_files << file_path unless register_file_dependency(example_id, file_path)
         end
       end
 
@@ -258,6 +257,17 @@ module RSpecTracer
 
       @reporter.register_source_file(source_file)
       @reporter.register_dependency(example_id, file_name)
+    end
+
+    def register_file_dependency(example_id, file_path)
+      source_file = RSpecTracer::SourceFile.from_path(file_path)
+
+      return false if RSpecTracer.filters.any? { |filter| filter.match?(source_file) }
+
+      @reporter.register_source_file(source_file)
+      @reporter.register_dependency(example_id, source_file[:file_name])
+
+      true
     end
 
     def generate_examples_status_report
