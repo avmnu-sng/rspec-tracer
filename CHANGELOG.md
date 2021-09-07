@@ -1,3 +1,9 @@
+## [0.6.2] - 2021-09-07
+
+### Added
+
+Improvements towards reducing dependency and coverage processing time (#26)
+
 ## [0.6.1] - 2021-09-06
 
 ### Fixed

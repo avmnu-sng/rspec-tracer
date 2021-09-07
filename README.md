@@ -71,7 +71,7 @@ integrating the gem into your project to better understand what is happening.
 
 Add this line to your `Gemfile` and `bundle install`:
 ```ruby
-gem 'rspec-tracer', group: :test, require: false
+gem 'rspec-tracer', '~> 0.6', group: :test, require: false
 ```
 
 And, add the followings to your `.gitignore`:
