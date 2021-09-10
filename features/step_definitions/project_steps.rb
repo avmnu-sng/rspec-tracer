@@ -128,7 +128,7 @@ When('I run specs using {string}') do |command|
     When I successfully run `bundle install --jobs 3 --retry 3` for up to 120 seconds
     Then I validate simplecov version
     And I validate rspec or rspec rails version
-    When I run `bundle exec #{command}`
+    And I run `bundle exec #{command}`
   )
 end
 
@@ -137,7 +137,7 @@ Then('I validate simplecov version') do
     expected = Gem::Dependency.new('simplecov', ENV['SIMPLECOV_VERSION'])
     actual = Gem::Dependency.new(
       'simplecov',
-      `bundle show simplecov`.chomp.split('/').last.split('-').last
+      `bundle show simplecov`.chomp.split("\n").first.split('/').last.split('-').last
     )
 
     expect(expected =~ actual).to eq(true)
@@ -157,7 +157,7 @@ Then('I validate rspec or rspec rails version') do
 
     actual = Gem::Dependency.new(
       rspec_gem,
-      `bundle show #{rspec_gem}`.chomp.split('/').last.split('-').last
+      `bundle show #{rspec_gem}`.chomp.split("\n").first.split('/').last.split('-').last
     )
 
     expect(expected =~ actual).to eq(true)

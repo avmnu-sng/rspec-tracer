@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 Then('The JSON coverage report should have been generated for {string}') do |type|
+  next if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
+
   steps %(
     Then the output should contain "Coverage report generated for #{type}"
   )
@@ -23,6 +25,8 @@ end
 
 # rubocop:disable Metrics/BlockLength
 Then('The JSON coverage report should have correct coverage for {string}') do |type|
+  next if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
+
   project_dir = File.dirname(__FILE__)
   data_file = File.join(project_dir, "../#{@data_dir}/coverage.json")
   data = JSON.parse(File.read(data_file))
@@ -65,3 +69,9 @@ Then('The JSON coverage report should have correct coverage for {string}') do |t
   end
 end
 # rubocop:enable Metrics/BlockLength
+
+Then('The coverage percent stat is {string}') do |coverage_stat|
+  next if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
+
+  expect(last_command_started.output).to include(coverage_stat)
+end

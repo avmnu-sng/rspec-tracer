@@ -1,4 +1,4 @@
-@rails_app @simplecov @explicit_run @disable-bundler
+@rails-app @simplecov @explicit-run @disable-bundler
 Feature: Rails App with Explicit Run
 
   Adding rspec-tracer with simplecov should generate tracer reports and the
@@ -53,7 +53,7 @@ Feature: Rails App with Explicit Run
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I want to explicitly run all the tests
     When I run `bundle exec rspec spec`
@@ -101,7 +101,7 @@ Feature: Rails App with Explicit Run
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I reset explicit run
     When I run `bundle exec rspec spec`
@@ -141,5 +141,5 @@ Feature: Rails App with Explicit Run
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "71 / 72 LOC (98.61%) covered"
+    And The coverage percent stat is "71 / 72 LOC (98.61%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"

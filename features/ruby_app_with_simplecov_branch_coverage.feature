@@ -1,4 +1,4 @@
-@ruby_app @simplecov @branch_coverage @disable-bundler
+@ruby-app @simplecov @branch-coverage @disable-bundler
 Feature: Ruby App with SimpleCov Branch Coverage
 
   Adding rspec-tracer with simplecov branch coverage should generate tracer
@@ -52,7 +52,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -90,7 +90,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     Given I replace spec helper with "with_simplecov_with_branch_coverage_updated.rb"
     When I run `bundle exec rspec spec`
@@ -137,7 +137,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
@@ -175,7 +175,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"
     When I run `bundle exec rspec spec/course_spec.rb`
     Then The RSpecTracer should print the information
@@ -211,7 +211,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "27 / 33 LOC (81.82%) covered"
+    And The coverage percent stat is "27 / 33 LOC (81.82%) covered"
     When I run `bundle exec rspec spec/student_spec.rb`
     Then The RSpecTracer should print the information
       """
@@ -246,7 +246,7 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "25 / 33 LOC (75.76%) covered"
     When I run `bundle exec rspec spec`
     Then The RSpecTracer should print the information
       """
@@ -282,5 +282,5 @@ Feature: Ruby App with SimpleCov Branch Coverage
     And The dependency report should have correct details
     And The reverse dependency report should have correct details
     And The JSON coverage report should have been generated for "RSpec"
-    And the output should contain "32 / 33 LOC (96.97%) covered"
+    And The coverage percent stat is "32 / 33 LOC (96.97%) covered"
     And The JSON coverage report should have correct coverage for "RSpec"

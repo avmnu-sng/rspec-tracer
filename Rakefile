@@ -4,37 +4,17 @@ require 'rubocop/rake_task'
 RuboCop::RakeTask.new
 
 require 'rspec/core/rake_task'
-RSpec::Core::RakeTask.new(:spec)
+RSpec::Core::RakeTask.new(:rspec)
 
-namespace :features do
-  desc 'Run feature specs on sample ruby project'
-  task :ruby do
-    puts "\nRunning feature specs on sample Ruby project..."
+Dir.glob('tasks/features/**/*.rake') { |task| load task }
 
-    command = <<-COMMAND.strip.gsub(/\s+/, ' ')
-      RSPEC_VERSION="~> 3.10.0"
-      SIMPLECOV_VERSION="~> 0.21.0"
-      BRANCH_COVERAGE="true"
-      bundle exec cucumber features/ruby_app_*.feature
-    COMMAND
-
-    exit(1) unless system(command)
-  end
-
-  desc 'Run feature specs on sample rails project'
-  task :rails do
-    puts "\nRunning feature specs on sample Rails project..."
-
-    command = <<-COMMAND.strip.gsub(/\s+/, ' ')
-      RAILS_VERSION="~> 6.1.0"
-      RSPEC_RAILS_VERSION="~> 5.0.0"
-      SIMPLECOV_VERSION="~> 0.21.0"
-      BRANCH_COVERAGE="true"
-      bundle exec cucumber features/rails_app_*.feature
-    COMMAND
-
-    exit(1) unless system(command)
-  end
-end
-
-task default: %i[rubocop spec features:ruby features:rails]
+task default: %i[
+  rubocop
+  rspec
+  features:coverage:rspec_tracer:measure_line_coverage
+  features:coverage:simplecov:measure_branch_coverage
+  features:coverage:simplecov:measure_line_coverage
+  features:validation:rspec_tracer:validate_line_coverage
+  features:validation:simplecov:validate_branch_coverage
+  features:validation:simplecov:validate_line_coverage
+]

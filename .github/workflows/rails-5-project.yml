@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${GITHUB_REF#refs/heads/}-rails-1
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-rails-5
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +23,8 @@ jobs:
         simplecov: [ 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -39,9 +40,4 @@ jobs:
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}"
           SIMPLECOV_VERSION: "~> 0.${{ matrix.simplecov }}.0"
           BRANCH_COVERAGE: "${{ matrix.simplecov >= 18 && 'true' || 'false' }}"
-        run: |
-          echo RAILS_VERSION=$RAILS_VERSION
-          echo RSPEC_RAILS_VERSION=$RSPEC_RAILS_VERSION
-          echo SIMPLECOV_VERSION=$SIMPLECOV_VERSION
-          echo BRANCH_COVERAGE=$BRANCH_COVERAGE
-          bundle exec cucumber --tags @rails_app
+        run: bundle exec cucumber --tags @rails-app
