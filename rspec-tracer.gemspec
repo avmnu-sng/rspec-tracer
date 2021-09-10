@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'docile', '~> 1.1', '>= 1.1.0'
   spec.add_dependency 'rspec-core', '~> 3.6', '>= 3.6.0'
 
-  spec.files = Dir['{lib}/**/*.*', 'LICENSE', 'CHANGELOG.md', 'README.md', 'doc/*']
+  spec.files = `git ls-files -- lib/*`.chomp.split("\n")
+  spec.files += %w[CHANGELOG.md README.md LICENSE]
   spec.require_paths = ['lib']
 end

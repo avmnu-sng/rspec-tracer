@@ -1,3 +1,9 @@
+## [0.7.0] - 2021-09-10
+
+### Fixed
+
+Missing spec files for the gem
+
 ## [0.6.2] - 2021-09-07
 
 ### Added
