@@ -21,9 +21,15 @@ plugins:
     exclude_patterns:
       - "spec/"
 exclude_patterns:
-  - "lib/rspec_tracer/html_reporter/assets/"
-  - "lib/rspec_tracer/html_reporter/public/"
-  - "features/data/"
+  - "**/.*"
+  - "coverage/"
+  - "rspec_tracer_cache/"
+  - "rspec_tracer_coverage/"
+  - "rspec_tracer_report/"
+  - "lib/rspec_tracer/html_reporter/"
+  - "!lib/rspec_tracer/**/*.rb"
+  - "features/"
+  - "!features/**/*.rb"
   - "readme_files/"
   - "sample_projects/"
   - "tmp/"
