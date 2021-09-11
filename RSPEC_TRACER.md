@@ -341,15 +341,13 @@ f1b476a9ed foobar
 On the CI, it changes the following two things for us:
 
 - The unreachable commits list will always have **two entries**, `HEAD` and the
-`grafted` commit. It has all that Git can traverse from the current branch as well.
+`grafted` commits:
     ```sh
     $ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
       | awk '/commit/ { print $3 }'
 
     5b6cc57e74
     b110b730b3
-    3a438c2cc1
-    3d1019171c
     ```
 
 - The ignorable commit is always the `grafted` one:

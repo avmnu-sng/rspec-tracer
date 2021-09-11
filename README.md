@@ -1,8 +1,8 @@
 ![](./readme_files/rspec_tracer.png)
 
-RSpec Tracer is a **specs dependency analysis tool** and a **test skipper for RSpec**.
-It maintains a list of files for each test, enabling itself to skip tests in the
-subsequent runs if none of the dependent files are changed.
+RSpec Tracer is a **specs dependency analyzer**, **flaky tests detector**, **tests accelerator**,
+and **coverage reporter** tool. It maintains a list of files for each test, enabling
+itself to skip tests in the subsequent runs if none of the dependent files are changed.
 
 It uses [Ruby's built-in coverage library](https://ruby-doc.org/stdlib/libdoc/coverage/rdoc/Coverage.html)
 to keep track of the coverage for each test. For each test executed, the coverage
@@ -71,7 +71,7 @@ integrating the gem into your project to better understand what is happening.
 
 Add this line to your `Gemfile` and `bundle install`:
 ```ruby
-gem 'rspec-tracer', '~> 0.6', group: :test, require: false
+gem 'rspec-tracer', '~> 0.7', group: :test, require: false
 ```
 
 And, add the followings to your `.gitignore`:
