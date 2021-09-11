@@ -14,21 +14,18 @@ module RSpecTracer
       return @root if defined?(@root) && root.nil?
 
       @cache_path = nil
+      @report_path = nil
+      @coverage_path = nil
+
       @root = File.expand_path(root || Dir.getwd)
     end
 
-    def project_name(proj_name = nil)
-      return @project_name if defined?(@project_name) && proj_name.nil?
-
-      @project_name = proj_name if proj_name.is_a?(String)
+    def project_name
       @project_name ||= File.basename(root).capitalize
     end
 
-    def cache_dir(dir = nil)
-      return @cache_dir if defined?(@cache_dir) && dir.nil?
-
-      @cache_path = nil
-      @cache_dir = dir || DEFAULT_CACHE_DIR
+    def cache_dir
+      @cache_dir ||= (ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR)
     end
 
     def cache_path
@@ -42,15 +39,12 @@ module RSpecTracer
       end
     end
 
-    def report_dir(dir = nil)
-      return @report_dir if defined?(@report_dir) && dir.nil?
-
-      @report_path = nil
-      @report_dir = dir || DEFAULT_REPORT_DIR
+    def report_dir
+      @report_dir ||= (ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR)
     end
 
     def report_path
-      @report_path || begin
+      @report_path ||= begin
         report_path = File.expand_path(report_dir, root)
         report_path = File.join(report_path, ENV['TEST_SUITE_ID'].to_s)
 
@@ -60,11 +54,8 @@ module RSpecTracer
       end
     end
 
-    def coverage_dir(dir = nil)
-      return @coverage_dir if defined?(@coverage_dir) && dir.nil?
-
-      @coverage_path = nil
-      @coverage_dir = dir || DEFAULT_COVERAGE_DIR
+    def coverage_dir
+      @coverage_dir ||= (ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR)
     end
 
     def coverage_path
@@ -103,9 +94,7 @@ module RSpecTracer
     end
 
     def verbose?
-      return @verbose if defined?(@verbose)
-
-      @verbose = ENV.fetch('RSPEC_TRACER_VERBOSE', 'false') == 'true'
+      @verbose ||= (ENV.fetch('RSPEC_TRACER_VERBOSE', 'false') == 'true')
     end
 
     def configure(&block)
