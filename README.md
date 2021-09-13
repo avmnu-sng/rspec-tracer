@@ -1,5 +1,9 @@
 ![](./readme_files/rspec_tracer.png)
 
+[![Maintainability](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/maintainability)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/test_coverage)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/test_coverage)
+[![Gem Version](https://badge.fury.io/rb/rspec-tracer.svg)](https://badge.fury.io/rb/rspec-tracer)
+
 RSpec Tracer is a **specs dependency analyzer**, **flaky tests detector**, **tests accelerator**,
 and **coverage reporter** tool. It maintains a list of files for each test, enabling
 itself to skip tests in the subsequent runs if none of the dependent files are changed.
@@ -89,7 +93,7 @@ These reports provide information on the total number of tests that will run aft
 
 1. Add this line to your `Gemfile` and `bundle install`:
     ```ruby
-    gem 'rspec-tracer', '~> 0.7', group: :test, require: false
+    gem 'rspec-tracer', '~> 0.8', group: :test, require: false
     ```
 
     And, add the followings to your `.gitignore`:
