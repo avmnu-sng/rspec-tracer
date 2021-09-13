@@ -1,3 +1,9 @@
+## [0.8.0] - 2021-09-13
+
+### Fixed
+
+Unable to find cache in case of history rewrites (#33)
+
 ## [0.7.0] - 2021-09-10
 
 ### Fixed

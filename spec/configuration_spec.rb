@@ -32,32 +32,6 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#cache_dir' do
-    context 'when not configured' do
-      it 'returns current default cache dir' do
-        expect(config.cache_dir).to eq('rspec_tracer_cache')
-      end
-    end
-
-    context 'when configured' do
-      let(:cache_dir) { '/tmp/rspec_tracer/cache' }
-
-      before { config.cache_dir(cache_dir) }
-
-      it 'returns the provided directory' do
-        expect(config.cache_dir).to eq(cache_dir)
-      end
-
-      context 'when configured again with nil' do
-        before { config.cache_dir(nil) }
-
-        it 'does not change the cache dir' do
-          expect(config.cache_dir).to eq(cache_dir)
-        end
-      end
-    end
-  end
-
   describe '#cache_path' do
     context 'without test suite id' do
       before { stub_const('ENV', ENV.to_hash.merge('TEST_SUITE_ID' => nil)) }
@@ -74,32 +48,6 @@ RSpec.describe RSpecTracer::Configuration do
 
       it 'returns cache path with suite id' do
         expect(config.cache_path).to eq("#{Dir.getwd}/rspec_tracer_cache/#{suite_id}")
-      end
-    end
-  end
-
-  describe '#coverage_dir' do
-    context 'when not configured' do
-      it 'returns current default cache dir' do
-        expect(config.coverage_dir).to eq('rspec_tracer_coverage')
-      end
-    end
-
-    context 'when configured' do
-      let(:coverage_dir) { '/tmp/rspec_tracer/coverage' }
-
-      before { config.coverage_dir(coverage_dir) }
-
-      it 'returns the provided directory' do
-        expect(config.coverage_dir).to eq(coverage_dir)
-      end
-
-      context 'when configured again with nil' do
-        before { config.coverage_dir(nil) }
-
-        it 'does not change the cache dir' do
-          expect(config.coverage_dir).to eq(coverage_dir)
-        end
       end
     end
   end

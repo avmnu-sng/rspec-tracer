@@ -16,7 +16,6 @@ about implementation details of **managing dependency**, **managing flaky tests*
   * [Handling History Rewrites](#handling-history-rewrites)
   * [Handling Merge Commits](#handling-merge-commits)
   * [Handling Shallow Clone](#handling-shallow-clone)
-    * [Recommendation](#recommendation)
   * [Finding the Nearest Cache](#finding-the-nearest-cache)
 
 ## Intention
@@ -257,22 +256,15 @@ be the `HEAD` ref on the **main** branch.
 The following command fetches the list of 25 commits starting from the branch ref:
 
 ```sh
-$ git rev-list --max-count=25 --topo-order $BRANCH_REF
+$ git rev-list --max-count=25 $BRANCH_REF
 ```
 
 ### Handling History Rewrites
 
 If you use `git commit --amend`, `git pull -r origin main`, and `git merge origin/main`,
-etc., then the commit SHA will change, and the last run remote cache reference is lost.
-Since Git uses the [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
-data structure, the previous commits refs are not entirely lost. We can use the
-current commit SHA to find these:
-
-```sh
-$ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
-  | awk '/commit/ { print $3 }' \
-  | head -n 25
-```
+etc., then the commit SHA will change, and the last run remote cache reference
+is lost. To deal with this, we maintain the branch refs with the committer timestamp
+for each branch.
 
 ### Handling Merge Commits
 
@@ -302,66 +294,11 @@ $ git rev-list $BRANCH_REF..origin/HEAD
 
 When we configure CI to shallow clone the repository (using `--depth` option),
 the root commit is marked as grafted. It works by letting users record fake ancestry
-information for commits. Consider the following Git graph:
-
-```sh
-$ git log --all --max-count=10 --decorate --oneline --graph
-
-*   b110b730b3 (HEAD) Merge a893fa0677 into 5b6cc57e74
-|\
-| * a893fa0677 grault
-| * fc3d894156 corge
-| * 6d45b211f8 quuz
-| * 8b4713af1f quux
-| * b6033a4f80 qux
-| * 0f7afab0b5 baz
-| * b6bec52e93 bar
-| * 64a913bc9a foo
-| * f1b476a9ed foobar
-```
-
-Notice that the commit `5b6cc57e74` is not part of the above graph.
-
-```sh
-$ git log --all --max-count=11 --oneline
-
-b110b730b3 (HEAD) Merge a893fa0677 into 5b6cc57e74
-5b6cc57e74 (grafted, origin/main, origin/HEAD, main) garply
-a893fa0677 grault
-fc3d894156 corge
-6d45b211f8 quuz
-8b4713af1f quux
-b6033a4f80 qux
-0f7afab0b5 baz
-b6bec52e93 bar
-64a913bc9a foo
-f1b476a9ed foobar
-```
-
-On the CI, it changes the following two things for us:
-
-- The unreachable commits list will always have **two entries**, `HEAD` and the
-`grafted` commits:
-    ```sh
-    $ git fsck --no-progress --unreachable --connectivity-only $BRANCH_REF \
-      | awk '/commit/ { print $3 }'
-
-    5b6cc57e74
-    b110b730b3
-    ```
-
-- The ignorable commit is always the `grafted` one:
-    ```sh
-    $ git rev-list $BRANCH_REF..origin/HEAD
-
-    5b6cc57e74
-    ```
-
-#### Recommendation
-
-To fully utilize the caching feature, you should make a complete clone, or at
-least `--depth=50` because the RSpec Tracer tries to find the nearest cache from
-the **25 unreachable** and **25 ancestry** commits.
+information for commits. Because of this the **ancestry** refs will be all the
+refs present in the build branch and the **grafted** one. Since RSpec Tracer tries
+to maintain at most 25 ancestry refs, in the case of a shallow clone, the minimum
+clone depth should be 25 to increase the chances of finding a cache in the ancestry
+refs when there is no suitable ref in the branch refs.
 
 ### Finding the Nearest Cache
 
@@ -376,3 +313,27 @@ RSpec Tracer generates **nine** files for each run, so if you run tests in diffe
 suites, say, **5**, then the full cache has **45** objects. Therefore, we can first
 find such a commit and then download the files.
 
+```
+Fetched the following ancestry refs for feature branch:
+  * 470c7703836d96216fcc5853953b8ced3598517f (commit timestamp: 1631471386)
+  * 31165fc203b4cbc6cbeb440c343f121e6be09ee9 (commit timestamp: 1631436436)
+  * bc2eabc567dccbb3bb17a83585f77ae17e6ef031 (commit timestamp: 1631396595)
+  * 47763b1ec9f765ac801d658654c9dd6063094c1a (commit timestamp: 1631396481)
+  * d5da2df58decb554f2d869ea6c8e6a40ca89d47f (commit timestamp: 1631385874)
+  * f6ff6689f5ff551e2f533f4e765a9c20a76faae8 (commit timestamp: 1631383924)
+  * 805741242ad751e4a95ff667c3fb3637db54fe5e (commit timestamp: 1630605903)
+
+Fetched the following branch refs for feature branch:
+  * 470c7703836d96216fcc5853953b8ced3598517f (commit timestamp: 1631471386)
+  * 63a313892338d60646856d5ea0dee63caf8043e2 (commit timestamp: 1631437893)
+
+Fetched the following cache refs for feature branch:
+  * 470c7703836d96216fcc5853953b8ced3598517f (commit timestamp: 1631471386)
+  * 63a313892338d60646856d5ea0dee63caf8043e2 (commit timestamp: 1631437893)
+  * 31165fc203b4cbc6cbeb440c343f121e6be09ee9 (commit timestamp: 1631436436)
+  * bc2eabc567dccbb3bb17a83585f77ae17e6ef031 (commit timestamp: 1631396595)
+  * 47763b1ec9f765ac801d658654c9dd6063094c1a (commit timestamp: 1631396481)
+  * d5da2df58decb554f2d869ea6c8e6a40ca89d47f (commit timestamp: 1631385874)
+  * f6ff6689f5ff551e2f533f4e765a9c20a76faae8 (commit timestamp: 1631383924)
+  * 805741242ad751e4a95ff667c3fb3637db54fe5e (commit timestamp: 1630605903)
+```
