@@ -28,7 +28,7 @@ require_relative 'rspec_tracer/version'
 
 module RSpecTracer
   class << self
-    attr_accessor :running, :pid
+    attr_accessor :running, :pid, :no_examples
 
     def start(&block)
       RSpecTracer.running = false
@@ -175,7 +175,11 @@ module RSpecTracer
     end
 
     def run_exit_tasks
-      generate_reports
+      if RSpecTracer.no_examples
+        puts 'Skipped reports generation since all examples were filtered out'
+      else
+        generate_reports
+      end
 
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
     ensure
@@ -224,12 +228,14 @@ module RSpecTracer
 
       puts 'SimpleCov will now generate coverage report (<3 RSpec tracer)'
 
+      coverage_reporter.record_coverage if RSpecTracer.no_examples
       SimpleCov.result.format!
     end
 
     def run_coverage_exit_task
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
+      coverage_reporter.record_coverage if RSpecTracer.no_examples
       coverage_reporter.generate_final_coverage
 
       file_name = File.join(RSpecTracer.coverage_path, 'coverage.json')
