@@ -3,13 +3,23 @@
 module RSpecTracer
   module RSpecRunner
     # rubocop:disable Metrics/AbcSize
-    def run_specs(_example_groups)
+    def run_specs(example_groups)
       actual_count = RSpec.world.example_count
+      RSpecTracer.no_examples = actual_count.zero?
+
+      if RSpecTracer.no_examples
+        RSpecTracer.running = true
+
+        super(example_groups)
+
+        return
+      end
+
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      filtered_examples, example_groups = RSpecTracer.filter_examples
+      filtered_examples, filtered_example_groups = RSpecTracer.filter_examples
 
       RSpec.world.instance_variable_set(:@filtered_examples, filtered_examples)
-      RSpec.world.instance_variable_set(:@example_groups, example_groups)
+      RSpec.world.instance_variable_set(:@example_groups, filtered_example_groups)
 
       current_count = RSpec.world.example_count
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -23,7 +33,7 @@ module RSpecTracer
 
       RSpecTracer.running = true
 
-      super(example_groups)
+      super(filtered_example_groups)
     end
     # rubocop:enable Metrics/AbcSize
   end
