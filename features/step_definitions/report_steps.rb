@@ -15,6 +15,29 @@ Then('The RSpecTracer should print the information') do |expected_output|
   expect(output & expected).to contain_exactly(*expected)
 end
 
+Then('The RSpecTracer should print the duplicate examples report') do |expected_output|
+  output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
+  expected = expected_output.lines.map(&:strip).reject(&:empty?)
+
+  idx = output.index(expected.first)
+  output = output[idx...(idx + expected.length)]
+
+  expect(output).to eq(expected)
+end
+
+Then('The RSpecTracer should forbid using the tool') do
+  expected = [
+    '================================================================================',
+    '                IMPORTANT NOTICE -- DO NOT USE RSPEC TRACER',
+    '================================================================================',
+    '    It would be best to make changes so that the RSpec tracer can uniquely',
+    '    identify all the examples, and then you can enable the RSpec tracer back.',
+    '================================================================================'
+  ].join("\n")
+
+  expect(last_command_started.output).to include(expected)
+end
+
 Then('The RSpecTracer report should have been generated') do
   steps %(
     Then a directory named "#{@cache_dir}" should exist
