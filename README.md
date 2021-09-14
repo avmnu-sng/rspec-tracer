@@ -125,10 +125,8 @@ any of the application code.**
     RSpecTracer.start
     ```
 
-    Currently using RSpec Tracer with SimpleCov has the following two limitations:
-
-    - SimpleCov **won't be able to provide branch coverage report** even when enabled.
-    - RSpec Tracer **nullifies the `SimpleCov.at_exit`** callback.
+    If you use RSpec Tracer with SimpleCov, then **SimpleCov would not report branch
+    coverage results even when enabled**.
 
 3. After running your tests, open `rspec_tracer_report/index.html` in the browser
 of your choice.
