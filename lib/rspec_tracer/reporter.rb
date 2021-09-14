@@ -15,6 +15,7 @@ module RSpecTracer
 
     def register_example(example)
       @all_examples[example[:example_id]] = example
+      @duplicate_examples[example[:example_id]] << example
     end
 
     def on_example_skipped(example_id)
@@ -106,6 +107,17 @@ module RSpecTracer
       file_deleted?(file_name) || file_modified?(file_name)
     end
 
+    def incorrect_analysis?
+      @duplicate_examples.select! { |_, examples| examples.count > 1 }
+
+      return false if @duplicate_examples.empty?
+
+      print_not_use_notice
+      print_duplicate_examples
+
+      true
+    end
+
     def register_dependency(example_id, file_name)
       @dependency[example_id] << file_name
     end
@@ -169,6 +181,7 @@ module RSpecTracer
 
     def initialize_examples
       @all_examples = {}
+      @duplicate_examples = Hash.new { |examples, example_id| examples[example_id] = [] }
       @passed_examples = Set.new
       @possibly_flaky_examples = Set.new
       @flaky_examples = Set.new
@@ -225,6 +238,45 @@ module RSpecTracer
 
       @reverse_dependency = report.to_h
     end
+
+    def print_not_use_notice
+      justify = ' ' * 4
+      four_justify = justify * 4
+
+      puts '=' * 80
+      puts "#{four_justify}IMPORTANT NOTICE -- DO NOT USE RSPEC TRACER"
+      puts '=' * 80
+      puts "#{justify}It would be best to make changes so that the RSpec tracer can uniquely"
+      puts "#{justify}identify all the examples, and then you can enable the RSpec tracer back."
+      puts '=' * 80
+      puts
+    end
+
+    # rubocop:disable Metrics/AbcSize
+    def print_duplicate_examples
+      total = @duplicate_examples.sum { |_, examples| examples.length }
+
+      puts "RSpec tracer could not uniquely identify the following #{total} examples:"
+
+      justify = ' ' * 2
+      nested_justify = justify * 3
+
+      @duplicate_examples.each_pair do |example_id, examples|
+        puts "#{justify}- Example ID: #{example_id} (#{examples.count} examples)"
+
+        examples.each do |example|
+          description = example[:full_description].strip
+          file_name = example[:rerun_file_name].sub(%r{^/}, '')
+          line_number = example[:rerun_line_number]
+          location = "#{file_name}:#{line_number}"
+
+          puts "#{nested_justify}* #{description} (#{location})"
+        end
+      end
+
+      puts
+    end
+    # rubocop:enable Metrics/AbcSize
 
     def write_all_examples_report
       file_name = File.join(@cache_dir, 'all_examples.json')

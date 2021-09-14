@@ -63,6 +63,10 @@ module RSpecTracer
       @reporter.register_deleted_examples(@cache.all_examples)
     end
 
+    def incorrect_analysis?
+      @reporter.incorrect_analysis?
+    end
+
     # rubocop:disable Metrics/AbcSize
     def generate_missed_coverage
       missed_coverage = Hash.new do |files_coverage, file_path|

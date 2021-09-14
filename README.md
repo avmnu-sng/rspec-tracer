@@ -40,6 +40,7 @@ describing the **intention** and implementation details of **managing dependency
 * [Advanced Configuration](#advanced-configuration)
 * [Filters](#filters)
 * [Environment Variables](#environment-variables)
+* [When Should You Not Use RSpec Tracer](#when-should-you-not-use-rspec-tracer)
 
 ## Demo
 
@@ -257,52 +258,48 @@ end
 ### Defining Custom Filteres
 
 You can currently define a filter using either a String or Regexp (that will then
-be Regexp-matched against each source file's path), a block or by passing in your
-own Filter class.
+be Regexp-matched against each source file's name relative to the project root),
+a block or by passing in your own Filter class.
 
-#### String Filter
-
-```ruby
-RSpecTracer.start do
-  add_filter '/helpers/'
-end
-```
-
-This simple string filter will remove all files that match "/helpers/" in their path.
-
-#### Regex Filter
-
-```ruby
-RSpecTracer.start do
-  add_filter %r{^/helpers/}
-end
-```
-
-This simple regex filter will remove all files that start with /helper/ in their path.
-
-#### Block Filter
-
-```ruby
-RSpecTracer.start do
-  add_filter do |source_file|
-    source_file[:file_path].include?('/helpers/')
+- **String Filter**: The string filter matches files that have the given string
+in their name. For example, the following string filter will remove all files that
+have `"/helpers/"` in their name.
+  ```ruby
+  RSpecTracer.start do
+    add_filter '/helpers/'
   end
-end
-```
+  ```
 
-Block filters receive a `Hash` object and expect your block to return either true
-(if the file is to be removed from the result) or false (if the result should be kept).
-In the above example, the filter will remove all files that match "/helpers/" in their path.
+- **Regex Filter**: The regex filter removes all files that have a successful name
+match against the given regex expression. This simple regex filter will remove
+all files that start with `%r{^/helper/}` in their name:
+  ```ruby
+  RSpecTracer.start do
+    add_filter %r{^/helpers/}
+  end
+  ```
 
-#### Array Filter
+- **Block Filter**: Block filters receive a `Hash` object and expect your block
+to return either **true** (if the file is to be removed from the result) or **false**
+(if the result should be kept). In the below example, the filter will remove all
+files that match `"/helpers/"` in their path.
+  ```ruby
+  RSpecTracer.start do
+    add_filter do |source_file|
+      source_file[:file_path].include?('/helpers/')
+    end
+  end
+  ```
 
-```ruby
-RSpecTracer.start do
-  add_filter ['/helpers/', %r{^/utils/}]
-end
-```
+  You can also use `source_file[:name]` to define the return value of the block
+  filter for the given source file.
 
-You can pass in an array containing any of the other filter types.
+- **Array Filter**: You can pass in an array containing any of the other filter types:
+  ```ruby
+  RSpecTracer.start do
+    add_filter ['/helpers/', %r{^/utils/}]
+  end
+  ```
 
 ## Environment Variables
 
@@ -339,6 +336,122 @@ specific test suites and not merge them.
   TEST_SUITE_ID=1 bundle exec rspec spec/models
   TEST_SUITE_ID=2 bundle exec rspec spec/helpers
   ```
+
+## When Should You Not Use RSpec Tracer
+
+To uniquely identify the examples is one of the requirements for the correctness
+of the RSpec Tracer. Sometimes, it would not be possible to do so depending upon
+how we have written the specs. The following attributes determine the uniqueness:
+
+- The example group
+- The example full description
+- The spec file location, i.e., file name and line number
+- All the shared examples and contexts
+
+Consider the following `Calculator` module:
+```ruby
+module Calculator
+  module_function
+
+  def add(a, b) a + b; end
+  def sub(a, b) a - b; end
+  def mul(a, b) a * b; end
+end
+```
+
+And the corresponding spec file `spec/calculator_spec.rb`:
+```ruby
+RSpec.describe Calculator do
+  describe '#add' do
+    [
+      [1, 2, 3],
+      [0, 0, 0],
+      [5, 32, 37],
+      [-1, -8, -9],
+      [10, -10, 0]
+    ].each { |a, b, r| it { expect(described_class.add(a, b)).to eq(r) } }
+  end
+
+  describe '#sub' do
+    [
+      [1, 2, -1],
+      [10, 0, 10],
+      [37, 5, 32],
+      [-1, -8, 7],
+      [10, 10, 0]
+    ].each do |a, b, r|
+      it 'performs subtraction' do
+        expect(described_class.sub(a, b)).to eq(r)
+      end
+    end
+  end
+
+  describe '#mul' do
+    [
+      [1, 2, -2],
+      [10, 0, 0],
+      [5, 7, 35],
+      [-1, -8, 8],
+      [10, 10, 100]
+    ].each do |a, b, r|
+      it "multiplies #{a} and #{b} to #{r}" do
+        expect(described_class.mul(a, b)).to eq(r)
+      end
+    end
+  end
+end
+```
+
+Running the spec with `bundle exec rspec spec/calculator_spec.rb` generates the
+following output:
+```
+Calculator
+  #mul
+    multiplies 5 and 7 to 35
+    multiplies 10 and 10 to 100
+    multiplies 10 and 0 to 0
+    multiplies 1 and 2 to -2 (FAILED - 1)
+    multiplies -1 and -8 to 8
+  #add
+    example at ./spec/calculator_spec.rb:13
+    example at ./spec/calculator_spec.rb:13
+    example at ./spec/calculator_spec.rb:13
+    example at ./spec/calculator_spec.rb:13
+    example at ./spec/calculator_spec.rb:13
+  #sub
+    performs subtraction
+    performs subtraction
+    performs subtraction
+    performs subtraction
+    performs subtraction
+```
+
+In this scenario, RSpec Tracer cannot determine the `Calculator#add` and
+`Calculator#sub` group examples. Also, it will ask you not to use the gem unless
+you have made some changes to your spec files.
+
+```
+================================================================================
+                IMPORTANT NOTICE -- DO NOT USE RSPEC TRACER
+================================================================================
+    It would be best to make changes so that the RSpec tracer can uniquely
+    identify all the examples, and then you can enable the RSpec tracer back.
+================================================================================
+
+RSpec tracer could not uniquely identify the following 10 examples:
+  - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
+      * Calculator#add (spec/calculator_spec.rb:13)
+      * Calculator#add (spec/calculator_spec.rb:13)
+      * Calculator#add (spec/calculator_spec.rb:13)
+      * Calculator#add (spec/calculator_spec.rb:13)
+      * Calculator#add (spec/calculator_spec.rb:13)
+  - Example ID: 72171b502c5a42b9aa133f165cf09ec2 (5 examples)
+      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
+      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
+      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
+      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
+      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
+```
 
 ## Contributing
 

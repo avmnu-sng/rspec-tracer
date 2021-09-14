@@ -146,7 +146,7 @@ Then('I validate rspec or rspec rails version') do
     when 'rails_app'
       rspec_gem = 'rspec-rails'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_RAILS_VERSION'])
-    when 'ruby_app', 'calculator_app'
+    when 'ruby_app', 'calculator_app', 'calculator_2_app'
       rspec_gem = 'rspec'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_VERSION'])
     end

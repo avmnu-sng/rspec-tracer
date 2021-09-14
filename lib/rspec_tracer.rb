@@ -74,7 +74,11 @@ module RSpecTracer
     def at_exit_behavior
       return unless RSpecTracer.pid == Process.pid && RSpecTracer.running
 
+      ::Kernel.exit(1) if runner.incorrect_analysis?
+
       run_exit_tasks
+    ensure
+      RSpecTracer.running = false
     end
 
     def start_example_trace
@@ -182,8 +186,6 @@ module RSpecTracer
       end
 
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
-    ensure
-      RSpecTracer.running = false
     end
 
     def generate_reports
