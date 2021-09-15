@@ -15,6 +15,14 @@ Then('The RSpecTracer should print the information') do |expected_output|
   expect(output & expected).to contain_exactly(*expected)
 end
 
+Then('The SimpleCov at_exit hook should have executed at the right time') do
+  output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
+  idx = output.index('SimpleCov will now generate coverage report (<3 RSpec tracer)')
+
+  expect(idx).not_to eq(nil)
+  expect(output[idx + 1]).to eq('Running SimpleCov exit task using at_exit hook')
+end
+
 Then('The RSpecTracer should print the duplicate examples report') do |expected_output|
   output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
   expected = expected_output.lines.map(&:strip).reject(&:empty?)

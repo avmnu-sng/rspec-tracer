@@ -8,7 +8,8 @@ Given('I am working on the project {string}') do |project|
   @run_id = {
     rails_app: '6654a84c672a717904112cef7503d7a1',
     ruby_app: '63df6c782675a201fbef23140bd868e2',
-    calculator_app: 'ac50ff82ef0e8c97f7142ae07483d81d'
+    calculator_app: 'ac50ff82ef0e8c97f7142ae07483d81d',
+    calculator_3_app: 'ac50ff82ef0e8c97f7142ae07483d81d'
   }[@project.to_sym]
 
   project_dir = File.dirname(__FILE__)
@@ -146,7 +147,7 @@ Then('I validate rspec or rspec rails version') do
     when 'rails_app'
       rspec_gem = 'rspec-rails'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_RAILS_VERSION'])
-    when 'ruby_app', 'calculator_app', 'calculator_2_app'
+    when 'ruby_app', 'calculator_app', 'calculator_2_app', 'calculator_3_app'
       rspec_gem = 'rspec'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_VERSION'])
     end

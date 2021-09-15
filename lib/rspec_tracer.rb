@@ -158,15 +158,11 @@ module RSpecTracer
     def setup_coverage
       @simplecov = defined?(SimpleCov) && SimpleCov.running
 
-      if simplecov?
-        # rubocop:disable Lint/EmptyBlock
-        SimpleCov.at_exit {}
-        # rubocop:enable Lint/EmptyBlock
-      else
-        require 'coverage'
+      return if simplecov?
 
-        ::Coverage.start
-      end
+      require 'coverage'
+
+      ::Coverage.start
     end
 
     def setup_trace_point
@@ -231,7 +227,6 @@ module RSpecTracer
       puts 'SimpleCov will now generate coverage report (<3 RSpec tracer)'
 
       coverage_reporter.record_coverage if RSpecTracer.no_examples
-      SimpleCov.result.format!
     end
 
     def run_coverage_exit_task
