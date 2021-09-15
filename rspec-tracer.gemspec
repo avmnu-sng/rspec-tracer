@@ -11,12 +11,17 @@ Gem::Specification.new do |spec|
   spec.email = ['abhisinghabhimanyu@gmail.com']
 
   spec.homepage = 'https://github.com/avmnu-sng/rspec-tracer'
-  spec.summary = 'RSpec Tracer is a specs dependency analysis tool and a test skipper for RSpec'
-  spec.description = <<-DESC.strip.gsub(/\s+/, ' ')
-    RSpec Tracer is a specs dependency analysis tool and a test skipper for RSpec.
-    It maintains a list of files for each test, enabling itself to skip tests in
-    the subsequent runs if none of the dependent files are changed.
-  DESC
+  spec.summary = <<-SUMMARY.strip.gsub(/\s+/, ' ')
+    RSpec Tracer is a specs dependency analyzer, flaky tests detector, tests
+    accelerator, and coverage reporter tool.
+  SUMMARY
+  spec.description = <<-DESCRIPTION.strip.gsub(/\s+/, ' ')
+    RSpec Tracer is a specs dependency analyzer, flaky tests detector, tests
+    accelerator, and coverage reporter tool for RSpec. It maintains a list of
+    files for each test, enabling itself to skip tests in the subsequent runs
+    if none of the dependent files are changed. It uses Ruby's built-in coverage
+    library to keep track of the coverage for each test
+  DESCRIPTION
   spec.license = 'MIT'
 
   spec.metadata['homepage_uri'] = spec.homepage

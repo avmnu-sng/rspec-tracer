@@ -1,3 +1,11 @@
+## [0.9.0] - 2021-09-15
+
+### Added
+
+- Handling all examples filtered by RSpec (#34)
+- Warn on incorrect analysis to stop using RSpec Tracer (#35)
+- Run `SimpleCov.at_exit` hook (#36)
+
 ## [0.8.0] - 2021-09-13
 
 ### Fixed

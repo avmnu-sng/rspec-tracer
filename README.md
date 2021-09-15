@@ -94,7 +94,7 @@ These reports provide information on the total number of tests that will run aft
 
 1. Add this line to your `Gemfile` and `bundle install`:
     ```ruby
-    gem 'rspec-tracer', '~> 0.8', group: :test, require: false
+    gem 'rspec-tracer', '~> 0.9', group: :test, require: false
     ```
 
     And, add the followings to your `.gitignore`:

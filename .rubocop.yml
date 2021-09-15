@@ -6,6 +6,7 @@ require:
 AllCops:
   NewCops: enable
   Exclude:
+    - "rspec-tracer.gemspec"
     - "sample_projects/**/*"
     - "tmp/**/*"
     - "vendor/**/*"
