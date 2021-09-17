@@ -25,7 +25,9 @@ module RSpecTracer
     end
 
     def file_path(file_name)
-      File.expand_path(file_name.sub(%r{^/}, ''), RSpecTracer.root)
+      file_name = file_name.include?('/gems/') ? file_name : file_name.sub(%r{^/}, '')
+
+      File.expand_path(file_name, RSpecTracer.root)
     end
   end
 end
