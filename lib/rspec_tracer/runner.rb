@@ -187,6 +187,7 @@ module RSpecTracer
       @cache.flaky_examples.each do |example_id|
         @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:flaky_example]
 
+        next unless @cache.dependency.key?(example_id)
         next unless (@changed_files & @cache.dependency[example_id]).empty?
 
         @reporter.register_possibly_flaky_example(example_id)
@@ -199,6 +200,7 @@ module RSpecTracer
 
         @filtered_examples[example_id] = EXAMPLE_RUN_REASON[:failed_example]
 
+        next unless @cache.dependency.key?(example_id)
         next unless (@changed_files & @cache.dependency[example_id]).empty?
 
         @reporter.register_possibly_flaky_example(example_id)

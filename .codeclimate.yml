@@ -5,7 +5,7 @@ checks:
       threshold: 300
   method-complexity:
     config:
-      threshold: 10
+      threshold: 15
   method-count:
     config:
       threshold: 50
@@ -21,7 +21,14 @@ plugins:
     exclude_patterns:
       - "spec/"
 exclude_patterns:
+  - "Gemfile"
+  - "Gemfile.lock"
+  - "LICENSE"
+  - "rspec-tracer.gemspec"
+  - "**/Rakefile"
   - "**/.*"
+  - "**/*.md"
+  - "**/*.rake"
   - "coverage/"
   - "rspec_tracer_cache/"
   - "rspec_tracer_coverage/"
