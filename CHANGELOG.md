@@ -1,3 +1,9 @@
+## [0.9.1] - 2021-09-23
+
+### Fixed
+
+Flaky and failed examples dependency check (#38)
+
 ## [0.9.0] - 2021-09-15
 
 ### Added

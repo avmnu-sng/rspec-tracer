@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
     accelerator, and coverage reporter tool for RSpec. It maintains a list of
     files for each test, enabling itself to skip tests in the subsequent runs
     if none of the dependent files are changed. It uses Ruby's built-in coverage
-    library to keep track of the coverage for each test
+    library to keep track of the coverage for each test.
   DESCRIPTION
   spec.license = 'MIT'
 
