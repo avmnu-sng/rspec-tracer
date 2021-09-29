@@ -2,9 +2,10 @@
 
 module RSpecTracer
   class Reporter
-    attr_reader :all_examples, :possibly_flaky_examples, :flaky_examples, :pending_examples,
-                :all_files, :modified_files, :deleted_files, :dependency, :reverse_dependency,
-                :examples_coverage, :last_run
+    attr_reader :all_examples, :interrupted_examples, :possibly_flaky_examples,
+                :flaky_examples, :pending_examples, :all_files, :modified_files,
+                :deleted_files, :dependency, :reverse_dependency, :examples_coverage,
+                :last_run
 
     def initialize
       initialize_examples
@@ -37,8 +38,21 @@ module RSpecTracer
       @all_examples[example_id][:execution_result] = formatted_execution_result(result)
     end
 
+    def register_interrupted_examples
+      @all_examples.each_pair do |example_id, example|
+        next if example.key?(:execution_result)
+
+        @interrupted_examples << example_id
+      end
+
+      return if @interrupted_examples.empty?
+
+      puts "RSpec tracer is not processing #{@interrupted_examples.count} interrupted examples"
+    end
+
     def register_deleted_examples(seen_examples)
       @deleted_examples = seen_examples.keys.to_set - (@skipped_examples | @all_examples.keys)
+      @deleted_examples -= @interrupted_examples
 
       @deleted_examples.select! do |example_id|
         example = seen_examples[example_id]
@@ -61,6 +75,10 @@ module RSpecTracer
 
     def register_pending_example(example_id)
       @pending_examples << example_id
+    end
+
+    def example_interrupted?(example_id)
+      @interrupted_examples.include?(example_id)
     end
 
     def example_passed?(example_id)
@@ -128,6 +146,8 @@ module RSpecTracer
 
     def generate_reverse_dependency_report
       @dependency.each_pair do |example_id, files|
+        next if @interrupted_examples.include?(example_id)
+
         example_file = @all_examples[example_id][:rerun_file_name]
 
         files.each do |file_name|
@@ -145,9 +165,11 @@ module RSpecTracer
         pid: RSpecTracer.pid,
         actual_count: RSpec.world.example_count + @skipped_examples.count,
         example_count: RSpec.world.example_count,
+        interrupted_examples: @interrupted_examples.count,
         failed_examples: @failed_examples.count,
         skipped_examples: @skipped_examples.count,
-        pending_examples: @pending_examples.count
+        pending_examples: @pending_examples.count,
+        flaky_examples: @flaky_examples.count
       }
     end
 
@@ -182,6 +204,7 @@ module RSpecTracer
     def initialize_examples
       @all_examples = {}
       @duplicate_examples = Hash.new { |examples, example_id| examples[example_id] = [] }
+      @interrupted_examples = Set.new
       @passed_examples = Set.new
       @possibly_flaky_examples = Set.new
       @flaky_examples = Set.new

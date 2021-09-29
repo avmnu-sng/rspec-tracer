@@ -60,7 +60,19 @@ module RSpecTracer
             id: example_id,
             description: example[:full_description],
             location: example_location(example[:rerun_file_name], example[:rerun_line_number]),
-            status: example[:run_reason] || 'Skipped',
+            status: example[:run_reason] || 'Skipped'
+          }.merge(example_result(example_id, example))
+        end
+      end
+
+      def example_result(example_id, example)
+        if example[:execution_result].nil?
+          {
+            result: @reporter.example_interrupted?(example_id) ? 'Interrupted' : '_',
+            last_run: '_'
+          }
+        else
+          {
             result: example[:execution_result][:status].capitalize,
             last_run: example_run_local_time(example[:execution_result][:finished_at])
           }
@@ -176,7 +188,7 @@ module RSpecTracer
 
       def example_status_css_class(example_status)
         case example_status.split.first
-        when 'Failed', 'Flaky'
+        when 'Failed', 'Flaky', 'Interrupted'
           'red'
         when 'Pending'
           'yellow'
@@ -189,7 +201,7 @@ module RSpecTracer
         case example_result
         when 'Passed'
           'green'
-        when 'Failed'
+        when 'Failed', 'Interrupted'
           'red'
         when 'Pending'
           'yellow'

@@ -196,6 +196,7 @@ module RSpecTracer
     def process_dependency
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
+      runner.register_interrupted_examples
       runner.register_deleted_examples
       runner.register_dependency(coverage_reporter.examples_coverage)
       runner.register_untraced_dependency(@traced_files)
