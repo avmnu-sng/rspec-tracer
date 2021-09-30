@@ -1,3 +1,9 @@
+## [0.9.2] - 2021-09-30
+
+### Fixed
+
+Caches getting corrupted on interrupts (#39)
+
 ## [0.9.1] - 2021-09-23
 
 ### Fixed

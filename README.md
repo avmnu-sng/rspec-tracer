@@ -28,9 +28,7 @@ recommended to use **simplecov >= 0.12.0**. To use RSpec Tracer **cache on CI**,
 need to have an **S3 bucket** and **[AWS CLI](https://aws.amazon.com/cli/)**
 installed.
 
-You should take some time and go through the **[document](./RSPEC_TRACER.md)**
-describing the **intention** and implementation details of **managing dependency**,
-**managing flaky tests**, **skipping tests**, and **caching on CI**.
+### You should take some time and go through the **[document](./RSPEC_TRACER.md)** describing the **intention** and implementation details of **managing dependency**, **managing flaky tests**, **skipping tests**, and **caching on CI**.
 
 ## Table of Contents
 
