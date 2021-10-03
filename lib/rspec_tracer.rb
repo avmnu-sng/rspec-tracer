@@ -34,6 +34,8 @@ module RSpecTracer
       RSpecTracer.running = false
       RSpecTracer.pid = Process.pid
 
+      return if RUBY_ENGINE == 'jruby' && !valid_jruby_opts?
+
       puts 'Started RSpec tracer'
 
       configure(&block) if block
@@ -126,6 +128,20 @@ module RSpecTracer
     end
 
     private
+
+    def valid_jruby_opts?
+      return true if Java::OrgJruby::RubyInstanceConfig.FULL_TRACE_ENABLED &&
+        JRuby.runtime.object_space_enabled?
+
+      puts <<-WARN.strip.gsub(/\s+/, ' ')
+        RSpec Tracer is not running as it requires debug and object space enabled. Use
+        command line options "--debug" and "-X+O" or set the "debug.fullTrace=true" and
+        "objectspace.enabled=true" options in your .jrubyrc file. You can also use
+        JRUBY_OPTS="--debug -X+O".
+      WARN
+
+      false
+    end
 
     def initial_setup
       unless setup_rspec

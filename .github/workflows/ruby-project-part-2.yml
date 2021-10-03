@@ -38,4 +38,4 @@ jobs:
           RSPEC_VERSION: "~> ${{ matrix.rspec }}"
           SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
           BRANCH_COVERAGE: true
-        run: bundle exec cucumber --tags @ruby-app
+        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags @ruby-app

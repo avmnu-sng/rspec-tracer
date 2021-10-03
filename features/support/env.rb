@@ -24,7 +24,12 @@ Before do
   if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
     setup_file = File.join(File.expand_path('../..', __dir__), 'support', 'coverage_setup')
 
-    set_environment_variable('RUBYOPT', "-r#{setup_file} #{ENV['RUBYOPT']}")
+    case RUBY_ENGINE
+    when 'ruby'
+      set_environment_variable('RUBYOPT', "-r#{setup_file} #{ENV['RUBYOPT']}")
+    when 'jruby'
+      set_environment_variable('JRUBY_OPTS', "--debug -X+O -r#{setup_file} #{ENV['JRUBY_OPTS']}")
+    end
   end
 end
 

@@ -11,7 +11,7 @@ namespace :features do
           SKIP_COVERAGE_VALIDATION="false"
           RSPEC_VERSION="~> 3.10"
           SIMPLECOV_VERSION="~> 0.21"
-          bundle exec cucumber --tags "@ruby-app and @no-simplecov"
+          bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @no-simplecov"
         COMMAND
 
         exit(1) unless system(command)

@@ -40,4 +40,4 @@ jobs:
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}"
           SIMPLECOV_VERSION: "~> 0.${{ matrix.simplecov }}.0"
           BRANCH_COVERAGE: "${{ matrix.simplecov >= 18 && 'true' || 'false' }}"
-        run: bundle exec cucumber --tags @rails-app
+        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags @rails-app
