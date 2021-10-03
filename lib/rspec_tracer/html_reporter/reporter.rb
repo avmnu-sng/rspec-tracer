@@ -10,18 +10,12 @@ module RSpecTracer
 
       def initialize
         @reporter = RSpecTracer.runner.reporter
-
-        format_last_run
-        format_examples
-        format_flaky_examples
-        format_examples_dependency
-        format_files_dependency
       end
 
       def generate_report
         starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        copy_assets
+        prepare
 
         file_name = File.join(RSpecTracer.report_path, 'index.html')
 
@@ -37,6 +31,16 @@ module RSpecTracer
 
       private
 
+      def prepare
+        format_last_run
+        format_examples
+        format_duplicate_examples
+        format_flaky_examples
+        format_examples_dependency
+        format_files_dependency
+        copy_assets
+      end
+
       def copy_assets
         Dir[File.join(File.dirname(__FILE__), 'public/*')].each do |path|
           FileUtils.cp_r(path, asset_output_path)
@@ -46,6 +50,7 @@ module RSpecTracer
       def format_last_run
         @last_run = @reporter.last_run.slice(
           :actual_count,
+          :duplicate_examples,
           :failed_examples,
           :pending_examples,
           :skipped_examples
@@ -76,6 +81,20 @@ module RSpecTracer
             result: example[:execution_result][:status].capitalize,
             last_run: example_run_local_time(example[:execution_result][:finished_at])
           }
+        end
+      end
+
+      def format_duplicate_examples
+        @duplicate_examples = []
+
+        @reporter.duplicate_examples.each_pair do |example_id, examples|
+          examples.each do |example|
+            @duplicate_examples << {
+              id: example_id,
+              description: example[:full_description],
+              location: example_location(example[:rerun_file_name], example[:rerun_line_number])
+            }
+          end
         end
       end
 
@@ -147,6 +166,14 @@ module RSpecTracer
       end
 
       def formatted_examples(title, examples)
+        title_id = report_container_id(title)
+        current_binding = binding
+
+        current_binding.local_variable_set(:title_id, title_id)
+        template(title_id).result(current_binding)
+      end
+
+      def formatted_duplicate_examples(title, duplicate_examples)
         title_id = report_container_id(title)
         current_binding = binding
 

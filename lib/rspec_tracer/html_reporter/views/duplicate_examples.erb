@@ -1,0 +1,34 @@
+<div class="report_container" id="<%= title_id %>">
+  <h2>
+    <span class="group_name"><%= title %></span>
+    (
+      <span class="blue">
+        <strong><%= duplicate_examples.count %></strong>
+      </span> examples
+    )
+  </h2>
+
+  <a name="<%= title_id %>"></a>
+
+  <div class="report-table--responsive">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Description</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% duplicate_examples.each do |example| %>
+          <tr>
+            <td><%= example[:id] %></td>
+            <td><%= example[:description] %></td>
+            <td><%= example[:location] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

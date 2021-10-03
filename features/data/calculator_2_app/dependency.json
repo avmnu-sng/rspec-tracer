@@ -1,0 +1,27 @@
+{
+  "399a3130aaca80408020db0d3d2a1571": [
+    "/spec/calculator_spec.rb",
+    "/app/calculator.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "743241f052ac078df639300bf9e7dc90": [
+    "/spec/calculator_spec.rb",
+    "/app/calculator.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "3e2f78d04a432fd57e6e173732dfc665": [
+    "/spec/calculator_spec.rb",
+    "/app/calculator.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "6dc2c97f1c877ff305a42c5a30454f25": [
+    "/spec/calculator_spec.rb",
+    "/app/calculator.rb",
+    "/spec/spec_helper.rb"
+  ],
+  "1be34ddaa19469923b1a2c6798a5d15a": [
+    "/spec/calculator_spec.rb",
+    "/app/calculator.rb",
+    "/spec/spec_helper.rb"
+  ]
+}

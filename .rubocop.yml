@@ -44,6 +44,9 @@ Metrics/BlockLength:
 Metrics/ClassLength:
   Max: 300
 
+Metrics/CyclomaticComplexity:
+  Max: 10
+
 Metrics/MethodLength:
   Max: 25
 

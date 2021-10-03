@@ -18,12 +18,15 @@
       <ul class="group_tabs"></ul>
 
       <div id="content">
-        <%= formatted_examples('Examples', examples.values) %>
-        <% unless flaky_examples.empty? %>
-          <%= formatted_flaky_examples('Flaky Examples', flaky_examples) %>
+        <%= formatted_examples('Examples', @examples.values) %>
+        <% unless @duplicate_examples.empty? %>
+          <%= formatted_duplicate_examples('Duplicate Examples', @duplicate_examples) %>
         <% end %>
-        <%= formatted_examples_dependency('Examples Dependency', examples_dependency) %>
-        <%= formatted_files_dependency("Files Dependency", files_dependency) %>
+        <% unless @flaky_examples.empty? %>
+          <%= formatted_flaky_examples('Flaky Examples', @flaky_examples) %>
+        <% end %>
+        <%= formatted_examples_dependency('Examples Dependency', @examples_dependency) %>
+        <%= formatted_files_dependency("Files Dependency", @files_dependency) %>
       </div>
 
       <div id="footer">
