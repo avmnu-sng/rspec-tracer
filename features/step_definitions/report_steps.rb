@@ -15,6 +15,12 @@ Then('The RSpecTracer should print the information') do |expected_output|
   expect(output & expected).to contain_exactly(*expected)
 end
 
+Then('The RSpecTracer should print {string} example {int} times') do |example, times|
+  output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
+
+  expect(output.count(example)).to eq(times)
+end
+
 Then('The SimpleCov at_exit hook should have executed at the right time') do
   output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
   idx = output.index('SimpleCov will now generate coverage report (<3 RSpec tracer)')
@@ -31,19 +37,6 @@ Then('The RSpecTracer should print the duplicate examples report') do |expected_
   output = output[idx...(idx + expected.length)]
 
   expect(output).to eq(expected)
-end
-
-Then('The RSpecTracer should forbid using the tool') do
-  expected = [
-    '================================================================================',
-    '                IMPORTANT NOTICE -- DO NOT USE RSPEC TRACER',
-    '================================================================================',
-    '    It would be best to make changes so that the RSpec tracer can uniquely',
-    '    identify all the examples, and then you can enable the RSpec tracer back.',
-    '================================================================================'
-  ].join("\n")
-
-  expect(last_command_started.output).to include(expected)
 end
 
 Then('The RSpecTracer report should have been generated') do
@@ -133,6 +126,8 @@ Then('The failed example report should have correct details') do
                 else
                   ['b5963ecab8d95c1024a46117fce4e907']
                 end
+              when 'calculator_2_app'
+                ['1be34ddaa19469923b1a2c6798a5d15a']
               end
 
     expect(report).to eq(example)
@@ -143,7 +138,11 @@ Then('The pending example report should have correct details') do
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/pending_examples.json"))
 
-    expect(report).to eq(['94cd4d0e1d9ef63237421fe02085eb9a'])
+    if @project == 'calculator_2_app'
+      expect(report).to eq([])
+    else
+      expect(report).to eq(['94cd4d0e1d9ef63237421fe02085eb9a'])
+    end
   end
 end
 

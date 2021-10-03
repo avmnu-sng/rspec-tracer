@@ -5,6 +5,11 @@
       <span class="blue">
         <strong><%= last_run[:actual_count] %></strong>
       </span> examples,
+      <% if last_run[:duplicate_examples].positive? %>
+        <span class="blue">
+          <strong><%= last_run[:duplicate_examples] %></strong>
+        </span> duplicates,
+      <% end %>
       <% if last_run[:failed_examples].positive? %>
         <span class="red">
           <strong><%= last_run[:failed_examples] %></strong>

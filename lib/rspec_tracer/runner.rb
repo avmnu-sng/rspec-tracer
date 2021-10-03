@@ -44,6 +44,10 @@ module RSpecTracer
       @reporter.register_example(example)
     end
 
+    def deregister_duplicate_examples
+      @reporter.deregister_duplicate_examples
+    end
+
     def on_example_skipped(example_id)
       @reporter.on_example_skipped(example_id)
     end
@@ -68,10 +72,6 @@ module RSpecTracer
       @reporter.register_deleted_examples(@cache.all_examples)
     end
 
-    def incorrect_analysis?
-      @reporter.incorrect_analysis?
-    end
-
     # rubocop:disable Metrics/AbcSize
     def generate_missed_coverage
       missed_coverage = Hash.new do |files_coverage, file_path|
@@ -82,7 +82,9 @@ module RSpecTracer
 
       @cache.cached_examples_coverage.each_pair do |example_id, example_coverage|
         example_coverage.each_pair do |file_path, line_coverage|
-          next if @reporter.example_interrupted?(example_id)
+          next if @reporter.example_interrupted?(example_id) ||
+            @reporter.duplicate_example?(example_id)
+
           next unless @reporter.example_skipped?(example_id)
 
           file_name = RSpecTracer::SourceFile.file_name(file_path)
@@ -103,7 +105,8 @@ module RSpecTracer
       filtered_files = Set.new
 
       examples_coverage.each_pair do |example_id, example_coverage|
-        next if @reporter.example_interrupted?(example_id)
+        next if @reporter.example_interrupted?(example_id) ||
+          @reporter.duplicate_example?(example_id)
 
         register_example_files_dependency(example_id)
 
@@ -130,7 +133,8 @@ module RSpecTracer
         @reporter.register_source_file(source_file)
 
         @reporter.all_examples.each_key do |example_id|
-          next if @reporter.example_interrupted?(example_id)
+          next if @reporter.example_interrupted?(example_id) ||
+            @reporter.duplicate_example?(example_id)
 
           @reporter.register_dependency(example_id, source_file[:file_name])
         end
@@ -157,6 +161,12 @@ module RSpecTracer
       end
 
       @reporter.write_reports
+      @reporter.print_duplicate_examples
+    end
+
+    def non_zero_exit_code?
+      !@reporter.duplicate_examples.empty? &&
+        ENV.fetch('RSPEC_TRACER_FAIL_ON_DUPLICATES', 'true') == 'true'
     end
 
     private
@@ -266,7 +276,8 @@ module RSpecTracer
     end
 
     def register_example_files_dependency(example_id)
-      return if @reporter.example_interrupted?(example_id)
+      return if @reporter.example_interrupted?(example_id) ||
+        @reporter.duplicate_example?(example_id)
 
       example = @reporter.all_examples[example_id]
 
@@ -278,7 +289,8 @@ module RSpecTracer
     end
 
     def register_example_file_dependency(example_id, file_name)
-      return if @reporter.example_interrupted?(example_id)
+      return if @reporter.example_interrupted?(example_id) ||
+        @reporter.duplicate_example?(example_id)
 
       source_file = RSpecTracer::SourceFile.from_name(file_name)
 
@@ -287,7 +299,8 @@ module RSpecTracer
     end
 
     def register_file_dependency(example_id, file_path)
-      return if @reporter.example_interrupted?(example_id)
+      return if @reporter.example_interrupted?(example_id) ||
+        @reporter.duplicate_example?(example_id)
 
       source_file = RSpecTracer::SourceFile.from_path(file_path)
 

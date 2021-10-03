@@ -9,6 +9,7 @@ Given('I am working on the project {string}') do |project|
     rails_app: '6654a84c672a717904112cef7503d7a1',
     ruby_app: '63df6c782675a201fbef23140bd868e2',
     calculator_app: 'ac50ff82ef0e8c97f7142ae07483d81d',
+    calculator_2_app: '35194a37e68446e9d6960c46e717fd44',
     calculator_3_app: 'ac50ff82ef0e8c97f7142ae07483d81d'
   }[@project.to_sym]
 

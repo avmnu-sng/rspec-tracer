@@ -67,6 +67,8 @@ module RSpecTracer
         end
       end
 
+      runner.deregister_duplicate_examples
+
       [to_run, groups.to_a]
     end
     # rubocop:enable Metrics/AbcSize
@@ -74,9 +76,9 @@ module RSpecTracer
     def at_exit_behavior
       return unless RSpecTracer.pid == Process.pid && RSpecTracer.running
 
-      ::Kernel.exit(1) if runner.incorrect_analysis?
-
       run_exit_tasks
+
+      ::Kernel.exit(1) if runner.non_zero_exit_code?
     ensure
       RSpecTracer.running = false
     end

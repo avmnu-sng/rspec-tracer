@@ -1,0 +1,52 @@
+{
+  "1be34ddaa19469923b1a2c6798a5d15a": {
+    "example_group": "RSpec::ExampleGroups::Calculator::Mul",
+    "description": "multiplies 1 and 2 to -2",
+    "full_description": "Calculator#mul multiplies 1 and 2 to -2",
+    "file_name": "/spec/calculator_spec.rb",
+    "line_number": 38,
+    "rerun_file_name": "/spec/calculator_spec.rb",
+    "rerun_line_number": 38,
+    "example_id": "1be34ddaa19469923b1a2c6798a5d15a"
+  },
+  "743241f052ac078df639300bf9e7dc90": {
+    "example_group": "RSpec::ExampleGroups::Calculator::Mul",
+    "description": "multiplies 10 and 0 to 0",
+    "full_description": "Calculator#mul multiplies 10 and 0 to 0",
+    "file_name": "/spec/calculator_spec.rb",
+    "line_number": 38,
+    "rerun_file_name": "/spec/calculator_spec.rb",
+    "rerun_line_number": 38,
+    "example_id": "743241f052ac078df639300bf9e7dc90"
+  },
+  "399a3130aaca80408020db0d3d2a1571": {
+    "example_group": "RSpec::ExampleGroups::Calculator::Mul",
+    "description": "multiplies 5 and 7 to 35",
+    "full_description": "Calculator#mul multiplies 5 and 7 to 35",
+    "file_name": "/spec/calculator_spec.rb",
+    "line_number": 38,
+    "rerun_file_name": "/spec/calculator_spec.rb",
+    "rerun_line_number": 38,
+    "example_id": "399a3130aaca80408020db0d3d2a1571"
+  },
+  "3e2f78d04a432fd57e6e173732dfc665": {
+    "example_group": "RSpec::ExampleGroups::Calculator::Mul",
+    "description": "multiplies -1 and -8 to 8",
+    "full_description": "Calculator#mul multiplies -1 and -8 to 8",
+    "file_name": "/spec/calculator_spec.rb",
+    "line_number": 38,
+    "rerun_file_name": "/spec/calculator_spec.rb",
+    "rerun_line_number": 38,
+    "example_id": "3e2f78d04a432fd57e6e173732dfc665"
+  },
+  "6dc2c97f1c877ff305a42c5a30454f25": {
+    "example_group": "RSpec::ExampleGroups::Calculator::Mul",
+    "description": "multiplies 10 and 10 to 100",
+    "full_description": "Calculator#mul multiplies 10 and 10 to 100",
+    "file_name": "/spec/calculator_spec.rb",
+    "line_number": 38,
+    "rerun_file_name": "/spec/calculator_spec.rb",
+    "rerun_line_number": 38,
+    "example_id": "6dc2c97f1c877ff305a42c5a30454f25"
+  }
+}

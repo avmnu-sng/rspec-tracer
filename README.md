@@ -28,7 +28,7 @@ recommended to use **simplecov >= 0.12.0**. To use RSpec Tracer **cache on CI**,
 need to have an **S3 bucket** and **[AWS CLI](https://aws.amazon.com/cli/)**
 installed.
 
-### You should take some time and go through the **[document](./RSPEC_TRACER.md)** describing the **intention** and implementation details of **managing dependency**, **managing flaky tests**, **skipping tests**, and **caching on CI**.
+> You should take some time and go through the **[document](./RSPEC_TRACER.md)** describing the **intention** and implementation details of **managing dependency**, **managing flaky tests**, **skipping tests**, and **caching on CI**.
 
 ## Table of Contents
 
@@ -38,7 +38,7 @@ installed.
 * [Advanced Configuration](#advanced-configuration)
 * [Filters](#filters)
 * [Environment Variables](#environment-variables)
-* [When Should You Not Use RSpec Tracer](#when-should-you-not-use-rspec-tracer)
+* [Duplicate Examples](#duplicate-examples)
 
 ## Demo
 
@@ -61,6 +61,12 @@ These reports provide basic test information:
 **Next Run**
 
 ![](./readme_files/examples_report_next_run.png)
+
+### Duplicate Examples Report
+
+These reports provide duplicate tests information.
+
+![](./readme_files/duplicate_examples_report.png)
 
 ### Flaky Examples Report
 
@@ -307,6 +313,9 @@ development environment. You can install [localstack](https://github.com/localst
 and [awscli-local](https://github.com/localstack/awscli-local) and then invoke the
 rake tasks with `LOCAL_AWS=true`.
 
+- **`RSPEC_TRACER_FAIL_ON_DUPLICATES (default: true)`:** By default, RSpec Tracer
+exits with one if there are [duplicate examples](#duplicate-examples).
+
 - **`RSPEC_TRACER_NO_SKIP (default: false)`:** Use this environment variables to
 not skip any tests. Note that it will continue to maintain cache files and generate
 reports.
@@ -333,7 +342,7 @@ specific test suites and not merge them.
   TEST_SUITE_ID=2 bundle exec rspec spec/helpers
   ```
 
-## When Should You Not Use RSpec Tracer
+## Duplicate Examples
 
 To uniquely identify the examples is one of the requirements for the correctness
 of the RSpec Tracer. Sometimes, it would not be possible to do so depending upon
@@ -423,17 +432,12 @@ Calculator
 ```
 
 In this scenario, RSpec Tracer cannot determine the `Calculator#add` and
-`Calculator#sub` group examples. Also, it will ask you not to use the gem unless
-you have made some changes to your spec files.
+`Calculator#sub` group examples.
 
 ```
 ================================================================================
-                IMPORTANT NOTICE -- DO NOT USE RSPEC TRACER
+   IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY
 ================================================================================
-    It would be best to make changes so that the RSpec tracer can uniquely
-    identify all the examples, and then you can enable the RSpec tracer back.
-================================================================================
-
 RSpec tracer could not uniquely identify the following 10 examples:
   - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
       * Calculator#add (spec/calculator_spec.rb:13)
