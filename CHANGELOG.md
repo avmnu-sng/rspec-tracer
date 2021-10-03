@@ -1,3 +1,7 @@
+## [0.9.3] - 2021-10-03
+
+Generate reports ignoring duplicate examples (#42)
+
 ## [0.9.2] - 2021-09-30
 
 ### Fixed

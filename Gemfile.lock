@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rspec-tracer (0.9.2)
+    rspec-tracer (0.9.3)
       docile (~> 1.1, >= 1.1.0)
       rspec-core (~> 3.6, >= 3.6.0)
 
