@@ -130,6 +130,8 @@ module RSpecTracer
     private
 
     def valid_jruby_opts?
+      require 'jruby'
+
       return true if Java::OrgJruby::RubyInstanceConfig.FULL_TRACE_ENABLED &&
         JRuby.runtime.object_space_enabled?
 
