@@ -13,7 +13,7 @@ namespace :features do
           RSPEC_VERSION="~> 3.10"
           SIMPLECOV_VERSION="~> 0.21"
           BRANCH_COVERAGE="true"
-          bundle exec cucumber --tags "@ruby-app and @simplecov and @branch-coverage"
+          bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and @branch-coverage"
         COMMAND
 
         exit(1) unless system(command)
@@ -29,7 +29,7 @@ namespace :features do
           RSPEC_VERSION="~> 3.10"
           SIMPLECOV_VERSION="~> 0.21"
           BRANCH_COVERAGE="false"
-          bundle exec cucumber --tags "@ruby-app and @simplecov and not @branch-coverage"
+          bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and not @branch-coverage"
         COMMAND
 
         exit(1) unless system(command)

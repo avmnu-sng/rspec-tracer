@@ -1,4 +1,4 @@
-name: ruby-project-part-1
+name: jruby-ruby-project
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby-1
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-jruby-ruby
   cancel-in-progress: true
 
 jobs:
@@ -17,9 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        ruby: [ 'jruby-9.2.10.0', 'jruby-9.2.19.0', 'jruby-9.3.0.0' ]
         rspec: [ '3.6.0', '3.7.0', '3.8.0', '3.9.0', '3.10.0' ]
-        simplecov: [ '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0' ]
+        simplecov: [ '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0', '0.18.0', '0.19.0', '0.20.0', '0.21.0' ]
 
     steps:
       - name: Checkout
@@ -37,4 +37,4 @@ jobs:
         env:
           RSPEC_VERSION: "~> ${{ matrix.rspec }}"
           SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
-        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags @ruby-app
+        run: JRUBY_OPTS="--debug -X+O" bundle exec cucumber --retry 3 --no-strict-flaky --tags @ruby-app

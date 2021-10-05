@@ -34,6 +34,7 @@ installed.
 
 * [Demo](#demo)
 * [Getting Started](#getting-started)
+  * [Working with JRuby](#working-with-jruby)
 * [Configuring CI Caching](#configuring-ci-caching)
 * [Advanced Configuration](#advanced-configuration)
 * [Filters](#filters)
@@ -134,6 +135,16 @@ any of the application code.**
 
 3. After running your tests, open `rspec_tracer_report/index.html` in the browser
 of your choice.
+
+### Working with JRuby
+
+It is recommend to use **JRuby 9.2.10.0+**. Also, configure it with **`JRUBY_OPTS="--debug -X+O"`**
+or have the `.jrubyrc` file:
+
+```ruby
+debug.fullTrace=true
+objectspace.enabled=true
+```
 
 ## Configuring CI Caching
 
