@@ -22,8 +22,6 @@ module RSpecTracer
       @reporter = RSpecTracer::Reporter.new
       @filtered_examples = {}
 
-      return if @cache.run_id.nil?
-
       @cache.load_cache_for_run
       filter_examples_to_run
     end
@@ -72,7 +70,6 @@ module RSpecTracer
       @reporter.register_deleted_examples(@cache.all_examples)
     end
 
-    # rubocop:disable Metrics/AbcSize
     def generate_missed_coverage
       missed_coverage = Hash.new do |files_coverage, file_path|
         files_coverage[file_path] = Hash.new do |strength, line_number|
@@ -99,7 +96,6 @@ module RSpecTracer
 
       missed_coverage
     end
-    # rubocop:enable Metrics/AbcSize
 
     def register_dependency(examples_coverage)
       filtered_files = Set.new
@@ -145,25 +141,6 @@ module RSpecTracer
       @reporter.register_examples_coverage(examples_coverage)
     end
 
-    def generate_report
-      @reporter.generate_last_run_report
-      generate_examples_status_report
-
-      %i[all_files all_examples dependency examples_coverage reverse_dependency].each do |report_type|
-        starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        send("generate_#{report_type}_report")
-
-        ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-        puts "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elpased})" if RSpecTracer.verbose?
-      end
-
-      @reporter.write_reports
-      @reporter.print_duplicate_examples
-    end
-
     def non_zero_exit_code?
       !@reporter.duplicate_examples.empty? &&
         ENV.fetch('RSPEC_TRACER_FAIL_ON_DUPLICATES', 'true') == 'true'
@@ -183,9 +160,9 @@ module RSpecTracer
       filter_by_files_changed
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed cache (took #{elpased})" if RSpecTracer.verbose?
+      puts "RSpec tracer processed cache (took #{elapsed})" if RSpecTracer.verbose?
     end
 
     def filter_by_example_status
@@ -310,93 +287,6 @@ module RSpecTracer
       @reporter.register_dependency(example_id, source_file[:file_name])
 
       true
-    end
-
-    def generate_examples_status_report
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      generate_flaky_examples_report
-      generate_failed_examples_report
-      generate_pending_examples_report
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      puts "RSpec tracer generated flaky, failed, and pending examples report (took #{elpased})" if RSpecTracer.verbose?
-    end
-
-    def generate_all_files_report
-      @cache.all_files.each_pair do |file_name, data|
-        next if @reporter.all_files.key?(file_name) ||
-          @reporter.file_deleted?(file_name)
-
-        @reporter.all_files[file_name] = data
-      end
-    end
-
-    def generate_all_examples_report
-      @cache.all_examples.each_pair do |example_id, data|
-        next if @reporter.all_examples.key?(example_id) ||
-          @reporter.example_deleted?(example_id)
-
-        @reporter.all_examples[example_id] = data
-      end
-    end
-
-    def generate_flaky_examples_report
-      @reporter.possibly_flaky_examples.each do |example_id|
-        next if @reporter.example_deleted?(example_id)
-        next unless @cache.flaky_examples.include?(example_id) ||
-          @reporter.example_passed?(example_id)
-
-        @reporter.register_flaky_example(example_id)
-      end
-    end
-
-    def generate_failed_examples_report
-      @cache.failed_examples.each do |example_id|
-        next if @reporter.example_deleted?(example_id) ||
-          @reporter.all_examples.key?(example_id)
-
-        @reporter.register_failed_example(example_id)
-      end
-    end
-
-    def generate_pending_examples_report
-      @cache.pending_examples.each do |example_id|
-        next if @reporter.example_deleted?(example_id) ||
-          @reporter.all_examples.key?(example_id)
-
-        @reporter.register_pending_example(example_id)
-      end
-    end
-
-    def generate_dependency_report
-      @cache.dependency.each_pair do |example_id, data|
-        next if @reporter.dependency.key?(example_id) ||
-          @reporter.example_deleted?(example_id)
-
-        @reporter.dependency[example_id] = data.reject do |file_name|
-          @reporter.file_deleted?(file_name)
-        end
-      end
-
-      @reporter.dependency.transform_values!(&:to_a)
-    end
-
-    def generate_examples_coverage_report
-      @cache.cached_examples_coverage.each_pair do |example_id, data|
-        next if @reporter.examples_coverage.key?(example_id) ||
-          @reporter.example_deleted?(example_id)
-
-        @reporter.examples_coverage[example_id] = data.reject do |file_name|
-          @reporter.file_deleted?(file_name)
-        end
-      end
-    end
-
-    def generate_reverse_dependency_report
-      @reporter.generate_reverse_dependency_report
     end
   end
 end

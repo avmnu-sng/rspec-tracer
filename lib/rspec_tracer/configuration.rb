@@ -31,7 +31,8 @@ module RSpecTracer
     def cache_path
       @cache_path ||= begin
         cache_path = File.expand_path(cache_dir, root)
-        cache_path = File.join(cache_path, ENV['TEST_SUITE_ID'].to_s)
+        cache_path = File.join(cache_path, ENV['TEST_SUITE_ID'].to_s) if ENV['TEST_SUITE_ID']
+        cache_path = File.join(cache_path, parallel_tests_id) if RSpecTracer.parallel_tests?
 
         FileUtils.mkdir_p(cache_path)
 
@@ -46,7 +47,8 @@ module RSpecTracer
     def report_path
       @report_path ||= begin
         report_path = File.expand_path(report_dir, root)
-        report_path = File.join(report_path, ENV['TEST_SUITE_ID'].to_s)
+        report_path = File.join(report_path, ENV['TEST_SUITE_ID'].to_s) if ENV['TEST_SUITE_ID']
+        report_path = File.join(report_path, parallel_tests_id) if RSpecTracer.parallel_tests?
 
         FileUtils.mkdir_p(report_path)
 
@@ -61,7 +63,8 @@ module RSpecTracer
     def coverage_path
       @coverage_path ||= begin
         coverage_path = File.expand_path(coverage_dir, root)
-        coverage_path = File.join(coverage_path, ENV['TEST_SUITE_ID'].to_s)
+        coverage_path = File.join(coverage_path, ENV['TEST_SUITE_ID'].to_s) if ENV['TEST_SUITE_ID']
+        coverage_path = File.join(coverage_path, parallel_tests_id) if RSpecTracer.parallel_tests?
 
         FileUtils.mkdir_p(coverage_path)
 
@@ -93,6 +96,10 @@ module RSpecTracer
       @coverage_filters ||= []
     end
 
+    def parallel_tests_lock_file
+      '/tmp/parallel_tests.lock'
+    end
+
     def verbose?
       @verbose ||= (ENV.fetch('RSPEC_TRACER_VERBOSE', 'false') == 'true')
     end
@@ -103,12 +110,12 @@ module RSpecTracer
 
     private
 
-    def test_suite_id
-      suite_id = ENV.fetch('TEST_SUITE_ID', '')
-
-      return if suite_id.empty?
-
-      suite_id
+    def parallel_tests_id
+      if ParallelTests.first_process?
+        'parallel_tests_1'
+      else
+        "parallel_tests_#{ENV['TEST_ENV_NUMBER']}"
+      end
     end
 
     def at_exit(&block)

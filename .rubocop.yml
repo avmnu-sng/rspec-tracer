@@ -36,6 +36,9 @@ Layout/MultilineMethodCallIndentation:
 Layout/MultilineOperationIndentation:
   EnforcedStyle: indented
 
+Metrics/AbcSize:
+  Max: 35
+
 Metrics/BlockLength:
   Exclude:
     - "tasks/**/*"

@@ -3,7 +3,7 @@
 module RSpecTracer
   module RemoteCache
     class Validator
-      CACHE_FILES_PER_TEST_SUITE = 8
+      CACHE_FILES_PER_TEST_SUITE = 11
 
       def initialize
         @test_suite_id = ENV['TEST_SUITE_ID']

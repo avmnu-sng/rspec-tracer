@@ -13,11 +13,16 @@ require 'set'
 require_relative 'rspec_tracer/configuration'
 RSpecTracer.extend RSpecTracer::Configuration
 
+require_relative 'rspec_tracer/coverage_merger'
 require_relative 'rspec_tracer/coverage_reporter'
+require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/example'
 require_relative 'rspec_tracer/html_reporter/reporter'
 require_relative 'rspec_tracer/remote_cache/cache'
+require_relative 'rspec_tracer/report_generator'
+require_relative 'rspec_tracer/report_merger'
+require_relative 'rspec_tracer/report_writer'
 require_relative 'rspec_tracer/rspec_reporter'
 require_relative 'rspec_tracer/rspec_runner'
 require_relative 'rspec_tracer/ruby_coverage'
@@ -36,10 +41,10 @@ module RSpecTracer
 
       return if RUBY_ENGINE == 'jruby' && !valid_jruby_opts?
 
-      puts 'Started RSpec tracer'
+      puts "Started RSpec tracer (pid: #{RSpecTracer.pid})"
 
+      parallel_tests_setup
       configure(&block) if block
-
       initial_setup
     end
 
@@ -82,6 +87,8 @@ module RSpecTracer
 
       ::Kernel.exit(1) if runner.non_zero_exit_code?
     ensure
+      FileUtils.rm_f(RSpecTracer.parallel_tests_lock_file) if parallel_tests_last_process?
+
       RSpecTracer.running = false
     end
 
@@ -111,6 +118,14 @@ module RSpecTracer
       return @coverage_reporter if defined?(@coverage_reporter)
     end
 
+    def coverage_merger
+      return @coverage_merger if defined?(@coverage_merger)
+    end
+
+    def report_merger
+      return @report_merger if defined?(@report_merger)
+    end
+
     def trace_point
       return @trace_point if defined?(@trace_point)
     end
@@ -125,6 +140,10 @@ module RSpecTracer
 
     def simplecov?
       return @simplecov if defined?(@simplecov)
+    end
+
+    def parallel_tests?
+      return @parallel_tests if defined?(@parallel_tests)
     end
 
     private
@@ -157,6 +176,36 @@ module RSpecTracer
 
       @runner = RSpecTracer::Runner.new
       @coverage_reporter = RSpecTracer::CoverageReporter.new
+    end
+
+    def parallel_tests_setup
+      @parallel_tests = !(ENV['TEST_ENV_NUMBER'] && ENV['PARALLEL_TEST_GROUPS']).nil?
+
+      return unless parallel_tests?
+
+      require 'parallel_tests' unless defined?(ParallelTests)
+
+      @coverage_merger = RSpecTracer::CoverageMerger.new
+      @report_merger = RSpecTracer::ReportMerger.new
+    rescue LoadError => e
+      puts "Failed to load parallel tests (Error: #{e.message})"
+    ensure
+      track_parallel_tests_test_env_number
+    end
+
+    def track_parallel_tests_test_env_number
+      return unless parallel_tests?
+
+      File.open(RSpecTracer.parallel_tests_lock_file, File::RDWR | File::CREAT, 0o644) do |f|
+        f.flock(File::LOCK_EX)
+
+        test_num = [f.read.to_i, ENV['TEST_ENV_NUMBER'].to_i].max
+
+        f.rewind
+        f.write("#{test_num}\n")
+        f.flush
+        f.truncate(f.pos)
+      end
     end
 
     def setup_rspec
@@ -202,15 +251,23 @@ module RSpecTracer
       end
 
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
+
+      run_parallel_tests_exit_tasks
     end
 
     def generate_reports
-      puts 'RSpec tracer is generating reports'
+      puts "RSpec tracer is generating reports (pid: #{RSpecTracer.pid})"
 
       process_dependency
       process_coverage
-      runner.generate_report
-      RSpecTracer::HTMLReporter::Reporter.new.generate_report
+
+      RSpecTracer::ReportGenerator.new(runner.reporter, runner.cache).generate_report
+
+      report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, runner.reporter)
+      report_writer.write_report
+      report_writer.print_duplicate_examples
+
+      RSpecTracer::HTMLReporter::Reporter.new(RSpecTracer.report_path, runner.reporter).generate_report
     end
 
     def process_dependency
@@ -222,9 +279,9 @@ module RSpecTracer
       runner.register_untraced_dependency(@traced_files)
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed dependency (took #{elpased})" if RSpecTracer.verbose?
+      puts "RSpec tracer processed dependency (took #{elapsed})" if RSpecTracer.verbose?
     end
 
     def process_coverage
@@ -235,9 +292,9 @@ module RSpecTracer
       runner.register_examples_coverage(coverage_reporter.examples_coverage)
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed coverage (took #{elpased})" if RSpecTracer.verbose?
+      puts "RSpec tracer processed coverage (took #{elapsed})" if RSpecTracer.verbose?
     end
 
     def run_simplecov_exit_task
@@ -257,34 +314,129 @@ module RSpecTracer
       coverage_reporter.generate_final_coverage
 
       file_name = File.join(RSpecTracer.coverage_path, 'coverage.json')
+      coverage_writer = RSpecTracer::CoverageWriter.new(file_name, coverage_reporter)
 
-      write_coverage_report(file_name)
+      coverage_writer.write_report
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      print_coverage_stats(file_name, elpased)
+      coverage_writer.print_stats(ending - starting)
     end
 
-    def write_coverage_report(file_name)
-      report = {
-        RSpecTracer: {
-          coverage: coverage_reporter.coverage,
-          timestamp: Time.now.utc.to_i
-        }
-      }
+    def run_parallel_tests_exit_tasks
+      return unless parallel_tests_executed?
 
-      File.write(file_name, JSON.pretty_generate(report))
+      merge_parallel_tests_reports
+      write_parallel_tests_merged_report
+      merge_parallel_tests_coverage_reports
+      write_parallel_tests_coverage_report
+      purge_parallel_tests_reports
     end
 
-    def print_coverage_stats(file_name, elpased)
-      stat = coverage_reporter.coverage_stat
+    def merge_parallel_tests_reports
+      return unless parallel_tests_executed?
 
-      puts <<-REPORT.strip.gsub(/\s+/, ' ')
-        Coverage report generated for RSpecTracer to #{file_name}. #{stat[:covered_lines]}
-        / #{stat[:total_lines]} LOC (#{stat[:covered_percent]}%) covered
-        (took #{elpased})
-      REPORT
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      reports_dir = []
+
+      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
+        cache_path = File.dirname(RSpecTracer.cache_path)
+        cache_dir = File.join(cache_path, "parallel_tests_#{test_num}")
+
+        next unless File.directory?(cache_dir)
+
+        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json')))['run_id']
+
+        reports_dir << File.join(cache_dir, run_id)
+      end
+
+      report_merger.merge(reports_dir)
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "\nRSpec tracer merged parallel tests reports (took #{elapsed})"
+    end
+
+    def write_parallel_tests_merged_report
+      return unless parallel_tests_executed?
+
+      report_dir = File.dirname(RSpecTracer.cache_path)
+
+      RSpecTracer::ReportWriter.new(report_dir, report_merger).write_report
+
+      report_dir = File.dirname(RSpecTracer.report_path)
+
+      RSpecTracer::HTMLReporter::Reporter.new(report_dir, report_merger).generate_report
+    end
+
+    def merge_parallel_tests_coverage_reports
+      return unless parallel_tests_executed? && !simplecov?
+
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      reports_dir = []
+
+      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
+        coverage_path = File.dirname(RSpecTracer.coverage_path)
+        coverage_dir = File.join(coverage_path, "parallel_tests_#{test_num}")
+
+        reports_dir << coverage_dir if File.directory?(coverage_dir)
+      end
+
+      coverage_merger.merge(reports_dir)
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      puts "RSpec tracer merged parallel tests coverage reports (took #{elapsed})"
+    end
+
+    def write_parallel_tests_coverage_report
+      return unless parallel_tests_executed? && !simplecov?
+
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      coverage_path = File.dirname(RSpecTracer.coverage_path)
+      file_name = File.join(coverage_path, 'coverage.json')
+      coverage_writer = RSpecTracer::CoverageWriter.new(file_name, coverage_merger)
+
+      coverage_writer.write_report
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      coverage_writer.print_stats(ending - starting)
+    end
+
+    def purge_parallel_tests_reports
+      return unless parallel_tests_executed?
+
+      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
+        [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
+          FileUtils.rm_rf(File.join(File.dirname(path), "parallel_tests_#{test_num}"))
+        end
+      end
+    end
+
+    def parallel_tests_executed?
+      return false unless parallel_tests? && parallel_tests_last_process?
+
+      ParallelTests.wait_for_other_processes_to_finish
+
+      true
+    end
+
+    def parallel_tests_last_process?
+      return false unless parallel_tests?
+
+      max_test_num = 0
+
+      File.open(RSpecTracer.parallel_tests_lock_file, 'r') do |f|
+        f.flock(File::LOCK_SH)
+
+        max_test_num = f.read.to_i
+      end
+
+      ENV['TEST_ENV_NUMBER'].to_i == max_test_num
     end
   end
 end

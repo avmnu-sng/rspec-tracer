@@ -5,6 +5,7 @@ Then('The RSpecTracer should print the information') do |expected_output|
     .map(&:strip)
     .reject(&:empty?)
     .map { |line| line.sub(/\(FAILED(\s-\s\d+)\)$/, 'FAILED') }
+    .map { |line| line.sub(/\s\(pid: \d+\)$/, '') }
     .map { |line| line.sub(/\s\(took 0(.\d{0,5})?\sseconds\)$/, '') }
 
   expected = expected_output.lines

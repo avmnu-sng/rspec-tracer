@@ -2,7 +2,6 @@
 
 module RSpecTracer
   module RSpecRunner
-    # rubocop:disable Metrics/AbcSize
     def run_specs(example_groups)
       actual_count = RSpec.world.example_count
       RSpecTracer.no_examples = actual_count.zero?
@@ -23,18 +22,17 @@ module RSpecTracer
 
       current_count = RSpec.world.example_count
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
       puts
       puts <<-EXAMPLES.strip.gsub(/\s+/, ' ')
         RSpec tracer is running #{current_count} examples (actual: #{actual_count},
-        skipped: #{actual_count - current_count}) (took #{elpased})
+        skipped: #{actual_count - current_count}) (took #{elapsed})
       EXAMPLES
 
       RSpecTracer.running = true
 
       super(filtered_example_groups)
     end
-    # rubocop:enable Metrics/AbcSize
   end
 end
