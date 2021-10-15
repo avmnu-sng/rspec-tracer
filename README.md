@@ -239,11 +239,11 @@ variables:
   ```
 - **`RSPEC_TRACER_COVERAGE_DIR`** to update the default coverage directory (`rspec_tracer_coverage`).
   ```sh
-  export RSPEC_TRACER_CACHE_DIR=/tmp/rspec_tracer_coverage
+  export RSPEC_TRACER_COVERAGE_DIR=/tmp/rspec_tracer_coverage
   ```
 - **`RSPEC_TRACER_REPORT_DIR`** to update the default html reports directory (`rspec_tracer_report`).
   ```sh
-  export RSPEC_TRACER_CACHE_DIR=/tmp/rspec_tracer_report
+  export RSPEC_TRACER_REPORT_DIR=/tmp/rspec_tracer_report
   ```
 
 These settings are available through environment variables because the rake tasks
