@@ -12,6 +12,7 @@ namespace :features do
           SIMPLECOV_COMMAND_NAME="features:coverage:rspec_tracer"
           RSPEC_VERSION="~> 3.10"
           SIMPLECOV_VERSION="~> 0.21"
+          PARALLEL_TESTS_VERSION="~> 3.7"
           bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @no-simplecov"
         COMMAND
 

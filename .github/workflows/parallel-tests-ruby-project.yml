@@ -1,0 +1,82 @@
+name: parallel-tests-ruby-project
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby-parallel-tests
+  cancel-in-progress: true
+
+jobs:
+  main:
+    name: ruby-${{ matrix.ruby }} rspec-${{ matrix.rspec }} simplecov-${{ matrix.simplecov }} parallel-tests-${{ matrix.parallel_tests }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        rspec: [ '3.6.0', '3.8.0', '3.10.0' ]
+        simplecov: [ '0.14.0', '0.19.0', '0.21.0' ]
+        parallel_tests: [ '2.10.0', '2.32.0', '3.0.0', '3.5.0', '3.7.0' ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+
+      - name: Install Dependencies
+        run:  bundle install --jobs 3 --retry 3
+
+      - name: Run Features
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}"
+          SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
+          PARALLEL_TESTS_VERSION: "~> ${{ matrix.parallel_tests }}"
+        run: |
+          mkdir -p exit-codes
+          if bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @parallel-tests"; then
+            echo 0 > exit-codes/ruby-${{ matrix.ruby }}-rspec-${{ matrix.rspec }}-simplecov-${{ matrix.simplecov }}-parallel_tests-${{ matrix.parallel_tests }}.txt
+          else
+            echo 1 > exit-codes/ruby-${{ matrix.ruby }}-rspec-${{ matrix.rspec }}-simplecov-${{ matrix.simplecov }}-parallel_tests-${{ matrix.parallel_tests }}.txt
+          fi
+
+      - name: Save Exit Code
+        uses: actions/upload-artifact@v2
+        with:
+          name: ruby-${{ matrix.ruby }}-rspec-${{ matrix.rspec }}-simplecov-${{ matrix.simplecov }}-parallel_tests-${{ matrix.parallel_tests }}.txt
+          path: exit-codes/ruby-${{ matrix.ruby }}-rspec-${{ matrix.rspec }}-simplecov-${{ matrix.simplecov }}-parallel_tests-${{ matrix.parallel_tests }}.txt
+          retention-days: 1
+
+  parallel-tests-success-rate:
+    needs: [ 'main' ]
+    name: parallel-tests-success-rate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Exit Code Reports
+        uses: actions/download-artifact@v2
+        with:
+          path: exit-codes-temp
+
+      - name: Finalize Artifacts
+        run: |
+          mkdir -p exit-codes
+          find exit-codes-temp -mindepth 2 -type f -exec mv -i '{}' exit-codes ';'
+
+      - name: Install dc
+        run: |
+          sudo apt-get update
+          sudo apt-get install dc -y
+
+      - name: Measure Success Rate
+        run: |
+          cat exit-codes/*.txt
+          [[ `ls -1q exit-codes/*.txt | wc -l | sed 's/^ *//g'` == 225 ]] || exit 1
+          [[ `cat exit-codes/*.txt | sed '2,$s/$/+/;$s/$/p/' | dc` < 6 ]] || exit 1

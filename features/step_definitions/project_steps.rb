@@ -6,6 +6,8 @@ Given('I am working on the project {string}') do |project|
   @coverage_dir = 'rspec_tracer_coverage'
   @data_dir = "data/#{@project}"
   @run_id = {
+    parallel_tests_ruby_app: '63df6c782675a201fbef23140bd868e2',
+    parallel_tests_ruby_app_many_spec_files: '60d5ac9453a7d86d238b92992ca20540',
     rails_app: '6654a84c672a717904112cef7503d7a1',
     ruby_app: '63df6c782675a201fbef23140bd868e2',
     calculator_app: 'ac50ff82ef0e8c97f7142ae07483d81d',
@@ -93,11 +95,11 @@ Given('I use test suite id {int}') do |suite_id|
   @coverage_dir = "rspec_tracer_coverage/#{@suite_id}"
   @data_dir = "data/#{@project}/#{@suite_id}"
   @run_id = case [@project, @suite_id]
-            when ['ruby_app', 1]
+            when ['parallel_tests_ruby_app', 1], ['ruby_app', 1]
               '9badef37e6a3dd45e4d0342956371b73'
             when ['rails_app', 1]
               'cf7e97dcafe77149bac34e2f6f35ff38'
-            when ['ruby_app', 2]
+            when ['parallel_tests_ruby_app', 2], ['ruby_app', 2]
               '2c48486d4513ef0eeee4e7ab8c284419'
             when ['rails_app', 2]
               'aa2c6f193206bf829ea3cb17f5c7672e'
@@ -114,7 +116,7 @@ Given('I reset test suite id') do
   @run_id = case @project
             when 'rails_app'
               '6654a84c672a717904112cef7503d7a1'
-            when 'ruby_app'
+            when 'parallel_tests_ruby_app', 'ruby_app'
               '63df6c782675a201fbef23140bd868e2'
             end
 
@@ -148,7 +150,12 @@ Then('I validate rspec or rspec rails version') do
     when 'rails_app'
       rspec_gem = 'rspec-rails'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_RAILS_VERSION'])
-    when 'ruby_app', 'calculator_app', 'calculator_2_app', 'calculator_3_app'
+    when 'parallel_tests_ruby_app',
+         'parallel_tests_ruby_app_many_spec_files',
+         'ruby_app',
+         'calculator_app',
+         'calculator_2_app',
+         'calculator_3_app'
       rspec_gem = 'rspec'
       expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_VERSION'])
     end

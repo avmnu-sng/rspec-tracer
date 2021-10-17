@@ -33,8 +33,8 @@ jobs:
       - name: Install Dependencies
         run:  bundle install --jobs 3 --retry 3
 
-      - name: Run Features for Ruby Project
+      - name: Run Features
         env:
           RSPEC_VERSION: "~> ${{ matrix.rspec }}"
           SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
-        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags @ruby-app
+        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"

@@ -3,8 +3,17 @@
 Then('The JSON coverage report should have been generated for {string}') do |type|
   next if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
 
+  @coverage_type = type
+
+  if type == 'ParallelTestsRSpec'
+    require 'parallel'
+
+    processor_count = Parallel.processor_count
+    @coverage_type = "(1/#{processor_count}), (2/#{processor_count})"
+  end
+
   steps %(
-    Then the output should contain "Coverage report generated for #{type}"
+    Then the output should contain "Coverage report generated for #{@coverage_type}"
   )
 
   if type == 'RSpecTracer'
@@ -24,14 +33,14 @@ Then('The JSON coverage report should have been generated for {string}') do |typ
 end
 
 # rubocop:disable Metrics/BlockLength
-Then('The JSON coverage report should have correct coverage for {string}') do |type|
+Then('The JSON coverage report should have correct coverage for {string}') do |_type|
   next if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true'
 
   project_dir = File.dirname(__FILE__)
   data_file = File.join(project_dir, "../#{@data_dir}/coverage.json")
   data = JSON.parse(File.read(data_file))
 
-  coverage_file = if type == 'RSpecTracer'
+  coverage_file = if @coverage_type == 'RSpecTracer'
                     "#{@coverage_dir}/coverage.json"
                   else
                     'coverage/.resultset.json'
@@ -39,11 +48,15 @@ Then('The JSON coverage report should have correct coverage for {string}') do |t
 
   cd('.') do
     root_dir = Dir.pwd
-    report = JSON.parse(File.read(coverage_file))[type]['coverage']
+    report = {}
+
+    @coverage_type.split(', ').each do |sub_type|
+      report.merge!(JSON.parse(File.read(coverage_file))[sub_type]['coverage'])
+    end
 
     expected_files = data.keys.sort
 
-    if type == 'RSpec'
+    if @coverage_type != 'RSpecTracer'
       expected_files -= %w[
         app/foo.rb
         app/controllers/application_controller.rb
