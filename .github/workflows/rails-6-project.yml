@@ -34,7 +34,7 @@ jobs:
       - name: Install Dependencies
         run:  bundle install --jobs 3 --retry 3
 
-      - name: Run Features for Rails Project
+      - name: Run Features
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}"
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}"

@@ -5,6 +5,7 @@ Then('The RSpecTracer should print the information') do |expected_output|
     .map(&:strip)
     .reject(&:empty?)
     .map { |line| line.sub(/\(FAILED(\s-\s\d+)\)$/, 'FAILED') }
+    .map { |line| line.sub(/\s\(pid: \d+\)$/, '') }
     .map { |line| line.sub(/\s\(took 0(.\d{0,5})?\sseconds\)$/, '') }
 
   expected = expected_output.lines
@@ -19,6 +20,29 @@ Then('The RSpecTracer should print {string} example {int} times') do |example, t
   output = last_command_started.output.lines.map(&:strip).reject(&:empty?)
 
   expect(output.count(example)).to eq(times)
+end
+
+Then('The parallel processes information should have printed for {int} spec files') do |files_count|
+  require 'parallel'
+
+  major, minor = ENV['PARALLEL_TESTS_VERSION'].match(/~>\s(\d+).(\d+).*/).to_a.drop(1).map(&:to_i)
+  all_pluralized = major < 3 || minor < 5
+
+  processor_count = Parallel.processor_count
+  processor_count = files_count if files_count < processor_count
+  specs_per_process = files_count / processor_count
+
+  if all_pluralized
+    message = "#{processor_count} processes for #{files_count} specs, ~ #{specs_per_process} specs per process"
+  else
+    processor_info = "#{processor_count} #{processor_count > 1 ? 'processes' : 'process'}"
+    specs_info = "#{files_count} #{files_count > 1 ? 'specs' : 'spec'}"
+    per_process_info = "~ #{specs_per_process} #{specs_per_process > 1 ? 'specs' : 'spec'} per process"
+
+    message = "#{processor_info} for #{specs_info}, #{per_process_info}"
+  end
+
+  expect(last_command_started.output).to include(message)
 end
 
 Then('The SimpleCov at_exit hook should have executed at the right time') do
@@ -106,7 +130,7 @@ Then('The flaky example report should have correct details') do
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/flaky_examples.json"))
 
-    expect(report).to eq(%w[c25a9aa240c4a72810d9ccfc0e2c10ad 9479ac3d1030d06371c69081856ce7e0])
+    expect(report).to eq(%w[9479ac3d1030d06371c69081856ce7e0 c25a9aa240c4a72810d9ccfc0e2c10ad])
   end
 end
 
@@ -119,13 +143,15 @@ Then('The failed example report should have correct details') do
               when 'ruby_app'
                 if @force_fail
                   %w[
+                    9479ac3d1030d06371c69081856ce7e0
                     b5963ecab8d95c1024a46117fce4e907
                     c25a9aa240c4a72810d9ccfc0e2c10ad
-                    9479ac3d1030d06371c69081856ce7e0
                   ]
                 else
                   ['b5963ecab8d95c1024a46117fce4e907']
                 end
+              when 'parallel_tests_ruby_app', 'parallel_tests_ruby_app_many_spec_files'
+                %w[95f5a10aa098336083912eee9d6666cd b5963ecab8d95c1024a46117fce4e907]
               when 'calculator_2_app'
                 ['1be34ddaa19469923b1a2c6798a5d15a']
               end

@@ -88,8 +88,6 @@ module RSpecTracer
       all_files.each do |file_path|
         @coverage[file_path] ||= line_stub(file_path).freeze
       end
-
-      generate_final_coverage_stat
     end
 
     private
@@ -131,31 +129,6 @@ module RSpecTracer
       all_files.sort
     end
 
-    def generate_final_coverage_stat
-      total_loc = 0
-      covered_loc = 0
-
-      @coverage.each_pair do |_file_path, line_coverage|
-        line_coverage.each do |strength|
-          next if strength.nil?
-
-          total_loc += 1
-          covered_loc += 1 if strength.positive?
-        end
-      end
-
-      @coverage_stat = {
-        total_lines: total_loc,
-        covered_lines: covered_loc,
-        missed_lines: total_loc - covered_loc,
-        covered_percent: 0.0
-      }
-
-      return if total_loc.zero?
-
-      @coverage_stat[:covered_percent] = (100.0 * covered_loc / total_loc).round(2)
-    end
-
     def peek_coverage
       data = ::Coverage.peek_result.select do |file_path, _|
         file_path.start_with?(RSpecTracer.root)
@@ -189,7 +162,6 @@ module RSpecTracer
       lines
     end
 
-    # rubocop:disable Metrics/AbcSize
     def jruby_line_stub(file_path)
       lines = File.foreach(file_path).map { nil }
       root_node = ::JRuby.parse(File.read(file_path))
@@ -210,6 +182,5 @@ module RSpecTracer
 
       lines
     end
-    # rubocop:enable Metrics/AbcSize
   end
 end

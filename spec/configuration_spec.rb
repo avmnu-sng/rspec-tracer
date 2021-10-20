@@ -37,7 +37,7 @@ RSpec.describe RSpecTracer::Configuration do
       before { stub_const('ENV', ENV.to_hash.merge('TEST_SUITE_ID' => nil)) }
 
       it 'returns cache path without suite id' do
-        expect(config.cache_path).to eq("#{Dir.getwd}/rspec_tracer_cache/")
+        expect(config.cache_path).to eq("#{Dir.getwd}/rspec_tracer_cache")
       end
     end
 
@@ -57,7 +57,7 @@ RSpec.describe RSpecTracer::Configuration do
       before { stub_const('ENV', ENV.to_hash.merge('TEST_SUITE_ID' => nil)) }
 
       it 'returns coverage path without suite id' do
-        expect(config.coverage_path).to eq("#{Dir.getwd}/rspec_tracer_coverage/")
+        expect(config.coverage_path).to eq("#{Dir.getwd}/rspec_tracer_coverage")
       end
     end
 

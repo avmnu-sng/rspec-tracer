@@ -8,8 +8,9 @@ module RSpecTracer
     class Reporter
       attr_reader :last_run, :examples, :flaky_examples, :examples_dependency, :files_dependency
 
-      def initialize
-        @reporter = RSpecTracer.runner.reporter
+      def initialize(report_dir, reporter)
+        @report_dir = report_dir
+        @reporter = reporter
       end
 
       def generate_report
@@ -17,16 +18,16 @@ module RSpecTracer
 
         prepare
 
-        file_name = File.join(RSpecTracer.report_path, 'index.html')
+        file_name = File.join(@report_dir, 'index.html')
 
         File.open(file_name, 'wb') do |file|
           file.puts(template('layout').result(binding))
         end
 
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
+        elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-        puts "RSpecTracer generated HTML report to #{file_name} (took #{elpased})"
+        puts "RSpecTracer generated HTML report to #{file_name} (took #{elapsed})"
       end
 
       private
@@ -153,7 +154,7 @@ module RSpecTracer
 
       def asset_output_path
         @asset_output_path ||= begin
-          asset_output_path = File.join(RSpecTracer.report_path, 'assets', RSpecTracer::VERSION)
+          asset_output_path = File.join(@report_dir, 'assets', RSpecTracer::VERSION)
 
           FileUtils.mkdir_p(asset_output_path)
 

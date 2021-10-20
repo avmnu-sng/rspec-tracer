@@ -4,8 +4,10 @@ module RSpecTracer
   class Reporter
     attr_reader :all_examples, :interrupted_examples, :duplicate_examples,
                 :possibly_flaky_examples, :flaky_examples, :pending_examples,
-                :all_files, :modified_files, :deleted_files, :dependency,
-                :reverse_dependency, :examples_coverage, :last_run
+                :skipped_examples, :failed_examples, :all_files, :modified_files,
+                :deleted_files, :dependency, :examples_coverage
+
+    attr_accessor :reverse_dependency, :last_run
 
     def initialize
       initialize_examples
@@ -151,92 +153,6 @@ module RSpecTracer
       @examples_coverage = examples_coverage
     end
 
-    def generate_reverse_dependency_report
-      @dependency.each_pair do |example_id, files|
-        next if @interrupted_examples.include?(example_id)
-
-        example_file = @all_examples[example_id][:rerun_file_name]
-
-        files.each do |file_name|
-          @reverse_dependency[file_name][:example_count] += 1
-          @reverse_dependency[file_name][:examples][example_file] += 1
-        end
-      end
-
-      format_reverse_dependency_report
-    end
-
-    def generate_last_run_report
-      @last_run = {
-        pid: RSpecTracer.pid,
-        actual_count: RSpec.world.example_count + @skipped_examples.count,
-        example_count: RSpec.world.example_count,
-        duplicate_examples: @duplicate_examples.sum { |_, examples| examples.count },
-        interrupted_examples: @interrupted_examples.count,
-        failed_examples: @failed_examples.count,
-        skipped_examples: @skipped_examples.count,
-        pending_examples: @pending_examples.count,
-        flaky_examples: @flaky_examples.count
-      }
-    end
-
-    def write_reports
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      @run_id = Digest::MD5.hexdigest(@all_examples.keys.sort.to_json)
-      @cache_dir = File.join(RSpecTracer.cache_path, @run_id)
-
-      FileUtils.mkdir_p(@cache_dir)
-
-      %i[
-        all_examples
-        flaky_examples
-        failed_examples
-        pending_examples
-        all_files
-        dependency
-        reverse_dependency
-        examples_coverage
-        last_run
-      ].each { |report_type| send("write_#{report_type}_report") }
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elpased = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      puts "RSpec tracer reports written to #{@cache_dir} (took #{elpased})"
-    end
-
-    # rubocop:disable Metrics/AbcSize
-    def print_duplicate_examples
-      return if @duplicate_examples.empty?
-
-      total = @duplicate_examples.sum { |_, examples| examples.count }
-
-      puts '=' * 80
-      puts '   IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY'
-      puts '=' * 80
-      puts "RSpec tracer could not uniquely identify the following #{total} examples:"
-
-      justify = ' ' * 2
-      nested_justify = justify * 3
-
-      @duplicate_examples.each_pair do |example_id, examples|
-        puts "#{justify}- Example ID: #{example_id} (#{examples.count} examples)"
-
-        examples.each do |example|
-          description = example[:full_description].strip
-          file_name = example[:rerun_file_name].sub(%r{^/}, '')
-          line_number = example[:rerun_line_number]
-          location = "#{file_name}:#{line_number}"
-
-          puts "#{nested_justify}* #{description} (#{location})"
-        end
-      end
-
-      puts
-    end
-    # rubocop:enable Metrics/AbcSize
-
     private
 
     def initialize_examples
@@ -283,76 +199,6 @@ module RSpecTracer
         run_time: result.run_time,
         status: result.status.to_s
       }
-    end
-
-    def format_reverse_dependency_report
-      @reverse_dependency.transform_values! do |data|
-        {
-          example_count: data[:example_count],
-          examples: data[:examples].sort_by { |file_name, count| [-count, file_name] }.to_h
-        }
-      end
-
-      report = @reverse_dependency.sort_by do |file_name, data|
-        [-data[:example_count], file_name]
-      end
-
-      @reverse_dependency = report.to_h
-    end
-
-    def write_all_examples_report
-      file_name = File.join(@cache_dir, 'all_examples.json')
-
-      File.write(file_name, JSON.pretty_generate(@all_examples))
-    end
-
-    def write_flaky_examples_report
-      file_name = File.join(@cache_dir, 'flaky_examples.json')
-
-      File.write(file_name, JSON.pretty_generate(@flaky_examples.to_a))
-    end
-
-    def write_failed_examples_report
-      file_name = File.join(@cache_dir, 'failed_examples.json')
-
-      File.write(file_name, JSON.pretty_generate(@failed_examples.to_a))
-    end
-
-    def write_pending_examples_report
-      file_name = File.join(@cache_dir, 'pending_examples.json')
-
-      File.write(file_name, JSON.pretty_generate(@pending_examples.to_a))
-    end
-
-    def write_all_files_report
-      file_name = File.join(@cache_dir, 'all_files.json')
-
-      File.write(file_name, JSON.pretty_generate(@all_files))
-    end
-
-    def write_dependency_report
-      file_name = File.join(@cache_dir, 'dependency.json')
-
-      File.write(file_name, JSON.pretty_generate(@dependency))
-    end
-
-    def write_reverse_dependency_report
-      file_name = File.join(@cache_dir, 'reverse_dependency.json')
-
-      File.write(file_name, JSON.pretty_generate(@reverse_dependency))
-    end
-
-    def write_examples_coverage_report
-      file_name = File.join(@cache_dir, 'examples_coverage.json')
-
-      File.write(file_name, JSON.pretty_generate(@examples_coverage))
-    end
-
-    def write_last_run_report
-      file_name = File.join(RSpecTracer.cache_path, 'last_run.json')
-      last_run_data = @last_run.merge(run_id: @run_id, timestamp: Time.now.utc)
-
-      File.write(file_name, JSON.pretty_generate(last_run_data))
     end
   end
 end

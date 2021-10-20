@@ -1,0 +1,181 @@
+{
+  "/spec/spec_helper.rb": {
+    "example_count": 241,
+    "examples": {
+      "/spec/dummy_21_spec.rb": 21,
+      "/spec/dummy_20_spec.rb": 20,
+      "/spec/dummy_19_spec.rb": 19,
+      "/spec/dummy_18_spec.rb": 18,
+      "/spec/dummy_17_spec.rb": 17,
+      "/spec/dummy_16_spec.rb": 16,
+      "/spec/dummy_15_spec.rb": 15,
+      "/spec/dummy_14_spec.rb": 14,
+      "/spec/dummy_13_spec.rb": 13,
+      "/spec/dummy_12_spec.rb": 12,
+      "/spec/dummy_11_spec.rb": 11,
+      "/spec/dummy_10_spec.rb": 10,
+      "/spec/dummy_9_spec.rb": 9,
+      "/spec/dummy_8_spec.rb": 8,
+      "/spec/student_spec.rb": 8,
+      "/spec/dummy_7_spec.rb": 7,
+      "/spec/dummy_6_spec.rb": 6,
+      "/spec/dummy_5_spec.rb": 5,
+      "/spec/dummy_4_spec.rb": 4,
+      "/spec/dummy_3_spec.rb": 3,
+      "/spec/course_spec.rb": 2,
+      "/spec/dummy_2_spec.rb": 2,
+      "/spec/dummy_1_spec.rb": 1
+    }
+  },
+  "/spec/dummy_21_spec.rb": {
+    "example_count": 21,
+    "examples": {
+      "/spec/dummy_21_spec.rb": 21
+    }
+  },
+  "/spec/dummy_20_spec.rb": {
+    "example_count": 20,
+    "examples": {
+      "/spec/dummy_20_spec.rb": 20
+    }
+  },
+  "/spec/dummy_19_spec.rb": {
+    "example_count": 19,
+    "examples": {
+      "/spec/dummy_19_spec.rb": 19
+    }
+  },
+  "/spec/dummy_18_spec.rb": {
+    "example_count": 18,
+    "examples": {
+      "/spec/dummy_18_spec.rb": 18
+    }
+  },
+  "/spec/dummy_17_spec.rb": {
+    "example_count": 17,
+    "examples": {
+      "/spec/dummy_17_spec.rb": 17
+    }
+  },
+  "/spec/dummy_16_spec.rb": {
+    "example_count": 16,
+    "examples": {
+      "/spec/dummy_16_spec.rb": 16
+    }
+  },
+  "/spec/dummy_15_spec.rb": {
+    "example_count": 15,
+    "examples": {
+      "/spec/dummy_15_spec.rb": 15
+    }
+  },
+  "/spec/dummy_14_spec.rb": {
+    "example_count": 14,
+    "examples": {
+      "/spec/dummy_14_spec.rb": 14
+    }
+  },
+  "/spec/dummy_13_spec.rb": {
+    "example_count": 13,
+    "examples": {
+      "/spec/dummy_13_spec.rb": 13
+    }
+  },
+  "/spec/dummy_12_spec.rb": {
+    "example_count": 12,
+    "examples": {
+      "/spec/dummy_12_spec.rb": 12
+    }
+  },
+  "/spec/dummy_11_spec.rb": {
+    "example_count": 11,
+    "examples": {
+      "/spec/dummy_11_spec.rb": 11
+    }
+  },
+  "/spec/dummy_10_spec.rb": {
+    "example_count": 10,
+    "examples": {
+      "/spec/dummy_10_spec.rb": 10
+    }
+  },
+  "/spec/dummy_9_spec.rb": {
+    "example_count": 9,
+    "examples": {
+      "/spec/dummy_9_spec.rb": 9
+    }
+  },
+  "/app/student.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/student_spec.rb": 7,
+      "/spec/course_spec.rb": 1
+    }
+  },
+  "/spec/dummy_8_spec.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/dummy_8_spec.rb": 8
+    }
+  },
+  "/spec/student_spec.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/student_spec.rb": 8
+    }
+  },
+  "/spec/dummy_7_spec.rb": {
+    "example_count": 7,
+    "examples": {
+      "/spec/dummy_7_spec.rb": 7
+    }
+  },
+  "/spec/dummy_6_spec.rb": {
+    "example_count": 6,
+    "examples": {
+      "/spec/dummy_6_spec.rb": 6
+    }
+  },
+  "/spec/dummy_5_spec.rb": {
+    "example_count": 5,
+    "examples": {
+      "/spec/dummy_5_spec.rb": 5
+    }
+  },
+  "/spec/dummy_4_spec.rb": {
+    "example_count": 4,
+    "examples": {
+      "/spec/dummy_4_spec.rb": 4
+    }
+  },
+  "/spec/dummy_3_spec.rb": {
+    "example_count": 3,
+    "examples": {
+      "/spec/dummy_3_spec.rb": 3
+    }
+  },
+  "/app/course.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/spec/course_spec.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/course_spec.rb": 2
+    }
+  },
+  "/spec/dummy_2_spec.rb": {
+    "example_count": 2,
+    "examples": {
+      "/spec/dummy_2_spec.rb": 2
+    }
+  },
+  "/spec/dummy_1_spec.rb": {
+    "example_count": 1,
+    "examples": {
+      "/spec/dummy_1_spec.rb": 1
+    }
+  }
+}

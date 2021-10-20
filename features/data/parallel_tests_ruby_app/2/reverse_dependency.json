@@ -1,0 +1,20 @@
+{
+  "/spec/spec_helper.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/student_spec.rb": 8
+    }
+  },
+  "/spec/student_spec.rb": {
+    "example_count": 8,
+    "examples": {
+      "/spec/student_spec.rb": 8
+    }
+  },
+  "/app/student.rb": {
+    "example_count": 7,
+    "examples": {
+      "/spec/student_spec.rb": 7
+    }
+  }
+}
