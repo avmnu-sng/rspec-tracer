@@ -1,3 +1,15 @@
+## [1.0.0] - 2021-10-21
+
+### Added
+
+- [JRuby](https://github.com/jruby/jruby) support
+- [Parallel Tests](https://github.com/grosser/parallel_tests) support
+
+### Breaking Changes
+
+The first run on this version will not use any cache on the CI because the number
+of files changed from eight to eleven, so there will be no appropriate cache to use.
+
 ## [0.9.3] - 2021-10-03
 
 Generate reports ignoring duplicate examples (#42)

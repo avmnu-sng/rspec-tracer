@@ -1,5 +1,6 @@
 ![](./readme_files/rspec_tracer.png)
 
+[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/H2G9yWeuRZ)
 [![Maintainability](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/maintainability)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/test_coverage)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/test_coverage)
 [![Gem Version](https://badge.fury.io/rb/rspec-tracer.svg)](https://badge.fury.io/rb/rspec-tracer)
@@ -35,6 +36,7 @@ installed.
 * [Demo](#demo)
 * [Getting Started](#getting-started)
   * [Working with JRuby](#working-with-jruby)
+  * [Working with Parallel Tests](#working-with-parallel-tests)
 * [Configuring CI Caching](#configuring-ci-caching)
 * [Advanced Configuration](#advanced-configuration)
 * [Filters](#filters)
@@ -144,6 +146,18 @@ or have the `.jrubyrc` file:
 ```ruby
 debug.fullTrace=true
 objectspace.enabled=true
+```
+
+### Working with Parallel Tests
+
+The Rspec tracer, by default, supports working with [parallel_tests](https://github.com/grosser/parallel_tests/)
+gem. It maintains a lock file `/tmp/parallel_tests.lock` to identify the last
+running process. Usually, you are not required to do anything special unless you
+interrupt the execution in between and the process did not complete correctly.
+In such a case, you must delete the lock file before the next run.
+
+```sh
+rm -f /tmp/parallel_tests.lock && bundle exec parallel_rspec
 ```
 
 ## Configuring CI Caching
