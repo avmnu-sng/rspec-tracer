@@ -93,21 +93,14 @@ module RSpecTracer
     end
 
     def start_example_trace
-      trace_point.enable if trace_example?
+      trace_point.enable
     end
 
-    def stop_example_trace(success)
-      return unless trace_example?
-
+    def stop_example_trace(example_id)
       trace_point.disable
 
-      unless success
-        @traced_files = Set.new
-
-        return
-      end
-
-      @trace_example = false
+      @examples_traced_files[example_id] = @traced_files
+      @traced_files = Set.new
     end
 
     def runner
@@ -134,8 +127,8 @@ module RSpecTracer
       return @traced_files if defined?(@traced_files)
     end
 
-    def trace_example?
-      defined?(@trace_example) ? @trace_example : false
+    def examples_traced_files
+      return @examples_traced_files if defined?(@examples_traced_files)
     end
 
     def simplecov?
@@ -235,10 +228,10 @@ module RSpecTracer
     end
 
     def setup_trace_point
-      @trace_example = true
       @traced_files = Set.new
+      @examples_traced_files = {}
 
-      @trace_point = TracePoint.new(:call) do |tp|
+      @trace_point = TracePoint.new(:call, :b_call, :c_call) do |tp|
         RSpecTracer.traced_files << tp.path if tp.path.start_with?(RSpecTracer.root)
       end
     end
@@ -276,7 +269,7 @@ module RSpecTracer
       runner.register_interrupted_examples
       runner.register_deleted_examples
       runner.register_dependency(coverage_reporter.examples_coverage)
-      runner.register_untraced_dependency(@traced_files)
+      runner.register_traced_dependency(@examples_traced_files)
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
