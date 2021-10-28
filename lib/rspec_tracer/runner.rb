@@ -118,22 +118,13 @@ module RSpecTracer
       end
     end
 
-    def register_untraced_dependency(trace_point_files)
-      untraced_files = generate_untraced_files(trace_point_files)
+    def register_traced_dependency(examples_traced_files)
+      rspec_required_files = fetch_rspec_required_files
 
-      untraced_files.each do |file_path|
-        source_file = RSpecTracer::SourceFile.from_path(file_path)
+      examples_traced_files.each_pair do |example_id, traced_files|
+        required_files = traced_files | rspec_required_files
 
-        next if RSpecTracer.filters.any? { |filter| filter.match?(source_file) }
-
-        @reporter.register_source_file(source_file)
-
-        @reporter.all_examples.each_key do |example_id|
-          next if @reporter.example_interrupted?(example_id) ||
-            @reporter.duplicate_example?(example_id)
-
-          @reporter.register_dependency(example_id, source_file[:file_name])
-        end
+        required_files.each { |file_path| register_file_dependency(example_id, file_path) }
       end
     end
 
@@ -230,14 +221,6 @@ module RSpecTracer
       end
 
       @reporter.modified_files | @reporter.deleted_files
-    end
-
-    def generate_untraced_files(trace_point_files)
-      all_files = @reporter.all_files
-        .each_value
-        .with_object([]) { |source_file, files| files << source_file[:file_path] }
-
-      (trace_point_files | fetch_rspec_required_files) - all_files
     end
 
     def fetch_rspec_required_files
