@@ -4,16 +4,14 @@ module RSpecTracer
   module RSpecReporter
     def example_started(example)
       RSpecTracer.coverage_reporter.record_coverage
-      RSpecTracer.start_example_trace if RSpecTracer.trace_example?
+      RSpecTracer.start_example_trace
 
       super(example)
     end
 
     def example_finished(example)
-      passed = example.execution_result.status == :passed
-      RSpecTracer.stop_example_trace(passed) if RSpecTracer.trace_example?
-
       example_id = example.metadata[:rspec_tracer_example_id]
+      RSpecTracer.stop_example_trace(example_id)
       RSpecTracer.coverage_reporter.compute_diff(example_id)
 
       super(example)
