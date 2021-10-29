@@ -160,7 +160,7 @@ module RSpecTracer
         if ENV.fetch('LOCAL_AWS', 'false') == 'true'
           'awslocal'
         else
-          'aws'
+          "aws#{ENV['RSPEC_TRACER_AWS_PROFILE'] && ' --profile=$RSPEC_TRACER_AWS_PROFILE'}"
         end
       end
 
