@@ -8,10 +8,10 @@ module RSpecTracer
       attr_reader :branch_name, :branch_ref, :branch_refs, :ancestry_refs, :cache_refs
 
       def initialize(aws)
+        raise RepoError, 'GIT_BRANCH environment variable is not set' if ENV['GIT_BRANCH'].nil?
+
         @aws = aws
         @branch_name = ENV['GIT_BRANCH'].chomp
-
-        raise RepoError, 'GIT_BRANCH environment variable is not set' if @branch_name.nil?
 
         fetch_head_ref
         fetch_branch_ref
