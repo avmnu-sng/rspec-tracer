@@ -40,6 +40,8 @@ module RSpecTracer
       private
 
       def cache_ref?
+        return false if @aws.empty_bucket?
+
         cache_validator = RSpecTracer::RemoteCache::Validator.new
 
         @cache_sha = @repo.cache_refs.each_key.detect do |ref|
