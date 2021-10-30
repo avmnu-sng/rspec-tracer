@@ -1,5 +1,6 @@
 ![](./readme_files/rspec_tracer.png)
 
+[![Open Source Helpers](https://www.codetriage.com/avmnu-sng/rspec-tracer/badges/users.svg)](https://www.codetriage.com/avmnu-sng/rspec-tracer)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/H2G9yWeuRZ)
 [![Maintainability](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/maintainability)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/eabce2757839c08d8f8d/test_coverage)](https://codeclimate.com/github/avmnu-sng/rspec-tracer/test_coverage)
