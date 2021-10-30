@@ -139,6 +139,24 @@ module RSpecTracer
         puts "Uploaded files from #{local_dir} to #{remote_dir}"
       end
 
+      # Lists the @s3_bucket folder and check if it's empty
+      #
+      # @return [Boolean] if the bucket is empty
+      def empty_bucket?
+        folder_bucket_content = system(
+          @aws_cli,
+          's3api',
+          'list-objects-v2',
+          '--bucket',
+          @s3_bucket,
+          '--start-after',
+          "#{@s3_path}/",
+          '--query',
+          'Contents[].Key'
+        )
+        folder_bucket_content.nil?
+      end
+
       private
 
       def setup_s3
