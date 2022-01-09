@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ 'jruby-9.2.10.0', 'jruby-9.2.14.0', 'jruby-9.2.19.0', 'jruby-9.3.0.0', 'jruby-head' ]
+        ruby: [ 'jruby-9.2.10.0', 'jruby-9.2.14.0', 'jruby-9.2.19.0', 'jruby-9.3.0.0' ]
         rspec: [ '3.10.0' ]
         simplecov: [ '0.21.0' ]
 

@@ -17,10 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        ruby: [ '2.5', '2.6', '2.7', '3.0' ]
         rspec: [ '3.6.0', '3.8.0', '3.10.0' ]
-        simplecov: [ '0.14.0', '0.19.0', '0.21.0' ]
-        parallel_tests: [ '2.10.0', '2.32.0', '3.0.0', '3.5.0', '3.7.0' ]
+        simplecov: [ '0.17.0', '0.19.0', '0.21.0' ]
+        parallel_tests: [ '2.28.0', '2.32.0', '3.0.0', '3.5.0', '3.7.0' ]
 
     steps:
       - name: Checkout
@@ -69,14 +69,12 @@ jobs:
         run: |
           mkdir -p exit-codes
           find exit-codes-temp -mindepth 2 -type f -exec mv -i '{}' exit-codes ';'
-
       - name: Install dc
         run: |
           sudo apt-get update
           sudo apt-get install dc -y
-
       - name: Measure Success Rate
         run: |
           cat exit-codes/*.txt
-          [[ `ls -1q exit-codes/*.txt | wc -l | sed 's/^ *//g'` == 225 ]] || exit 1
-          [[ `cat exit-codes/*.txt | sed '2,$s/$/+/;$s/$/p/' | dc` < 6 ]] || exit 1
+          [[ `ls -1q exit-codes/*.txt | wc -l | sed 's/^ *//g'` == 180 ]] || exit 1
+          [[ `cat exit-codes/*.txt | sed '2,$s/$/+/;$s/$/p/' | dc` < 3 ]] || exit 1

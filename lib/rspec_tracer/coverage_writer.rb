@@ -26,7 +26,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time((ending - starting) + elapsed_time)
 
-      puts <<-STATS.strip.gsub(/\s+/, ' ')
+      RSpecTracer.logger.info <<-STATS.strip.gsub(/\s+/, ' ')
         Coverage report generated for RSpecTracer to #{@file_name}.
         #{covered} / #{total} LOC (#{percent}%) covered (took #{elapsed})
       STATS

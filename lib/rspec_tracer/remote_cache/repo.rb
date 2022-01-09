@@ -59,7 +59,7 @@ module RSpecTracer
 
       def fetch_branch_refs
         unless @aws.branch_refs?(@branch_name)
-          puts "No branch refs for #{@branch_name} branch found in S3"
+          RSpecTracer.logger.warn "No branch refs for #{@branch_name} branch found in S3"
 
           @branch_refs = {}
 
@@ -146,7 +146,7 @@ module RSpecTracer
 
           File.rm_f(file_name)
 
-          puts "Failed to fetch branch refs for #{@branch_name} branch"
+          RSpecTracer.logger.error "Failed to fetch branch refs for #{@branch_name} branch"
         end
       end
 
@@ -167,8 +167,9 @@ module RSpecTracer
       end
 
       def print_refs(refs, type)
-        puts "Fetched the following #{type} refs for #{@branch_name} branch:"
-        puts refs.map { |ref, timestamp| "  * #{ref} (commit timestamp: #{timestamp})" }.join("\n")
+        refs_list = refs.map { |ref, timestamp| "  * #{ref} (commit timestamp: #{timestamp})" }.join("\n")
+
+        RSpecTracer.logger.debug "Fetched the following #{type} refs for #{@branch_name} branch:\n#{refs_list}"
       end
     end
   end

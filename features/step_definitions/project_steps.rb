@@ -68,11 +68,11 @@ Given('I update the spec file {string}') do |spec_file|
 end
 
 Given('I want to explicitly run all the tests') do
-  set_environment_variable('RSPEC_TRACER_NO_SKIP', 'true')
+  set_environment_variable('RSPEC_TRACER_RUN_ALL_EXAMPLES', 'true')
 end
 
 Given('I reset explicit run') do
-  delete_environment_variable('RSPEC_TRACER_NO_SKIP')
+  delete_environment_variable('RSPEC_TRACER_RUN_ALL_EXAMPLES')
 end
 
 Given('I want to force fail some of the tests') do

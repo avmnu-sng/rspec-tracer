@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+RSpecTracer.configure do
+  run_all_examples true
+end

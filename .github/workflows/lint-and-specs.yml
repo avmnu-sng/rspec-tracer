@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        ruby: [ '2.5', '2.6', '2.7', '3.0' ]
 
     steps:
       - name: Checkout
@@ -88,5 +88,5 @@ jobs:
           GIT_COMMIT_SHA: ${{ github.sha }}
           CC_TEST_REPORTER_ID: "5499f6009ecc1c84cd90aac7409351a1439946922f9405d43b81b1564afd21ed"
         run: |
-          ./cc-test-reporter sum-coverage coverage-artifacts/ruby-*-coverage.json --parts 5 --output coverage-artifacts/coverage.json
+          ./cc-test-reporter sum-coverage coverage-artifacts/ruby-*-coverage.json --parts 4 --output coverage-artifacts/coverage.json
           ./cc-test-reporter upload-coverage --input coverage-artifacts/coverage.json

@@ -63,7 +63,7 @@ module RSpecTracer
 
       return if @interrupted_examples.empty?
 
-      puts "RSpec tracer is not processing #{@interrupted_examples.count} interrupted examples"
+      RSpecTracer.logger.info "RSpec tracer is not processing #{@interrupted_examples.count} interrupted examples"
     end
 
     def register_deleted_examples(seen_examples)

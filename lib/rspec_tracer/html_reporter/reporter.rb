@@ -27,7 +27,7 @@ module RSpecTracer
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-        puts "RSpecTracer generated HTML report to #{file_name} (took #{elapsed})"
+        RSpecTracer.logger.debug "RSpecTracer generated HTML report to #{file_name} (took #{elapsed})"
       end
 
       private

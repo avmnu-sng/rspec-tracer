@@ -17,10 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        ruby: [ '2.5', '2.6', '2.7', '3.0' ]
         rails: [ '6.1.0' ]
         rspec-rails: [ '4.1.0', '5.0.0' ]
-        simplecov: [ 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ]
+        simplecov: [ 17, 18, 19, 20, 21 ]
 
     steps:
       - name: Checkout
@@ -40,4 +40,4 @@ jobs:
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}"
           SIMPLECOV_VERSION: "~> 0.${{ matrix.simplecov }}.0"
           BRANCH_COVERAGE: "${{ matrix.simplecov >= 18 && 'true' || 'false' }}"
-        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags @rails-app
+        run: bundle exec cucumber --retry 1 --no-strict-flaky --tags @rails-app

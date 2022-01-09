@@ -1,14 +1,55 @@
 # frozen_string_literal: true
 
 require_relative 'filter'
+require_relative 'logger'
 
 module RSpecTracer
   module Configuration
-    DEFAULT_CACHE_DIR = 'rspec_tracer_cache'
-    DEFAULT_REPORT_DIR = 'rspec_tracer_report'
-    DEFAULT_COVERAGE_DIR = 'rspec_tracer_coverage'
+    class InvalidUsageError < StandardError; end
 
-    attr_writer :filters, :coverage_filters
+    ALLOWED_CONFIGURER = %w[
+      lib/rspec_tracer/load_default_config.rb
+      lib/rspec_tracer/load_global_config.rb
+      lib/rspec_tracer/load_local_config.rb
+    ].freeze
+
+    DEFAULT_CACHE_DIR = 'rspec_tracer_cache'
+    DEFAULT_COVERAGE_DIR = 'rspec_tracer_coverage'
+    DEFAULT_REPORT_DIR = 'rspec_tracer_report'
+    DEFAULT_LOCK_FILE = 'rspec_tracer.lock'
+
+    LOG_LEVEL = {
+      off: 0,
+      debug: 1,
+      info: 2,
+      warn: 3,
+      error: 4
+    }.freeze
+
+    def configure(&block)
+      configurers = caller_locations(1, 2).map(&:path)
+      invalid = configurers.none? do |configurer|
+        ALLOWED_CONFIGURER.any? do |allowed_configurer|
+          configurer.end_with?(allowed_configurer)
+        end
+      end
+
+      raise InvalidUsageError, 'You must define configurations in a .rspec-tracer file' if invalid
+
+      RSpecTracer::Configuration.module_exec do
+        RSpecTracer::Configuration.private_instance_methods(false).each do |method_name|
+          alias_method "_#{method_name}".to_sym, method_name
+
+          define_method method_name do |*args|
+            send("_#{method_name}".to_sym, *args)
+          end
+        end
+      end
+
+      Docile.dsl_eval(self, &block)
+    end
+
+    private
 
     def root(root = nil)
       return @root if defined?(@root) && root.nil?
@@ -20,12 +61,18 @@ module RSpecTracer
       @root = File.expand_path(root || Dir.getwd)
     end
 
-    def project_name
-      @project_name ||= File.basename(root).capitalize
+    def project_name(new_name = nil)
+      return @project_name if defined?(@project_name) && @project_name && new_name.nil?
+
+      @project_name = new_name if new_name.is_a?(String)
+      @project_name ||= File.basename(root.split('/').last).capitalize.tr('_', ' ')
     end
 
-    def cache_dir
-      @cache_dir ||= (ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR)
+    def cache_dir(dir = nil)
+      return @cache_dir if defined?(@cache_dir) && dir.nil?
+
+      @cache_path = nil
+      @cache_dir = (dir || ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR)
     end
 
     def cache_path
@@ -40,8 +87,11 @@ module RSpecTracer
       end
     end
 
-    def report_dir
-      @report_dir ||= (ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR)
+    def report_dir(dir = nil)
+      return @report_dir if defined?(@report_dir) && dir.nil?
+
+      @report_path = nil
+      @report_dir ||= (dir || ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR)
     end
 
     def report_path
@@ -56,8 +106,11 @@ module RSpecTracer
       end
     end
 
-    def coverage_dir
-      @coverage_dir ||= (ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR)
+    def coverage_dir(dir = nil)
+      return @coverage_dir if defined?(@coverage_dir) && dir.nil?
+
+      @coverage_path = nil
+      @coverage_dir ||= (dir || ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR)
     end
 
     def coverage_path
@@ -70,6 +123,59 @@ module RSpecTracer
 
         coverage_path
       end
+    end
+
+    def reports_s3_path(s3_path = nil)
+      return @reports_s3_path if defined?(@reports_s3_path) && s3_path.nil?
+
+      @reports_s3_path = s3_path if valid_s3_path?(s3_path)
+      @reports_s3_path ||= ENV['RSPEC_TRACER_REPORTS_S3_PATH'] if valid_s3_path?(ENV['RSPEC_TRACER_REPORTS_S3_PATH'])
+    end
+
+    def use_local_aws(new_flag = nil)
+      return @use_local_aws if defined?(@use_local_aws) && new_flag.nil?
+
+      @use_local_aws = (new_flag == true)
+      @use_local_aws ||= (ENV['RSPEC_TRACER_USE_LOCAL_AWS'] == 'true')
+    end
+
+    def upload_non_ci_reports(new_flag = nil)
+      return @upload_non_ci_reports if defined?(@upload_non_ci_reports) && new_flag.nil?
+
+      @upload_non_ci_reports = (new_flag == true)
+      @upload_non_ci_reports ||= (ENV['RSPEC_TRACER_UPLOAD_NON_CI_REPORTS'] == 'true')
+    end
+
+    def run_all_examples(new_flag = nil)
+      return @run_all_examples if defined?(@run_all_examples) && new_flag.nil?
+
+      @run_all_examples = (new_flag == true)
+      @run_all_examples ||= (ENV['RSPEC_TRACER_RUN_ALL_EXAMPLES'] == 'true')
+    end
+
+    def fail_on_duplicates(new_flag = nil)
+      return @fail_on_duplicates if defined?(@fail_on_duplicates) && new_flag.nil?
+
+      @fail_on_duplicates = (new_flag == true)
+      @fail_on_duplicates ||= (ENV['RSPEC_TRACER_FAIL_ON_DUPLICATES'] != 'false')
+    end
+
+    def lock_file(new_file = nil)
+      return @lock_file if defined?(@lock_file) && @lock_file && new_file.nil?
+
+      @lock_file = new_file if new_file.is_a?(String)
+      @lock_file ||= (ENV['RSPEC_TRACER_LOCK_FILE'] || DEFAULT_LOCK_FILE)
+    end
+
+    def log_level(new_level = nil)
+      return @log_level if defined?(@log_level) && @log_level && new_level.nil?
+
+      @logger = nil
+      @log_level = LOG_LEVEL[(new_level || ENV['RSPEC_TRACER_LOG_LEVEL']).to_s.to_sym].to_i
+    end
+
+    def logger
+      @logger ||= RSpecTracer::Logger.new(log_level)
     end
 
     def coverage_track_files(glob)
@@ -88,6 +194,10 @@ module RSpecTracer
       @filters ||= []
     end
 
+    def filters=(new_filteres)
+      raise NotImplementedError
+    end
+
     def add_coverage_filter(filter = nil, &block)
       coverage_filters << parse_filter(filter, &block)
     end
@@ -96,19 +206,17 @@ module RSpecTracer
       @coverage_filters ||= []
     end
 
-    def parallel_tests_lock_file
-      '/tmp/parallel_tests.lock'
+    def coverage_filters=(new_filteres)
+      raise NotImplementedError
     end
 
-    def verbose?
-      @verbose ||= (ENV.fetch('RSPEC_TRACER_VERBOSE', 'false') == 'true')
-    end
+    def valid_s3_path?(s3_path)
+      uri = URI.parse(s3_path)
 
-    def configure(&block)
-      Docile.dsl_eval(self, &block)
+      uri.scheme == 's3' && !uri.host.empty?
+    rescue URI::InvalidURIError => _e
+      false
     end
-
-    private
 
     def parallel_tests_id
       if ParallelTests.first_process?
@@ -116,13 +224,6 @@ module RSpecTracer
       else
         "parallel_tests_#{ENV['TEST_ENV_NUMBER']}"
       end
-    end
-
-    def at_exit(&block)
-      return Proc.new unless RSpecTracer.running || block
-
-      @at_exit = block if block
-      @at_exit ||= proc { RSpecTracer.at_exit_behavior }
     end
 
     def parse_filter(filter = nil, &block)
