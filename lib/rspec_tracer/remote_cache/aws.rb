@@ -7,7 +7,7 @@ module RSpecTracer
 
       def initialize
         @s3_bucket, @s3_path = setup_s3
-        @aws_cli = setup_aws_cli
+        @aws_cli = RSpecTracer.use_local_aws ? 'awslocal' : 'aws'
       end
 
       def branch_refs?(branch_name)
@@ -56,7 +56,7 @@ module RSpecTracer
           err: File::NULL
         )
 
-        puts "Uploaded branch refs for #{branch_name} branch to #{remote_path}"
+        RSpecTracer.logger.debug "Uploaded branch refs for #{branch_name} branch to #{remote_path}"
       end
 
       def cache_files_list(ref)
@@ -79,7 +79,7 @@ module RSpecTracer
           err: File::NULL
         )
 
-        puts "Downloaded file #{remote_path} to #{local_path}"
+        RSpecTracer.logger.debug "Downloaded file #{remote_path} to #{local_path}"
       end
 
       def download_dir(ref, run_id)
@@ -97,7 +97,7 @@ module RSpecTracer
           err: File::NULL
         )
 
-        puts "Downloaded cache files from #{remote_dir} to #{local_dir}"
+        RSpecTracer.logger.debug "Downloaded cache files from #{remote_dir} to #{local_dir}"
       rescue AwsError => e
         FileUtils.rm_rf(local_dir)
 
@@ -118,7 +118,7 @@ module RSpecTracer
           err: File::NULL
         )
 
-        puts "Uploaded file #{local_path} to #{remote_path}"
+        RSpecTracer.logger.debug "Uploaded file #{local_path} to #{remote_path}"
       end
 
       def upload_dir(ref, run_id)
@@ -136,13 +136,13 @@ module RSpecTracer
           err: File::NULL
         )
 
-        puts "Uploaded files from #{local_dir} to #{remote_dir}"
+        RSpecTracer.logger.debug "Uploaded files from #{local_dir} to #{remote_dir}"
       end
 
       private
 
       def setup_s3
-        s3_uri = ENV['RSPEC_TRACER_S3_URI']
+        s3_uri = RSpecTracer.reports_s3_path
 
         raise AwsError, 'RSPEC_TRACER_S3_URI environment variable is not set' if s3_uri.nil?
 
@@ -154,14 +154,6 @@ module RSpecTracer
           uri_parts[1],
           uri_parts[2..-1].join('/')
         ]
-      end
-
-      def setup_aws_cli
-        if ENV.fetch('LOCAL_AWS', 'false') == 'true'
-          'awslocal'
-        else
-          'aws'
-        end
       end
 
       def s3_dir(ref, run_id = nil)

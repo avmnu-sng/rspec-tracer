@@ -14,6 +14,14 @@ end
 
 require 'rspec_tracer'
 
+RSpecTracer::Configuration.module_exec do
+  RSpecTracer::Configuration.instance_methods(false).each do |method_name|
+    define_method method_name do |*args|
+      send("_#{method_name}".to_sym, *args)
+    end
+  end
+end
+
 RSpecTracer.start
 
 RSpec.configure do |config|

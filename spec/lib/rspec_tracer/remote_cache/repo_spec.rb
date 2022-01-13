@@ -7,7 +7,7 @@ RSpec.describe RSpecTracer::RemoteCache::Repo do
 
   let(:aws) { instance_double('aws') }
 
-  describe 'initialize' do
+  describe '#initialize' do
     context 'when GIT_BRANCH is not defined' do
       it 'raises an error' do
         expect { service }

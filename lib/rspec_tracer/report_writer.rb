@@ -31,7 +31,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer reports written to #{@cache_dir} (took #{elapsed})"
+      RSpecTracer.logger.debug "RSpec tracer reports written to #{@cache_dir} (took #{elapsed})"
     end
 
     def print_duplicate_examples
@@ -39,16 +39,18 @@ module RSpecTracer
 
       total = @reporter.duplicate_examples.sum { |_, examples| examples.count }
 
-      puts '=' * 80
-      puts '   IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY'
-      puts '=' * 80
-      puts "RSpec tracer could not uniquely identify the following #{total} examples:"
+      RSpecTracer.logger.error [
+        '=' * 80,
+        '   IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY',
+        '=' * 80,
+        "RSpec tracer could not uniquely identify the following #{total} examples:"
+      ].join("\n")
 
       justify = ' ' * 2
       nested_justify = justify * 3
 
       @reporter.duplicate_examples.each_pair do |example_id, examples|
-        puts "#{justify}- Example ID: #{example_id} (#{examples.count} examples)"
+        RSpecTracer.logger.error "#{justify}- Example ID: #{example_id} (#{examples.count} examples)"
 
         examples.each do |example|
           description = example[:full_description].strip
@@ -56,11 +58,9 @@ module RSpecTracer
           line_number = example[:rerun_line_number]
           location = "#{file_name}:#{line_number}"
 
-          puts "#{nested_justify}* #{description} (#{location})"
+          RSpecTracer.logger.error "#{nested_justify}* #{description} (#{location})"
         end
       end
-
-      puts
     end
 
     private

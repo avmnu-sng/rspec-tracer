@@ -1,4 +1,4 @@
-name: ruby-project-part-1
+name: ruby-project
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby-1
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby
   cancel-in-progress: true
 
 jobs:
@@ -17,9 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0', 'head' ]
+        ruby: [ '2.5', '2.6', '2.7', '3.0' ]
         rspec: [ '3.6.0', '3.7.0', '3.8.0', '3.9.0', '3.10.0' ]
-        simplecov: [ '0.12.0', '0.13.0', '0.14.0', '0.15.0', '0.16.0', '0.17.0' ]
+        simplecov: [ 17, 18, 19, 20, 21 ]
 
     steps:
       - name: Checkout
@@ -36,5 +36,6 @@ jobs:
       - name: Run Features
         env:
           RSPEC_VERSION: "~> ${{ matrix.rspec }}"
-          SIMPLECOV_VERSION: "~> ${{ matrix.simplecov }}"
-        run: bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+          SIMPLECOV_VERSION: "~> 0.${{ matrix.simplecov }}.0"
+          BRANCH_COVERAGE: "${{ matrix.simplecov >= 18 && 'true' || 'false' }}"
+        run: bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"

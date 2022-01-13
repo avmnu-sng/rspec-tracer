@@ -4,33 +4,32 @@ namespace :rspec_tracer do
   namespace :remote_cache do
     desc 'Download cache'
     task :download do
+      require 'rspec_tracer'
+
       unless system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
-        puts 'Not a git repository'
+        RSpecTracer.logger.error 'Not a git repository'
 
         exit
       end
-
-      require 'rspec_tracer'
 
       RSpecTracer::RemoteCache::Cache.new.download
     end
 
     desc 'Upload cache'
     task :upload do
-      unless system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
-        puts 'Not a git repository'
-
-        exit
-      end
-
-      unless ENV.fetch('CI', 'false') == 'true' || ENV.fetch('RSPEC_TRACER_UPLOAD_LOCAL_CACHE', 'false') == 'true'
-        puts 'Skipping upload from local development environment'
-        puts 'Use RSPEC_TRACER_UPLOAD_LOCAL_CACHE=true to upload local cache'
-
-        exit
-      end
-
       require 'rspec_tracer'
+
+      unless system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
+        RSpecTracer.logger.error 'Not a git repository'
+
+        exit
+      end
+
+      unless ENV['CI'] == 'true' || RSpecTracer.upload_non_ci_reports
+        RSpecTracer.logger.warn 'Uploading reports from a non CI environment is disabled'
+
+        exit
+      end
 
       RSpecTracer::RemoteCache::Cache.new.upload
     end

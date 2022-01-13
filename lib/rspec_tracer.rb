@@ -7,11 +7,9 @@ require 'docile'
 require 'fileutils'
 require 'forwardable'
 require 'json'
+require 'pathname'
 require 'pry'
 require 'set'
-
-require_relative 'rspec_tracer/configuration'
-RSpecTracer.extend RSpecTracer::Configuration
 
 require_relative 'rspec_tracer/coverage_merger'
 require_relative 'rspec_tracer/coverage_reporter'
@@ -19,6 +17,7 @@ require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/example'
 require_relative 'rspec_tracer/html_reporter/reporter'
+require_relative 'rspec_tracer/load_config'
 require_relative 'rspec_tracer/remote_cache/cache'
 require_relative 'rspec_tracer/report_generator'
 require_relative 'rspec_tracer/report_merger'
@@ -35,16 +34,15 @@ module RSpecTracer
   class << self
     attr_accessor :running, :pid, :no_examples
 
-    def start(&block)
+    def start
       RSpecTracer.running = false
       RSpecTracer.pid = Process.pid
 
       return if RUBY_ENGINE == 'jruby' && !valid_jruby_opts?
 
-      puts "Started RSpec tracer (pid: #{RSpecTracer.pid})"
+      RSpecTracer.logger.debug "Started RSpec tracer (pid: #{RSpecTracer.pid})"
 
       parallel_tests_setup
-      configure(&block) if block
       initial_setup
     end
 
@@ -87,7 +85,7 @@ module RSpecTracer
 
       ::Kernel.exit(1) if runner.non_zero_exit_code?
     ensure
-      FileUtils.rm_f(RSpecTracer.parallel_tests_lock_file) if parallel_tests_last_process?
+      FileUtils.rm_f(RSpecTracer.lock_file) if parallel_tests_last_process?
 
       RSpecTracer.running = false
     end
@@ -147,7 +145,7 @@ module RSpecTracer
       return true if Java::OrgJruby::RubyInstanceConfig.FULL_TRACE_ENABLED &&
         JRuby.runtime.object_space_enabled?
 
-      puts <<-WARN.strip.gsub(/\s+/, ' ')
+      RSpecTracer.logger.warn <<-WARN.strip.gsub(/\s+/, ' ')
         RSpec Tracer is not running as it requires debug and object space enabled. Use
         command line options "--debug" and "-X+O" or set the "debug.fullTrace=true" and
         "objectspace.enabled=true" options in your .jrubyrc file. You can also use
@@ -159,7 +157,7 @@ module RSpecTracer
 
     def initial_setup
       unless setup_rspec
-        puts 'Could not find a running RSpec process'
+        RSpecTracer.logger.error 'Could not find a running RSpec process'
 
         return
       end
@@ -181,7 +179,7 @@ module RSpecTracer
       @coverage_merger = RSpecTracer::CoverageMerger.new
       @report_merger = RSpecTracer::ReportMerger.new
     rescue LoadError => e
-      puts "Failed to load parallel tests (Error: #{e.message})"
+      RSpecTracer.logger.error "Failed to load parallel tests (Error: #{e.message})"
     ensure
       track_parallel_tests_test_env_number
     end
@@ -189,7 +187,7 @@ module RSpecTracer
     def track_parallel_tests_test_env_number
       return unless parallel_tests?
 
-      File.open(RSpecTracer.parallel_tests_lock_file, File::RDWR | File::CREAT, 0o644) do |f|
+      File.open(RSpecTracer.lock_file, File::RDWR | File::CREAT, 0o644) do |f|
         f.flock(File::LOCK_EX)
 
         test_num = [f.read.to_i, ENV['TEST_ENV_NUMBER'].to_i].max
@@ -238,7 +236,7 @@ module RSpecTracer
 
     def run_exit_tasks
       if RSpecTracer.no_examples
-        puts 'Skipped reports generation since all examples were filtered out'
+        RSpecTracer.logger.debug 'Skipped reports generation since all examples were filtered out'
       else
         generate_reports
       end
@@ -249,7 +247,7 @@ module RSpecTracer
     end
 
     def generate_reports
-      puts "RSpec tracer is generating reports (pid: #{RSpecTracer.pid})"
+      RSpecTracer.logger.debug "RSpec tracer is generating reports (pid: #{RSpecTracer.pid})"
 
       process_dependency
       process_coverage
@@ -274,7 +272,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed dependency (took #{elapsed})" if RSpecTracer.verbose?
+      RSpecTracer.logger.debug "RSpec tracer processed dependency (took #{elapsed})"
     end
 
     def process_coverage
@@ -287,7 +285,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed coverage (took #{elapsed})" if RSpecTracer.verbose?
+      RSpecTracer.logger.debug "RSpec tracer processed coverage (took #{elapsed})"
     end
 
     def run_simplecov_exit_task
@@ -295,7 +293,7 @@ module RSpecTracer
       clazz = RSpecTracer::RubyCoverage
       coverage_clazz.prepend(clazz) unless coverage_clazz.ancestors.include?(clazz)
 
-      puts 'SimpleCov will now generate coverage report (<3 RSpec tracer)'
+      RSpecTracer.logger.debug 'SimpleCov will now generate coverage report (<3 RSpec tracer)'
 
       coverage_reporter.record_coverage if RSpecTracer.no_examples
     end
@@ -348,7 +346,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "\nRSpec tracer merged parallel tests reports (took #{elapsed})"
+      RSpecTracer.logger.debug "RSpec tracer merged parallel tests reports (took #{elapsed})"
     end
 
     def write_parallel_tests_merged_report
@@ -381,7 +379,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer merged parallel tests coverage reports (took #{elapsed})"
+      RSpecTracer.logger.debug "RSpec tracer merged parallel tests coverage reports (took #{elapsed})"
     end
 
     def write_parallel_tests_coverage_report
@@ -423,7 +421,7 @@ module RSpecTracer
 
       max_test_num = 0
 
-      File.open(RSpecTracer.parallel_tests_lock_file, 'r') do |f|
+      File.open(RSpecTracer.lock_file, 'r') do |f|
         f.flock(File::LOCK_SH)
 
         max_test_num = f.read.to_i

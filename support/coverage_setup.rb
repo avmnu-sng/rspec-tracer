@@ -20,17 +20,23 @@ def setup_rspec_tracer
 
   require File.join(File.expand_path('..', __dir__), 'lib', 'rspec_tracer')
 
-  RSpecTracer.configure do
-    add_filter %w[
-      /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/
-      /opt/hostedtoolcache/ /rspec-tracer/ /ruby/gems/ /vendor/bundle/
-    ]
-
-    add_coverage_filter %w[
-      /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/ /autotest/
-      /features/ /opt/hostedtoolcache/ /ruby/gems/ /spec/ /test/ /vendor/bundle/
-    ]
+  RSpecTracer::Configuration.module_exec do
+    (RSpecTracer::Configuration.instance_methods(false) - [:configure]).each do |method_name|
+      define_method method_name do |*args|
+        send("_#{method_name}".to_sym, *args)
+      end
+    end
   end
+
+  RSpecTracer.add_filter %w[
+    /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/
+    /opt/hostedtoolcache/ /rspec-tracer/ /ruby/gems/ /vendor/bundle/
+  ]
+
+  RSpecTracer.add_coverage_filter %w[
+    /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/ /autotest/
+    /features/ /opt/hostedtoolcache/ /ruby/gems/ /spec/ /test/ /vendor/bundle/
+  ]
 end
 
 if ENV.fetch('SKIP_COVERAGE_VALIDATION', 'false') == 'true' && File.file?('Gemfile.lock')

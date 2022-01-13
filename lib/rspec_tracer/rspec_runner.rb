@@ -24,8 +24,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts
-      puts <<-EXAMPLES.strip.gsub(/\s+/, ' ')
+      RSpecTracer.logger.info <<-EXAMPLES.strip.gsub(/\s+/, ' ')
         RSpec tracer is running #{current_count} examples (actual: #{actual_count},
         skipped: #{actual_count - current_count}) (took #{elapsed})
       EXAMPLES

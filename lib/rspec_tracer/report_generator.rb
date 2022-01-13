@@ -48,7 +48,7 @@ module RSpecTracer
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-        puts "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elapsed})" if RSpecTracer.verbose?
+        RSpecTracer.logger.debug "RSpec tracer generated #{report_type.to_s.tr('_', ' ')} report (took #{elapsed})"
       end
     end
 
@@ -78,7 +78,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer generated flaky, failed, and pending examples report (took #{elapsed})" if RSpecTracer.verbose?
+      RSpecTracer.logger.debug "RSpec tracer generated flaky, failed, and pending examples report (took #{elapsed})"
     end
 
     def generate_flaky_examples_report

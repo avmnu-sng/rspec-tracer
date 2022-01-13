@@ -27,13 +27,13 @@ module RSpecTracer
     end
 
     def run_example?(example_id)
-      return true if explicit_run?
+      return true if RSpecTracer.run_all_examples
 
       !@cache.all_examples.key?(example_id) || @filtered_examples.key?(example_id)
     end
 
     def run_example_reason(example_id)
-      return EXAMPLE_RUN_REASON[:explicit_run] if explicit_run?
+      return EXAMPLE_RUN_REASON[:explicit_run] if RSpecTracer.run_all_examples
 
       @filtered_examples[example_id] || EXAMPLE_RUN_REASON[:no_cache]
     end
@@ -133,15 +133,10 @@ module RSpecTracer
     end
 
     def non_zero_exit_code?
-      !@reporter.duplicate_examples.empty? &&
-        ENV.fetch('RSPEC_TRACER_FAIL_ON_DUPLICATES', 'true') == 'true'
+      !@reporter.duplicate_examples.empty? && RSpecTracer.fail_on_duplicates
     end
 
     private
-
-    def explicit_run?
-      ENV.fetch('RSPEC_TRACER_NO_SKIP', 'false') == 'true'
-    end
 
     def filter_examples_to_run
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -153,7 +148,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer processed cache (took #{elapsed})" if RSpecTracer.verbose?
+      RSpecTracer.logger.debug "RSpec tracer processed cache (took #{elapsed})"
     end
 
     def filter_by_example_status

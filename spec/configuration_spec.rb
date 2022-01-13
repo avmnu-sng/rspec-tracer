@@ -3,8 +3,9 @@
 require 'securerandom'
 
 RSpec.describe RSpecTracer::Configuration do
+  subject(:config) { clazz.new }
+
   let(:clazz) { Class.new { include RSpecTracer::Configuration } }
-  let(:config) { clazz.new }
 
   describe '#root' do
     context 'when not configured' do

@@ -19,9 +19,6 @@ module RSpecTracer
 
         @aws.download_file(@cache_sha, 'last_run.json')
         @aws.download_dir(@cache_sha, last_run_id)
-      rescue StandardError => e
-        puts "Error: #{e.message}"
-        puts e.backtrace.first(5).join("\n")
       end
 
       def upload
@@ -32,9 +29,6 @@ module RSpecTracer
 
         write_branch_refs(file_name)
         @aws.upload_branch_refs(@repo.branch_name, file_name)
-      rescue StandardError => e
-        puts "Error: #{e.message}"
-        puts e.backtrace.first(5).join("\n")
       end
 
       private
@@ -43,13 +37,13 @@ module RSpecTracer
         cache_validator = RSpecTracer::RemoteCache::Validator.new
 
         @cache_sha = @repo.cache_refs.each_key.detect do |ref|
-          puts "Validating ref #{ref}"
+          RSpecTracer.logger.debug "Validating ref #{ref}"
 
           cache_validator.valid?(ref, @aws.cache_files_list(ref))
         end
 
         if @cache_sha.nil?
-          puts 'Could not find a suitable cache sha to download'
+          RSpecTracer.logger.warn 'Could not find a suitable cache sha to download'
 
           return false
         end
@@ -60,7 +54,9 @@ module RSpecTracer
       def write_branch_refs(file_name)
         branch_ref_time = `git show --no-patch --format="%ct" #{@repo.branch_ref}`.chomp
 
-        puts "Failed to find object #{@repo.branch_ref} commit timestamp" unless $CHILD_STATUS.success?
+        unless $CHILD_STATUS.success?
+          RSpecTracer.logger.warn "Failed to find object #{@repo.branch_ref} commit timestamp"
+        end
 
         ref_list = @repo.branch_refs.merge(@repo.branch_ref => branch_ref_time.to_i)
 

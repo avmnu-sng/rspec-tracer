@@ -46,7 +46,7 @@ module RSpecTracer
 
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer loaded cache from #{cache_dir} (took #{elapsed})"
+      RSpecTracer.logger.debug "RSpec tracer loaded cache from #{cache_dir} (took #{elapsed})"
     end
 
     def cached_examples_coverage
@@ -64,7 +64,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      puts "RSpec tracer loaded cached examples coverage (took #{elapsed})" if RSpecTracer.verbose?
+      RSpecTracer.logger.debug "RSpec tracer loaded cached examples coverage (took #{elapsed})"
 
       coverage
     end
