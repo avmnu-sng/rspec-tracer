@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpecTracer.configure do
-  log_level :warn
+  log_level :info
 
   filters.clear
   add_filter '/vendor/bundle/'

@@ -9,8 +9,8 @@ require_relative 'load_local_config'
 
 RSpecTracer::Configuration.module_exec do
   (RSpecTracer::Configuration.instance_methods(false) - [:configure]).each do |method_name|
-    define_method method_name do
-      send("_#{method_name}".to_sym)
+    define_method method_name do |*args|
+      send("_#{method_name}".to_sym, *args)
     end
   end
 end

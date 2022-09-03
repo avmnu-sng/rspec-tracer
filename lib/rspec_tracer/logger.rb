@@ -7,19 +7,19 @@ module RSpecTracer
     end
 
     def debug(message)
-      puts message if @log_level <= 1
+      puts message if @log_level == 1
     end
 
     def info(message)
-      puts message if @log_level <= 2
+      puts message if @log_level.between?(1, 2)
     end
 
     def warn(message)
-      puts message if @log_level <= 3
+      puts message if @log_level.between?(1, 3)
     end
 
     def error(message)
-      puts message if @log_level <= 4
+      puts message if @log_level.between?(1, 4)
     end
   end
 end
