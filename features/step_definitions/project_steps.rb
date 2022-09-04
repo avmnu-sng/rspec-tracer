@@ -89,6 +89,14 @@ Given('I reset force fail') do
   @data_dir = "data/#{@project}"
 end
 
+Given('I want to ignore duplicate examples failures') do
+  set_environment_variable('RSPEC_TRACER_FAIL_ON_DUPLICATES', 'false')
+end
+
+Given('I reset ignore duplicate examples failures') do
+  delete_environment_variable('RSPEC_TRACER_FAIL_ON_DUPLICATES')
+end
+
 Given('I use test suite id {int}') do |suite_id|
   @suite_id = suite_id
   @cache_dir = "rspec_tracer_cache/#{@suite_id}"
