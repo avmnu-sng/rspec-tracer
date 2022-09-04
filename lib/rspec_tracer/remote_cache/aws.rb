@@ -144,7 +144,7 @@ module RSpecTracer
       def setup_s3
         s3_uri = RSpecTracer.reports_s3_path
 
-        raise AwsError, 'RSPEC_TRACER_S3_URI environment variable is not set' if s3_uri.nil?
+        raise AwsError, 'Invalid reports S3 path' if s3_uri.nil?
 
         uri_parts = s3_uri[4..-1].split('/')
 

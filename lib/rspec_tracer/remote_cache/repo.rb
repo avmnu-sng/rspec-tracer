@@ -5,14 +5,17 @@ module RSpecTracer
     class Repo
       class RepoError < StandardError; end
 
-      attr_reader :branch_name, :branch_ref, :branch_refs, :ancestry_refs, :cache_refs
+      attr_reader :default_branch_name, :branch_name, :branch_ref, :branch_refs, :ancestry_refs, :cache_refs
 
       def initialize(aws)
+        raise RepoError, 'GIT_DEFAULT_BRANCH environment variable is not set' if ENV['GIT_DEFAULT_BRANCH'].nil?
         raise RepoError, 'GIT_BRANCH environment variable is not set' if ENV['GIT_BRANCH'].nil?
 
         @aws = aws
+        @default_branch_name = ENV['GIT_DEFAULT_BRANCH'].chomp
         @branch_name = ENV['GIT_BRANCH'].chomp
 
+        merge_base_branch
         fetch_head_ref
         fetch_branch_ref
         fetch_ancestry_refs
@@ -22,6 +25,55 @@ module RSpecTracer
 
       private
 
+      def merge_base_branch
+        return if @default_branch_name == @branch_name
+
+        pull_remote_branch if current_branch != @branch_name
+
+        merge_default_branch
+      end
+
+      def current_branch
+        branch = `git rev-parse --abbrev-ref HEAD`.chomp
+
+        return branch if $CHILD_STATUS.success?
+
+        raise RepoError, 'Could not determine current branch'
+      end
+
+      def pull_remote_branch
+        return if system(
+          'git',
+          'fetch',
+          'origin',
+          "#{@branch_name}:#{@branch_name}",
+          out: File::NULL,
+          err: File::NULL
+        ) && system(
+          'git',
+          'checkout',
+          @branch_name,
+          out: File::NULL,
+          err: File::NULL
+        )
+
+        raise RepoError, "Could not pull remote branch #{@branch_name}"
+      end
+
+      def merge_default_branch
+        return if system(
+          'git',
+          'merge',
+          "origin/#{@default_branch_name}",
+          '--no-edit',
+          '--no-ff',
+          out: File::NULL,
+          err: File::NULL
+        )
+
+        raise RepoError, "Could not merge #{@default_branch_name} into #{@branch_name}"
+      end
+
       def fetch_head_ref
         @head_ref = `git rev-parse HEAD`.chomp
 
@@ -29,28 +81,41 @@ module RSpecTracer
       end
 
       def fetch_branch_ref
-        @merged_parents = []
-        @ignored_refs = []
+        if merged?
+          fetch_merged_parents
 
-        unless merged?
+          @branch_ref = @merged_parents.first
+          @ignored_refs = [@head_ref]
+        else
           @branch_ref = @head_ref
-
-          return
+          @ignored_refs = []
         end
+      end
 
-        @ignored_refs << @head_ref
+      def merged?
+        system('git', 'rev-parse', 'HEAD^2', out: File::NULL, err: File::NULL)
+      end
 
-        fetch_merged_parents
-        fetch_merged_branch_ref
+      def fetch_merged_parents
+        @merged_parents = []
+
+        first_parent = `git rev-parse HEAD^1`.chomp
+        @merged_parents << first_parent if $CHILD_STATUS.success?
+
+        second_parent = `git rev-parse HEAD^2`.chomp
+        @merged_parents << second_parent if $CHILD_STATUS.success?
+
+        raise RepoError, 'Could not find merge commit parents' if @merged_parents.length != 2
       end
 
       def fetch_ancestry_refs
-        ref_list = `git rev-list --max-count=25 #{@branch_ref}`.chomp.split
+        ref_list = Set.new
+        ref_list |= `git rev-list --max-count=25 #{@branch_ref}..origin/HEAD`.chomp.split if merged?
+        ref_list |= `git rev-list --max-count=25 #{@branch_ref}`.chomp.split
 
         raise RepoError, 'Could not find ancestry refs' unless $CHILD_STATUS.success?
 
-        ref_list = ref_list.to_set - @ignored_refs
-        @ancestry_refs = refs_committer_timestamp(ref_list.to_a)
+        @ancestry_refs = refs_committer_timestamp(ref_list - @ignored_refs)
 
         return if @ancestry_refs.empty?
 
@@ -83,37 +148,6 @@ module RSpecTracer
         print_refs(@cache_refs, 'cache')
       end
 
-      def merged?
-        system('git', 'rev-parse', 'HEAD^2', out: File::NULL, err: File::NULL)
-      end
-
-      def fetch_merged_parents
-        first_parent = `git rev-parse HEAD^1`.chomp
-        @merged_parents << first_parent if $CHILD_STATUS.success?
-
-        second_parent = `git rev-parse HEAD^2`.chomp
-        @merged_parents << second_parent if $CHILD_STATUS.success?
-
-        raise RepoError, 'Could not find merged commit parents' if @merged_parents.length != 2
-      end
-
-      def fetch_merged_branch_ref
-        @origin_head_ref = `git rev-parse origin/HEAD`.chomp
-        @branch_ref = nil
-
-        if @merged_parents.first != @origin_head_ref
-          @branch_ref = @head_ref
-          @ignored_refs = []
-
-          return
-        end
-
-        @branch_ref = @merged_parents.last
-        @ignored_refs = @ignored_refs.to_set | `git rev-list #{@branch_ref}..origin/HEAD`.chomp.split
-
-        raise RepoError, 'Could not find ignored refs' unless $CHILD_STATUS.success?
-      end
-
       def refs_committer_timestamp(ref_list)
         return {} if ref_list.empty?
 
@@ -121,14 +155,14 @@ module RSpecTracer
           git show
             --no-patch
             --format="%H %ct"
-            #{ref_list.join(' ')}
+            #{ref_list.to_a.join(' ')}
         COMMAND
 
-        ref_list = `#{command}`.chomp
+        ref_timestamp = `#{command}`.chomp
 
         raise RepoError, 'Could not find ancestry refs' unless $CHILD_STATUS.success?
 
-        ref_list.split("\n").map(&:split).to_h.transform_values(&:to_i)
+        ref_timestamp.split("\n").map(&:split).to_h.transform_values(&:to_i)
       end
 
       def download_branch_refs
