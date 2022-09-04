@@ -72,7 +72,11 @@ module RSpecTracer
       return @cache_dir if defined?(@cache_dir) && dir.nil?
 
       @cache_path = nil
-      @cache_dir = (dir || ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR)
+      @cache_dir = if ENV.key?('RSPEC_TRACER_CACHE_DIR')
+                     ENV['RSPEC_TRACER_CACHE_DIR']
+                   else
+                     dir || DEFAULT_CACHE_DIR
+                   end
     end
 
     def cache_path
@@ -91,7 +95,11 @@ module RSpecTracer
       return @report_dir if defined?(@report_dir) && dir.nil?
 
       @report_path = nil
-      @report_dir ||= (dir || ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR)
+      @report_dir = if ENV.key?('RSPEC_TRACER_REPORT_DIR')
+                      ENV['RSPEC_TRACER_REPORT_DIR']
+                    else
+                      dir || DEFAULT_REPORT_DIR
+                    end
     end
 
     def report_path
@@ -110,7 +118,11 @@ module RSpecTracer
       return @coverage_dir if defined?(@coverage_dir) && dir.nil?
 
       @coverage_path = nil
-      @coverage_dir ||= (dir || ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR)
+      @coverage_dir = if ENV.key?('RSPEC_TRACER_COVERAGE_DIR')
+                        ENV['RSPEC_TRACER_COVERAGE_DIR']
+                      else
+                        dir || DEFAULT_COVERAGE_DIR
+                      end
     end
 
     def coverage_path
@@ -128,50 +140,76 @@ module RSpecTracer
     def reports_s3_path(s3_path = nil)
       return @reports_s3_path if defined?(@reports_s3_path) && s3_path.nil?
 
-      @reports_s3_path = s3_path if valid_s3_path?(s3_path)
-      @reports_s3_path ||= ENV['RSPEC_TRACER_REPORTS_S3_PATH'] if valid_s3_path?(ENV['RSPEC_TRACER_REPORTS_S3_PATH'])
+      path = if ENV.key?('RSPEC_TRACER_REPORTS_S3_PATH')
+               ENV['RSPEC_TRACER_REPORTS_S3_PATH']
+             else
+               s3_path
+             end
+
+      @reports_s3_path = path if valid_s3_path?(path)
     end
 
     def use_local_aws(new_flag = nil)
       return @use_local_aws if defined?(@use_local_aws) && new_flag.nil?
 
-      @use_local_aws = (new_flag == true)
-      @use_local_aws ||= (ENV['RSPEC_TRACER_USE_LOCAL_AWS'] == 'true')
+      @use_local_aws = if ENV.key?('RSPEC_TRACER_USE_LOCAL_AWS')
+                         ENV['RSPEC_TRACER_USE_LOCAL_AWS'] == 'true'
+                       else
+                         new_flag == true
+                       end
     end
 
     def upload_non_ci_reports(new_flag = nil)
       return @upload_non_ci_reports if defined?(@upload_non_ci_reports) && new_flag.nil?
 
-      @upload_non_ci_reports = (new_flag == true)
-      @upload_non_ci_reports ||= (ENV['RSPEC_TRACER_UPLOAD_NON_CI_REPORTS'] == 'true')
+      @upload_non_ci_reports = if ENV.key?('RSPEC_TRACER_UPLOAD_NON_CI_REPORTS')
+                                 ENV['RSPEC_TRACER_UPLOAD_NON_CI_REPORTS'] == 'true'
+                               else
+                                 new_flag == true
+                               end
     end
 
     def run_all_examples(new_flag = nil)
       return @run_all_examples if defined?(@run_all_examples) && new_flag.nil?
 
-      @run_all_examples = (new_flag == true)
-      @run_all_examples ||= (ENV['RSPEC_TRACER_RUN_ALL_EXAMPLES'] == 'true')
+      @run_all_examples = if ENV.key?('RSPEC_TRACER_RUN_ALL_EXAMPLES')
+                            ENV['RSPEC_TRACER_RUN_ALL_EXAMPLES'] == 'true'
+                          else
+                            new_flag == true
+                          end
     end
 
     def fail_on_duplicates(new_flag = nil)
       return @fail_on_duplicates if defined?(@fail_on_duplicates) && new_flag.nil?
 
-      @fail_on_duplicates = (new_flag == true)
-      @fail_on_duplicates ||= (ENV['RSPEC_TRACER_FAIL_ON_DUPLICATES'] != 'false')
+      @fail_on_duplicates = if ENV.key?('RSPEC_TRACER_FAIL_ON_DUPLICATES')
+                              ENV['RSPEC_TRACER_FAIL_ON_DUPLICATES'] == 'true'
+                            else
+                              new_flag == true
+                            end
     end
 
     def lock_file(new_file = nil)
       return @lock_file if defined?(@lock_file) && @lock_file && new_file.nil?
 
-      @lock_file = new_file if new_file.is_a?(String)
-      @lock_file ||= (ENV['RSPEC_TRACER_LOCK_FILE'] || DEFAULT_LOCK_FILE)
+      @lock_file = if ENV.key?('RSPEC_TRACER_LOCK_FILE')
+                     ENV['RSPEC_TRACER_LOCK_FILE']
+                   else
+                     new_file || DEFAULT_LOCK_FILE
+                   end
     end
 
     def log_level(new_level = nil)
       return @log_level if defined?(@log_level) && @log_level && new_level.nil?
 
+      level = if ENV.key?('RSPEC_TRACER_LOG_LEVEL')
+                ENV['RSPEC_TRACER_LOG_LEVEL']
+              else
+                new_level
+              end
+
       @logger = nil
-      @log_level = LOG_LEVEL[(new_level || ENV['RSPEC_TRACER_LOG_LEVEL']).to_s.to_sym].to_i
+      @log_level = LOG_LEVEL[level.to_s.to_sym].to_i
     end
 
     def logger
