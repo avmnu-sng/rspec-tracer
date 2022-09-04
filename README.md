@@ -195,14 +195,14 @@ variable.
 You can also set the **`RSPEC_TRACER_RUN_ALL_EXAMPLES`** environment variable.
 
 - **`fail_on_duplicates bool_flag`** to fail with a non-zero exit code in case of
-duplicate examples. You can also set the **`RSPEC_TRACER_FAIL_ON_DUPLICATES`** environment
-variable.
+duplicate examples. The default value is `true`. You can also set the **`RSPEC_TRACER_FAIL_ON_DUPLICATES`** 
+environment variable.
 
 - **`lock_file file`** to set the lock file when executing with `parallel_tests`. The default
 value is `./rspec_tracer.lock`. You can also set the **`RSPEC_TRACER_LOCK_FILE`** environment
 variable.
 
-- **`log_level level`** to set the log level. The default value is `warn`. The possible
+- **`log_level level`** to set the log level. The default value is `info`. The possible
 values are `off`, `debug`, `info`, `warn`, and `error`. You can also set the
 **`RSPEC_TRACER_LOG_LEVEL`** environment variable.
 

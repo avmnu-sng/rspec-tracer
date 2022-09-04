@@ -32,7 +32,7 @@ require_relative 'rspec_tracer/version'
 
 module RSpecTracer
   class << self
-    attr_accessor :running, :pid, :no_examples
+    attr_accessor :running, :pid, :no_examples, :duplicate_examples
 
     def start
       RSpecTracer.running = false
@@ -81,9 +81,9 @@ module RSpecTracer
     def at_exit_behavior
       return unless RSpecTracer.pid == Process.pid && RSpecTracer.running
 
-      run_exit_tasks
+      ::Kernel.exit(1) if duplicate_examples
 
-      ::Kernel.exit(1) if runner.non_zero_exit_code?
+      run_exit_tasks
     ensure
       FileUtils.rm_f(RSpecTracer.lock_file) if parallel_tests_last_process?
 
@@ -107,6 +107,10 @@ module RSpecTracer
 
     def coverage_reporter
       return @coverage_reporter if defined?(@coverage_reporter)
+    end
+
+    def report_writer
+      return @report_writer if defined?(@report_writer)
     end
 
     def coverage_merger
@@ -167,6 +171,7 @@ module RSpecTracer
 
       @runner = RSpecTracer::Runner.new
       @coverage_reporter = RSpecTracer::CoverageReporter.new
+      @report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, @runner.reporter)
     end
 
     def parallel_tests_setup
@@ -236,7 +241,7 @@ module RSpecTracer
 
     def run_exit_tasks
       if RSpecTracer.no_examples
-        RSpecTracer.logger.debug 'Skipped reports generation since all examples were filtered out'
+        RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
       else
         generate_reports
       end
@@ -253,11 +258,7 @@ module RSpecTracer
       process_coverage
 
       RSpecTracer::ReportGenerator.new(runner.reporter, runner.cache).generate_report
-
-      report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, runner.reporter)
       report_writer.write_report
-      report_writer.print_duplicate_examples
-
       RSpecTracer::HTMLReporter::Reporter.new(RSpecTracer.report_path, runner.reporter).generate_report
     end
 

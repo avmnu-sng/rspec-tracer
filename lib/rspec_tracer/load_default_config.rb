@@ -2,6 +2,7 @@
 
 RSpecTracer.configure do
   log_level :info
+  fail_on_duplicates true
 
   filters.clear
   add_filter '/vendor/bundle/'

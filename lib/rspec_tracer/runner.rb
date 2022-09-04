@@ -132,10 +132,6 @@ module RSpecTracer
       @reporter.register_examples_coverage(examples_coverage)
     end
 
-    def non_zero_exit_code?
-      !@reporter.duplicate_examples.empty? && RSpecTracer.fail_on_duplicates
-    end
-
     private
 
     def filter_examples_to_run
