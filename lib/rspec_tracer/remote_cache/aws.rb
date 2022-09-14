@@ -125,7 +125,7 @@ module RSpecTracer
         remote_dir = s3_dir(ref, run_id)
         local_dir = File.join(RSpecTracer.cache_path, run_id)
 
-        raise AwsError, "Failed to download files from #{local_dir}" unless system(
+        raise AwsError, "Failed to upload files from #{local_dir}" unless system(
           @aws_cli,
           's3',
           'cp',
@@ -144,7 +144,7 @@ module RSpecTracer
       def setup_s3
         s3_uri = RSpecTracer.reports_s3_path
 
-        raise AwsError, 'RSPEC_TRACER_S3_URI environment variable is not set' if s3_uri.nil?
+        raise AwsError, 'RSPEC_TRACER_REPORTS_S3_PATH environment variable is not set' if s3_uri.nil?
 
         uri_parts = s3_uri[4..-1].split('/')
 
