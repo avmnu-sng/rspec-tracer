@@ -41,7 +41,7 @@ describing the **intention** and implementation details of **managing dependency
 * [Getting Started](#getting-started)
   * [Working with JRuby](#working-with-jruby)
   * [Working with Parallel Tests](#working-with-parallel-tests)
-* [Configuring CI](#configuring-ci-caching)
+* [Configuring CI](#configuring-ci)
 * [Advanced Configuration](#advanced-configuration)
   * [Available Settings](#available-settings)
 * [Filters](#filters)
@@ -133,6 +133,8 @@ bundle exec rake rspec_tracer:remote_cache:upload
 ```
 
 You must set the following environment variables:
+
+- **`GIT_DEFAULT_BRANCH`** is the default branch name for the repo, e.g., `main` or `master`.
 
 - **`GIT_BRANCH`** is the git branch name you are running the CI build on.
 
