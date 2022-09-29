@@ -8,23 +8,28 @@ RSpec.describe RSpecTracer::RemoteCache::Repo do
   let(:aws) { instance_double('aws') }
 
   describe '#initialize' do
-    context 'when GIT_BRANCH is not defined' do
-      it 'raises an error' do
-        expect { service }
-          .to raise_error(RSpecTracer::RemoteCache::Repo::RepoError)
+    let(:envs) { %w[GIT_DEFAULT_BRANCH GIT_BRANCH] }
+
+    before { envs.each { |env| ENV.delete(env) } }
+
+    after { envs.each { |env| ENV.delete(env) } }
+
+    context 'when environment variables not defined' do
+      it 'raises error' do
+        expect { service }.to raise_error(RSpecTracer::RemoteCache::Repo::RepoError)
       end
     end
 
-    context 'when GIT_BRANCH is defined' do
+    context 'when environment variables defined' do
+      let(:branch_name) { 'a_branch' }
+
       before do
-        branch_name = 'some branch'
-        stub_const('ENV', ENV.to_hash.merge('GIT_BRANCH' => branch_name))
+        envs.each { |env| ENV[env] = branch_name }
+
         allow(aws).to receive(:branch_refs?).with(branch_name)
       end
 
-      after { ENV.delete('GIT_BRANCH') }
-
-      it 'does not raise an error' do
+      it 'does not raise error' do
         expect { service }.not_to raise_error
       end
     end
