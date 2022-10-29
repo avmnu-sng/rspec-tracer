@@ -234,7 +234,7 @@ module RSpecTracer
       @traced_files = Set.new
       @examples_traced_files = {}
 
-      @trace_point = TracePoint.new(:call, :b_call, :c_call) do |tp|
+      @trace_point = TracePoint.new(:call) do |tp|
         RSpecTracer.traced_files << tp.path if tp.path.start_with?(RSpecTracer.root)
       end
     end
