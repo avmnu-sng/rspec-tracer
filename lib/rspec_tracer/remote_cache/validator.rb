@@ -8,7 +8,7 @@ module RSpecTracer
       def initialize
         @test_suite_id = ENV['TEST_SUITE_ID']
         @test_suites = ENV['TEST_SUITES']
-        @use_test_suite_id_cache = ENV['USE_TEST_SUITE_ID_CACHE']
+        @use_test_suite_id_cache = ENV['USE_TEST_SUITE_ID_CACHE'] == 'true'
 
         if @test_suite_id.nil? ^ @test_suites.nil?
           raise(
