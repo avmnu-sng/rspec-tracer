@@ -62,11 +62,7 @@ module RSpecTracer
       end
 
       def cache_files_list(ref)
-        if @use_test_suite_id_cache && !@test_suite_id.nil?
-          prefix = "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/#{@test_suite_id}/"
-        else
-          prefix = "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
-        end
+        prefix = @use_test_suite_id_cache && !@test_suite_id.nil? ? "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/#{@test_suite_id}/" : "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
 
         `#{@aws_cli} s3 ls #{prefix} --recursive`.chomp.split("\n")
       end
