@@ -8,6 +8,8 @@ module RSpecTracer
       def initialize
         @s3_bucket, @s3_path = setup_s3
         @aws_cli = RSpecTracer.use_local_aws ? 'awslocal' : 'aws'
+        @use_test_suite_id_cache = ENV['USE_TEST_SUITE_ID_CACHE'] == 'true'
+        @test_suite_id = ENV['TEST_SUITE_ID'] if @use_test_suite_id_cache
       end
 
       def branch_refs?(branch_name)
@@ -60,7 +62,7 @@ module RSpecTracer
       end
 
       def cache_files_list(ref)
-        prefix = "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
+        prefix = @use_test_suite_id_cache && !@test_suite_id.nil? ? "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/#{@test_suite_id}/" : "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
 
         `#{@aws_cli} s3 ls #{prefix} --recursive`.chomp.split("\n")
       end
