@@ -72,6 +72,7 @@ module RSpecTracer
                             end
 
         line_coverage.each_pair do |line_number, strength|
+          next unless strength && line_coverage_dup[line_number.to_i]
           line_coverage_dup[line_number.to_i] += strength
         end
 
