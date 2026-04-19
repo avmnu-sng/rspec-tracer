@@ -76,7 +76,7 @@ RSpec.describe RSpecTracer::Configuration do
   describe '#coverage_tracked_files' do
     context 'when not configured' do
       it 'returns current nil' do
-        expect(config.coverage_tracked_files).to eq(nil)
+        expect(config.coverage_tracked_files).to be_nil
       end
     end
 
@@ -93,8 +93,37 @@ RSpec.describe RSpecTracer::Configuration do
         before { config.coverage_track_files(nil) }
 
         it 'returns nil' do
-          expect(config.coverage_tracked_files).to eq(nil)
+          expect(config.coverage_tracked_files).to be_nil
         end
+      end
+    end
+  end
+
+  describe '#add_filter' do
+    # Uses the isolated `config` instance (Class.new { include Configuration })
+    # rather than the global RSpecTracer constant so a registered filter
+    # does not leak into the production at-exit processing that fires
+    # after this suite completes.
+
+    context 'with a block' do
+      it 'forwards the block through the DSL wrapper and registers a filter' do
+        expect do
+          config.add_filter { |source_file| source_file[:file_name].include?('/vendor/bundle/') }
+        end.to change { config.filters.size }.by(1)
+      end
+    end
+
+    context 'with a string argument' do
+      it 'registers a filter without a block' do
+        expect do
+          config.add_filter('/some/path/')
+        end.to change { config.filters.size }.by(1)
+      end
+    end
+
+    context 'with neither argument nor block' do
+      it 'raises ArgumentError' do
+        expect { config.add_filter }.to raise_error(ArgumentError)
       end
     end
   end

@@ -5,7 +5,7 @@ def setup_simplecov
 
   require 'simplecov'
 
-  SimpleCov.command_name "#{ENV['SIMPLECOV_COMMAND_NAME']}:#{Process.pid}"
+  SimpleCov.command_name "#{ENV.fetch('SIMPLECOV_COMMAND_NAME', nil)}:#{Process.pid}"
   SimpleCov.root File.expand_path('..', __dir__)
 
   SimpleCov.start do
@@ -20,21 +20,19 @@ def setup_rspec_tracer
 
   require File.join(File.expand_path('..', __dir__), 'lib', 'rspec_tracer')
 
-  RSpecTracer::Configuration.module_exec do
-    (RSpecTracer::Configuration.instance_methods(false) - [:configure]).each do |method_name|
-      define_method method_name do |*args|
-        send("_#{method_name}".to_sym, *args)
-      end
-    end
-  end
+  # The DSL wrappers are installed by `Configuration#configure` during
+  # `load_default_config` (auto-triggered by the `require` above). No
+  # second install needed here.
 
   RSpecTracer.add_filter %w[
-    /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/
-    /opt/hostedtoolcache/ /rspec-tracer/ /ruby/gems/ /vendor/bundle/
+    /.rbenv/versions/ /.asdf/installs/ruby/ /.rubies/ruby-head/
+    /.rvm/gems/ /.rvm/rubies/ /bundler/gems/ /opt/hostedtoolcache/
+    /rspec-tracer/ /ruby/gems/ /vendor/bundle/
   ]
 
   RSpecTracer.add_coverage_filter %w[
-    /.rubies/ruby-head/ /.rvm/gems/ /.rvm/rubies/ /bundler/gems/ /autotest/
+    /.rbenv/versions/ /.asdf/installs/ruby/ /.rubies/ruby-head/
+    /.rvm/gems/ /.rvm/rubies/ /bundler/gems/ /autotest/
     /features/ /opt/hostedtoolcache/ /ruby/gems/ /spec/ /test/ /vendor/bundle/
   ]
 end

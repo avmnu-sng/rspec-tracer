@@ -59,3 +59,7 @@ build-iPhoneSimulator/
 # .rubocop-https?--*
 
 .DS_Store
+
+# Internal 2.0 revamp planning — kept locally per-maintainer, NOT committed.
+# See CLAUDE.md / AGENTS.md for why.
+/docs/revamp/

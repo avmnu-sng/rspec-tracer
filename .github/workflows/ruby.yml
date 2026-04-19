@@ -1,0 +1,51 @@
+name: ruby
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    name: ruby-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { group: 1,  ruby: '3.1', rspec: '3.12' }
+          - { group: 2,  ruby: '3.1', rspec: '3.13' }
+          - { group: 3,  ruby: '3.2', rspec: '3.12' }
+          - { group: 4,  ruby: '3.2', rspec: '3.13' }
+          - { group: 5,  ruby: '3.3', rspec: '3.12' }
+          - { group: 6,  ruby: '3.3', rspec: '3.13' }
+          - { group: 7,  ruby: '3.4', rspec: '3.12' }
+          - { group: 8,  ruby: '3.4', rspec: '3.13' }
+          - { group: 9,  ruby: '4.0', rspec: '3.12' }
+          - { group: 10, ruby: '4.0', rspec: '3.13' }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Run Features
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          BRANCH_COVERAGE: "true"
+        run: bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"

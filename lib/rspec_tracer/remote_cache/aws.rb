@@ -146,18 +146,18 @@ module RSpecTracer
 
         raise AwsError, 'Invalid reports S3 path' if s3_uri.nil?
 
-        uri_parts = s3_uri[4..-1].split('/')
+        uri_parts = s3_uri[4..].split('/')
 
         raise AwsError, "Invalid S3 URI #{s3_uri}" unless uri_parts.length >= 3 && uri_parts.first.empty?
 
         [
           uri_parts[1],
-          uri_parts[2..-1].join('/')
+          uri_parts[2..].join('/')
         ]
       end
 
       def s3_dir(ref, run_id = nil)
-        test_suite_id = ENV['TEST_SUITE_ID']
+        test_suite_id = ENV.fetch('TEST_SUITE_ID', nil)
 
         if test_suite_id.nil?
           "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/#{run_id}/".sub(%r{/+$}, '/')

@@ -29,10 +29,10 @@ Gem::Specification.new do |spec|
   spec.metadata['changelog_uri'] = 'https://github.com/avmnu-sng/rspec-tracer/blob/main/CHANGELOG.md'
   spec.metadata['bug_tracker_uri'] = 'https://github.com/avmnu-sng/rspec-tracer/issues'
 
-  spec.required_ruby_version = '>= 2.5.0'
+  spec.required_ruby_version = '>= 3.1.0'
 
-  spec.add_dependency 'docile', '~> 1.1', '>= 1.1.0'
-  spec.add_dependency 'rspec-core', '~> 3.6', '>= 3.6.0'
+  spec.add_dependency 'docile', '~> 1.4'
+  spec.add_dependency 'rspec-core', '~> 3.12'
 
   spec.files = `git ls-files -- lib/*`.chomp.split("\n")
   spec.files += %w[CHANGELOG.md README.md LICENSE]

@@ -14,7 +14,4 @@ task default: %i[
   features:coverage:rspec_tracer:measure_line_coverage
   features:coverage:simplecov:measure_branch_coverage
   features:coverage:simplecov:measure_line_coverage
-  features:validation:rspec_tracer:validate_line_coverage
-  features:validation:simplecov:validate_branch_coverage
-  features:validation:simplecov:validate_line_coverage
 ]

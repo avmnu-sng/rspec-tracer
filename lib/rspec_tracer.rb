@@ -8,7 +8,6 @@ require 'fileutils'
 require 'forwardable'
 require 'json'
 require 'pathname'
-require 'pry'
 require 'set'
 
 require_relative 'rspec_tracer/coverage_merger'
@@ -102,43 +101,43 @@ module RSpecTracer
     end
 
     def runner
-      return @runner if defined?(@runner)
+      @runner if defined?(@runner)
     end
 
     def coverage_reporter
-      return @coverage_reporter if defined?(@coverage_reporter)
+      @coverage_reporter if defined?(@coverage_reporter)
     end
 
     def report_writer
-      return @report_writer if defined?(@report_writer)
+      @report_writer if defined?(@report_writer)
     end
 
     def coverage_merger
-      return @coverage_merger if defined?(@coverage_merger)
+      @coverage_merger if defined?(@coverage_merger)
     end
 
     def report_merger
-      return @report_merger if defined?(@report_merger)
+      @report_merger if defined?(@report_merger)
     end
 
     def trace_point
-      return @trace_point if defined?(@trace_point)
+      @trace_point if defined?(@trace_point)
     end
 
     def traced_files
-      return @traced_files if defined?(@traced_files)
+      @traced_files if defined?(@traced_files)
     end
 
     def examples_traced_files
-      return @examples_traced_files if defined?(@examples_traced_files)
+      @examples_traced_files if defined?(@examples_traced_files)
     end
 
     def simplecov?
-      return @simplecov if defined?(@simplecov)
+      defined?(@simplecov) && @simplecov == true
     end
 
     def parallel_tests?
-      return @parallel_tests if defined?(@parallel_tests)
+      defined?(@parallel_tests) && @parallel_tests == true
     end
 
     private
@@ -160,7 +159,7 @@ module RSpecTracer
     end
 
     def initial_setup
-      unless setup_rspec
+      unless setup_rspec?
         RSpecTracer.logger.error 'Could not find a running RSpec process'
 
         return
@@ -175,7 +174,7 @@ module RSpecTracer
     end
 
     def parallel_tests_setup
-      @parallel_tests = !(ENV['TEST_ENV_NUMBER'] && ENV['PARALLEL_TEST_GROUPS']).nil?
+      @parallel_tests = !(ENV.fetch('TEST_ENV_NUMBER', nil) && ENV.fetch('PARALLEL_TEST_GROUPS', nil)).nil?
 
       return unless parallel_tests?
 
@@ -204,7 +203,7 @@ module RSpecTracer
       end
     end
 
-    def setup_rspec
+    def setup_rspec?
       runners = ObjectSpace.each_object(::RSpec::Core::Runner) do |runner|
         runner_clazz = runner.singleton_class
         clazz = RSpecTracer::RSpecRunner

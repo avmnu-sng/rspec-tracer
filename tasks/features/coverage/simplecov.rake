@@ -10,9 +10,9 @@ namespace :features do
         command = <<-COMMAND.strip.gsub(/\s+/, ' ')
           SKIP_COVERAGE_VALIDATION="true"
           SIMPLECOV_COMMAND_NAME="features:coverage:simplecov:branch_coverage"
-          RSPEC_VERSION="~> 3.10"
-          SIMPLECOV_VERSION="~> 0.21"
-          PARALLEL_TESTS_VERSION="~> 3.7"
+          RSPEC_VERSION="~> 3.13"
+          SIMPLECOV_VERSION="~> 0.22"
+          PARALLEL_TESTS_VERSION="~> 4.7"
           BRANCH_COVERAGE="true"
           bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and @branch-coverage"
         COMMAND
@@ -27,9 +27,9 @@ namespace :features do
         command = <<-COMMAND.strip.gsub(/\s+/, ' ')
           SKIP_COVERAGE_VALIDATION="true"
           SIMPLECOV_COMMAND_NAME="features:coverage:simplecov:line_coverage"
-          RSPEC_VERSION="~> 3.10"
-          SIMPLECOV_VERSION="~> 0.21"
-          PARALLEL_TESTS_VERSION="~> 3.7"
+          RSPEC_VERSION="~> 3.13"
+          SIMPLECOV_VERSION="~> 0.22"
+          PARALLEL_TESTS_VERSION="~> 4.7"
           BRANCH_COVERAGE="false"
           bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and not @branch-coverage"
         COMMAND

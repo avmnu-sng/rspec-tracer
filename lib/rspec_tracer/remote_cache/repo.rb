@@ -162,7 +162,7 @@ module RSpecTracer
 
         raise RepoError, 'Could not find ancestry refs' unless $CHILD_STATUS.success?
 
-        ref_timestamp.split("\n").map(&:split).to_h.transform_values(&:to_i)
+        ref_timestamp.split("\n").to_h(&:split).transform_values(&:to_i)
       end
 
       def download_branch_refs
