@@ -8,6 +8,18 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # The `required_ruby_version` floor is `>= 3.1.0` (see rspec-tracer.gemspec).
+    # The upgrades below would break that by transitively requiring Ruby
+    # >= 3.2 or >= 3.3 via bundler or the `parallel` gem. Dependabot reports
+    # these as hard failures every week otherwise. Revisit when we raise
+    # the Ruby floor (likely in 2.0).
+    ignore:
+      - dependency-name: "parallel"
+        versions: [">= 2.0"]
+      - dependency-name: "aruba"
+        versions: [">= 2.3"]
+      - dependency-name: "cucumber"
+        versions: [">= 10.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
