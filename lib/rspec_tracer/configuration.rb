@@ -26,7 +26,7 @@ module RSpecTracer
       error: 4
     }.freeze
 
-    def configure(&block)
+    def configure(&)
       configurers = caller_locations(1, 2).map(&:path)
       invalid = configurers.none? do |configurer|
         ALLOWED_CONFIGURER.any? do |allowed_configurer|
@@ -38,15 +38,15 @@ module RSpecTracer
 
       RSpecTracer::Configuration.module_exec do
         RSpecTracer::Configuration.private_instance_methods(false).each do |method_name|
-          alias_method "_#{method_name}".to_sym, method_name
+          alias_method :"_#{method_name}", method_name
 
-          define_method method_name do |*args|
-            send("_#{method_name}".to_sym, *args)
+          define_method method_name do |*args, &block|
+            send(:"_#{method_name}", *args, &block)
           end
         end
       end
 
-      Docile.dsl_eval(self, &block)
+      Docile.dsl_eval(self, &)
     end
 
     private
@@ -224,8 +224,8 @@ module RSpecTracer
       @coverage_track_files if defined?(@coverage_track_files)
     end
 
-    def add_filter(filter = nil, &block)
-      filters << parse_filter(filter, &block)
+    def add_filter(filter = nil, &)
+      filters << parse_filter(filter, &)
     end
 
     def filters
@@ -236,8 +236,8 @@ module RSpecTracer
       raise NotImplementedError
     end
 
-    def add_coverage_filter(filter = nil, &block)
-      coverage_filters << parse_filter(filter, &block)
+    def add_coverage_filter(filter = nil, &)
+      coverage_filters << parse_filter(filter, &)
     end
 
     def coverage_filters
@@ -260,7 +260,7 @@ module RSpecTracer
       if ParallelTests.first_process?
         'parallel_tests_1'
       else
-        "parallel_tests_#{ENV['TEST_ENV_NUMBER']}"
+        "parallel_tests_#{ENV.fetch('TEST_ENV_NUMBER', nil)}"
       end
     end
 

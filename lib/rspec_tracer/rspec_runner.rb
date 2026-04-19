@@ -6,7 +6,7 @@ module RSpecTracer
       actual_count = RSpec.world.example_count
 
       if _no_examples?(actual_count)
-        super(example_groups)
+        super
 
         return
       end

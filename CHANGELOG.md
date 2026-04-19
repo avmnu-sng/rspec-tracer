@@ -1,3 +1,55 @@
+## [1.1.0]
+
+### Added
+
+- Ruby 3.1, 3.2, 3.3, 3.4, 4.0 are now CI-gated.
+- Rails 7.0, 7.1, 7.2 are CI-gated via a reference sample app.
+- Regression specs for four crash bugs (B1–B4) under
+  `spec/lib/rspec_tracer/`.
+
+### Fixed
+
+- **B1** — `Cache#cached_examples_coverage` returns `{}` (not `nil`)
+  when `last_run.json` is present but `examples_coverage.json` is
+  missing; previously this leaked nil into the missed-coverage merge.
+- **B2** — `Runner#generate_missed_coverage` tolerates a nil cached
+  coverage map and nil line-strength entries; both are treated as
+  empty / zero.
+- **B3** — `Runner#register_{file,example_file}_dependency` skips
+  (logs debug, returns false) when `SourceFile.from_path` /
+  `.from_name` cannot resolve the file (e.g. gem-generated examples
+  or files deleted between runs).
+- **B4** — `CoverageReporter#merge_coverage` treats nil existing
+  line coverage as 0 when summing skipped-test contributions.
+- Custom filter and coverage-filter blocks now reach
+  `RSpecTracer::Filter.register` — the DSL wrappers were dropping
+  the block, causing `add_filter { |sf| … }` to raise
+  `ArgumentError`.
+- `load_global_config.rb` wraps `Dir.home` / `Etc.getpwuid.dir` /
+  `File.expand_path("~user")` in `rescue ArgumentError` so gem
+  load never crashes in minimal containers where HOME is unset and
+  the passwd database has no matching entry.
+
+### Changed
+
+- **Behavior change (default filters)** — the default dependency
+  and coverage filter lists now exclude Ruby installation /
+  toolchain paths: `/lib/rspec_tracer/`, `/lib/rspec_tracer.rb`,
+  `/usr/local/lib/ruby/`, `/usr/local/bundle/`,
+  `/opt/hostedtoolcache/`, `/.rbenv/versions/`,
+  `/.asdf/installs/ruby/`, `/.rvm/`. Previously only
+  `/vendor/bundle/` was filtered. A test that previously recorded
+  a dependency on a gem file or Ruby stdlib file (because of a
+  custom install path like rbenv or asdf) will no longer record
+  that dependency — those paths are handled by `Gemfile.lock` /
+  the Ruby version file, not by coverage tracking. If you relied
+  on the old narrow default, add your own `add_filter` /
+  `add_coverage_filter` to clear the extras.
+
+### Removed
+
+- Support for Ruby ≤ 3.0 and Rails ≤ 6.x (EOL).
+
 ## [1.0.0] - 2021-10-21
 
 ### Added

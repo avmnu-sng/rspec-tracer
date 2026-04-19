@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe RSpecTracer::RemoteCache::Repo do
   subject(:service) { described_class.new(aws) }
 
-  let(:aws) { instance_double('aws') }
+  let(:aws) { instance_double(RSpecTracer::RemoteCache::Aws) }
 
   describe '#initialize' do
     let(:envs) { %w[GIT_DEFAULT_BRANCH GIT_BRANCH] }

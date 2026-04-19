@@ -105,7 +105,7 @@ Then('The all examples report should have correct details') do
 end
 
 Then('The all files report should have correct details') do |table|
-  data = table.hashes.map { |a| [a['file_name'], a['file_digest']] }.to_h
+  data = table.hashes.to_h { |a| [a['file_name'], a['file_digest']] }
 
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/all_files.json"))

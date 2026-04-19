@@ -37,20 +37,7 @@ module RSpecTracer
     private
 
     def load_cache(cache_dir)
-      cache = RSpecTracer::Cache.new
-
-      cache.send(:load_all_examples_cache, cache_dir, discard_run_reason: false)
-      cache.send(:load_duplicate_examples_cache, cache_dir)
-      cache.send(:load_interrupted_examples_cache, cache_dir)
-      cache.send(:load_flaky_examples_cache, cache_dir)
-      cache.send(:load_failed_examples_cache, cache_dir)
-      cache.send(:load_pending_examples_cache, cache_dir)
-      cache.send(:load_skipped_examples_cache, cache_dir)
-      cache.send(:load_all_files_cache, cache_dir)
-      cache.send(:load_dependency_cache, cache_dir)
-      cache.send(:load_examples_coverage_cache, cache_dir)
-
-      cache
+      RSpecTracer::Cache.new.populate_from_disk(cache_dir, discard_run_reason: false)
     end
 
     def merge_cache(cache)

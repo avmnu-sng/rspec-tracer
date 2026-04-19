@@ -15,8 +15,28 @@ module RSpecTracer
       @flaky_examples = Set.new
       @failed_examples = Set.new
       @pending_examples = Set.new
+      @skipped_examples = Set.new
       @all_files = {}
       @dependency = Hash.new { |hash, key| hash[key] = Set.new }
+      @examples_coverage = {}
+    end
+
+    # Public populate-from-disk surface for ReportMerger. Replaces ten
+    # separate `cache.send(:load_*_cache, ...)` pokes at the private
+    # interface with a single contract.
+    def populate_from_disk(cache_dir, discard_run_reason: true)
+      load_all_examples_cache(cache_dir, discard_run_reason: discard_run_reason)
+      load_duplicate_examples_cache(cache_dir)
+      load_interrupted_examples_cache(cache_dir)
+      load_flaky_examples_cache(cache_dir)
+      load_failed_examples_cache(cache_dir)
+      load_pending_examples_cache(cache_dir)
+      load_skipped_examples_cache(cache_dir)
+      load_all_files_cache(cache_dir)
+      load_dependency_cache(cache_dir)
+      load_examples_coverage_cache(cache_dir)
+
+      self
     end
 
     def load_cache_for_run
@@ -50,23 +70,25 @@ module RSpecTracer
     end
 
     def cached_examples_coverage
-      return @examples_coverage if defined?(@examples_coverage)
+      return @examples_coverage if @examples_coverage_loaded
+
+      @examples_coverage_loaded = true
 
       cache_path = RSpecTracer.cache_path
       cache_path = File.dirname(cache_path) if RSpecTracer.parallel_tests?
       run_id = last_run_id(cache_path)
 
-      return @examples_coverage = {} if run_id.nil?
+      return @examples_coverage if run_id.nil?
 
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       cache_dir = File.join(cache_path, run_id)
-      coverage = load_examples_coverage_cache(cache_dir)
+      load_examples_coverage_cache(cache_dir)
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
       RSpecTracer.logger.debug "RSpec tracer loaded cached examples coverage (took #{elapsed})"
 
-      coverage
+      @examples_coverage
     end
 
     private
