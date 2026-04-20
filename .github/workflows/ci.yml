@@ -61,10 +61,13 @@ jobs:
               *.md|LICENSE|.gitignore|CODEOWNERS|readme_files/*|.github/FUNDING.yml|.github/ISSUE_TEMPLATE/*)
                 # skip-tier files — don't upgrade TIER
                 ;;
-              lib/*|*.gemspec|bin/*|benchmark/*|.ruby-version|.tool-versions)
+              lib/*|*.gemspec|bin/*|benchmark/*|.ruby-version|.tool-versions|Taskfile.yml|.github/workflows/*)
+                # lib/ proper, version/tool pins, OR the CI definition itself —
+                # the matrix must run when any of these change because they all
+                # influence what the matrix does.
                 TIER="build"
                 ;;
-              Taskfile.yml|.github/workflows/*|Gemfile|Gemfile.lock|.rubocop.yml|.yamllint.yml|.rspec)
+              Gemfile|Gemfile.lock|.rubocop.yml|.yamllint.yml|.rspec|trivy.yaml)
                 if [ "$TIER" != "build" ]; then
                   TIER="validate"
                 fi

@@ -4,6 +4,7 @@
 # That direct I/O is the "blind spot" the 2.0 tracker's I/O hooks target.
 class EditorialChecker
   GUIDELINES_PATH = Rails.root.join("config/editorial_guidelines.yml").freeze
+  WELCOME_BANNER_PATH = Rails.root.join("lib/copy/welcome_banner.txt").to_s.freeze
 
   def self.guidelines
     @guidelines ||= YAML.load_file(GUIDELINES_PATH, permitted_classes: [ Symbol ])
@@ -39,13 +40,14 @@ class EditorialChecker
   end
 
   def self.welcome_banner
-    File.read(Rails.root.join("lib/copy/welcome_banner.txt"))
+    File.read(WELCOME_BANNER_PATH)
   end
 
   # Uses IO.read (not File.read) to exercise the distinct blind-spot path.
   # 2.0's I/O hooks prepend both File and IO; 1.x's Coverage-only approach
-  # catches neither.
+  # catches neither. Path is a frozen constant so CodeQL's
+  # rb/non-constant-kernel-open doesn't false-positive.
   def self.welcome_banner_via_io
-    IO.read(Rails.root.join("lib/copy/welcome_banner.txt").to_s)
+    IO.read(WELCOME_BANNER_PATH)
   end
 end
