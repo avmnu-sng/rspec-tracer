@@ -1,0 +1,73 @@
+---
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      docs_only: ${{ steps.filter.outputs.docs_only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          predicate-quantifier: every
+          filters: |
+            docs_only:
+              - '**/*.md'
+              - 'LICENSE'
+              - '.gitignore'
+              - 'CODEOWNERS'
+              - 'readme_files/**'
+              - '.github/FUNDING.yml'
+              - '.github/ISSUE_TEMPLATE/**'
+
+  full-matrix:
+    name: full-matrix
+    needs: changes
+    # Skip full matrix for docs-only PRs; always run on pushes to main and manual dispatch.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.docs_only != 'true' }}
+    uses: ./.github/workflows/full-matrix.yml
+    secrets: inherit
+
+  ci-done:
+    name: ci-done
+    needs: [changes, full-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Report result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          FULL_MATRIX_RESULT: ${{ needs.full-matrix.result }}
+        run: |
+          echo "changes=${CHANGES_RESULT}"
+          echo "full-matrix=${FULL_MATRIX_RESULT}"
+          if [ "${CHANGES_RESULT}" != "success" ]; then
+            echo "::error::changes job did not succeed (${CHANGES_RESULT})"
+            exit 1
+          fi
+          if [ "${FULL_MATRIX_RESULT}" != "success" ] && [ "${FULL_MATRIX_RESULT}" != "skipped" ]; then
+            echo "::error::full-matrix job failed (${FULL_MATRIX_RESULT})"
+            exit 1
+          fi
+          echo "ci-done: all required jobs succeeded or were intentionally skipped"

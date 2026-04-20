@@ -41,16 +41,20 @@ tasks:
       - rbenv install --skip-existing {{.RUBY_VERSION}}
 
   install:tools:
-    desc: Install all pinned dev tools (binaries + out-of-bundle gems)
-    # Binaries (actionlint, shellcheck) land in ./bin/. The three gems
-    # (yamllint, bundler-audit, license_finder) install to the active
-    # Ruby's default gem bin dir; lint:yaml, security:bundle-audit, and
-    # security:licenses resolve them via $PATH (rbenv/asdf shims).
+    desc: Install all pinned dev tools (binaries + out-of-bundle tools)
+    # Binaries (actionlint, shellcheck) land in ./bin/. yamllint installs
+    # via pipx (Python package, not a Ruby gem). bundler-audit and
+    # license_finder install to the active Ruby's default gem bin dir.
+    # All three (yamllint, bundler-audit, license_finder) resolve via
+    # $PATH in downstream tasks.
     deps: [ruby:version-check]
+    preconditions:
+      - sh: command -v pipx >/dev/null 2>&1
+        msg: "pipx not found; install: 'brew install pipx' (mac) or 'sudo apt install pipx' (linux)"
     status:
       - test -x bin/actionlint
       - test -x bin/shellcheck
-      - gem list -i yamllint --version {{.YAMLLINT_VERSION}}
+      - pipx list 2>/dev/null | grep -q "package yamllint {{.YAMLLINT_VERSION}}"
       - gem list -i bundler-audit --version {{.BUNDLER_AUDIT_VERSION}}
       - gem list -i license_finder --version {{.LICENSE_FINDER_VERSION}}
     cmds:
@@ -67,7 +71,8 @@ tasks:
         [ "$ARCH" = "arm64" ] && ARCH=aarch64
         curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
           | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
-      - gem install yamllint --version {{.YAMLLINT_VERSION}} --no-doc
+      - pipx install --force "yamllint=={{.YAMLLINT_VERSION}}"
+      - pipx ensurepath
       - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
       - gem install license_finder --version {{.LICENSE_FINDER_VERSION}} --no-doc
 
@@ -152,6 +157,30 @@ tasks:
     cmds:
       - task: test:all
       - task: test:integration
+
+  # ── Cucumber features (legacy, removed in 2.0.0) ───────
+
+  test:features:ruby:
+    desc: Cucumber features — pure Ruby (@ruby-app, not @parallel-tests)
+    cmds:
+      - bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+
+  test:features:ruby-parallel:
+    desc: Cucumber features — parallel_tests (@ruby-app and @parallel-tests)
+    cmds:
+      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @parallel-tests"
+
+  test:features:rails:
+    desc: Cucumber features — Rails (@rails-app)
+    cmds:
+      - bundle exec cucumber --retry 1 --no-strict-flaky --tags @rails-app
+
+  test:features:jruby:
+    desc: Cucumber features on JRuby (@ruby-app, not @parallel-tests)
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
 
   # ── Benchmarks ─────────────────────────────────────────
 

@@ -1,0 +1,396 @@
+---
+name: full-matrix
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-specs:
+    name: lint-and-specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache out-of-bundle tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            bin/actionlint
+            bin/shellcheck
+            ~/.local/pipx
+            ~/.local/bin/yamllint
+          key: ${{ runner.os }}-tools-${{ hashFiles('Taskfile.yml', '.tool-versions') }}
+
+      - name: Install tools
+        run: task install:tools
+
+      - name: Ensure tool paths
+        run: |
+          echo "$(pwd)/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Lint — Ruby
+        run: task lint:ruby
+
+      - name: Lint — Actions
+        run: task lint:actions
+
+      - name: Lint — YAML
+        run: task lint:yaml
+
+      - name: Check — Bundle
+        run: task check:bundle
+
+      - name: Security — bundle-audit
+        run: task security:bundle-audit
+
+      - name: Test — Unit
+        run: task test:unit
+
+  spec:
+    name: spec-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: 1
+            ruby: '3.1'
+          - group: 2
+            ruby: '3.2'
+          - group: 3
+            ruby: '3.3'
+          - group: 4
+            ruby: '3.4'
+          - group: 5
+            ruby: '4.0'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Unit
+        run: task test:unit
+
+  ruby-project:
+    name: ruby-project-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: 1
+            ruby: '3.1'
+            rspec: '3.12'
+          - group: 2
+            ruby: '3.1'
+            rspec: '3.13'
+          - group: 3
+            ruby: '3.2'
+            rspec: '3.12'
+          - group: 4
+            ruby: '3.2'
+            rspec: '3.13'
+          - group: 5
+            ruby: '3.3'
+            rspec: '3.12'
+          - group: 6
+            ruby: '3.3'
+            rspec: '3.13'
+          - group: 7
+            ruby: '3.4'
+            rspec: '3.12'
+          - group: 8
+            ruby: '3.4'
+            rspec: '3.13'
+          - group: 9
+            ruby: '4.0'
+            rspec: '3.12'
+          - group: 10
+            ruby: '4.0'
+            rspec: '3.13'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Ruby)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          BRANCH_COVERAGE: 'true'
+        run: task test:features:ruby
+
+  ruby-parallel:
+    name: ruby-parallel-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: 1
+            ruby: '3.1'
+            rspec: '3.12'
+          - group: 2
+            ruby: '3.1'
+            rspec: '3.13'
+          - group: 3
+            ruby: '3.2'
+            rspec: '3.12'
+          - group: 4
+            ruby: '3.2'
+            rspec: '3.13'
+          - group: 5
+            ruby: '3.3'
+            rspec: '3.12'
+          - group: 6
+            ruby: '3.3'
+            rspec: '3.13'
+          - group: 7
+            ruby: '3.4'
+            rspec: '3.12'
+          - group: 8
+            ruby: '3.4'
+            rspec: '3.13'
+          - group: 9
+            ruby: '4.0'
+            rspec: '3.12'
+          - group: 10
+            ruby: '4.0'
+            rspec: '3.13'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Ruby, parallel_tests)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          PARALLEL_TESTS_VERSION: "~> 4.7"
+        run: task test:features:ruby-parallel
+
+  rails:
+    name: rails-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Rails 8.0 is planned once the reference Rails app is rebuilt.
+        include:
+          - group: 1
+            ruby: '3.1'
+            rails: '7.0'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 2
+            ruby: '3.1'
+            rails: '7.1'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 3
+            ruby: '3.1'
+            rails: '7.2'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 4
+            ruby: '3.2'
+            rails: '7.0'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 5
+            ruby: '3.2'
+            rails: '7.1'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 6
+            ruby: '3.2'
+            rails: '7.2'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 7
+            ruby: '3.3'
+            rails: '7.0'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 8
+            ruby: '3.3'
+            rails: '7.1'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 9
+            ruby: '3.3'
+            rails: '7.2'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 10
+            ruby: '3.4'
+            rails: '7.0'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 11
+            ruby: '3.4'
+            rails: '7.1'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 12
+            ruby: '3.4'
+            rails: '7.2'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 13
+            ruby: '4.0'
+            rails: '7.0'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 14
+            ruby: '4.0'
+            rails: '7.1'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+          - group: 15
+            ruby: '4.0'
+            rails: '7.2'
+            rspec-rails: '6.1'
+            sqlite3: '1.4'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Rails)
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
+          BRANCH_COVERAGE: 'true'
+        run: task test:features:rails
+
+  jruby:
+    name: jruby
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install build tools for JRuby native extensions
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: jruby-9.4
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (JRuby)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+        run: task test:features:jruby
+
+  benchmark:
+    name: benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Benchmark — Full
+        run: task benchmark:full
