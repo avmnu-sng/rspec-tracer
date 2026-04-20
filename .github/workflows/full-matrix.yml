@@ -224,13 +224,6 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # PR-comment permission (sticky comment). GITHUB_TOKEN needs write on
-    # pull-requests to post; default repo permission is read-only on PRs
-    # from forks, so the step gracefully no-ops on fork PRs via the
-    # action's built-in fork handling.
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -271,9 +264,9 @@ jobs:
             --no-enforce \
             --summary-md benchmark/ci-summary.md
 
-      - name: Post benchmark PR comment
-        if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+      - name: Upload benchmark summary artifact
+        uses: actions/upload-artifact@v4
         with:
-          header: benchmark
+          name: benchmark-summary
           path: benchmark/ci-summary.md
+          if-no-files-found: error
