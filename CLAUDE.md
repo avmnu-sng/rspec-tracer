@@ -47,28 +47,35 @@ commit messages are the only materials that survive in the repository.
   technical limitation (Windows path semantics, ENV-driven branches with
   no declaration, refinements in unexecuted files). "Effort" is not a
   reason.
-- **The feedback loop is sacred.** The dev-loop command
-  (currently `bundle exec rake`; `task check` after the Taskfile lands)
-  must stay fast. Any regression is the highest-priority fix.
+- **The feedback loop is sacred.** `task check` (lint + unit specs +
+  smoke benchmark) is the dev-loop command; it must stay under ~10 s.
+  Any regression is the highest-priority fix.
 
 ## Dev loop
 
-- `bundle exec rake` — full default: rubocop + rspec + feature coverage
-  measurements (cucumber). Used by CI's `lint-and-specs` workflow.
-- `bundle exec rspec` — unit specs only, fast.
-- `bundle exec rubocop` — lint only.
-- `bundle exec cucumber --tags "@ruby-app"` — feature subsets.
+- `task check` — the fast feedback loop: `task lint:ruby` + `task test:unit`
+  + `task benchmark:smoke`. Runs in ~2 s post-M2.4.
+- `task ci` — full CI pipeline locally (lint + check + test + security +
+  benchmark + integration).
+- `task --list` — full catalog. Common: `task lint:all`, `task test:unit`,
+  `task test:features:{ruby,ruby-parallel,rails,jruby}`,
+  `task benchmark:{smoke,full,ratchet:update}`,
+  `task fixtures:rails:{bundle,migrate,seed,rspec,lint}`,
+  `task security:{bundle-audit,trivy}`.
+- `bundle exec rake` is still wired (legacy cucumber path). Removed in
+  the 2.0.0 cleanup.
 
-A Taskfile (`task check`, `task ci`, etc.) is on the roadmap for later
-in the 2.0 work.
+Tool versions are pinned at the top of `Taskfile.yml` (`vars:`); bump
+them in one place.
 
 ## Branching and releases
 
 Trunk-based. PRs into `main`. Releases = tags on `main`
-(`v1.1.0`, `v2.0.0.pre.1`, ..., `v2.0.0`). A tag push will trigger
-`.github/workflows/release.yml` (not yet wired up — planned for the
-1.1.0 release cut) which runs the full CI matrix then `gem push` via
-`RUBYGEMS_API_KEY`.
+(`v1.1.0`, `v2.0.0.pre.1`, ..., `v2.0.0`). A tag push triggers
+`.github/workflows/release.yml`, which validates the tag matches
+`RSpecTracer::VERSION`, builds the gem, runs `gem push` via
+`RUBYGEMS_API_KEY`, and creates the GitHub release. Shipped as part
+of M1.3 / v1.1.0.
 
 ## Fork + upstream context
 
@@ -85,7 +92,35 @@ Two Git remotes exist for this codebase:
 ## CI-gated compatibility
 
 - Ruby: 3.1, 3.2, 3.3, 3.4, 4.0, JRuby 9.4.
-- Rails: 7.0, 7.1, 7.2 (Rails 8.0 target pending reference-app rework).
+- Rails: 7.0, 7.1, 7.2 (Rails 8.0 deferred — see below).
 - RSpec: 3.12, 3.13.
 - Dropped: Ruby ≤ 3.0, Rails ≤ 6.x, RSpec ≤ 3.11, Windows.
 - Best-effort (no CI gate): TruffleRuby, Ruby head.
+
+Full matrix per run is 43 cells (spec × 5 Ruby + ruby-project × 10 +
+ruby-parallel × 10 + rails × 15 + jruby + benchmark canary +
+lint-and-specs); full definition lives in
+`.github/workflows/full-matrix.yml`'s `matrix-config` preflight.
+
+## Phase-2 deferrals worth knowing
+
+Do not re-litigate these in Phase 2 PRs:
+
+- **Rails 8.0 matrix cells** — attempted in M2.3; all 4 cells failed
+  because `features/rails_app_*.feature` cucumber scenarios hardcode
+  coverage line counts like `"71 / 84 LOC (84.52%)"` that shift under
+  Rails 8.0's different initializer load pattern. Re-added when M4.3
+  wires the new `spec/fixtures/rails_app/` (Rails-8.0-capable) as the
+  CI integration-test target. Full context: M2.3 / M2.4 handoff notes.
+- **Benchmark ratchet CI enforcement** — M2.4 ships with
+  `--no-enforce` in CI. The committed `benchmark/ratchet.json` was
+  generated on Apple M2 Max; GHA `ubuntu-latest` is 1.4-1.6× slower,
+  so absolute thresholds would always fail. Followup: regenerate the
+  ratchet on GHA and remove `--no-enforce`. Details: M2.4 handoff.
+- **`file_read_hook` benchmark scenario** — deferred to M3.2 (1.x
+  has no I/O prepend hooks to measure).
+
+Local-only session docs: `docs/revamp/sessions/*.md`. Each `DONE`
+session's "Handoff notes" section lists what shipped, deviations from
+the brief, and followups. Read the relevant ones before reopening a
+milestone's decisions.
