@@ -1,6 +1,7 @@
 *.gem
 *.rbc
 /.config
+/.venv/
 /coverage/
 /rspec_tracer_cache/
 /rspec_tracer_coverage/

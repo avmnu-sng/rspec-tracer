@@ -44,22 +44,24 @@ tasks:
       - rbenv install --skip-existing {{.RUBY_VERSION}}
 
   install:tools:
-    desc: Install all pinned dev tools (binaries + out-of-bundle tools)
-    # Binaries (actionlint, shellcheck) land in ./bin/. yamllint installs
-    # via pipx (Python package, not a Ruby gem). bundler-audit and
-    # license_finder install to the active Ruby's default gem bin dir.
-    # All three (yamllint, bundler-audit, license_finder) resolve via
-    # $PATH in downstream tasks.
+    desc: Install all pinned dev tools (binaries + yamllint venv + bundler-audit gem)
+    # Everything lands under ./bin/ or ./.venv/ — no writes to system dirs,
+    # no sudo, no PIPX_HOME gymnastics. Same install works on local Mac,
+    # local Linux, and GHA runners.
+    #   bin/actionlint, bin/shellcheck — direct curl + tar to ./bin/
+    #   bin/yamllint                   — symlink to .venv/yamllint/bin/yamllint
+    #   bundler-audit gem              — installed to the active Ruby's gem
+    #                                    dir (setup-ruby handles PATH on CI;
+    #                                    rbenv/asdf shims handle it locally)
     deps: [ruby:version-check]
     preconditions:
-      - sh: command -v pipx >/dev/null 2>&1
-        msg: "pipx not found; install: 'brew install pipx' (mac) or 'sudo apt install pipx' (linux)"
+      - sh: command -v python3 >/dev/null 2>&1
+        msg: "python3 not found; install: 'brew install python@3.12' (mac) — Ubuntu ships it"
     status:
       - test -x bin/actionlint
       - test -x bin/shellcheck
-      - pipx list 2>/dev/null | grep -q "package yamllint {{.YAMLLINT_VERSION}}"
+      - test -x bin/yamllint
       - gem list -i bundler-audit --version {{.BUNDLER_AUDIT_VERSION}}
-      - gem list -i license_finder --version {{.LICENSE_FINDER_VERSION}}
     cmds:
       - bundle install
       - |
@@ -86,10 +88,15 @@ tasks:
         esac
         curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
           | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
-      - pipx install --force "yamllint=={{.YAMLLINT_VERSION}}"
-      - pipx ensurepath
+      - |
+        # yamllint: user-scoped venv under .venv/yamllint. Works identically
+        # on local dev and GHA runners (pipx on GHA is pre-configured for
+        # /opt/pipx system-wide, which non-sudo writes can't reach).
+        mkdir -p bin
+        python3 -m venv .venv/yamllint
+        .venv/yamllint/bin/pip install --quiet --disable-pip-version-check "yamllint=={{.YAMLLINT_VERSION}}"
+        ln -sf "$(pwd)/.venv/yamllint/bin/yamllint" bin/yamllint
       - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
-      - gem install license_finder --version {{.LICENSE_FINDER_VERSION}} --no-doc
 
   # ── Lint ───────────────────────────────────────────────
 
@@ -117,7 +124,7 @@ tasks:
   lint:yaml:
     desc: Lint YAML files
     cmds:
-      - yamllint --strict .
+      - bin/yamllint --strict .
 
   lint:all:
     desc: Run every linter
@@ -217,14 +224,16 @@ tasks:
       - bundle-audit check --update
 
   security:licenses:
-    desc: License compliance check
+    desc: License compliance check (optional; install via `gem install license_finder`)
+    preconditions:
+      - sh: command -v license_finder >/dev/null 2>&1
+        msg: "license_finder not installed; run: gem install license_finder --version {{.LICENSE_FINDER_VERSION}}"
     cmds:
       - license_finder
 
   security:all:
     cmds:
       - task: security:bundle-audit
-      - task: security:licenses
 
   # ── Feedback loop ──────────────────────────────────────
 

@@ -8,84 +8,40 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-specs:
-    name: lint-and-specs
+  # Single source of truth for the compat matrix. Downstream jobs
+  # consume these outputs via fromJSON(), so adding (say) Ruby 4.1 is
+  # one line here instead of four edits across spec/ruby-project/
+  # ruby-parallel/rails.
+  matrix-config:
+    name: matrix-config
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 2
+    outputs:
+      rubies: ${{ steps.cfg.outputs.rubies }}
+      rspecs: ${{ steps.cfg.outputs.rspecs }}
+      railses: ${{ steps.cfg.outputs.railses }}
+      jruby: ${{ steps.cfg.outputs.jruby }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          # Match .ruby-version so `task install:tools` ruby:version-check passes.
-          ruby-version: '.ruby-version'
-          bundler-cache: true
-
-      - name: Setup Task
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.45.4
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache out-of-bundle tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            bin/actionlint
-            bin/shellcheck
-            ~/.local/pipx
-            ~/.local/bin/yamllint
-          key: ${{ runner.os }}-tools-${{ hashFiles('Taskfile.yml', '.tool-versions') }}
-
-      - name: Install tools
-        run: task install:tools
-
-      - name: Ensure tool paths
+      - name: Emit matrix config
+        id: cfg
         run: |
-          echo "$(pwd)/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Lint — Ruby
-        run: task lint:ruby
-
-      - name: Lint — Actions
-        run: task lint:actions
-
-      - name: Lint — YAML
-        run: task lint:yaml
-
-      - name: Check — Bundle
-        run: task check:bundle
-
-      - name: Security — bundle-audit
-        run: task security:bundle-audit
-
-      - name: Test — Unit
-        run: task test:unit
+          {
+            echo 'rubies=["3.1","3.2","3.3","3.4","4.0"]'
+            echo 'rspecs=["3.12","3.13"]'
+            # Rails 8.0 deferred pending reference Rails app rework (M2.3).
+            echo 'railses=["7.0","7.1","7.2"]'
+            echo 'jruby=jruby-9.4'
+          } >> "$GITHUB_OUTPUT"
 
   spec:
-    name: spec-group-${{ matrix.group }}
+    name: spec (ruby-${{ matrix.ruby }})
+    needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - group: 1
-            ruby: '3.1'
-          - group: 2
-            ruby: '3.2'
-          - group: 3
-            ruby: '3.3'
-          - group: 4
-            ruby: '3.4'
-          - group: 5
-            ruby: '4.0'
-
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -97,7 +53,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -106,45 +62,15 @@ jobs:
         run: task test:unit
 
   ruby-project:
-    name: ruby-project-group-${{ matrix.group }}
+    name: ruby-project (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
+    needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - group: 1
-            ruby: '3.1'
-            rspec: '3.12'
-          - group: 2
-            ruby: '3.1'
-            rspec: '3.13'
-          - group: 3
-            ruby: '3.2'
-            rspec: '3.12'
-          - group: 4
-            ruby: '3.2'
-            rspec: '3.13'
-          - group: 5
-            ruby: '3.3'
-            rspec: '3.12'
-          - group: 6
-            ruby: '3.3'
-            rspec: '3.13'
-          - group: 7
-            ruby: '3.4'
-            rspec: '3.12'
-          - group: 8
-            ruby: '3.4'
-            rspec: '3.13'
-          - group: 9
-            ruby: '4.0'
-            rspec: '3.12'
-          - group: 10
-            ruby: '4.0'
-            rspec: '3.13'
-
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -156,7 +82,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -169,45 +95,15 @@ jobs:
         run: task test:features:ruby
 
   ruby-parallel:
-    name: ruby-parallel-group-${{ matrix.group }}
+    name: ruby-parallel (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
+    needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - group: 1
-            ruby: '3.1'
-            rspec: '3.12'
-          - group: 2
-            ruby: '3.1'
-            rspec: '3.13'
-          - group: 3
-            ruby: '3.2'
-            rspec: '3.12'
-          - group: 4
-            ruby: '3.2'
-            rspec: '3.13'
-          - group: 5
-            ruby: '3.3'
-            rspec: '3.12'
-          - group: 6
-            ruby: '3.3'
-            rspec: '3.13'
-          - group: 7
-            ruby: '3.4'
-            rspec: '3.12'
-          - group: 8
-            ruby: '3.4'
-            rspec: '3.13'
-          - group: 9
-            ruby: '4.0'
-            rspec: '3.12'
-          - group: 10
-            ruby: '4.0'
-            rspec: '3.13'
-
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -219,7 +115,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -232,91 +128,20 @@ jobs:
         run: task test:features:ruby-parallel
 
   rails:
-    name: rails-group-${{ matrix.group }}
+    name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
+    needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
+    env:
+      RSPEC_RAILS_VERSION: "~> 6.1.0"
+      SIMPLECOV_VERSION: "~> 0.22"
+      SQLITE3_VERSION: "~> 1.4"
+      BRANCH_COVERAGE: 'true'
     strategy:
       fail-fast: false
       matrix:
-        # Rails 8.0 is planned once the reference Rails app is rebuilt.
-        include:
-          - group: 1
-            ruby: '3.1'
-            rails: '7.0'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 2
-            ruby: '3.1'
-            rails: '7.1'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 3
-            ruby: '3.1'
-            rails: '7.2'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 4
-            ruby: '3.2'
-            rails: '7.0'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 5
-            ruby: '3.2'
-            rails: '7.1'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 6
-            ruby: '3.2'
-            rails: '7.2'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 7
-            ruby: '3.3'
-            rails: '7.0'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 8
-            ruby: '3.3'
-            rails: '7.1'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 9
-            ruby: '3.3'
-            rails: '7.2'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 10
-            ruby: '3.4'
-            rails: '7.0'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 11
-            ruby: '3.4'
-            rails: '7.1'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 12
-            ruby: '3.4'
-            rails: '7.2'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 13
-            ruby: '4.0'
-            rails: '7.0'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 14
-            ruby: '4.0'
-            rails: '7.1'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-          - group: 15
-            ruby: '4.0'
-            rails: '7.2'
-            rspec-rails: '6.1'
-            sqlite3: '1.4'
-
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rails: ${{ fromJSON(needs.matrix-config.outputs.railses) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -328,7 +153,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -336,17 +161,13 @@ jobs:
       - name: Test — Features (Rails)
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}.0"
-          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec-rails }}.0"
-          SIMPLECOV_VERSION: "~> 0.22"
-          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
-          BRANCH_COVERAGE: 'true'
         run: task test:features:rails
 
   jruby:
     name: jruby
+    needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -357,11 +178,11 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: jruby-9.4
+          ruby-version: ${{ needs.matrix-config.outputs.jruby }}
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -376,7 +197,6 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -384,11 +204,13 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          # Canonical benchmark cell — comparing across Rubies adds noise
+          # without signal, so pin to the .ruby-version floor.
+          ruby-version: '.ruby-version'
           bundler-cache: true
 
       - name: Setup Task
-        uses: arduino/setup-task@v2
+        uses: go-task/setup-task@v2
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}

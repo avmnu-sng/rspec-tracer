@@ -15,59 +15,121 @@ permissions:
   contents: read
 
 jobs:
-  changes:
-    name: changes
+  tier:
+    name: tier
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
-      docs_only: ${{ steps.filter.outputs.docs_only }}
+      tier: ${{ steps.detect.outputs.tier }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Detect changed paths
-        id: filter
-        uses: dorny/paths-filter@v3
         with:
-          predicate-quantifier: every
-          filters: |
-            docs_only:
-              - '**/*.md'
-              - 'LICENSE'
-              - '.gitignore'
-              - 'CODEOWNERS'
-              - 'readme_files/**'
-              - '.github/FUNDING.yml'
-              - '.github/ISSUE_TEMPLATE/**'
+          fetch-depth: 0
+
+      - name: Detect change tier
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            FILES=$(git diff --name-only "$BASE_SHA".."$HEAD_SHA")
+          else
+            # push to main / workflow_dispatch: always run everything.
+            FILES=""
+          fi
+
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "tier=build" >> "$GITHUB_OUTPUT"
+            echo "Non-PR event ($EVENT): tier=build (full matrix)"
+            exit 0
+          fi
+
+          if [ -z "$FILES" ]; then
+            echo "tier=skip" >> "$GITHUB_OUTPUT"
+            echo "No changed files: tier=skip"
+            exit 0
+          fi
+
+          TIER="skip"
+
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              *.md|LICENSE|.gitignore|CODEOWNERS|readme_files/*|.github/FUNDING.yml|.github/ISSUE_TEMPLATE/*)
+                # skip-tier files — don't upgrade TIER
+                ;;
+              lib/*|*.gemspec|bin/*|benchmark/*|.ruby-version|.tool-versions)
+                TIER="build"
+                ;;
+              Taskfile.yml|.github/workflows/*|Gemfile|Gemfile.lock|.rubocop.yml|.yamllint.yml|.rspec)
+                if [ "$TIER" != "build" ]; then
+                  TIER="validate"
+                fi
+                ;;
+              spec/*|features/*|support/*)
+                if [ "$TIER" != "build" ] && [ "$TIER" != "validate" ]; then
+                  TIER="test"
+                fi
+                ;;
+              *)
+                # any other file (scripts, config, unclassified) — at least lint.
+                if [ "$TIER" = "skip" ]; then
+                  TIER="lint"
+                fi
+                ;;
+            esac
+          done <<< "$FILES"
+
+          echo "tier=${TIER}" >> "$GITHUB_OUTPUT"
+          echo "Detected tier: ${TIER}"
+          echo "Changed files:"
+          echo "$FILES"
+
+  lint-and-specs:
+    name: lint-and-specs
+    needs: tier
+    if: ${{ needs.tier.outputs.tier != 'skip' }}
+    uses: ./.github/workflows/lint-and-specs.yml
+    secrets: inherit
 
   full-matrix:
     name: full-matrix
-    needs: changes
-    # Skip full matrix for docs-only PRs; always run on pushes to main and manual dispatch.
-    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.docs_only != 'true' }}
+    needs: [tier, lint-and-specs]
+    if: ${{ needs.tier.outputs.tier == 'build' }}
     uses: ./.github/workflows/full-matrix.yml
     secrets: inherit
 
   ci-done:
     name: ci-done
-    needs: [changes, full-matrix]
+    needs: [tier, lint-and-specs, full-matrix]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Report result
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          FULL_MATRIX_RESULT: ${{ needs.full-matrix.result }}
+          TIER: ${{ needs.tier.outputs.tier }}
+          TIER_RESULT: ${{ needs.tier.result }}
+          LINT_RESULT: ${{ needs.lint-and-specs.result }}
+          MATRIX_RESULT: ${{ needs.full-matrix.result }}
         run: |
-          echo "changes=${CHANGES_RESULT}"
-          echo "full-matrix=${FULL_MATRIX_RESULT}"
-          if [ "${CHANGES_RESULT}" != "success" ]; then
-            echo "::error::changes job did not succeed (${CHANGES_RESULT})"
+          echo "tier=${TIER} (job result: ${TIER_RESULT})"
+          echo "lint-and-specs=${LINT_RESULT}"
+          echo "full-matrix=${MATRIX_RESULT}"
+
+          if [ "$TIER_RESULT" != "success" ]; then
+            echo "::error::tier job did not succeed"
             exit 1
           fi
-          if [ "${FULL_MATRIX_RESULT}" != "success" ] && [ "${FULL_MATRIX_RESULT}" != "skipped" ]; then
-            echo "::error::full-matrix job failed (${FULL_MATRIX_RESULT})"
+          if [ "$LINT_RESULT" != "success" ] && [ "$LINT_RESULT" != "skipped" ]; then
+            echo "::error::lint-and-specs failed (${LINT_RESULT})"
             exit 1
           fi
-          echo "ci-done: all required jobs succeeded or were intentionally skipped"
+          if [ "$MATRIX_RESULT" != "success" ] && [ "$MATRIX_RESULT" != "skipped" ]; then
+            echo "::error::full-matrix failed (${MATRIX_RESULT})"
+            exit 1
+          fi
+          echo "ci-done: all required jobs succeeded or were intentionally skipped (tier=${TIER})"
