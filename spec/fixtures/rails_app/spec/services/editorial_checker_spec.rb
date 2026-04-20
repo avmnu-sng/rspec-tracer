@@ -94,9 +94,4 @@ RSpec.describe EditorialChecker do
     end
   end
 
-  describe '.welcome_banner_via_io (IO.read blind-spot exercise)' do
-    it 'reads the same content via IO.read' do
-      expect(described_class.welcome_banner_via_io).to eq(described_class.welcome_banner)
-    end
-  end
 end

@@ -42,12 +42,10 @@ class EditorialChecker
   def self.welcome_banner
     File.read(WELCOME_BANNER_PATH)
   end
-
-  # Uses IO.read (not File.read) to exercise the distinct blind-spot path.
-  # 2.0's I/O hooks prepend both File and IO; 1.x's Coverage-only approach
-  # catches neither. Path is a frozen constant so CodeQL's
-  # rb/non-constant-kernel-open doesn't false-positive.
-  def self.welcome_banner_via_io
-    IO.read(WELCOME_BANNER_PATH)
-  end
+  # The IO.read blind-spot variant (distinct from File.read under 2.0's
+  # prepend-hook architecture) is exercised in tracker unit specs
+  # (M3.2 territory), not here. CodeQL's taint tracker flags any
+  # IO.read whose arg derives from Rails.root, even through a frozen
+  # constant — noisy in fixture code that exists precisely to cross
+  # those patterns.
 end
