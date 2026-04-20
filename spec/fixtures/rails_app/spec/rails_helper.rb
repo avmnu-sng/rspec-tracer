@@ -2,6 +2,15 @@
 
 ENV['RAILS_ENV'] ||= 'test'
 
+# Enable rspec-tracer for this fixture when RSPEC_TRACER=1 is set (the
+# benchmark harness sets this for cold_rails measurements). Left off by
+# default so `task fixtures:rails:rspec` and the M4.3 integration tests
+# can opt in explicitly.
+if ENV['RSPEC_TRACER'] == '1'
+  require 'rspec_tracer'
+  RSpecTracer.start
+end
+
 require_relative '../config/environment'
 
 abort('The Rails environment is running in production mode!') if Rails.env.production?

@@ -1,1 +1,32 @@
-{}
+{
+  "environment": {
+    "ruby": "3.3.10",
+    "ruby_platform": "arm64-darwin24",
+    "os": "darwin24",
+    "cpu": "Apple M2 Max",
+    "cores": 12,
+    "recorded_at": "2026-04-20T11:37:50Z"
+  },
+  "scenarios": {
+    "cold_ruby": {
+      "p50": 0.2518,
+      "p95": 0.3244,
+      "iterations": 10
+    },
+    "warm_noop": {
+      "p50": 0.2272,
+      "p95": 0.2294,
+      "iterations": 10
+    },
+    "cache_load": {
+      "p50": 0.246,
+      "p95": 0.2502,
+      "iterations": 10
+    },
+    "cold_rails": {
+      "p50": 1.0313,
+      "p95": 1.0949,
+      "iterations": 10
+    }
+  }
+}
