@@ -12,9 +12,7 @@ module RSpecTracer
       day: Float::INFINITY
     }.freeze
 
-    module_function
-
-    def format_time(seconds)
+    def self.format_time(seconds)
       return pluralize(format_duration(seconds), 'second') if seconds < 60
 
       formatted_duration = UNITS.each_pair.with_object([]) do |(unit, count), duration|
@@ -30,26 +28,28 @@ module RSpecTracer
       formatted_duration.reverse.join(' ')
     end
 
-    def format_duration(duration)
-      return 0 if duration.negative?
+    class << self
+      private
 
-      precision = duration < 1 ? SECONDS_PRECISION : DEFAULT_PRECISION
+      def format_duration(duration)
+        return 0 if duration.negative?
 
-      strip_trailing_zeroes(format("%<duration>0.#{precision}f", duration: duration))
-    end
+        precision = duration < 1 ? SECONDS_PRECISION : DEFAULT_PRECISION
 
-    def strip_trailing_zeroes(formatted_duration)
-      formatted_duration.sub(/(?:(\..*[^0])0+|\.0+)$/, '\1')
-    end
+        strip_trailing_zeroes(format("%<duration>0.#{precision}f", duration: duration))
+      end
 
-    def pluralize(duration, unit)
-      if (duration.to_f - 1).abs < Float::EPSILON
-        "#{duration} #{unit}"
-      else
-        "#{duration} #{unit}s"
+      def strip_trailing_zeroes(formatted_duration)
+        formatted_duration.sub(/(?:(\..*[^0])0+|\.0+)$/, '\1')
+      end
+
+      def pluralize(duration, unit)
+        if (duration.to_f - 1).abs < Float::EPSILON
+          "#{duration} #{unit}"
+        else
+          "#{duration} #{unit}s"
+        end
       end
     end
-
-    private_class_method :format_duration, :strip_trailing_zeroes, :pluralize
   end
 end

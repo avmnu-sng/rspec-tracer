@@ -15,6 +15,13 @@ AllCops:
     - "tmp/**/*"
     - "vendor/**/*"
 
+# spec/fuzz/ holds standalone ruby harness scripts, not RSpec specs.
+# Exempt them from rubocop-rspec so cops like RSpec/Output don't strip
+# the reporting puts.
+RSpec:
+  Exclude:
+    - "spec/fuzz/**/*"
+
 Layout/ClassStructure:
   Enabled: true
   Categories:
