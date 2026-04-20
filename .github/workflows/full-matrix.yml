@@ -20,7 +20,8 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4'
+          # Match .ruby-version so `task install:tools` ruby:version-check passes.
+          ruby-version: '.ruby-version'
           bundler-cache: true
 
       - name: Setup Task

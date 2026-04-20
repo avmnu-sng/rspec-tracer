@@ -6,7 +6,10 @@ vars:
   RUBY_VERSION:
     sh: cat .ruby-version
   VERSION:
-    sh: ruby -e "require_relative 'lib/rspec_tracer/version'; puts RSpecTracer::VERSION"
+    # -Ilib + -r avoids `require_relative` under `ruby -e`, which JRuby
+    # can't resolve (LoadError: cannot infer basepath). Same pattern as
+    # release.yml's tag-vs-VERSION check.
+    sh: ruby -Ilib -rrspec_tracer/version -e 'puts RSpecTracer::VERSION'
   # Tool versions — bump intentionally, not accidentally.
   ACTIONLINT_VERSION: 1.7.12
   SHELLCHECK_VERSION: v0.11.0
