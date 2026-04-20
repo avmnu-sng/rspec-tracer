@@ -214,15 +214,29 @@ tasks:
 
   # ── Benchmarks ─────────────────────────────────────────
 
-  benchmark:smoke:
-    desc: Smoke benchmark (~2s)
+  benchmark:bundle:
+    desc: bundle install for both benchmark fixtures (prerequisite for harness)
     cmds:
-      - ruby benchmark/harness.rb --smoke
+      - cd benchmark/fixtures/ruby_app && bundle install
+      - cd spec/fixtures/rails_app && bundle install
+
+  benchmark:smoke:
+    desc: Smoke benchmark (~3s — cold_ruby + warm_noop + cache_load)
+    deps: [benchmark:bundle]
+    cmds:
+      - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json
 
   benchmark:full:
-    desc: Full benchmark suite with ratchet check
+    desc: Full benchmark suite — all 4 scenarios + ratchet comparison
+    deps: [benchmark:bundle]
     cmds:
       - ruby benchmark/harness.rb --full --ratchet benchmark/ratchet.json
+
+  benchmark:ratchet:update:
+    desc: Regenerate benchmark/ratchet.json from a fresh 10-iter run (requires --yes to confirm)
+    deps: [benchmark:bundle]
+    cmds:
+      - ruby benchmark/harness.rb --full --iterations 10 --update-ratchet benchmark/ratchet.json --yes
 
   # ── Security ───────────────────────────────────────────
 

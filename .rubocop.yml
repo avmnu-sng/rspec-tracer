@@ -9,6 +9,7 @@ AllCops:
   TargetRubyVersion: 3.1
   Exclude:
     - "rspec-tracer.gemspec"
+    - "benchmark/fixtures/**/*"
     - "sample_projects/**/*"
     - "spec/fixtures/**/*"
     - "tmp/**/*"

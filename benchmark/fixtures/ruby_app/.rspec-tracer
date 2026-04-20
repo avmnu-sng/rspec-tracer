@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+RSpecTracer.configure do
+  coverage_track_files 'app/**/*.rb'
+end

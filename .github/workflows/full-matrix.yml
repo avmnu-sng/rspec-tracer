@@ -223,7 +223,7 @@ jobs:
   benchmark:
     name: benchmark
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -242,5 +242,31 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Benchmark — Full
-        run: task benchmark:full
+      - name: Install fixture bundles
+        run: task benchmark:bundle
+
+      - name: Prepare Rails fixture database
+        run: bundle exec rails db:test:prepare
+        working-directory: spec/fixtures/rails_app
+        env:
+          RAILS_VERSION: "~> 7.1.0"
+          RSPEC_RAILS_VERSION: "~> 6.1.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          SQLITE3_VERSION: "~> 1.4"
+
+      - name: Benchmark — full (no enforcement; CI baseline not yet committed)
+        # Ratchet file was generated on Apple M2 Max; GHA ubuntu-latest
+        # (2-core VMs) runs 3-5× slower, so enforcement would always
+        # fail. See benchmark/README.md for the CI-baseline followup.
+        run: |
+          ruby benchmark/harness.rb --full \
+            --ratchet benchmark/ratchet.json \
+            --no-enforce \
+            --summary-md benchmark/ci-summary.md
+
+      - name: Upload benchmark summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-summary
+          path: benchmark/ci-summary.md
+          if-no-files-found: error
