@@ -1,0 +1,219 @@
+---
+name: full-matrix
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  # Single source of truth for the compat matrix. Downstream jobs
+  # consume these outputs via fromJSON(), so adding (say) Ruby 4.1 is
+  # one line here instead of four edits across spec/ruby-project/
+  # ruby-parallel/rails.
+  matrix-config:
+    name: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      rubies: ${{ steps.cfg.outputs.rubies }}
+      rspecs: ${{ steps.cfg.outputs.rspecs }}
+      railses: ${{ steps.cfg.outputs.railses }}
+      jruby: ${{ steps.cfg.outputs.jruby }}
+    steps:
+      - name: Emit matrix config
+        id: cfg
+        run: |
+          {
+            echo 'rubies=["3.1","3.2","3.3","3.4","4.0"]'
+            echo 'rspecs=["3.12","3.13"]'
+            # Rails 8.0 deferred pending reference Rails app rework (M2.3).
+            echo 'railses=["7.0","7.1","7.2"]'
+            echo 'jruby=jruby-9.4'
+          } >> "$GITHUB_OUTPUT"
+
+  spec:
+    name: spec (ruby-${{ matrix.ruby }})
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Unit
+        run: task test:unit
+
+  ruby-project:
+    name: ruby-project (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Ruby)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          BRANCH_COVERAGE: 'true'
+        run: task test:features:ruby
+
+  ruby-parallel:
+    name: ruby-parallel (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Ruby, parallel_tests)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          PARALLEL_TESTS_VERSION: "~> 4.7"
+        run: task test:features:ruby-parallel
+
+  rails:
+    name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RSPEC_RAILS_VERSION: "~> 6.1.0"
+      SIMPLECOV_VERSION: "~> 0.22"
+      SQLITE3_VERSION: "~> 1.4"
+      BRANCH_COVERAGE: 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rails: ${{ fromJSON(needs.matrix-config.outputs.railses) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (Rails)
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+        run: task test:features:rails
+
+  jruby:
+    name: jruby
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install build tools for JRuby native extensions
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.matrix-config.outputs.jruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Features (JRuby)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+        run: task test:features:jruby
+
+  benchmark:
+    name: benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # Canonical benchmark cell — comparing across Rubies adds noise
+          # without signal, so pin to the .ruby-version floor.
+          ruby-version: '.ruby-version'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Benchmark — Full
+        run: task benchmark:full

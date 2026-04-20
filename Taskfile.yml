@@ -6,7 +6,10 @@ vars:
   RUBY_VERSION:
     sh: cat .ruby-version
   VERSION:
-    sh: ruby -e "require_relative 'lib/rspec_tracer/version'; puts RSpecTracer::VERSION"
+    # -Ilib + -r avoids `require_relative` under `ruby -e`, which JRuby
+    # can't resolve (LoadError: cannot infer basepath). Same pattern as
+    # release.yml's tag-vs-VERSION check.
+    sh: ruby -Ilib -rrspec_tracer/version -e 'puts RSpecTracer::VERSION'
   # Tool versions — bump intentionally, not accidentally.
   ACTIONLINT_VERSION: 1.7.12
   SHELLCHECK_VERSION: v0.11.0
@@ -41,35 +44,59 @@ tasks:
       - rbenv install --skip-existing {{.RUBY_VERSION}}
 
   install:tools:
-    desc: Install all pinned dev tools (binaries + out-of-bundle gems)
-    # Binaries (actionlint, shellcheck) land in ./bin/. The three gems
-    # (yamllint, bundler-audit, license_finder) install to the active
-    # Ruby's default gem bin dir; lint:yaml, security:bundle-audit, and
-    # security:licenses resolve them via $PATH (rbenv/asdf shims).
+    desc: Install all pinned dev tools (binaries + yamllint venv + bundler-audit gem)
+    # Everything lands under ./bin/ or ./.venv/ — no writes to system dirs,
+    # no sudo, no PIPX_HOME gymnastics. Same install works on local Mac,
+    # local Linux, and GHA runners.
+    #   bin/actionlint, bin/shellcheck — direct curl + tar to ./bin/
+    #   bin/yamllint                   — symlink to .venv/yamllint/bin/yamllint
+    #   bundler-audit gem              — installed to the active Ruby's gem
+    #                                    dir (setup-ruby handles PATH on CI;
+    #                                    rbenv/asdf shims handle it locally)
     deps: [ruby:version-check]
+    preconditions:
+      - sh: command -v python3 >/dev/null 2>&1
+        msg: "python3 not found; install: 'brew install python@3.12' (mac) — Ubuntu ships it"
     status:
       - test -x bin/actionlint
       - test -x bin/shellcheck
-      - gem list -i yamllint --version {{.YAMLLINT_VERSION}}
+      - test -x bin/yamllint
       - gem list -i bundler-audit --version {{.BUNDLER_AUDIT_VERSION}}
-      - gem list -i license_finder --version {{.LICENSE_FINDER_VERSION}}
     cmds:
       - bundle install
       - |
+        # actionlint: release naming uses amd64/arm64. `uname -m` on Linux
+        # returns x86_64; on Apple Silicon returns arm64. Map both.
         mkdir -p bin
-        ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        [ "$ARCH" = "aarch64" ] && ARCH=arm64
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        case "$(uname -m)" in
+          aarch64|arm64) ARCH=arm64 ;;
+          x86_64|amd64)  ARCH=amd64 ;;
+          *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+        esac
         curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v{{.ACTIONLINT_VERSION}}/actionlint_{{.ACTIONLINT_VERSION}}_${OS}_${ARCH}.tar.gz" \
           | tar xz -C bin actionlint
       - |
+        # shellcheck: release naming uses x86_64/aarch64 (not amd64/arm64).
         mkdir -p bin
-        VERSION={{.SHELLCHECK_VERSION}}; ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        [ "$ARCH" = "arm64" ] && ARCH=aarch64
+        VERSION={{.SHELLCHECK_VERSION}}
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        case "$(uname -m)" in
+          aarch64|arm64) ARCH=aarch64 ;;
+          x86_64|amd64)  ARCH=x86_64 ;;
+          *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+        esac
         curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
           | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
-      - gem install yamllint --version {{.YAMLLINT_VERSION}} --no-doc
+      - |
+        # yamllint: user-scoped venv under .venv/yamllint. Works identically
+        # on local dev and GHA runners (pipx on GHA is pre-configured for
+        # /opt/pipx system-wide, which non-sudo writes can't reach).
+        mkdir -p bin
+        python3 -m venv .venv/yamllint
+        .venv/yamllint/bin/pip install --quiet --disable-pip-version-check "yamllint=={{.YAMLLINT_VERSION}}"
+        ln -sf "$(pwd)/.venv/yamllint/bin/yamllint" bin/yamllint
       - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
-      - gem install license_finder --version {{.LICENSE_FINDER_VERSION}} --no-doc
 
   # ── Lint ───────────────────────────────────────────────
 
@@ -97,7 +124,7 @@ tasks:
   lint:yaml:
     desc: Lint YAML files
     cmds:
-      - yamllint --strict .
+      - bin/yamllint --strict .
 
   lint:all:
     desc: Run every linter
@@ -153,6 +180,30 @@ tasks:
       - task: test:all
       - task: test:integration
 
+  # ── Cucumber features (legacy, removed in 2.0.0) ───────
+
+  test:features:ruby:
+    desc: Cucumber features — pure Ruby (@ruby-app, not @parallel-tests)
+    cmds:
+      - bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+
+  test:features:ruby-parallel:
+    desc: Cucumber features — parallel_tests (@ruby-app and @parallel-tests)
+    cmds:
+      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @parallel-tests"
+
+  test:features:rails:
+    desc: Cucumber features — Rails (@rails-app)
+    cmds:
+      - bundle exec cucumber --retry 1 --no-strict-flaky --tags @rails-app
+
+  test:features:jruby:
+    desc: Cucumber features on JRuby (@ruby-app, not @parallel-tests)
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+
   # ── Benchmarks ─────────────────────────────────────────
 
   benchmark:smoke:
@@ -173,14 +224,16 @@ tasks:
       - bundle-audit check --update
 
   security:licenses:
-    desc: License compliance check
+    desc: License compliance check (optional; install via `gem install license_finder`)
+    preconditions:
+      - sh: command -v license_finder >/dev/null 2>&1
+        msg: "license_finder not installed; run: gem install license_finder --version {{.LICENSE_FINDER_VERSION}}"
     cmds:
       - license_finder
 
   security:all:
     cmds:
       - task: security:bundle-audit
-      - task: security:licenses
 
   # ── Feedback loop ──────────────────────────────────────
 

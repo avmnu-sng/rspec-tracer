@@ -1,0 +1,30 @@
+---
+# yamllint configuration for rspec-tracer.
+# The defaults flag GitHub Actions' `on:` key as a truthy value and enforce
+# an 80-column limit that workflow syntax routinely exceeds. Relax both.
+
+extends: default
+
+rules:
+  truthy:
+    # GitHub Actions workflows use `on:` as a structural key, not a boolean.
+    allowed-values: ['true', 'false']
+    check-keys: false
+  line-length:
+    max: 200
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  document-start: disable
+
+ignore: |
+  /coverage/
+  /rspec_tracer_cache/
+  /rspec_tracer_coverage/
+  /rspec_tracer_report/
+  /tmp/
+  /vendor/
+  /.bundle/
+  /node_modules/
+  /sample_projects/

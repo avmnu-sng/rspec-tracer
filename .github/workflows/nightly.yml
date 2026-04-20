@@ -1,0 +1,23 @@
+---
+name: nightly
+
+on:
+  schedule:
+    # Every day at 02:00 UTC — catches upstream patch regressions that land
+    # outside our commit stream (e.g., a new Rails 7.x patch breaking us).
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-specs:
+    name: lint-and-specs
+    uses: ./.github/workflows/lint-and-specs.yml
+    secrets: inherit
+
+  full-matrix:
+    name: full-matrix
+    uses: ./.github/workflows/full-matrix.yml
+    secrets: inherit
