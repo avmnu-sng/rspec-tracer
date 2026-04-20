@@ -63,15 +63,27 @@ tasks:
     cmds:
       - bundle install
       - |
+        # actionlint: release naming uses amd64/arm64. `uname -m` on Linux
+        # returns x86_64; on Apple Silicon returns arm64. Map both.
         mkdir -p bin
-        ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        [ "$ARCH" = "aarch64" ] && ARCH=arm64
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        case "$(uname -m)" in
+          aarch64|arm64) ARCH=arm64 ;;
+          x86_64|amd64)  ARCH=amd64 ;;
+          *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+        esac
         curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v{{.ACTIONLINT_VERSION}}/actionlint_{{.ACTIONLINT_VERSION}}_${OS}_${ARCH}.tar.gz" \
           | tar xz -C bin actionlint
       - |
+        # shellcheck: release naming uses x86_64/aarch64 (not amd64/arm64).
         mkdir -p bin
-        VERSION={{.SHELLCHECK_VERSION}}; ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        [ "$ARCH" = "arm64" ] && ARCH=aarch64
+        VERSION={{.SHELLCHECK_VERSION}}
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        case "$(uname -m)" in
+          aarch64|arm64) ARCH=aarch64 ;;
+          x86_64|amd64)  ARCH=x86_64 ;;
+          *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+        esac
         curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
           | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
       - pipx install --force "yamllint=={{.YAMLLINT_VERSION}}"
