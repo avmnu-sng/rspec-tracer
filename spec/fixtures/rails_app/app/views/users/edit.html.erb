@@ -1,0 +1,7 @@
+<% content_for :title, t('.title', name: @user.display_name) %>
+
+<h1><%= t('.title', name: @user.display_name) %></h1>
+
+<%= render 'form', user: @user %>
+
+<%= link_to t('.back'), user_path(@user) %>

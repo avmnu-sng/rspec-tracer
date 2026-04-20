@@ -1,0 +1,7 @@
+<% content_for :title, t('.title', title: @post.title) %>
+
+<h1><%= t('.title', title: @post.title) %></h1>
+
+<%= render 'form', post: @post %>
+
+<%= link_to t('.back'), post_path(@post) %>

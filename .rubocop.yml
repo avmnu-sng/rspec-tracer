@@ -10,6 +10,7 @@ AllCops:
   Exclude:
     - "rspec-tracer.gemspec"
     - "sample_projects/**/*"
+    - "spec/fixtures/**/*"
     - "tmp/**/*"
     - "vendor/**/*"
 

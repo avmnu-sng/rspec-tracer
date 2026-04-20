@@ -1,0 +1,42 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Rails + the rspec-rails version are ENV-var driven so this single
+# fixture runs cleanly across the CI matrix (Rails 7.0 / 7.1 / 7.2 with
+# matching rspec-rails). Defaults target Rails 7.1 for local dev.
+gem "rails", ENV.fetch("RAILS_VERSION", "~> 7.1.0")
+
+# Rails 7.0/7.1's activerecord locks `sqlite3 ~> 1.4` at load time
+# (inside sqlite3_adapter.rb), not in its gemspec, so bundler can resolve
+# to 2.x and then gem activation blows up. Rails 8.0 needs sqlite3 >= 2.1.
+# Pick the right major via env var from the workflow.
+gem "sqlite3", ENV.fetch("SQLITE3_VERSION", "~> 1.4")
+
+gem "puma", "~> 6.0"
+gem "sprockets-rails"
+gem "bootsnap", require: false
+
+# View template engines under test — rspec-tracer's Rails integration
+# needs to observe dependencies via ActionView regardless of engine.
+gem "jbuilder", "~> 2.7"
+gem "slim-rails", "~> 3.6"
+
+# Windows / JRuby zoneinfo workaround.
+gem "tzinfo-data", platforms: %i[windows jruby]
+
+group :development, :test do
+  gem "pry"
+  gem "rubocop", "~> 1.60", require: false
+  gem "rubocop-performance", "~> 1.20", require: false
+  gem "rubocop-rails", "~> 2.24", require: false
+  gem "rubocop-rails-omakase", "~> 1.0", require: false
+  gem "rubocop-rspec", "~> 3.0", require: false
+end
+
+group :test do
+  gem "factory_bot_rails", "~> 6.4"
+  gem "rspec-rails", ENV.fetch("RSPEC_RAILS_VERSION", "~> 6.1.0")
+  gem "rspec-tracer", path: "../../..", require: false
+  gem "simplecov", ENV.fetch("SIMPLECOV_VERSION", "~> 0.22")
+end

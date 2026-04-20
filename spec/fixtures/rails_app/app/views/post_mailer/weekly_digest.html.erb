@@ -1,0 +1,15 @@
+<h1>Weekly digest for <%= @user.display_name %></h1>
+
+<% if @posts.any? %>
+  <p>Your recent published posts:</p>
+  <ul>
+    <% @posts.each do |post| %>
+      <li>
+        <%= link_to post.title, post_url(post) %>
+        (<%= l(post.published_at, format: :short) %>)
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>You have no recently published posts.</p>
+<% end %>

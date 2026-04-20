@@ -1,0 +1,38 @@
+---
+# Trivy filesystem scan config for rspec-tracer.
+# Run via `task security:trivy`.
+
+scan:
+  scanners:
+    - vuln
+    - secret
+    - misconfig
+
+misconfiguration:
+  include-non-failures: false
+
+secret:
+  # Default secret detection rules; override here if we need to tune.
+  config: ''
+
+# Exclude generated + cache + dep directories.
+skip-dirs:
+  - .bundle
+  - .git
+  - .venv
+  - coverage
+  - node_modules
+  - pkg
+  - rspec_tracer_cache
+  - rspec_tracer_coverage
+  - rspec_tracer_report
+  - sample_projects
+  - spec/fixtures/rails_app/log
+  - spec/fixtures/rails_app/storage
+  - spec/fixtures/rails_app/tmp
+  - tmp
+  - vendor
+
+severity:
+  - HIGH
+  - CRITICAL

@@ -1,0 +1,122 @@
+---
+es:
+  time:
+    formats:
+      short: "%-d %b %Y"
+      long: "%-d de %B de %Y a las %H:%M"
+
+  posts:
+    by: "por %{author}"
+    draft: "Borrador"
+    unpublished: "Sin publicar"
+    comments_count:
+      zero: "Sin comentarios"
+      one: "1 comentario"
+      other: "%{count} comentarios"
+    statuses:
+      draft: "Borrador"
+      published: "Publicado"
+    form:
+      errors:
+        one: "1 error impidió guardar este post"
+        other: "%{count} errores impidieron guardar este post"
+    index:
+      title: "Todos los posts"
+      all: "Todos"
+      drafts: "Borradores"
+      new: "Nuevo post"
+      empty: "Todavía no hay posts."
+    show:
+      edit: "Editar"
+      publish: "Publicar"
+      destroy: "Eliminar"
+      destroy_confirm: "¿Estás seguro? Esta acción no se puede deshacer."
+      view_comments: "Ver comentarios"
+    new:
+      title: "Nuevo post"
+      back: "Volver a posts"
+    edit:
+      title: "Editar %{title}"
+      back: "Volver al post"
+    create:
+      created: "Post creado correctamente."
+    update:
+      updated: "Post actualizado correctamente."
+    destroy:
+      destroyed: "Post eliminado."
+    publish:
+      published: "Post publicado."
+      already_published: "El post ya estaba publicado."
+
+  users:
+    roles:
+      admin: "Administrador"
+      member: "Miembro"
+      guest: "Invitado"
+    activation:
+      activated_at: "Activado el %{time}"
+      pending: "Pendiente de activación"
+    author:
+      unknown: "Desconocido"
+      admin: "%{name} (admin)"
+    form:
+      errors:
+        one: "1 error impidió guardar este usuario"
+        other: "%{count} errores impidieron guardar este usuario"
+    index:
+      title: "Todos los usuarios"
+      new: "Nuevo usuario"
+      empty: "Todavía no hay usuarios."
+    show:
+      posts_by: "Posts de %{name}"
+      no_posts: "Todavía no hay posts."
+      edit: "Editar"
+      destroy: "Eliminar"
+      destroy_confirm: "¿Eliminar este usuario y todos sus posts y comentarios?"
+    new:
+      title: "Nuevo usuario"
+      back: "Volver a usuarios"
+    edit:
+      title: "Editar %{name}"
+      back: "Volver al usuario"
+    create:
+      created: "Usuario creado correctamente."
+    update:
+      updated: "Usuario actualizado correctamente."
+    destroy:
+      destroyed: "Usuario eliminado."
+    _user:
+      activated_at: "Se unió %{time}"
+      inactive: "Pendiente de activación"
+
+  comments:
+    destroy: "Eliminar"
+    destroy_confirm: "¿Eliminar este comentario?"
+    author:
+      unknown: "Desconocido"
+      admin: "%{name} (admin)"
+    index:
+      title: "Comentarios en %{post}"
+      empty: "Todavía no hay comentarios. Sé el primero."
+      add_comment: "Añadir comentario"
+    create:
+      created: "Comentario publicado."
+    destroy:
+      destroyed: "Comentario eliminado."
+
+  categories:
+    post_count:
+      zero: "sin posts"
+      one: "1 post"
+      other: "%{count} posts"
+    index:
+      title: "Categorías"
+    show:
+      empty: "Todavía no hay posts en esta categoría."
+      back: "Todas las categorías"
+
+  post_mailer:
+    notify_author:
+      subject: "Nuevo comentario en \"%{title}\""
+    weekly_digest:
+      subject: "Tu resumen semanal"
