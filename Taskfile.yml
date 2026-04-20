@@ -1,0 +1,227 @@
+version: '3'
+
+set: [errexit, nounset, pipefail]
+
+vars:
+  RUBY_VERSION:
+    sh: cat .ruby-version
+  VERSION:
+    sh: ruby -e "require_relative 'lib/rspec_tracer/version'; puts RSpecTracer::VERSION"
+  # Tool versions — bump intentionally, not accidentally.
+  ACTIONLINT_VERSION: 1.7.12
+  SHELLCHECK_VERSION: v0.11.0
+  YAMLLINT_VERSION: 1.37.1
+  BUNDLER_AUDIT_VERSION: 0.9.2
+  LICENSE_FINDER_VERSION: 7.2.1
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  # ── Setup ──────────────────────────────────────────────
+
+  ruby:version-check:
+    internal: true
+    cmds:
+      - |
+        ACTUAL=$(ruby -e "puts RUBY_VERSION")
+        if [ "$ACTUAL" != "{{.RUBY_VERSION}}" ]; then
+          echo "Ruby version mismatch: expected {{.RUBY_VERSION}}, got $ACTUAL"
+          echo "Run 'task install:ruby'"; exit 1
+        fi
+
+  install:ruby:
+    desc: Install the Ruby version from .ruby-version via rbenv
+    preconditions:
+      - sh: command -v rbenv >/dev/null 2>&1
+        msg: "rbenv not found; install: brew install rbenv"
+    cmds:
+      - rbenv install --skip-existing {{.RUBY_VERSION}}
+
+  install:tools:
+    desc: Install all pinned dev tools (binaries + out-of-bundle gems)
+    # Binaries (actionlint, shellcheck) land in ./bin/. The three gems
+    # (yamllint, bundler-audit, license_finder) install to the active
+    # Ruby's default gem bin dir; lint:yaml, security:bundle-audit, and
+    # security:licenses resolve them via $PATH (rbenv/asdf shims).
+    deps: [ruby:version-check]
+    status:
+      - test -x bin/actionlint
+      - test -x bin/shellcheck
+      - gem list -i yamllint --version {{.YAMLLINT_VERSION}}
+      - gem list -i bundler-audit --version {{.BUNDLER_AUDIT_VERSION}}
+      - gem list -i license_finder --version {{.LICENSE_FINDER_VERSION}}
+    cmds:
+      - bundle install
+      - |
+        mkdir -p bin
+        ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        [ "$ARCH" = "aarch64" ] && ARCH=arm64
+        curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v{{.ACTIONLINT_VERSION}}/actionlint_{{.ACTIONLINT_VERSION}}_${OS}_${ARCH}.tar.gz" \
+          | tar xz -C bin actionlint
+      - |
+        mkdir -p bin
+        VERSION={{.SHELLCHECK_VERSION}}; ARCH=$(uname -m); OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        [ "$ARCH" = "arm64" ] && ARCH=aarch64
+        curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
+          | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
+      - gem install yamllint --version {{.YAMLLINT_VERSION}} --no-doc
+      - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
+      - gem install license_finder --version {{.LICENSE_FINDER_VERSION}} --no-doc
+
+  # ── Lint ───────────────────────────────────────────────
+
+  lint:ruby:
+    desc: Run RuboCop (parallel)
+    cmds:
+      - bundle exec rubocop --parallel --format progress
+
+  lint:actions:
+    desc: Lint GitHub Actions workflows
+    cmds:
+      - bin/actionlint
+
+  lint:shell:
+    desc: Lint shell scripts
+    cmds:
+      - |
+        SCRIPTS=$(find . -name '*.sh' -not -path './.git/*' -not -path './tmp/*' -not -path './coverage/*' -not -path './rspec_tracer_*/*' 2>/dev/null || true)
+        if [ -n "$SCRIPTS" ]; then
+          echo "$SCRIPTS" | xargs bin/shellcheck
+        else
+          echo "No shell scripts to lint."
+        fi
+
+  lint:yaml:
+    desc: Lint YAML files
+    cmds:
+      - yamllint --strict .
+
+  lint:all:
+    desc: Run every linter
+    cmds:
+      - task: lint:ruby
+      - task: lint:actions
+      - task: lint:shell
+      - task: lint:yaml
+
+  # ── Checks (format / tidy) ─────────────────────────────
+
+  check:bundle:
+    desc: Verify Gemfile.lock is installable
+    cmds:
+      - bundle check
+
+  check:all:
+    cmds:
+      - task: check:bundle
+
+  # ── Tests ──────────────────────────────────────────────
+
+  test:unit:
+    desc: Unit tests (fast)
+    cmds:
+      - bundle exec rspec --fail-fast
+
+  test:contract:
+    desc: Contract tests (storage + remote cache backends)
+    cmds:
+      - bundle exec rspec spec/contracts
+
+  test:integration:
+    desc: Integration tests against reference Rails app
+    cmds:
+      - bundle exec rspec spec/integration
+
+  test:property:
+    desc: Property-based invariant tests
+    cmds:
+      - bundle exec rspec spec/properties
+
+  test:all:
+    desc: Unit + contract + property (no integration — slow)
+    cmds:
+      - task: test:unit
+      - task: test:contract
+      - task: test:property
+
+  test:everything:
+    desc: Every test suite, including integration
+    cmds:
+      - task: test:all
+      - task: test:integration
+
+  # ── Benchmarks ─────────────────────────────────────────
+
+  benchmark:smoke:
+    desc: Smoke benchmark (~2s)
+    cmds:
+      - ruby benchmark/harness.rb --smoke
+
+  benchmark:full:
+    desc: Full benchmark suite with ratchet check
+    cmds:
+      - ruby benchmark/harness.rb --full --ratchet benchmark/ratchet.json
+
+  # ── Security ───────────────────────────────────────────
+
+  security:bundle-audit:
+    desc: CVE scan on Gemfile.lock
+    cmds:
+      - bundle-audit check --update
+
+  security:licenses:
+    desc: License compliance check
+    cmds:
+      - license_finder
+
+  security:all:
+    cmds:
+      - task: security:bundle-audit
+      - task: security:licenses
+
+  # ── Feedback loop ──────────────────────────────────────
+
+  check:
+    desc: 10-second feedback loop — lint + unit tests + smoke benchmark
+    cmds:
+      - task: lint:ruby
+      - task: test:unit
+      - task: benchmark:smoke
+
+  # ── Full CI (local equivalent of CI pipeline) ──────────
+
+  ci:
+    desc: Full CI pipeline locally
+    deps: [ruby:version-check]
+    cmds:
+      - task: lint:all
+      - task: check:all
+      - task: test:all
+      - task: security:all
+      - task: benchmark:full
+      - task: test:integration
+
+  # ── Gem release ────────────────────────────────────────
+
+  gem:build:
+    desc: Build the gem locally
+    cmds:
+      - mkdir -p pkg
+      - gem build rspec-tracer.gemspec -o pkg/rspec-tracer-{{.VERSION}}.gem
+
+  gem:install:local:
+    desc: Build + install locally for manual smoke testing
+    cmds:
+      - task: gem:build
+      - gem install pkg/rspec-tracer-{{.VERSION}}.gem --local --no-doc
+
+  gem:push:
+    desc: Push the built gem to RubyGems
+    preconditions:
+      - sh: test -n "${RUBYGEMS_API_KEY:-}"
+        msg: "RUBYGEMS_API_KEY must be set"
+    cmds:
+      - gem push pkg/rspec-tracer-{{.VERSION}}.gem
