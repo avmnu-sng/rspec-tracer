@@ -30,7 +30,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache out-of-bundle tools
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             bin
@@ -58,6 +58,9 @@ jobs:
 
       - name: Security — bundle-audit
         run: task security:bundle-audit
+
+      - name: Security — trivy
+        run: task security:trivy
 
       - name: Test — Unit
         run: task test:unit

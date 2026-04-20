@@ -1,0 +1,21 @@
+# Rails fixture — only the app source is committed.
+# Runtime artefacts are regenerated on each `bundle install` + `rspec` run.
+
+/.bundle/
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+!/tmp/pids
+/tmp/pids/*
+!/tmp/pids/.keep
+/storage/*
+!/storage/.keep
+/public/assets
+/vendor/bundle
+
+/db/*.sqlite3
+/db/*.sqlite3-*
+
+Gemfile.lock
+.byebug_history

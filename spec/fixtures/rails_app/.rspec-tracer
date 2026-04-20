@@ -1,0 +1,3 @@
+# Minimal rspec-tracer configuration for the reference Rails fixture.
+# Per-example Rails-aware tracking (`track_rails_defaults`) lands in M4.1.
+# For now this just ensures the tracer loads cleanly against the fixture.

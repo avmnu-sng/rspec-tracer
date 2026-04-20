@@ -16,6 +16,7 @@ vars:
   YAMLLINT_VERSION: 1.37.1
   BUNDLER_AUDIT_VERSION: 0.9.2
   LICENSE_FINDER_VERSION: 7.2.1
+  TRIVY_VERSION: v0.69.3
 
 tasks:
   default:
@@ -61,6 +62,7 @@ tasks:
       - test -x bin/actionlint
       - test -x bin/shellcheck
       - test -x bin/yamllint
+      - test -x bin/trivy
       - gem list -i bundler-audit --version {{.BUNDLER_AUDIT_VERSION}}
     cmds:
       - bundle install
@@ -96,6 +98,12 @@ tasks:
         python3 -m venv .venv/yamllint
         .venv/yamllint/bin/pip install --quiet --disable-pip-version-check "yamllint=={{.YAMLLINT_VERSION}}"
         ln -sf "$(pwd)/.venv/yamllint/bin/yamllint" bin/yamllint
+      - |
+        # trivy: official install script handles arch detection + pins
+        # the version. Lands in ./bin/trivy.
+        mkdir -p bin
+        curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sh -s -- -b "$(pwd)/bin" {{.TRIVY_VERSION}}
       - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
 
   # ── Lint ───────────────────────────────────────────────
@@ -231,9 +239,56 @@ tasks:
     cmds:
       - license_finder
 
+  security:trivy:
+    desc: Trivy filesystem scan (secrets + misconfig + vuln)
+    cmds:
+      - bin/trivy fs --config trivy.yaml --skip-version-check .
+
   security:all:
     cmds:
       - task: security:bundle-audit
+      - task: security:trivy
+
+  # ── Fixtures ───────────────────────────────────────────
+
+  fixtures:rails:bundle:
+    desc: bundle install in the reference Rails fixture
+    dir: spec/fixtures/rails_app
+    cmds:
+      - bundle install
+
+  fixtures:rails:migrate:
+    desc: Create + migrate the reference Rails fixture database
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
+      - bundle exec rails db:drop db:create db:migrate RAILS_ENV=development
+
+  fixtures:rails:seed:
+    desc: Seed the reference Rails fixture
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:migrate]
+    cmds:
+      - bundle exec rails db:seed
+
+  fixtures:rails:rspec:
+    desc: Run the reference Rails fixture's RSpec suite
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rails db:test:prepare
+      - bundle exec rspec
+
+  fixtures:rails:lint:
+    desc: Run RuboCop against the reference Rails fixture
+    # --config pins to the fixture's .rubocop.yml. Without it, rubocop's
+    # parent-dir walk picks up the outer project's config (which plugs in
+    # rubocop-rake, not present in the fixture bundle).
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rubocop --config .rubocop.yml --format progress
 
   # ── Feedback loop ──────────────────────────────────────
 

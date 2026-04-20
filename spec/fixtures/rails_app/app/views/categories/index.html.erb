@@ -1,0 +1,12 @@
+<% content_for :title, t('.title') %>
+
+<h1><%= t('.title') %></h1>
+
+<ul class="categories">
+  <% @categories.each do |category| %>
+    <li>
+      <%= link_to category.name, category_path(category) %>
+      <span class="count"><%= t('categories.post_count', count: category.post_count) %></span>
+    </li>
+  <% end %>
+</ul>
