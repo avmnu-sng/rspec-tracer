@@ -99,6 +99,105 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#track_files' do
+    it 'returns an empty list when never configured' do
+      expect(config.declared_globs).to eq([])
+    end
+
+    it 'accumulates across multiple calls' do
+      config.track_files('db/schema.rb')
+      config.track_files('config/**/*.yml')
+
+      expect(config.declared_globs).to eq(%w[db/schema.rb config/**/*.yml])
+    end
+
+    it 'accepts multiple globs per call' do
+      config.track_files('a.rb', 'b.rb')
+
+      expect(config.declared_globs).to eq(%w[a.rb b.rb])
+    end
+
+    it 'flattens nested arrays' do
+      config.track_files(%w[a.rb b.rb])
+
+      expect(config.declared_globs).to eq(%w[a.rb b.rb])
+    end
+
+    it 'de-duplicates repeated globs' do
+      config.track_files('a.rb')
+      config.track_files('a.rb')
+
+      expect(config.declared_globs).to eq(['a.rb'])
+    end
+
+    it 'coerces non-string globs to strings' do
+      config.track_files(Pathname.new('a.rb'))
+
+      expect(config.declared_globs).to eq(['a.rb'])
+    end
+
+    it 'drops nil entries' do
+      config.track_files(nil, 'a.rb', nil)
+
+      expect(config.declared_globs).to eq(['a.rb'])
+    end
+  end
+
+  describe '#declared_globs consolidation' do
+    it 'returns a frozen array' do
+      expect(config.declared_globs).to be_frozen
+    end
+
+    it 'includes the legacy coverage_track_files value' do
+      config.coverage_track_files('app/**/*.rb')
+
+      expect(config.declared_globs).to eq(['app/**/*.rb'])
+    end
+
+    it 'merges track_files and coverage_track_files (track_files first)' do
+      config.track_files('db/schema.rb')
+      config.coverage_track_files('app/**/*.rb')
+
+      expect(config.declared_globs).to eq(%w[db/schema.rb app/**/*.rb])
+    end
+
+    it 'de-duplicates a glob declared via both surfaces' do
+      config.track_files('app/**/*.rb')
+      config.coverage_track_files('app/**/*.rb')
+
+      expect(config.declared_globs).to eq(['app/**/*.rb'])
+    end
+  end
+
+  describe '#freeze_declared_globs!' do
+    it 'prevents subsequent track_files calls' do
+      config.track_files('a.rb')
+      config.freeze_declared_globs!
+
+      expect { config.track_files('b.rb') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /cannot be called/)
+    end
+
+    it 'keeps previously-declared globs readable after freezing' do
+      config.track_files('a.rb')
+      config.freeze_declared_globs!
+
+      expect(config.declared_globs).to eq(['a.rb'])
+    end
+  end
+
+  describe '#track_rails_defaults' do
+    it 'is a no-op stub until M4.1 (returns nil)' do
+      expect(config.track_rails_defaults).to be_nil
+    end
+
+    it 'does not accumulate any declared globs' do
+      config.track_rails_defaults
+
+      expect(config.declared_globs).to eq([])
+    end
+  end
+
   describe '#add_filter' do
     # Uses the isolated `config` instance (Class.new { include Configuration })
     # rather than the global RSpecTracer constant so a registered filter
