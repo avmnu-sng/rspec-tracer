@@ -1,35 +1,59 @@
 # Contributing
 
-If you discover issues, have ideas for improvements or new features,
-please report them to the [issue tracker][1] of the repository or
-submit a pull request. Please, try to follow these guidelines when you
-do so.
+Thanks for taking the time to contribute. A few pointers so we can
+merge your work quickly.
 
-## Issue reporting
+## Reporting issues
 
-- Check that the issue has not already been reported.
-- Check that the issue has not already been fixed.
-- Be clear, concise and precise in your description of the problem.
-- Include Ruby, RSpecTracer, and RSpec version. Also include Simplecov version if applicable.
+- Search first — chances are someone has hit it before.
+- Use the bug or feature-request template; fill in every field. The
+  [bug template](ISSUE_TEMPLATE/bug_report.md) asks for Ruby / Rails /
+  RSpec / SimpleCov versions, your `.rspec-tracer` config, and whether
+  the repro still shows up after `task check` — please include them.
+- A minimal reproduction (a failing spec, ideally) speeds resolution
+  by an order of magnitude.
 
 ## Pull requests
 
-- Read [how to properly contribute to open source projects on GitHub][2].
-- Fork the project.
-- Write [good commit messages][3].
-- Use the same coding conventions as the rest of the project.
-- If your change has a corresponding open GitHub issue, 
-prefix the commit message with `[Fix #github-issue-number]`.
-- Make sure to add tests for it.
-- Make sure to run `bundle exec rake assets:precompile` in
-`lib/rspec_tracer/html_reporter` if changing `JavaScript` and `CSS` files.
-- Make sure to run `bundle exec rake`.
-- [Squash related commits together][4].
-- Open a [pull request][5] that relates to *only* one subject with a 
-clear title and description in grammatically correct, complete sentences.
+### Before you push
 
-[1]: https://github.com/avmnu-sng/rspec-tracer/issues
-[2]: https://www.gun.io/blog/how-to-github-fork-branch-and-pull-request
-[3]: https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-[4]: http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html
-[5]: https://help.github.com/articles/about-pull-requests
+- Fork and branch off `main`.
+- Work in focused commits; squash noise before opening the PR.
+- Add or update tests for every behavioural change.
+- Run `task ci` locally and confirm it's green. That's the same
+  pipeline CI runs (lint, unit + property + mutation:smoke + dogfood,
+  security, benchmark, full-matrix). `task check` is the faster
+  feedback loop (lint + unit + benchmark smoke, under ~10 s) for
+  inner-loop development.
+- Document new public behaviour in the relevant place (README for
+  user-facing surface; source-level YARD comments for public APIs).
+
+### When you open the PR
+
+- Fill in the [PR template](PULL_REQUEST_TEMPLATE.md) — it's short.
+- Keep the PR to *one* subject. Separate unrelated fixes into
+  separate PRs.
+- Write a clear title and a description that a reviewer can skim:
+  what changed, why, and what testing you did.
+- If your change touches performance-sensitive paths, include a
+  `task benchmark:full` result summary in the PR body.
+
+## Project conventions
+
+- **Trunk-based.** PRs into `main`. Releases are tags on `main`.
+- **Maximum supported surface.** We drop a Ruby / Rails / RSpec
+  version only when there's a genuine technical reason (a feature
+  we need requires a newer floor, a platform is unshippable). We do
+  not drop versions because supporting them is extra work.
+- **Graceful degradation.** The tracer must never propagate a failure
+  into the user's test suite. Log, degrade, continue.
+- **Taskfile is the dev loop.** `bundle exec rake` is a legacy path
+  kept only for the cucumber integration suite; it is removed in
+  2.0.0.
+
+See `task --list` for the full command catalogue.
+
+## License
+
+By contributing, you agree your code ships under the project's
+[MIT license](../LICENSE).

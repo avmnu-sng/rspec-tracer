@@ -1,22 +1,44 @@
 ---
-name: Feature Request
-about: Suggest new RSpecTracer features or improvements to an existing features.
+name: Feature request
+about: Suggest a new capability or an improvement to an existing one.
+title: ''
+labels: enhancement
 ---
 
-## Is your feature request related to a problem? Please describe.
+## User story
 
-A clear and concise description of what the problem is. 
-Ex. I'm always frustrated when [...]
+<!--
+"As a [type of user], I want [capability] so that [outcome]."
+One sentence is ideal.
+-->
 
-## Describe the solution you'd like
+## Problem
 
-A clear and concise description of what you want to happen.
+<!-- what pain point does this address? concrete example welcome. -->
 
-## Describe alternatives you've considered
+## Proposed solution
 
-A clear and concise description of any alternative solutions or 
-features you've considered.
+<!-- what you'd like to see happen -->
+
+## Acceptance criteria
+
+<!--
+How do we know the feature is done? List concrete, checkable items.
+-->
+
+- [ ]
+- [ ]
+
+## Alternatives considered
+
+<!-- other approaches you thought about and why they don't fit -->
+
+## Environment (if relevant)
+
+- Ruby:
+- Rails (if applicable):
+- rspec-tracer:
 
 ## Additional context
 
-Add any other context or screenshots about the feature request here.
+<!-- anything else: links, screenshots, related issues -->
