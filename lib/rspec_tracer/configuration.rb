@@ -224,6 +224,47 @@ module RSpecTracer
       @coverage_track_files if defined?(@coverage_track_files)
     end
 
+    # M3.3 declared-globs DSL. Accumulates every call into a single
+    # array that DeclaredGlobs / NewFileDetector consume at boot.
+    # Coexists with legacy `coverage_track_files` (single-arg setter,
+    # overwrite-on-call) without changing that surface - see
+    # `#declared_globs` for the consolidated view.
+    def track_files(*globs)
+      if defined?(@declared_globs_frozen) && @declared_globs_frozen
+        raise InvalidUsageError,
+              'track_files cannot be called after the tracker has started'
+      end
+
+      @track_files_globs ||= []
+      @track_files_globs.concat(globs.flatten.compact.map(&:to_s))
+      @track_files_globs
+    end
+
+    # Consolidated read-only view over `track_files` + legacy
+    # `coverage_track_files`. Order: user-declared first (preserves
+    # DSL call order), legacy value last. De-duplicated; frozen so
+    # downstream consumers treat it as immutable.
+    def declared_globs
+      all = []
+      all.concat(@track_files_globs) if defined?(@track_files_globs) && @track_files_globs
+      all << @coverage_track_files if defined?(@coverage_track_files) && @coverage_track_files
+      all.uniq.freeze
+    end
+
+    # Rails preset hook. M3.3 ships it as a no-op so users can write
+    # `track_rails_defaults` in .rspec-tracer today without a
+    # NoMethodError; M4.1 fills in the Rails-specific glob set.
+    def track_rails_defaults
+      nil
+    end
+
+    # One-way latch. Tracker.setup (M3.6) flips it so a stray
+    # `track_files` later in the boot sequence raises instead of
+    # silently accumulating into state that has already been read.
+    def freeze_declared_globs!
+      @declared_globs_frozen = true
+    end
+
     def add_filter(filter = nil, &)
       filters << parse_filter(filter, &)
     end
