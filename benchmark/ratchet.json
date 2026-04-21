@@ -5,27 +5,32 @@
     "os": "darwin24",
     "cpu": "Apple M2 Max",
     "cores": 12,
-    "recorded_at": "2026-04-20T11:37:50Z"
+    "recorded_at": "2026-04-21T10:43:12Z"
   },
   "scenarios": {
     "cold_ruby": {
-      "p50": 0.2518,
-      "p95": 0.3244,
+      "p50": 0.2503,
+      "p95": 0.2595,
       "iterations": 10
     },
     "warm_noop": {
-      "p50": 0.2272,
-      "p95": 0.2294,
+      "p50": 0.231,
+      "p95": 0.2459,
       "iterations": 10
     },
     "cache_load": {
-      "p50": 0.246,
-      "p95": 0.2502,
+      "p50": 0.2473,
+      "p95": 0.2589,
       "iterations": 10
     },
     "cold_rails": {
-      "p50": 1.0313,
-      "p95": 1.0949,
+      "p50": 1.0406,
+      "p95": 1.0986,
+      "iterations": 10
+    },
+    "coverage_adapter": {
+      "p50": 2.5412,
+      "p95": 2.6657,
       "iterations": 10
     }
   }

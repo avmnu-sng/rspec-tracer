@@ -1,0 +1,69 @@
+# frozen_string_literal: true
+
+# 100%-line + 100%-branch coverage gate scoped to lib/rspec_tracer/tracker/.
+# Legacy files get no retroactive pressure; mutation is the stronger
+# signal for those (M8.3).
+#
+# Activation is per-file, keyed on the lib/spec pairing convention
+# (lib/rspec_tracer/tracker/X.rb ↔ spec/tracker/X_spec.rb). Running a
+# single spec file only gates the lib module it covers; unrelated runs
+# (e.g. spec/time_formatter_spec.rb) don't trigger at all.
+module TrackerCoverageGate
+  TRACKER_PREFIX = File.expand_path('../../lib/rspec_tracer/tracker/', __dir__)
+  EPSILON = 0.001 # guard float equality of "100.0%"
+
+  def self.install!
+    return unless defined?(SimpleCov)
+
+    # Kernel#at_exit runs LIFO; this hook is registered after
+    # SimpleCov.start's own hook, so ours runs first and materializes
+    # the result. SimpleCov's hook still runs afterward (idempotent).
+    at_exit { TrackerCoverageGate.check! }
+  end
+
+  def self.check!
+    files = gated_files
+    return if files.empty?
+
+    failures = files.reject { |f| full_coverage?(f) }
+    return if failures.empty?
+
+    warn 'coverage gate FAIL (tracker files require 100% line + branch):'
+    failures.each { |f| warn format_failure(f) }
+    Kernel.exit(1)
+  end
+
+  # Only the tracker files whose paired spec file was actually in this
+  # run's files_to_run list.
+  def self.gated_files
+    return [] unless defined?(RSpec) && RSpec.configuration
+
+    SimpleCov.result.files.select do |f|
+      f.filename.start_with?(TRACKER_PREFIX) && spec_ran_for?(f.filename)
+    end
+  end
+
+  def self.spec_ran_for?(lib_file)
+    basename = File.basename(lib_file, '.rb')
+    suffix = "/spec/tracker/#{basename}_spec.rb"
+    RSpec.configuration.files_to_run.any? { |f| f.end_with?(suffix) }
+  end
+
+  def self.full_coverage?(file)
+    line_ok = file.covered_percent >= (100.0 - EPSILON)
+    branch_ok = branch_percent(file) >= (100.0 - EPSILON)
+    line_ok && branch_ok
+  end
+
+  def self.branch_percent(file)
+    return 100.0 unless file.respond_to?(:branches_coverage_percent)
+
+    pct = file.branches_coverage_percent
+    pct.nil? ? 100.0 : pct
+  end
+
+  def self.format_failure(file)
+    format('  %<file>s: line=%<l>.2f%% branch=%<b>.2f%%',
+           file: file.filename, l: file.covered_percent, b: branch_percent(file))
+  end
+end

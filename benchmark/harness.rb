@@ -96,6 +96,13 @@ module BenchmarkHarness
                chdir: cwd, out: File::NULL, err: File::NULL)
       end,
       smoke: false
+    },
+    'coverage_adapter' => {
+      desc: 'Microbenchmark: Tracker::CoverageAdapter#compute_diff × 100 files × 1000 iters',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/coverage_adapter.rb'],
+      env: { 'ITERATIONS' => '1000' },
+      smoke: false
     }
   }.freeze
 

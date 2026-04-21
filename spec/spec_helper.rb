@@ -9,8 +9,12 @@ SimpleCov.formatters = [
 ].freeze
 
 SimpleCov.start do
+  enable_coverage :branch
   track_files 'lib/**/*.rb'
 end
+
+require_relative 'support/tracker_coverage_gate'
+TrackerCoverageGate.install!
 
 require 'rspec_tracer'
 
