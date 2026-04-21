@@ -17,6 +17,9 @@ module RSpecTracer
     DEFAULT_COVERAGE_DIR = 'rspec_tracer_coverage'
     DEFAULT_REPORT_DIR = 'rspec_tracer_report'
     DEFAULT_LOCK_FILE = 'rspec_tracer.lock'
+    DEFAULT_STORAGE_BACKEND = :json
+    # M3.8 adds :sqlite. Keep the list closed so typos raise early.
+    STORAGE_BACKEND_NAMES = %i[json].freeze
 
     LOG_LEVEL = {
       off: 0,
@@ -263,6 +266,28 @@ module RSpecTracer
     # silently accumulating into state that has already been read.
     def freeze_declared_globs!
       @declared_globs_frozen = true
+    end
+
+    # M3.4 storage backend selector. Symbol form
+    # (`storage_backend :json`); ENV `RSPEC_TRACER_STORAGE` wins over
+    # the DSL argument, matching the `cache_dir` / `coverage_dir`
+    # precedence convention so CI can swap backends without editing
+    # `.rspec-tracer`. Backend-specific options are intentionally not
+    # accepted here - the `configure` DSL wrapper strips Ruby 3+
+    # kwargs (it forwards `*args, &block` only), so any opts interface
+    # has to wait for the wrapper upgrade. M3.8 (SQLite) reopens this.
+    def storage_backend(name = nil)
+      return @storage_backend_name if defined?(@storage_backend_name) && @storage_backend_name && name.nil?
+
+      env = ENV.fetch('RSPEC_TRACER_STORAGE', nil)
+      resolved = (env || name || DEFAULT_STORAGE_BACKEND).to_sym
+
+      unless STORAGE_BACKEND_NAMES.include?(resolved)
+        raise InvalidUsageError,
+              "unknown storage backend: #{resolved.inspect}; allowed: #{STORAGE_BACKEND_NAMES.inspect}"
+      end
+
+      @storage_backend_name = resolved
     end
 
     def add_filter(filter = nil, &)
