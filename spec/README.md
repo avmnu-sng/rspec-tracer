@@ -18,10 +18,11 @@ Framework: [mutant](https://github.com/mbj/mutant) via the `mutant-rspec`
 integration. Licensing: `--usage opensource` — no license key needed for
 public repositories.
 
-Platform gate: mutant 0.16 requires MRI ≥ 3.2, which means Ruby 3.1 and
-JRuby matrix cells can't install the gem. `Gemfile`'s `install_if` keeps
-the gem out of incompatible environments; `task test:mutation:*` skips
-quietly on those platforms rather than erroring out.
+Platform gate: effectively MRI ≥ 3.3 (mutant 0.16's README says 3.2+,
+but its transitive dep `unparser 0.9.0` declares `required_ruby_version
+>= 3.3`, so 3.2 bundle installs fail). Ruby 3.1 / 3.2 / JRuby cells
+skip the gem via `Gemfile`'s `install_if`; `task test:mutation:*`
+skips quietly on those platforms rather than erroring out.
 
 ### Running
 

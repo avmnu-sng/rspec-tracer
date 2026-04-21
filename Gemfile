@@ -21,10 +21,12 @@ group :development do
   gem 'uglifier', '~> 4.2'
   gem 'yui-compressor', '~> 0.12'
 
-  # Mutation testing — MRI >= 3.2 only. mutant 0.16.x dropped Ruby 3.1
-  # and doesn't target JRuby. `install_if` keeps bundle install quiet
-  # on 3.1 / JRuby matrix cells instead of erroring out.
-  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2') } do
+  # Mutation testing — MRI >= 3.3 only. mutant 0.16's own README says
+  # "3.2+", but its transitive dep `unparser 0.9.0` declares
+  # `required_ruby_version >= 3.3`, so bundle install fails on Ruby
+  # 3.2 despite mutant's claim. Also doesn't target JRuby. `install_if`
+  # keeps bundle install quiet on 3.1 / 3.2 / JRuby cells.
+  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3') } do
     gem 'mutant-rspec', '~> 0.16'
   end
 end
