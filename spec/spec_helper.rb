@@ -14,7 +14,12 @@ end
 
 require 'rspec_tracer'
 
-RSpecTracer.start
+# Skip the tracer self-instrumentation when running under mutant — the
+# tracer's own Runner boot path calls TimeFormatter.format_time, and any
+# mutation that makes that raise would prevent the spec_helper from
+# loading at all, leaving mutant unable to distinguish "killed" from
+# "setup crashed".
+RSpecTracer.start unless ENV['RSPEC_TRACER_DISABLE'] == '1'
 
 RSpec.configure do |config|
   config.example_status_persistence_file_path = 'spec/examples.txt'

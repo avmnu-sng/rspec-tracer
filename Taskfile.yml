@@ -175,6 +175,66 @@ tasks:
     cmds:
       - bundle exec rspec spec/properties
 
+  test:fuzz:smoke:
+    desc: Fuzz smoke — 100 random-byte iterations against cache loaders
+    cmds:
+      - ITERATIONS=100 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
+
+  test:fuzz:full:
+    desc: Fuzz full — 10000 iterations (weekly CI only)
+    cmds:
+      - ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
+
+  test:mutation:smoke:
+    desc: Mutation smoke — TimeFormatter.format_time must hit >= 90% (< 2 min budget)
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      # mutant requires MRI >= 3.2; skip quietly on Ruby 3.1 / JRuby / any env
+      # where the Gemfile's install_if guard kept the gem out.
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+        # mutant exits non-zero whenever any mutation survives. We care about
+        # the coverage percentage instead; fall through and parse it.
+        OUT=$(bundle exec mutant run --use rspec --usage opensource \
+          --include lib --require rspec_tracer/time_formatter \
+          "RSpecTracer::TimeFormatter.format_time" 2>&1 || true)
+        echo "$OUT"
+        COV=$(echo "$OUT" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$COV" ]; then
+          echo "ERROR: could not parse mutant coverage from output"; exit 1
+        fi
+        if awk "BEGIN { exit ($COV >= 90) ? 0 : 1 }"; then
+          echo "mutation:smoke PASS (coverage $COV% >= 90%)"
+        else
+          echo "mutation:smoke FAIL (coverage $COV% < 90%)"; exit 1
+        fi
+
+  test:mutation:full:
+    desc: Mutation full — whole TimeFormatter module (informational, weekly CI only)
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+        # Private helpers (format_duration, strip_trailing_zeroes, pluralize)
+        # have no direct tests today; coverage on the whole module is expected
+        # to trail smoke until M8.3. Run anyway, report, don't gate.
+        bundle exec mutant run --use rspec --usage opensource \
+          --include lib --require rspec_tracer/time_formatter \
+          "RSpecTracer::TimeFormatter*" || true
+
+  test:dogfood:
+    desc: Dogfood — run rspec-tracer against the benchmark ruby_app fixture, cold + warm
+    cmds:
+      - bundle exec rspec spec/integration/dogfood_spec.rb
+
   test:all:
     desc: Unit + contract + property (no integration — slow)
     cmds:

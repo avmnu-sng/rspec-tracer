@@ -64,3 +64,6 @@ build-iPhoneSimulator/
 # Internal 2.0 revamp planning — kept locally per-maintainer, NOT committed.
 # See CLAUDE.md / AGENTS.md for why.
 /docs/revamp/
+
+# mutant session history — per-run artifact, not source.
+/.mutant/

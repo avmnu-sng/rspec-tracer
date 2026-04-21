@@ -64,3 +64,12 @@ jobs:
 
       - name: Test — Unit
         run: task test:unit
+
+      - name: Test — Property
+        run: task test:property
+
+      - name: Test — Mutation (smoke)
+        run: task test:mutation:smoke
+
+      - name: Test — Dogfood
+        run: task test:dogfood

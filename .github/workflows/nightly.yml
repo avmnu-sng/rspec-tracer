@@ -21,3 +21,30 @@ jobs:
     name: full-matrix
     uses: ./.github/workflows/full-matrix.yml
     secrets: inherit
+
+  fuzz-and-mutation:
+    name: fuzz-and-mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # Mutation requires MRI >= 3.2; pin to .ruby-version (3.3.10).
+          ruby-version: '.ruby-version'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Fuzz (full, 10000 iterations)
+        run: task test:fuzz:full
+
+      - name: Test — Mutation (full, whole TimeFormatter module)
+        run: task test:mutation:full
