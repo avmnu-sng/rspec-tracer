@@ -198,6 +198,44 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#storage_backend' do
+    it 'defaults to :json when never configured' do
+      expect(config.storage_backend).to eq(:json)
+    end
+
+    it 'coerces a string argument to a symbol' do
+      config.storage_backend('json')
+
+      expect(config.storage_backend).to eq(:json)
+    end
+
+    it 'raises InvalidUsageError for an unknown backend name' do
+      expect { config.storage_backend(:bogus) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown storage backend/)
+    end
+
+    it 'honors RSPEC_TRACER_STORAGE over the argument' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_STORAGE' => 'json'))
+
+      expect(config.storage_backend(:json)).to eq(:json)
+    end
+
+    it 'still rejects an unknown backend when set via ENV' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_STORAGE' => 'bogus'))
+
+      expect { config.storage_backend }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown storage backend/)
+    end
+
+    it 'memoizes the resolved name across no-arg calls' do
+      config.storage_backend(:json)
+      first = config.storage_backend
+      second = config.storage_backend
+
+      expect([first, second]).to eq(%i[json json])
+    end
+  end
+
   describe '#add_filter' do
     # Uses the isolated `config` instance (Class.new { include Configuration })
     # rather than the global RSpecTracer constant so a registered filter

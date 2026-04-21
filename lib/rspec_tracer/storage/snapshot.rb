@@ -1,0 +1,66 @@
+# frozen_string_literal: true
+
+require 'set'
+
+module RSpecTracer
+  module Storage
+    # Value object returned by `Backend#load_graph` and accepted by
+    # `Backend#save_graph`. Bundles every collection that 1.x's
+    # report_writer persists plus the schema_version + run_id envelope
+    # so a full cache can be reconstructed in one trip.
+    #
+    # The field layout mirrors 1.x's on-disk contract (see
+    # `JsonBackend::FILENAMES`); every field round-trips through
+    # `to_h` / `from_h` so the backend can serialize without reaching
+    # into struct internals.
+    #
+    # `examples_coverage` may be `nil` when a caller explicitly loads
+    # the cheap header only (M3.6 will wire that path). The default
+    # load is eager - `nil` vs `{}` distinguishes "not yet loaded"
+    # from "loaded and empty."
+    #
+    # Methods are defined on the reopened class body (not inside the
+    # Struct.new block) so mutant can introspect them - same pattern
+    # as Tracker::Input.
+    Snapshot = Struct.new(
+      :schema_version,
+      :run_id,
+      :all_examples,
+      :duplicate_examples,
+      :interrupted_examples,
+      :flaky_examples,
+      :failed_examples,
+      :pending_examples,
+      :skipped_examples,
+      :all_files,
+      :dependency,
+      :reverse_dependency,
+      :examples_coverage,
+      keyword_init: true
+    )
+
+    class Snapshot
+      # Defaults every collection to its 1.x starting shape: Hash for
+      # keyed collections, Set for example-id lists. Keeps spec
+      # construction terse and prevents accidental nil-deref when a
+      # save is composed incrementally.
+      def self.empty(schema_version:, run_id:)
+        new(
+          schema_version: schema_version,
+          run_id: run_id,
+          all_examples: {},
+          duplicate_examples: {},
+          interrupted_examples: Set.new,
+          flaky_examples: Set.new,
+          failed_examples: Set.new,
+          pending_examples: Set.new,
+          skipped_examples: Set.new,
+          all_files: {},
+          dependency: {},
+          reverse_dependency: {},
+          examples_coverage: {}
+        )
+      end
+    end
+  end
+end

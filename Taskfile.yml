@@ -186,7 +186,10 @@ tasks:
       - ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
 
   test:mutation:smoke:
-    desc: Mutation smoke — TimeFormatter.format_time + Tracker::Input + Tracker::DeclaredGlobs + Tracker::WholeSuiteInvalidators must each hit >= 90% (< 2 min budget)
+    desc: >-
+      Mutation smoke — 7 subjects (TimeFormatter.format_time, Tracker::Input,
+      Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators, Storage::Schema,
+      Storage::Snapshot, Storage::Backend) must each hit >= 90% (< 2 min budget)
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -235,6 +238,15 @@ tasks:
         run_mutant_subject "Tracker::WholeSuiteInvalidators" \
           "rspec_tracer/tracker/whole_suite_invalidators" \
           "RSpecTracer::Tracker::WholeSuiteInvalidators*" || fail=1
+        run_mutant_subject "Storage::Schema" \
+          "rspec_tracer/storage/schema" \
+          "RSpecTracer::Storage::Schema*" || fail=1
+        run_mutant_subject "Storage::Snapshot" \
+          "rspec_tracer/storage/snapshot" \
+          "RSpecTracer::Storage::Snapshot*" || fail=1
+        run_mutant_subject "Storage::Backend" \
+          "rspec_tracer/storage/backend" \
+          "RSpecTracer::Storage::Backend*" || fail=1
         exit "$fail"
 
   test:mutation:full:
