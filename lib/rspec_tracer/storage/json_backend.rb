@@ -41,6 +41,9 @@ module RSpecTracer
     # that bit the dogfood path when an example title contained a
     # non-ASCII byte on a US-ASCII-defaulted filesystem.
     class JsonBackend
+      # boot_set.json lands at the end of the list - additive w.r.t.
+      # 1.x and v2 readers that walked this enumeration. It carries
+      # the project's transitive boot-load set (schema_version 3).
       FILENAMES = %w[
         all_examples.json
         duplicate_examples.json
@@ -53,6 +56,7 @@ module RSpecTracer
         dependency.json
         reverse_dependency.json
         examples_coverage.json
+        boot_set.json
       ].freeze
 
       LAST_RUN_FILENAME = 'last_run.json'
@@ -67,9 +71,13 @@ module RSpecTracer
       ID_SET_FIELDS = %w[
         interrupted_examples flaky_examples failed_examples pending_examples skipped_examples
       ].freeze
-      HASH_FIELDS = %w[all_examples duplicate_examples all_files examples_coverage].freeze
+      HASH_FIELDS = %w[all_examples duplicate_examples all_files examples_coverage boot_set].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
       SYMBOLIZED_FIELDS = %w[all_examples all_files].freeze
+      # Fields that round-trip as a plain Hash on both sides - no
+      # key/value transformation. examples_coverage (1.x) preserved
+      # string keys; boot_set (M3.7) is simple path => digest.
+      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set].freeze
 
       attr_reader :cache_path
 
@@ -202,8 +210,15 @@ module RSpecTracer
         fields[:duplicate_examples] = deserialize_dupe_examples(read_run_file(dir, 'duplicate_examples.json'))
         ID_SET_FIELDS.each { |f| fields[f.to_sym] = deserialize_id_set(read_run_file(dir, "#{f}.json")) }
         DEPENDENCY_FIELDS.each { |f| fields[f.to_sym] = deserialize_dependency(read_run_file(dir, "#{f}.json")) }
-        fields[:examples_coverage] = read_run_file(dir, 'examples_coverage.json') || {}
+        PLAIN_HASH_FIELDS.each { |f| fields[f.to_sym] = deserialize_plain_hash(read_run_file(dir, "#{f}.json")) }
         Snapshot.new(**fields)
+      end
+
+      # Plain-hash round-trip: JSON.parse returns nil on failure, and
+      # a valid-but-wrong-shape file would otherwise poison the
+      # Snapshot field. Treat anything non-Hash as the empty default.
+      def deserialize_plain_hash(raw)
+        raw.is_a?(Hash) ? raw : {}
       end
 
       def read_run_file(dir, name)

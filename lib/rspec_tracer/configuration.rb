@@ -192,6 +192,31 @@ module RSpecTracer
                             end
     end
 
+    # M3.7 transitive-load attribution (closes the constants blind
+    # spot). Default `true` - the tracker observes files loaded during
+    # the process and attributes them as transitive deps of every
+    # subsequent example, so a change to a constants-defining file
+    # correctly invalidates tests that only reference its constants.
+    #
+    # Setting to `false` restores 1.x behavior (pure coverage-diff).
+    # Teams who explicitly accept the blind spot as a speed tradeoff
+    # can opt out; the cost is silent staleness on constants edits.
+    #
+    # Default-true breaks the `defined? && new_flag.nil?` memo shape
+    # (first read returns nil instead of true). Explicit ternary
+    # handles first-call / ENV / explicit-arg cases uniformly.
+    def transitive_load_tracking(new_flag = nil)
+      return @transitive_load_tracking if defined?(@transitive_load_tracking) && new_flag.nil?
+
+      @transitive_load_tracking = if ENV.key?('RSPEC_TRACER_TRANSITIVE_LOAD_TRACKING')
+                                    ENV['RSPEC_TRACER_TRANSITIVE_LOAD_TRACKING'] != 'false'
+                                  elsif new_flag.nil?
+                                    true
+                                  else
+                                    new_flag == true
+                                  end
+    end
+
     def lock_file(new_file = nil)
       return @lock_file if defined?(@lock_file) && @lock_file && new_file.nil?
 

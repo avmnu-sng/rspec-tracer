@@ -5,10 +5,10 @@ require 'rspec_tracer/storage/snapshot'
 
 RSpec.describe RSpecTracer::Storage::Snapshot do
   describe '.empty' do
-    subject(:snapshot) { described_class.empty(schema_version: 2, run_id: 'run-abc') }
+    subject(:snapshot) { described_class.empty(schema_version: 3, run_id: 'run-abc') }
 
     it 'stamps the schema_version' do
-      expect(snapshot.schema_version).to eq(2)
+      expect(snapshot.schema_version).to eq(3)
     end
 
     it 'stamps the run_id' do
@@ -16,7 +16,7 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
     end
 
     it 'defaults Hash-shaped fields to empty Hash' do
-      %i[all_examples duplicate_examples all_files dependency reverse_dependency examples_coverage]
+      %i[all_examples duplicate_examples all_files dependency reverse_dependency examples_coverage boot_set]
         .each { |field| expect(snapshot.send(field)).to eq({}) }
     end
 
@@ -24,19 +24,31 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
       %i[interrupted_examples flaky_examples failed_examples pending_examples skipped_examples]
         .each { |field| expect(snapshot.send(field)).to eq(Set.new) }
     end
+
+    it 'defaults boot_set to an empty Hash (schema_version 3 field)' do
+      expect(snapshot.boot_set).to eq({})
+    end
   end
 
   describe 'value semantics' do
     it 'compares equal when every field matches' do
-      a = described_class.empty(schema_version: 2, run_id: 'x')
-      b = described_class.empty(schema_version: 2, run_id: 'x')
+      a = described_class.empty(schema_version: 3, run_id: 'x')
+      b = described_class.empty(schema_version: 3, run_id: 'x')
 
       expect(a).to eq(b)
     end
 
     it 'differs when run_id differs' do
-      a = described_class.empty(schema_version: 2, run_id: 'x')
-      b = described_class.empty(schema_version: 2, run_id: 'y')
+      a = described_class.empty(schema_version: 3, run_id: 'x')
+      b = described_class.empty(schema_version: 3, run_id: 'y')
+
+      expect(a).not_to eq(b)
+    end
+
+    it 'differs when boot_set differs' do
+      a = described_class.empty(schema_version: 3, run_id: 'x')
+      b = described_class.empty(schema_version: 3, run_id: 'x')
+      b.boot_set = { 'lib/a.rb' => 'deadbeef' }
 
       expect(a).not_to eq(b)
     end
