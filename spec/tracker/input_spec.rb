@@ -132,6 +132,17 @@ RSpec.describe RSpecTracer::Tracker::Input do
     it 'is stale when the current digest is nil (input disappeared)' do
       expect(input.stale?(nil)).to be(true)
     end
+
+    it 'is not stale when digests are value-equal but not object-identical' do
+      # Kills the `!=` => `!equal?` mutation — `equal?` compares object
+      # identity; distinct allocations of the same digest must not trip
+      # staleness.
+      distinct_input = described_class.for_file(
+        path: '/tmp/p/x', kind: :ruby, digest: +'abc', root: '/tmp/p'
+      )
+
+      expect(distinct_input.stale?(+'abc')).to be(false)
+    end
   end
 
   describe 'equality' do

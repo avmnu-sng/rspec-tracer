@@ -186,32 +186,50 @@ tasks:
       - ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
 
   test:mutation:smoke:
-    desc: Mutation smoke — TimeFormatter.format_time must hit >= 90% (< 2 min budget)
+    desc: Mutation smoke — TimeFormatter.format_time + Tracker::Input must each hit >= 90% (< 2 min budget)
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
       # mutant requires MRI >= 3.2; skip quietly on Ruby 3.1 / JRuby / any env
       # where the Gemfile's install_if guard kept the gem out.
+      #
+      # Two independent subjects, parsed separately. mutant exits non-zero
+      # whenever any mutation survives; we care about the coverage percentage
+      # per subject and fail the task if either is below the 90% gate.
       - |
         if ! bundle show mutant >/dev/null 2>&1; then
           echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
           exit 0
         fi
-        # mutant exits non-zero whenever any mutation survives. We care about
-        # the coverage percentage instead; fall through and parse it.
-        OUT=$(bundle exec mutant run --use rspec --usage opensource \
-          --include lib --require rspec_tracer/time_formatter \
-          "RSpecTracer::TimeFormatter.format_time" 2>&1 || true)
-        echo "$OUT"
-        COV=$(echo "$OUT" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
-        if [ -z "$COV" ]; then
-          echo "ERROR: could not parse mutant coverage from output"; exit 1
-        fi
-        if awk "BEGIN { exit ($COV >= 90) ? 0 : 1 }"; then
-          echo "mutation:smoke PASS (coverage $COV% >= 90%)"
-        else
-          echo "mutation:smoke FAIL (coverage $COV% < 90%)"; exit 1
-        fi
+
+        run_mutant_subject() {
+          local label="$1" require_path="$2" matcher="$3"
+          echo "=== mutation:smoke [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= 90) ? 0 : 1 }"; then
+            echo "mutation:smoke [$label] PASS (coverage $cov% >= 90%)"
+            return 0
+          fi
+          echo "mutation:smoke [$label] FAIL (coverage $cov% < 90%)"
+          return 1
+        }
+
+        fail=0
+        run_mutant_subject "TimeFormatter.format_time" \
+          "rspec_tracer/time_formatter" \
+          "RSpecTracer::TimeFormatter.format_time" || fail=1
+        run_mutant_subject "Tracker::Input" \
+          "rspec_tracer/tracker/input" \
+          "RSpecTracer::Tracker::Input*" || fail=1
+        exit "$fail"
 
   test:mutation:full:
     desc: Mutation full — whole TimeFormatter module (informational, weekly CI only)
