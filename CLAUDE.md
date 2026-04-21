@@ -68,6 +68,54 @@ commit messages are the only materials that survive in the repository.
 Tool versions are pinned at the top of `Taskfile.yml` (`vars:`); bump
 them in one place.
 
+### Prefer `task <name>` over raw `bundle exec …`
+
+The Taskfile is the canonical entry point; each task bakes in the
+right env (`RSPEC_TRACER_DISABLE`, paths, flags) and guards (e.g.
+mutant Ruby-version check). Reaching past it to `bundle exec rspec …`
+bypasses those guards and masks issues that CI will catch. Use direct
+`bundle exec` only for targeted debugging (one spec file, one flag) —
+always re-run the relevant `task` before committing.
+
+### Pre-PR local parity
+
+`task check` is necessary but **not sufficient** — it only runs
+`lint:ruby + test:unit + benchmark:smoke`. Before opening a PR, also
+run every task the per-PR CI (`.github/workflows/lint-and-specs.yml`)
+runs:
+
+```
+task lint:ruby          # already in task check
+task lint:actions       # actionlint
+task lint:yaml          # yamllint --strict
+task check:bundle       # Gemfile.lock installable
+task security:bundle-audit
+task security:trivy
+task test:unit          # already in task check
+task test:property      # rantly properties
+task test:mutation:smoke # ≥ 90% on TimeFormatter.format_time
+task test:dogfood       # tracer-on-tracer subprocess smoke
+task benchmark:smoke    # already in task check
+```
+
+Why: `task check`'s narrow surface is intentional (10 s budget). The
+wider set regularly catches issues `task check` misses — e.g. a new
+`spec/support/` gate firing inside `mutant`'s forked test subprocess
+or a spec-helper change breaking the dogfood fixture.
+
+### Ruby toolchain
+
+Activate the pinned Ruby (`.ruby-version` → `3.3.10`) via rbenv:
+
+```
+export PATH=$HOME/.rbenv/shims:$PATH
+```
+
+macOS system Ruby (`/usr/bin/ruby` → 2.6) is too old for this
+Gemfile.lock — `bundle exec` without rbenv on PATH fails with
+`Could not find 'bundler' (2.6.9)`. Tasks run `ruby:version-check`
+as a preconditioned dep, but raw `bundle exec` skips that guard.
+
 ## Branching and releases
 
 Trunk-based. PRs into `main`. Releases = tags on `main`
