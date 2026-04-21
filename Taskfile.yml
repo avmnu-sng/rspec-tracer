@@ -187,9 +187,11 @@ tasks:
 
   test:mutation:smoke:
     desc: >-
-      Mutation smoke — 7 subjects (TimeFormatter.format_time, Tracker::Input,
+      Mutation smoke — 10 subjects (TimeFormatter.format_time, Tracker::Input,
       Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators, Storage::Schema,
-      Storage::Snapshot, Storage::Backend) must each hit >= 90% (< 2 min budget)
+      Storage::Snapshot, Storage::Backend, Tracker::DependencyGraph,
+      Tracker::ExampleRegistry, Tracker::Filter) must each hit >= 90%
+      (< 2 min budget)
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -247,6 +249,15 @@ tasks:
         run_mutant_subject "Storage::Backend" \
           "rspec_tracer/storage/backend" \
           "RSpecTracer::Storage::Backend*" || fail=1
+        run_mutant_subject "Tracker::DependencyGraph" \
+          "rspec_tracer/tracker/dependency_graph" \
+          "RSpecTracer::Tracker::DependencyGraph*" || fail=1
+        run_mutant_subject "Tracker::ExampleRegistry" \
+          "rspec_tracer/tracker/example_registry" \
+          "RSpecTracer::Tracker::ExampleRegistry*" || fail=1
+        run_mutant_subject "Tracker::Filter" \
+          "rspec_tracer/tracker/filter" \
+          "RSpecTracer::Tracker::Filter*" || fail=1
         exit "$fail"
 
   test:mutation:full:
