@@ -103,6 +103,13 @@ module BenchmarkHarness
       cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/coverage_adapter.rb'],
       env: { 'ITERATIONS' => '1000' },
       smoke: false
+    },
+    'file_read_hook' => {
+      desc: 'Microbenchmark: Tracker::IOHooks File.read overhead (reject + record paths)',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/file_read_hook.rb'],
+      env: { 'REJECT_ITERS' => '100000', 'RECORD_ITERS' => '10000' },
+      smoke: false
     }
   }.freeze
 
