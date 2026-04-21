@@ -22,6 +22,8 @@ module TrackerCoverageGate
   end
 
   def self.check!
+    return if skip?
+
     files = gated_files
     return if files.empty?
 
@@ -31,6 +33,17 @@ module TrackerCoverageGate
     warn 'coverage gate FAIL (tracker files require 100% line + branch):'
     failures.each { |f| warn format_failure(f) }
     Kernel.exit(1)
+  end
+
+  # Under mutant, spec files are loaded for discovery but only a
+  # targeted subset is executed — tracker files end up partially
+  # covered by the `require` side-effect and the gate would fire inside
+  # mutant's forked test subprocess, which mutant interprets as "the
+  # mutation survived" (exit 1 ⟹ 0% mutation coverage). Same dogfood
+  # spirit as spec_helper's RSPEC_TRACER_DISABLE guard in M2.5: the
+  # gate is a full-suite assertion, not something mutant cares about.
+  def self.skip?
+    defined?(::Mutant) || ENV['RSPEC_TRACER_DISABLE'] == '1'
   end
 
   # Only the tracker files whose paired spec file was actually in this
