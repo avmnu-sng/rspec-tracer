@@ -10,7 +10,7 @@ require 'rspec_tracer/engine'
 # stubbed configuration so the subject doesn't depend on the global
 # RSpecTracer module's state. Integration coverage (real RSpec
 # fixture, subprocess) lives at spec/integration/ruby_app_v2_tracker_spec.rb.
-# rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
+# rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/MultipleMemoizedHelpers
 RSpec.describe RSpecTracer::Engine do
   let(:tmp_base) { Dir.mktmpdir }
   let(:root) { File.join(tmp_base, 'project').tap { |p| FileUtils.mkdir_p(p) } }
@@ -40,7 +40,8 @@ RSpec.describe RSpecTracer::Engine do
     defaults = {
       root: root, cache_path: cache_path, logger: logger,
       filters: [], declared_globs: [],
-      run_all_examples: false, transitive_load_tracking: false
+      run_all_examples: false, transitive_load_tracking: false,
+      rails?: false, track_ar_schema_notifications: false
     }
     double(**defaults, **overrides).tap do |config|
       allow(config).to receive(:freeze_declared_globs!)
@@ -342,5 +343,108 @@ RSpec.describe RSpecTracer::Engine do
       expect { next_run.merge_skipped_coverage(%w[ex1]) }.not_to raise_error
     end
   end
+
+  describe 'Rails observer wiring' do
+    let(:fake_as_notifications) do
+      Class.new do
+        def initialize
+          @subscribers = {}
+        end
+
+        def subscribe(event_name, &block)
+          handle = Object.new
+          (@subscribers[event_name] ||= {})[handle] = block
+          handle
+        end
+
+        def unsubscribe(handle)
+          @subscribers.each_value { |blocks| blocks.delete(handle) }
+        end
+
+        def publish(event_name, payload)
+          (@subscribers[event_name] || {}).each_value do |b|
+            b.call(event_name, Time.now, Time.now, 'id', payload)
+          end
+        end
+      end.new
+    end
+
+    before do
+      stub_const('ActiveSupport', Module.new)
+      stub_const('ActiveSupport::Notifications', fake_as_notifications)
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+    end
+
+    after do
+      if defined?(RSpecTracer::Rails::Notifications) && RSpecTracer::Rails::Notifications.installed?
+        RSpecTracer::Rails::Notifications.uninstall
+      end
+      if defined?(RSpecTracer::Rails::I18nTracking) && RSpecTracer::Rails::I18nTracking.installed?
+        RSpecTracer::Rails::I18nTracking.uninstall
+      end
+    end
+
+    it 'installs the Rails notification observers when rails? is true' do
+      tracker = build_tracker(stub_configuration(rails?: true)).tap(&:setup)
+
+      expect(RSpecTracer::Rails::Notifications).to be_installed
+    ensure
+      tracker&.finalize
+    end
+
+    it 'skips observer install when rails? is false' do
+      build_tracker.tap(&:setup)
+
+      expect(defined?(RSpecTracer::Rails::Notifications) &&
+        RSpecTracer::Rails::Notifications.installed?).to be_falsey
+    end
+
+    it 'routes notification bucket through example_started / example_finished' do
+      tracker = build_tracker(stub_configuration(rails?: true)).tap(&:setup)
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      template = File.join(root, 'app/views/show.erb')
+      FileUtils.mkdir_p(File.dirname(template))
+      File.write(template, '<h1>x</h1>')
+
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      fake_as_notifications.publish('render_template.action_view', { identifier: template })
+      tracker.example_finished('ex1')
+
+      expect(tracker.graph.paths_for('ex1')).to include(template)
+    ensure
+      tracker&.finalize
+    end
+
+    it 'uninstalls Rails observers during finalize' do
+      tracker = build_tracker(stub_configuration(rails?: true)).tap(&:setup)
+
+      tracker.finalize
+
+      expect(RSpecTracer::Rails::Notifications).not_to be_installed
+    end
+
+    it 'installs the AR subscriber when track_ar_schema_notifications is true' do
+      FileUtils.mkdir_p(File.join(root, 'db'))
+      File.write(File.join(root, 'db/schema.rb'), "ActiveRecord::Schema.define { }\n")
+
+      build_tracker(stub_configuration(rails?: true, track_ar_schema_notifications: true))
+        .tap(&:setup)
+
+      expect(fake_as_notifications.instance_variable_get(:@subscribers).keys)
+        .to include('sql.active_record')
+    end
+
+    it 'swallows errors raised during Rails observer install' do
+      allow(RSpecTracer::Rails::Notifications).to receive(:install)
+        .and_raise(StandardError.new('boom'))
+
+      expect do
+        build_tracker(stub_configuration(rails?: true)).tap(&:setup)
+      end.not_to raise_error
+    end
+  end
 end
-# rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations
+# rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/MultipleMemoizedHelpers
