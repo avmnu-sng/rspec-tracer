@@ -257,6 +257,54 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Fixture bundles are fetched fresh on every run by default -
+      # setup-ruby's bundler-cache only keys on the outer project's
+      # Gemfile.lock. Cache each fixture's vendor/bundle dir
+      # separately so repeat runs reuse the downloaded gems. Key
+      # includes the Gemfile hash and the Ruby version file so a
+      # toolchain bump invalidates the cache.
+      - name: Cache benchmark ruby_app fixture bundle
+        uses: actions/cache@v4
+        with:
+          path: benchmark/fixtures/ruby_app/vendor/bundle
+          key: fixture-bundle-ruby-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('benchmark/fixtures/ruby_app/Gemfile') }}
+          restore-keys: |
+            fixture-bundle-ruby-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+
+      # The Rails fixture Gemfile branches on RAILS_VERSION /
+      # RSPEC_RAILS_VERSION / SQLITE3_VERSION at resolve time, so the
+      # cache key must include them to avoid serving a stale set when
+      # the matrix pin moves. SIMPLECOV_VERSION does not change the
+      # resolver path today but is included for parity with the env
+      # the fixture actually sees.
+      - name: Cache rails_app fixture bundle
+        uses: actions/cache@v4
+        with:
+          path: spec/fixtures/rails_app/vendor/bundle
+          # Folded scalar: line breaks land inside `${{ }}` so the
+          # inserted whitespace is harmless to the expression parser;
+          # the evaluated cache key contains no internal spaces.
+          key: >-
+            fixture-bundle-rails-app-${{ runner.os
+            }}-${{ hashFiles('.ruby-version')
+            }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
+            }}-${{ env.RAILS_VERSION
+            }}-${{ env.RSPEC_RAILS_VERSION
+            }}-${{ env.SIMPLECOV_VERSION
+            }}-${{ env.SQLITE3_VERSION }}
+          restore-keys: |
+            fixture-bundle-rails-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}-
+            fixture-bundle-rails-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+
+      # `bundle config set --local` writes to each fixture's
+      # .bundle/config (gitignored), scoping the path redirect to
+      # that Gemfile's context. Outer-project bundle commands stay on
+      # the setup-ruby-managed path.
+      - name: Point fixture bundler at vendor/bundle
+        run: |
+          (cd benchmark/fixtures/ruby_app && bundle config set --local path vendor/bundle)
+          (cd spec/fixtures/rails_app && bundle config set --local path vendor/bundle)
+
       - name: Install fixture bundles
         run: task benchmark:bundle
 
