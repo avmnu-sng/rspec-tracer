@@ -115,8 +115,15 @@ tasks:
 
   lint:actions:
     desc: Lint GitHub Actions workflows
+    # actionlint shells out to `shellcheck` via Go's exec.LookPath,
+    # which walks $PATH. On machines with goenv on PATH, its
+    # shim directory (~/.goenv/shims/) precedes our bin/ and exposes
+    # a shellcheck shim that errors unless a Go version currently has
+    # shellcheck installed. Pin shellcheck to the project-installed
+    # binary explicitly - any path with a slash bypasses PATH lookup.
+    # Empty -pyflakes disables the Python lint pass we don't install.
     cmds:
-      - bin/actionlint
+      - bin/actionlint -shellcheck=./bin/shellcheck -pyflakes=
 
   lint:shell:
     desc: Lint shell scripts
