@@ -68,74 +68,74 @@ module RSpecTracer
     def write_all_examples_report
       file_name = File.join(@cache_dir, 'all_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.all_examples))
+      File.write(file_name, JSON.pretty_generate(@reporter.all_examples), encoding: 'UTF-8')
     end
 
     def write_duplicate_examples_report
       file_name = File.join(@cache_dir, 'duplicate_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.duplicate_examples))
+      File.write(file_name, JSON.pretty_generate(@reporter.duplicate_examples), encoding: 'UTF-8')
     end
 
     def write_interrupted_examples_report
       file_name = File.join(@cache_dir, 'interrupted_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.interrupted_examples.sort.to_a))
+      File.write(file_name, JSON.pretty_generate(@reporter.interrupted_examples.sort.to_a), encoding: 'UTF-8')
     end
 
     def write_flaky_examples_report
       file_name = File.join(@cache_dir, 'flaky_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.flaky_examples.sort.to_a))
+      File.write(file_name, JSON.pretty_generate(@reporter.flaky_examples.sort.to_a), encoding: 'UTF-8')
     end
 
     def write_failed_examples_report
       file_name = File.join(@cache_dir, 'failed_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.failed_examples.sort.to_a))
+      File.write(file_name, JSON.pretty_generate(@reporter.failed_examples.sort.to_a), encoding: 'UTF-8')
     end
 
     def write_pending_examples_report
       file_name = File.join(@cache_dir, 'pending_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.pending_examples.sort.to_a))
+      File.write(file_name, JSON.pretty_generate(@reporter.pending_examples.sort.to_a), encoding: 'UTF-8')
     end
 
     def write_skipped_examples_report
       file_name = File.join(@cache_dir, 'skipped_examples.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.skipped_examples.sort.to_a))
+      File.write(file_name, JSON.pretty_generate(@reporter.skipped_examples.sort.to_a), encoding: 'UTF-8')
     end
 
     def write_all_files_report
       file_name = File.join(@cache_dir, 'all_files.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.all_files))
+      File.write(file_name, JSON.pretty_generate(@reporter.all_files), encoding: 'UTF-8')
     end
 
     def write_dependency_report
       file_name = File.join(@cache_dir, 'dependency.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.dependency))
+      File.write(file_name, JSON.pretty_generate(@reporter.dependency), encoding: 'UTF-8')
     end
 
     def write_reverse_dependency_report
       file_name = File.join(@cache_dir, 'reverse_dependency.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.reverse_dependency))
+      File.write(file_name, JSON.pretty_generate(@reporter.reverse_dependency), encoding: 'UTF-8')
     end
 
     def write_examples_coverage_report
       file_name = File.join(@cache_dir, 'examples_coverage.json')
 
-      File.write(file_name, JSON.pretty_generate(@reporter.examples_coverage))
+      File.write(file_name, JSON.pretty_generate(@reporter.examples_coverage), encoding: 'UTF-8')
     end
 
     def write_last_run_report
       file_name = File.join(@report_dir, 'last_run.json')
       last_run_data = @reporter.last_run.merge(run_id: @run_id, timestamp: Time.now.utc)
 
-      File.write(file_name, JSON.pretty_generate(last_run_data))
+      File.write(file_name, JSON.pretty_generate(last_run_data), encoding: 'UTF-8')
     end
   end
 end

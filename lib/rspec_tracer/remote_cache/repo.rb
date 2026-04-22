@@ -169,7 +169,7 @@ module RSpecTracer
         file_name = File.join(RSpecTracer.cache_path, 'branch_refs.json')
 
         if @aws.download_branch_refs(branch_name, file_name)
-          @branch_refs = JSON.parse(File.read(file_name)).transform_values(&:to_i)
+          @branch_refs = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values(&:to_i)
 
           return if @branch_refs.empty?
 

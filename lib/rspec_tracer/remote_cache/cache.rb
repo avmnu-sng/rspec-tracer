@@ -60,7 +60,7 @@ module RSpecTracer
 
         ref_list = @repo.branch_refs.merge(@repo.branch_ref => branch_ref_time.to_i)
 
-        File.write(file_name, JSON.pretty_generate(ref_list))
+        File.write(file_name, JSON.pretty_generate(ref_list), encoding: 'UTF-8')
       end
 
       def last_run_id
@@ -68,7 +68,7 @@ module RSpecTracer
 
         raise CacheError, 'Could not find any local cache to upload' unless File.file?(file_name)
 
-        JSON.parse(File.read(file_name))['run_id']
+        JSON.parse(File.read(file_name, encoding: 'UTF-8'))['run_id']
       end
     end
   end
