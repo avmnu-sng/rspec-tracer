@@ -96,11 +96,12 @@ RSpec.describe RSpecTracer::Engine do
       expect(configuration).to have_received(:freeze_declared_globs!)
     end
 
-    it 'builds all seven observer instances' do
+    it 'builds all eight observer instances' do
       expect([
         tracker.registry, tracker.graph, tracker.loaded_files_tracker,
         tracker.coverage_adapter, tracker.declared_globs,
-        tracker.whole_suite_invalidators, tracker.new_file_detector
+        tracker.whole_suite_invalidators, tracker.new_file_detector,
+        tracker.env_snapshot
       ]).to all(be_a(Object))
     end
 
@@ -292,6 +293,150 @@ RSpec.describe RSpecTracer::Engine do
 
     it 'returns the Snapshot it persisted' do
       expect(tracker.finalize).to be_a(RSpecTracer::Storage::Snapshot)
+    end
+
+    it 'persists env_snapshot for every tracked env key' do
+      stub_const('ENV', 'API_KEY' => 'secret')
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['API_KEY']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot).to have_key('API_KEY')
+    end
+
+    it 'leaves env_snapshot empty when no tracks were registered' do
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot).to eq({})
+    end
+  end
+
+  describe '#register_tracks (M5.2 DSL hook)' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'adds declared-kind inputs for each tracked glob to the example dep set' do
+      write_project_file('config/settings.yml', "feature: enabled\n")
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+
+      tracker.register_tracks('ex1', files: Set.new(['config/*.yml']), env: Set.new)
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+
+      settings_name = '/config/settings.yml'
+      expect(tracker.all_files).to have_key(File.join(root, 'config/settings.yml'))
+      expect(tracker.graph.dependency_hash['ex1']).to include(File.join(root, 'config/settings.yml'))
+      expect(settings_name).to be_a(String) # sentinel - file_name shape tested in finalize specs
+    end
+
+    it 'accumulates env names across examples into @tracked_env_names' do
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['A']))
+      tracker.register_tracks('ex2', files: Set.new, env: Set.new(['B']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot.keys).to contain_exactly('A', 'B')
+    end
+
+    it 'is a no-op when both files and env are empty' do
+      expect { tracker.register_tracks('ex1', files: Set.new, env: Set.new) }.not_to raise_error
+    end
+
+    it 'memoizes glob resolution so the filesystem is walked once per distinct glob' do
+      write_project_file('config/a.yml', 'a')
+      write_project_file('config/b.yml', 'b')
+      allow(Dir).to receive(:glob).and_call_original
+
+      tracker.register_tracks('ex1', files: Set.new(['config/*.yml']), env: Set.new)
+      tracker.register_tracks('ex2', files: Set.new(['config/*.yml']), env: Set.new)
+
+      expect(Dir).to have_received(:glob).with('config/*.yml', anything, base: root).once
+    end
+  end
+
+  describe '#apply_env_filter_decisions (M5.2)' do
+    let(:prev_cache_path) { File.join(tmp_base, 'cache') }
+    # Pre-seed wsi_snapshot with a digest matching the current project's
+    # WholeSuiteInvalidators output so the engine's whole_suite_changed?
+    # returns false. Without this, every previous example gets marked as
+    # whole_suite_invalidated and env_changed is suppressed by the
+    # "stronger prior filter reason" guard.
+    let(:current_wsi) do
+      RSpecTracer::Tracker::WholeSuiteInvalidators.new(root: root).digest_snapshot
+    end
+    let(:previous_snapshot) do
+      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+        s.all_examples = { 'ex1' => build_example('ex1'), 'ex2' => build_example('ex2') }
+        # Non-empty dependency keeps Filter from marking every prev example
+        # as :no_cache (Filter maps missing-from-graph to no_cache which
+        # the engine promotes to @filtered_examples, masking env_changed).
+        s.dependency = { 'ex1' => Set.new(['/lib/a.rb']), 'ex2' => Set.new(['/lib/b.rb']) }
+        s.all_files = {
+          '/lib/a.rb' => { file_name: '/lib/a.rb', file_path: File.join(root, 'lib/a.rb'),
+                           digest: Digest::SHA256.file(File.join(root, 'lib/a.rb')).hexdigest },
+          '/lib/b.rb' => { file_name: '/lib/b.rb', file_path: File.join(root, 'lib/b.rb'),
+                           digest: Digest::SHA256.file(File.join(root, 'lib/b.rb')).hexdigest }
+        }
+        s.env_snapshot = {
+          'API_KEY' => Digest::MD5.hexdigest('old'),
+          'OTHER' => Digest::MD5.hexdigest('') # matches current ENV['OTHER'] (absent -> '')
+        }
+        s.wsi_snapshot = current_wsi
+      end
+    end
+
+    def prime_previous_cache
+      FileUtils.mkdir_p(prev_cache_path)
+      backend = RSpecTracer::Storage::JsonBackend.new(cache_path: prev_cache_path, logger: logger)
+      backend.save_graph(previous_snapshot, schema_version: 3)
+    end
+
+    it 'adds env_changed decisions for examples whose tracked env key changed' do
+      stub_const('ENV', 'API_KEY' => 'new')
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['API_KEY']))
+
+      tracker.apply_env_filter_decisions
+
+      expect(tracker.run_example?('ex1')).to be(true)
+      expect(tracker.run_example_reason('ex1')).to eq('Environment changed')
+    end
+
+    it 'leaves examples not declaring the changed key alone' do
+      stub_const('ENV', 'API_KEY' => 'new')
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      tracker.register_tracks('ex2', files: Set.new, env: Set.new(['OTHER']))
+
+      tracker.apply_env_filter_decisions
+
+      expect(tracker.run_example?('ex2')).to be(false)
+    end
+
+    it 'is a no-op when no previous snapshot exists (cold first run)' do
+      tracker = build_tracker.tap(&:setup)
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['API_KEY']))
+
+      expect { tracker.apply_env_filter_decisions }.not_to raise_error
+    end
+
+    it 'does not overwrite a stronger prior filter reason' do
+      stub_const('ENV', 'API_KEY' => 'new')
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      tracker.instance_variable_get(:@filtered_examples)['ex1'] = 'Failed previously'
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['API_KEY']))
+
+      tracker.apply_env_filter_decisions
+
+      expect(tracker.run_example_reason('ex1')).to eq('Failed previously')
+    end
+
+    it 'returns self even on early-out paths' do
+      tracker = build_tracker.tap(&:setup)
+
+      expect(tracker.apply_env_filter_decisions).to be(tracker)
     end
   end
 

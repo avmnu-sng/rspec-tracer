@@ -8,6 +8,7 @@ require 'set'
 require_relative 'tracker/coverage_adapter'
 require_relative 'tracker/declared_globs'
 require_relative 'tracker/dependency_graph'
+require_relative 'tracker/env_snapshot'
 require_relative 'tracker/example_registry'
 require_relative 'tracker/filter'
 require_relative 'tracker/input'
@@ -74,7 +75,8 @@ module RSpecTracer
       failed_example: 'Failed previously',
       pending_example: 'Pending previously',
       files_changed: 'Files changed',
-      whole_suite_invalidator: 'Whole-suite invalidator changed'
+      whole_suite_invalidator: 'Whole-suite invalidator changed',
+      env_changed: 'Environment changed'
     }.freeze
 
     # Map from Filter#select reasons to the legacy-shaped strings
@@ -87,12 +89,13 @@ module RSpecTracer
       failed_example: EXAMPLE_RUN_REASON[:failed_example],
       pending_example: EXAMPLE_RUN_REASON[:pending_example],
       no_cache: EXAMPLE_RUN_REASON[:no_cache],
-      files_changed: EXAMPLE_RUN_REASON[:files_changed]
+      files_changed: EXAMPLE_RUN_REASON[:files_changed],
+      env_changed: EXAMPLE_RUN_REASON[:env_changed]
     }.freeze
 
     attr_reader :registry, :graph, :loaded_files_tracker, :coverage_adapter,
                 :declared_globs, :whole_suite_invalidators, :new_file_detector,
-                :storage_backend, :all_examples, :duplicate_examples,
+                :env_snapshot, :storage_backend, :all_examples, :duplicate_examples,
                 :examples_coverage, :all_files
 
     def initialize(configuration: RSpecTracer)
@@ -102,6 +105,9 @@ module RSpecTracer
       @duplicate_examples = {}
       @examples_coverage = {}
       @all_files = {}
+      @tracks_files = Hash.new { |h, id| h[id] = Set.new } # id => Set<abs_path>
+      @tracks_env = Hash.new { |h, id| h[id] = Set.new }   # id => Set<env_name>
+      @tracked_env_names = Set.new
       @previous_snapshot = nil
       @run_id = nil
       @before_peek = nil
@@ -148,6 +154,57 @@ module RSpecTracer
       self
     end
 
+    # M5.2 per-example tracking DSL hook. Called from RunnerHook with
+    # the normalized `{files: Set<String>, env: Set<String>}` that
+    # `RSpec::Metadata.tracks_for(example)` produced. Resolves the
+    # file globs against the project root once per distinct glob
+    # string (memoized) and unions the matching Inputs into this
+    # example's dependency set. Env names are accumulated into
+    # `@tracked_env_names` so the finalize snapshot covers every key
+    # the run cared about.
+    # rubocop:disable Metrics/PerceivedComplexity
+    def register_tracks(example_id, tracks)
+      files = tracks[:files] || tracks['files'] || Set.new
+      envs = tracks[:env] || tracks['env'] || Set.new
+
+      files.each { |glob| @tracks_files[example_id].merge(resolved_glob_inputs(glob)) } unless files.empty?
+      return self if envs.empty?
+
+      envs_strs = envs.map(&:to_s)
+      @tracks_env[example_id].merge(envs_strs)
+      @tracked_env_names.merge(envs_strs)
+      self
+    end
+    # rubocop:enable Metrics/PerceivedComplexity
+
+    # M5.2. Called from RunnerHook AFTER the filter-decision pre-walk
+    # has populated `@tracks_env` / `@tracked_env_names` for every
+    # example. Compares each declared env key against the previous
+    # snapshot's `env_snapshot` via Tracker::EnvSnapshot; marks any
+    # example whose tracked-env set intersects the invalidated set
+    # as re-runnable. Strictly additive vs other filter reasons -
+    # if the example was already in `@filtered_examples` for a
+    # stronger reason (files_changed / whole_suite_invalidator /
+    # failed_example / ...), env_changed does NOT overwrite.
+    def apply_env_filter_decisions
+      return self if @previous_snapshot.nil?
+      return self if @tracked_env_names.empty?
+
+      invalidated = @env_snapshot.invalidated_keys(
+        @previous_snapshot.env_snapshot, @tracked_env_names
+      )
+      return self if invalidated.empty?
+
+      reason = FILTER_REASON_STRINGS.fetch(:env_changed)
+      @tracks_env.each do |example_id, envs|
+        next unless envs.intersect?(invalidated)
+        next if @filtered_examples.key?(example_id)
+
+        @filtered_examples[example_id] = reason
+      end
+      self
+    end
+
     def deregister_duplicate_examples
       @duplicate_examples.select! { |_, entries| entries.count > 1 }
       return if @duplicate_examples.empty?
@@ -179,9 +236,11 @@ module RSpecTracer
         @loaded_files_tracker.stop_example(example_id)
       coverage_inputs = @coverage_adapter.compute_diff(@before_peek, after_peek)
       declared_inputs = @declared_globs.walk
+      tracks_inputs = per_example_tracks_inputs(example_id)
       attribute_to_example(
         example_id,
-        coverage_inputs | transitive_inputs | io_inputs.to_set | rails_inputs.to_set | declared_inputs
+        coverage_inputs | transitive_inputs | io_inputs.to_set |
+          rails_inputs.to_set | declared_inputs | tracks_inputs
       )
 
       @before_peek = nil
@@ -282,6 +341,7 @@ module RSpecTracer
       @whole_suite_invalidators = RSpecTracer::Tracker::WholeSuiteInvalidators.new(
         root: @configuration.root
       )
+      @env_snapshot = RSpecTracer::Tracker::EnvSnapshot.new
       @new_file_detector = RSpecTracer::Tracker::NewFileDetector.new(
         root: @configuration.root, declared_globs: @configuration.declared_globs
       )
@@ -632,8 +692,63 @@ module RSpecTracer
         reverse_dependency: reverse_dependency_by_name,
         examples_coverage: @examples_coverage,
         boot_set: @loaded_files_tracker.boot_set_digest_snapshot,
-        wsi_snapshot: @whole_suite_invalidators.digest_snapshot
+        wsi_snapshot: @whole_suite_invalidators.digest_snapshot,
+        env_snapshot: env_snapshot_for_persistence
       )
+    end
+
+    # Snapshot only the env keys THIS run tracked - persisting keys
+    # that stopped being tracked (user removed `tracks: env: ...`
+    # between runs) would pin stale digests in the cache. Missing
+    # keys on the next load just trigger a one-time re-run for any
+    # example that reintroduces them, which is the correct behavior.
+    def env_snapshot_for_persistence
+      return {} if @env_snapshot.nil? || @tracked_env_names.empty?
+
+      @env_snapshot.digest_snapshot(@tracked_env_names)
+    end
+
+    # Resolve one glob against the project root into a Set of
+    # `:declared`-kind Inputs. Walks via Dir.glob
+    # (FNM_PATHNAME+FNM_EXTGLOB like DeclaredGlobs so user muscle
+    # memory works identically) and digests each hit with SHA256.
+    # Unreadable files are skipped silently - graceful degradation.
+    # Memoized per distinct glob string so N examples declaring the
+    # same glob pay the filesystem walk cost exactly once.
+    def resolved_glob_inputs(glob)
+      @resolved_glob_cache ||= {}
+      @resolved_glob_cache[glob] ||= walk_one_glob(glob)
+    end
+
+    def walk_one_glob(glob)
+      inputs = Set.new
+      root = @configuration.root
+      Dir.glob(glob, File::FNM_PATHNAME | File::FNM_EXTGLOB, base: root).each do |rel|
+        abs = File.expand_path(rel, root)
+        next unless abs.start_with?("#{root}/") && File.file?(abs)
+
+        digest = tracks_file_digest(abs)
+        next if digest.nil?
+
+        inputs << RSpecTracer::Tracker::Input.for_file(
+          path: abs, kind: :declared, digest: digest, root: root
+        )
+      end
+      inputs
+    end
+
+    def tracks_file_digest(path)
+      Digest::SHA256.file(path).hexdigest
+    rescue SystemCallError
+      nil
+    end
+
+    # Materialize the per-example tracks-file Input set. Returns an
+    # empty Set when the example has no `tracks: files:` metadata,
+    # keeping the downstream union cheap for the 99% case.
+    def per_example_tracks_inputs(example_id)
+      set = @tracks_files[example_id]
+      set.nil? || set.empty? ? Set.new : set.dup
     end
 
     def duplicates_for_snapshot

@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-RSpec.describe Calculator do
+# M5.2 benchmark: annotate one describe block with `tracks: { env: ... }`
+# so the env-snapshot code path is exercised by every benchmark scenario
+# that runs this fixture. Holds the steady-state env-tracking overhead
+# on the benchmark ratchet so regressions show up during `task benchmark:*`.
+RSpec.describe Calculator, tracks: { env: 'RSPEC_TRACER_BENCH_ENV' } do
   subject(:calc) { described_class.new }
 
   it { expect(calc.add(2, 3)).to eq(5) }

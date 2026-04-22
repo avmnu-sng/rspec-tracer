@@ -18,7 +18,7 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
     it 'defaults Hash-shaped fields to empty Hash' do
       %i[
         all_examples duplicate_examples all_files dependency reverse_dependency
-        examples_coverage boot_set wsi_snapshot
+        examples_coverage boot_set wsi_snapshot env_snapshot
       ].each { |field| expect(snapshot.send(field)).to eq({}) }
     end
 
@@ -33,6 +33,10 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
 
     it 'defaults wsi_snapshot to an empty Hash (M4.3 field)' do
       expect(snapshot.wsi_snapshot).to eq({})
+    end
+
+    it 'defaults env_snapshot to an empty Hash (M5.2 field)' do
+      expect(snapshot.env_snapshot).to eq({})
     end
   end
 
@@ -55,6 +59,14 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
       a = described_class.empty(schema_version: 3, run_id: 'x')
       b = described_class.empty(schema_version: 3, run_id: 'x')
       b.boot_set = { 'lib/a.rb' => 'deadbeef' }
+
+      expect(a).not_to eq(b)
+    end
+
+    it 'differs when env_snapshot differs' do
+      a = described_class.empty(schema_version: 3, run_id: 'x')
+      b = described_class.empty(schema_version: 3, run_id: 'x')
+      b.env_snapshot = { 'API_KEY' => 'facade1' }
 
       expect(a).not_to eq(b)
     end

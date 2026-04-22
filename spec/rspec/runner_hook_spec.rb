@@ -35,7 +35,7 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
   let(:example_group) { double('ExampleGroup') }
   let(:example_metadata) { { file_path: 'spec/foo_spec.rb' } }
   let(:example) do
-    double('Example', metadata: example_metadata, description: 'does things',
+    double('Example', object_id: 1001, metadata: example_metadata, description: 'does things',
                       example_group: double('EG', parent_groups: [example_group]))
   end
   let(:tracer_example) { { example_id: 'ex1' } }
@@ -48,9 +48,12 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
     allow(RSpecTracer).to receive_messages(engine: engine, logger: logger, fail_on_duplicates: false,
                                            ignore_spec_file?: false)
     allow(RSpecTracer::Example).to receive(:from).and_return(tracer_example)
+    allow(RSpecTracer::RSpec::Metadata).to receive(:tracks_for).and_return(files: Set.new, env: Set.new)
     allow(engine).to receive_messages(run_example?: true, run_example_reason: 'No cache',
                                       duplicate_examples: {})
     allow(engine).to receive(:register_example)
+    allow(engine).to receive(:register_tracks)
+    allow(engine).to receive(:apply_env_filter_decisions)
     allow(engine).to receive(:on_example_skipped)
     allow(engine).to receive(:deregister_duplicate_examples)
   end
@@ -134,6 +137,52 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
 
         expect(engine).to have_received(:on_example_skipped).with('ex1')
         expect(engine).not_to have_received(:register_example)
+      end
+    end
+
+    context 'when per-example tracks metadata is present (M5.2)' do
+      before do
+        allow(world).to receive(:example_count).and_return(1, 1)
+        allow(world).to receive(:filtered_examples).and_return(example_group => [example])
+        allow(world).to receive(:instance_variable_set)
+      end
+
+      it 'registers non-empty tracks metadata on the engine (Pass 1)' do
+        allow(RSpecTracer::RSpec::Metadata).to receive(:tracks_for).with(example).and_return(
+          files: Set.new(['config/*.yml']), env: Set.new(['API_KEY'])
+        )
+
+        runner.run_specs([])
+
+        expect(engine).to have_received(:register_tracks)
+          .with('ex1', hash_including(files: Set.new(['config/*.yml']), env: Set.new(['API_KEY'])))
+      end
+
+      it 'skips register_tracks when both tracks sets are empty' do
+        runner.run_specs([])
+
+        expect(engine).not_to have_received(:register_tracks)
+      end
+
+      it 'invokes apply_env_filter_decisions between the two passes' do
+        runner.run_specs([])
+
+        expect(engine).to have_received(:apply_env_filter_decisions)
+      end
+
+      it 'does not read tracks for ignored spec files' do
+        allow(RSpecTracer).to receive(:ignore_spec_file?).with('spec/foo_spec.rb').and_return(true)
+
+        runner.run_specs([])
+
+        expect(RSpecTracer::RSpec::Metadata).not_to have_received(:tracks_for)
+        expect(engine).not_to have_received(:register_tracks)
+      end
+
+      it 'computes Example.from only once per example (Pass 1 caches into Pass 2)' do
+        runner.run_specs([])
+
+        expect(RSpecTracer::Example).to have_received(:from).once
       end
     end
 

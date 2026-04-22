@@ -53,6 +53,10 @@ module RSpecTracer
       # nil previous and treated every run as a cold first run.
       # Missing file deserializes to `{}` so pre-M4.3 caches still
       # load - the fallback path fires one full re-run (safe).
+      # env_snapshot.json (M5.2) persists the `Tracker::EnvSnapshot`
+      # digest map for env-var values the per-example `tracks:
+      # { env: ... }` DSL declares. Same missing-coerces-to-`{}`
+      # fallback as wsi_snapshot - no schema bump.
       FILENAMES = %w[
         all_examples.json
         duplicate_examples.json
@@ -67,6 +71,7 @@ module RSpecTracer
         examples_coverage.json
         boot_set.json
         wsi_snapshot.json
+        env_snapshot.json
       ].freeze
 
       LAST_RUN_FILENAME = 'last_run.json'
@@ -81,14 +86,17 @@ module RSpecTracer
       ID_SET_FIELDS = %w[
         interrupted_examples flaky_examples failed_examples pending_examples skipped_examples
       ].freeze
-      HASH_FIELDS = %w[all_examples duplicate_examples all_files examples_coverage boot_set wsi_snapshot].freeze
+      HASH_FIELDS = %w[
+        all_examples duplicate_examples all_files examples_coverage
+        boot_set wsi_snapshot env_snapshot
+      ].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
       SYMBOLIZED_FIELDS = %w[all_examples all_files].freeze
       # Fields that round-trip as a plain Hash on both sides - no
       # key/value transformation. examples_coverage (1.x) preserved
-      # string keys; boot_set (M3.7) + wsi_snapshot (M4.3) are simple
-      # name/path => digest maps.
-      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot].freeze
+      # string keys; boot_set (M3.7), wsi_snapshot (M4.3), and
+      # env_snapshot (M5.2) are simple name/path => digest maps.
+      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot env_snapshot].freeze
 
       attr_reader :cache_path
 
@@ -220,7 +228,8 @@ module RSpecTracer
             reverse_dependency: state[:reverse_dependency],
             examples_coverage: state[:examples_coverage],
             boot_set: state[:boot_set],
-            wsi_snapshot: state[:wsi_snapshot]
+            wsi_snapshot: state[:wsi_snapshot],
+            env_snapshot: state[:env_snapshot]
           )
         end
 
@@ -237,7 +246,8 @@ module RSpecTracer
             dependency: Hash.new { |h, k| h[k] = Set.new },
             examples_coverage: {},
             boot_set: {},
-            wsi_snapshot: {}
+            wsi_snapshot: {},
+            env_snapshot: {}
           }
         end
 
@@ -264,6 +274,7 @@ module RSpecTracer
           merge_examples_coverage!(state[:examples_coverage], snapshot.examples_coverage || {})
           state[:boot_set].merge!(snapshot.boot_set || {})
           state[:wsi_snapshot].merge!(snapshot.wsi_snapshot || {})
+          state[:env_snapshot].merge!(snapshot.env_snapshot || {})
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
