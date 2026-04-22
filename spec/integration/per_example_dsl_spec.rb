@@ -44,6 +44,7 @@ module PerExampleDslSpecHelpers
         unless system(gemfile_env, 'bundle', 'check', out: File::NULL, err: File::NULL)
           system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
         end
+
         system('bundle', 'exec', 'rails', 'db:test:prepare',
                out: File::NULL, err: File::NULL) || raise('db:test:prepare failed')
       end
@@ -88,7 +89,7 @@ module PerExampleDslSpecHelpers
   end
 end
 
-# rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 RSpec.describe 'M5.2 per-example tracks DSL integration' do
   include PerExampleDslSpecHelpers
 
@@ -138,11 +139,9 @@ RSpec.describe 'M5.2 per-example tracks DSL integration' do
     it 're-runs exactly the env-branch examples, skipping everything else' do
       unexpected_reruns = @re_run_ids - @expected_env_branch_ids
       missed_reruns = @expected_env_branch_ids - @re_run_ids
+      diff_msg = "unexpected reruns: #{unexpected_reruns.to_a} / missed: #{missed_reruns.to_a}"
 
-      expect(unexpected_reruns).to be_empty,
-                                   "unexpectedly re-ran non-env-branch examples: #{unexpected_reruns.to_a}"
-      expect(missed_reruns).to be_empty,
-                               "missed env-branch example re-runs: #{missed_reruns.to_a}"
+      expect([unexpected_reruns, missed_reruns]).to eq([Set.new, Set.new]), diff_msg
     end
 
     it 'updates env_snapshot to the new digest' do
@@ -150,4 +149,4 @@ RSpec.describe 'M5.2 per-example tracks DSL integration' do
     end
   end
 end
-# rubocop:enable RSpec/DescribeClass, RSpec/ExampleLength, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable

@@ -11,7 +11,7 @@
 # file-globs and env-names. Assertion checks that the walker output
 # equals the exact set-union across the walked path.
 #
-# rubocop:disable RSpec/ExampleLength, RSpec/DescribeClass, RSpec/MultipleExpectations
+# rubocop:disable RSpec/DescribeClass
 require 'set'
 require 'rantly/rspec_extensions'
 require 'rspec_tracer/rspec/metadata'
@@ -34,7 +34,7 @@ module MetadataCascadeGen
     hash = {}
     hash[:files] = pick_value(rantly, PROPERTY_FILES_POOL)
     hash[:env] = pick_value(rantly, PROPERTY_ENVS_POOL)
-    hash.reject { |_, v| v.nil? }
+    hash.compact
   end
 
   def pick_value(rantly, pool)
@@ -130,4 +130,4 @@ RSpec.describe 'RSpecTracer::RSpec::Metadata cascade invariants' do
     end
   end
 end
-# rubocop:enable RSpec/ExampleLength, RSpec/DescribeClass, RSpec/MultipleExpectations
+# rubocop:enable RSpec/DescribeClass
