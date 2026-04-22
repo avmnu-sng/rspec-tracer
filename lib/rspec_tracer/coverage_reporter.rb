@@ -165,7 +165,7 @@ module RSpecTracer
 
     def jruby_line_stub(file_path)
       lines = File.foreach(file_path).map { nil }
-      root_node = ::JRuby.parse(File.read(file_path))
+      root_node = ::JRuby.parse(File.read(file_path, encoding: 'UTF-8'))
 
       visitor = org.jruby.ast.visitor.NodeVisitor.impl do |_name, node|
         if node.newline?
