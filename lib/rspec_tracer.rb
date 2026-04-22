@@ -416,18 +416,47 @@ module RSpecTracer
       true
     end
 
+    # Elects the worker that performs the per-run merge. Delegates to
+    # `::ParallelTests.first_process?`, which returns true iff
+    # `TEST_ENV_NUMBER.to_i <= 1` — i.e. for exactly one worker
+    # (TEST_ENV_NUMBER == '' or '1'), regardless of how many workers
+    # were actually spawned vs. how many CPUs the runner reports.
+    #
+    # Two previously attempted approaches do NOT work here:
+    #
+    #   1. The lock-file scheme below (each worker writing its
+    #      TEST_ENV_NUMBER to `rspec_tracer.lock` via
+    #      `track_parallel_tests_test_env_number`; last_process picked
+    #      the max) deadlocked under slow CI: worker 1 could finish
+    #      its examples before worker 2 even loaded spec_helper,
+    #      observe itself as the max, and enter
+    #      `::ParallelTests.wait_for_other_processes_to_finish`
+    #      concurrently with worker 2's own self-election — both
+    #      workers then spun on each other's pid.
+    #
+    #   2. `::ParallelTests.last_process?` compares TEST_ENV_NUMBER
+    #      against PARALLEL_TEST_GROUPS, which parallel_rspec sets to
+    #      the CPU-based *intended* process count — NOT the actual
+    #      worker count. When spec files < CPU count (common), no
+    #      TEST_ENV_NUMBER ever matches PARALLEL_TEST_GROUPS and the
+    #      merge is silently skipped.
+    #
+    # `first_process?` avoids both: set by the parent at spawn,
+    # immutable thereafter, and identifies exactly one worker
+    # regardless of CPU count. The elected worker still calls
+    # `wait_for_other_processes_to_finish` before merging so peer
+    # caches are guaranteed on disk.
+    #
+    # `track_parallel_tests_test_env_number` and the lock-file
+    # cleanup in `at_exit_behavior` are retained for backward
+    # compatibility with users who observe `rspec_tracer.lock` /
+    # set `RSPEC_TRACER_LOCK_FILE`; the file is still written and
+    # removed but is no longer consulted.
     def parallel_tests_last_process?
       return false unless parallel_tests?
+      return false unless defined?(::ParallelTests)
 
-      max_test_num = 0
-
-      File.open(RSpecTracer.lock_file, 'r') do |f|
-        f.flock(File::LOCK_SH)
-
-        max_test_num = f.read.to_i
-      end
-
-      ENV['TEST_ENV_NUMBER'].to_i == max_test_num
+      ::ParallelTests.first_process?
     end
   end
 end

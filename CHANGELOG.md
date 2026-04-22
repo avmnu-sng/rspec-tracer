@@ -1,3 +1,20 @@
+## [1.1.1] - 2026-04-23
+
+### Fixed
+
+- **parallel_tests at-exit deadlock** — `parallel_tests_last_process?`
+  relied on a lock file written during `RSpecTracer.start` to identify
+  the last worker. If a fast worker reached `at_exit` before a slower
+  peer had loaded `spec_helper` and registered its `TEST_ENV_NUMBER`,
+  both workers could self-elect as the last process, both entered
+  `::ParallelTests.wait_for_other_processes_to_finish`, and deadlocked
+  on each other's pid. The elector now delegates to
+  `::ParallelTests.first_process?`, which reads immutable env vars set
+  by the parent at worker spawn. Exactly one worker is elected per run,
+  regardless of boot-time ordering or runner CPU count. No public-API
+  change — the `rspec_tracer.lock` file is still written and cleaned
+  up, just no longer consulted.
+
 ## [1.1.0] - 2026-04-20
 
 ### Added
