@@ -44,7 +44,16 @@ require_relative 'spec_helper'
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 
 RSpec.configure do |config|
-  config.fixture_paths = [ Rails.root.join('spec/fixtures').to_s ]
+  # rspec-rails renamed `fixture_path=` (singular) to `fixture_paths=`
+  # (Array) in 6.2. The Rails 7.0 matrix cell pins rspec-rails 6.1, so
+  # prefer the newer setter when available and fall back to the older one.
+  fixtures_path = Rails.root.join('spec/fixtures').to_s
+  if config.respond_to?(:fixture_paths=)
+    config.fixture_paths = [fixtures_path]
+  elsif config.respond_to?(:fixture_path=)
+    config.fixture_path = fixtures_path
+  end
+
   config.use_transactional_fixtures = true
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
