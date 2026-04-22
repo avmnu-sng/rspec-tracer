@@ -1,15 +1,17 @@
 # frozen_string_literal: true
 
-# 100%-line + 100%-branch coverage gate scoped to lib/rspec_tracer/tracker/.
-# Legacy files get no retroactive pressure; mutation is the stronger
-# signal for those (M8.3).
+# 100%-line + 100%-branch coverage gate scoped to the lib/rspec_tracer
+# subdirectories listed in GATED_SUBDIRS. Legacy files get no retroactive
+# pressure; mutation is the stronger signal for those (M8.3).
 #
 # Activation is per-file, keyed on the lib/spec pairing convention
-# (lib/rspec_tracer/tracker/X.rb ↔ spec/tracker/X_spec.rb). Running a
-# single spec file only gates the lib module it covers; unrelated runs
+# (lib/rspec_tracer/<subdir>/X.rb <-> spec/<subdir>/X_spec.rb). Running
+# a single spec file only gates the lib module it covers; unrelated runs
 # (e.g. spec/time_formatter_spec.rb) don't trigger at all.
 module TrackerCoverageGate
-  TRACKER_PREFIX = File.expand_path('../../lib/rspec_tracer/tracker/', __dir__)
+  LIB_ROOT = File.expand_path('../../lib/rspec_tracer', __dir__)
+  GATED_SUBDIRS = %w[tracker rails].freeze
+  GATED_PREFIXES = GATED_SUBDIRS.map { |subdir| "#{File.join(LIB_ROOT, subdir)}/" }.freeze
   EPSILON = 0.001 # guard float equality of "100.0%"
 
   def self.install!
@@ -46,20 +48,29 @@ module TrackerCoverageGate
     defined?(::Mutant) || ENV['RSPEC_TRACER_DISABLE'] == '1'
   end
 
-  # Only the tracker files whose paired spec file was actually in this
+  # Only the gated lib files whose paired spec file was actually in this
   # run's files_to_run list.
   def self.gated_files
     return [] unless defined?(RSpec) && RSpec.configuration
 
     SimpleCov.result.files.select do |f|
-      f.filename.start_with?(TRACKER_PREFIX) && spec_ran_for?(f.filename)
+      gated_subdir_for(f.filename) && spec_ran_for?(f.filename)
     end
   end
 
   def self.spec_ran_for?(lib_file)
+    subdir = gated_subdir_for(lib_file)
+    return false if subdir.nil?
+
     basename = File.basename(lib_file, '.rb')
-    suffix = "/spec/tracker/#{basename}_spec.rb"
+    suffix = "/spec/#{subdir}/#{basename}_spec.rb"
     RSpec.configuration.files_to_run.any? { |f| f.end_with?(suffix) }
+  end
+
+  def self.gated_subdir_for(lib_file)
+    GATED_SUBDIRS.find.with_index do |_, index|
+      lib_file.start_with?(GATED_PREFIXES[index])
+    end
   end
 
   def self.full_coverage?(file)

@@ -43,8 +43,13 @@ module RSpecTracer
         RSpecTracer::Configuration.private_instance_methods(false).each do |method_name|
           alias_method :"_#{method_name}", method_name
 
-          define_method method_name do |*args, &block|
-            send(:"_#{method_name}", *args, &block)
+          # Forward `**kwargs` too so DSL methods can accept Ruby 3+
+          # keyword args (e.g. `track_rails_defaults except: [:views]`,
+          # M3.8's `storage_backend :json, serializer: :msgpack`).
+          # Before M4.1 this wrapper forwarded `*args, &block` only and
+          # silently stripped kwargs; see M3.4 handoff notes.
+          define_method method_name do |*args, **kwargs, &block|
+            send(:"_#{method_name}", *args, **kwargs, &block)
           end
         end
       end
@@ -299,11 +304,22 @@ module RSpecTracer
       all.uniq.freeze
     end
 
-    # Rails preset hook. M3.3 ships it as a no-op so users can write
-    # `track_rails_defaults` in .rspec-tracer today without a
-    # NoMethodError; M4.1 fills in the Rails-specific glob set.
-    def track_rails_defaults
-      nil
+    # Rails preset hook. Expands to the Rails glob set defined in
+    # RSpecTracer::Rails::Preset (views, helpers, locales, config,
+    # schema, factories, fixtures) and accumulates those globs into
+    # `@track_files_globs`. Per-category opt-out via the `except:`
+    # keyword argument (e.g. `track_rails_defaults except: [:views]`).
+    #
+    # Requires 'rspec_tracer/rails/preset' lazily so pure-Ruby suites
+    # that never call `track_rails_defaults` do not pay for the file
+    # load. Deduplication and whole-suite-invalidator reuse happen in
+    # `#declared_globs` / `Tracker::WholeSuiteInvalidators`; this method
+    # is intentionally idempotent on repeat calls.
+    def track_rails_defaults(except: [])
+      require_relative 'rails/preset'
+
+      globs = RSpecTracer::Rails::Preset.globs(except: except)
+      track_files(*globs)
     end
 
     # One-way latch. Tracker.setup (M3.6) flips it so a stray
