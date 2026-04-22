@@ -13,7 +13,20 @@ module RSpecTracer
           .map(&:formatted_inclusion_location)
       }.merge(example_location(example))
 
-      data.merge(example_id: Digest::MD5.hexdigest(data.to_json))
+      example_id = Digest::MD5.hexdigest(data.to_json)
+
+      # TEMPORARY diagnostic for the M5.1 parallel_tests id-drift
+      # investigation. Emits every pre-MD5 `data` hash to STDERR so CI
+      # logs can be diffed cold-vs-warm to find which field drifts.
+      # Remove once the root cause is fixed.
+      if ENV['RSPEC_TRACER_EXAMPLE_DIAG'] == '1'
+        require 'json'
+        warn "EXAMPLE_DIAG: #{::JSON.dump(
+          data.merge(example_id: example_id, test_env_number: ENV.fetch('TEST_ENV_NUMBER', ''))
+        )}"
+      end
+
+      data.merge(example_id: example_id)
     end
 
     def example_location(example)

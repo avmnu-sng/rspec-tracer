@@ -345,7 +345,10 @@ tasks:
     desc: >-
       M5.1 parallel_tests integration test (swapped from cucumber; the legacy
       cucumber scenarios asserted on 1.x cache layout that v2 no longer writes).
+      TEMPORARY: runs the id-drift diagnostic first so its output lands in CI
+      logs regardless of whether the main parallel_tests_spec passes.
     cmds:
+      - bundle exec rspec --no-color spec/integration/example_id_drift_diagnostic_spec.rb
       - task: test:integration:parallel
 
   test:features:rails:
