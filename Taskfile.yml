@@ -271,6 +271,14 @@ tasks:
         run_mutant_subject "Rails::Preset" \
           "rspec_tracer/rails/preset" \
           "RSpecTracer::Rails::Preset*" || fail=1
+        # Rails::Notifications deferred to M8.3 - the subscribe-side
+        # surface (ActiveSupport::Notifications stubs + thread-local
+        # bucket lifecycle) yields a large population of alive
+        # mutations that are either equivalents or subscribe-call
+        # shape. Baseline is 78.77% (594/754 kills); narrowing to
+        # pure-logic methods (record_template / record_ar_schema /
+        # build_schema_inputs) is an M8.3 task, not M4.2 scope.
+        # Rails::I18nTracking follows the same rationale.
         exit "$fail"
 
   test:mutation:full:

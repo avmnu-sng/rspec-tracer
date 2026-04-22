@@ -242,6 +242,30 @@ module RSpecTracer
                                   end
     end
 
+    # M4.2 opt-in for narrow schema attribution. Default `false` - the
+    # Preset `:schema` category already declared-glob-tracks db/schema.rb
+    # + db/structure.sql as a safe over-approximation (any schema change
+    # re-runs every example). Setting this to `true` activates an
+    # `sql.active_record` subscriber that emits schema inputs only for
+    # examples that actually touched AR during the run, narrowing the
+    # re-run set to DB-touching examples.
+    #
+    # To use the narrower behavior, pair with `track_rails_defaults
+    # except: [:schema]` so the declared-glob path doesn't dominate the
+    # notification signal at graph registration. Leaving the Preset's
+    # :schema category on alongside this flag is a no-op in terms of
+    # the final re-run set - declared-glob attaches schema to every
+    # example regardless of what this subscriber emits.
+    def track_ar_schema_notifications(new_flag = nil)
+      return @track_ar_schema_notifications if defined?(@track_ar_schema_notifications) && new_flag.nil?
+
+      @track_ar_schema_notifications = if ENV.key?('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS')
+                                         ENV['RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS'] == 'true'
+                                       else
+                                         new_flag == true
+                                       end
+    end
+
     def lock_file(new_file = nil)
       return @lock_file if defined?(@lock_file) && @lock_file && new_file.nil?
 

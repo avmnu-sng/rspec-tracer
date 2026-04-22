@@ -112,6 +112,7 @@ module RSpecTracer
 
       build_observers
       install_io_hooks
+      install_rails_observers
       ensure_coverage_started
 
       @loaded_files_tracker.capture_boot_set!
@@ -159,7 +160,9 @@ module RSpecTracer
     def example_started
       @before_peek = @coverage_adapter.peek
       @current_bucket = {}
+      @current_rails_bucket = {}
       RSpecTracer::Tracker::IOHooks.set_bucket(@current_bucket)
+      set_rails_bucket(@current_rails_bucket)
       self
     end
 
@@ -167,15 +170,21 @@ module RSpecTracer
       after_peek = @coverage_adapter.peek
       record_coverage_delta(example_id, @before_peek, after_peek)
       io_inputs = @current_bucket.values
+      rails_inputs = @current_rails_bucket ? @current_rails_bucket.values : []
       RSpecTracer::Tracker::IOHooks.clear_bucket
+      clear_rails_bucket
 
       transitive_inputs = @loaded_files_tracker.loaded_set_inputs |
         @loaded_files_tracker.stop_example(example_id)
       coverage_inputs = @coverage_adapter.compute_diff(@before_peek, after_peek)
-      attribute_to_example(example_id, coverage_inputs | transitive_inputs | io_inputs.to_set)
+      attribute_to_example(
+        example_id,
+        coverage_inputs | transitive_inputs | io_inputs.to_set | rails_inputs.to_set
+      )
 
       @before_peek = nil
       @current_bucket = nil
+      @current_rails_bucket = nil
       self
     end
 
@@ -220,6 +229,7 @@ module RSpecTracer
 
       snapshot = build_snapshot
       @storage_backend.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      uninstall_rails_observers
       snapshot
     end
 
@@ -287,6 +297,77 @@ module RSpecTracer
         root: @configuration.root,
         filter: ->(path) { !declared.covers?(path) }
       )
+    end
+
+    # Install the Rails-observer family (ActionView notifications +
+    # I18n backend prepend) when Rails is detected in the process.
+    # Runs at setup time so the subscribers are attached before the
+    # first example fires. Errors here never propagate - the tracer
+    # gracefully degrades to IOHooks-only behavior.
+    def install_rails_observers
+      return unless @configuration.rails?
+
+      require_relative 'rails/notifications'
+      require_relative 'rails/i18n_tracking'
+
+      declared = @declared_globs
+      filter = ->(path) { !declared.covers?(path) }
+      ar_paths = ar_schema_notifications_enabled? ? ar_schema_path_probes : []
+
+      RSpecTracer::Rails::Notifications.install(
+        root: @configuration.root, filter: filter, ar_schema_paths: ar_paths
+      )
+      RSpecTracer::Rails::I18nTracking.install(
+        root: @configuration.root, filter: filter
+      )
+
+      @rails_observers_installed = true
+    rescue StandardError => e
+      @configuration.logger.warn(
+        "rspec-tracer: Rails observer install failed (#{e.class}: #{e.message})"
+      )
+      @rails_observers_installed = false
+    end
+
+    def uninstall_rails_observers
+      return unless rails_observers_installed?
+
+      RSpecTracer::Rails::Notifications.uninstall
+      RSpecTracer::Rails::I18nTracking.uninstall
+      @rails_observers_installed = false
+    rescue StandardError
+      @rails_observers_installed = false
+    end
+
+    def rails_observers_installed?
+      defined?(@rails_observers_installed) && @rails_observers_installed == true
+    end
+
+    # rubocop:disable Naming/AccessorMethodName
+    def set_rails_bucket(bucket)
+      return unless rails_observers_installed?
+
+      RSpecTracer::Rails::Notifications.set_bucket(bucket)
+    end
+    # rubocop:enable Naming/AccessorMethodName
+
+    def clear_rails_bucket
+      return unless rails_observers_installed?
+
+      RSpecTracer::Rails::Notifications.clear_bucket
+    end
+
+    def ar_schema_notifications_enabled?
+      return false unless @configuration.respond_to?(:track_ar_schema_notifications)
+
+      @configuration.track_ar_schema_notifications == true
+    end
+
+    def ar_schema_path_probes
+      %w[db/schema.rb db/structure.sql].each_with_object([]) do |rel, acc|
+        abs = File.expand_path(rel, @configuration.root)
+        acc << abs if File.file?(abs)
+      end
     end
 
     # Delegate to the legacy ::Coverage bootstrap if SimpleCov isn't

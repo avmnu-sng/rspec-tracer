@@ -384,6 +384,51 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#track_ar_schema_notifications' do
+    it 'defaults to false when never configured' do
+      expect(config.track_ar_schema_notifications).to be(false)
+    end
+
+    it 'returns the last value set via the DSL' do
+      config.track_ar_schema_notifications(true)
+
+      expect(config.track_ar_schema_notifications).to be(true)
+    end
+
+    it 'coerces any non-true value to false' do
+      config.track_ar_schema_notifications('yes')
+
+      expect(config.track_ar_schema_notifications).to be(false)
+    end
+
+    it 'honors RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS=true over the DSL' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS' => 'true'))
+
+      expect(config.track_ar_schema_notifications(false)).to be(true)
+    end
+
+    it 'treats any non-"true" ENV value as false' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS' => '1'))
+
+      expect(config.track_ar_schema_notifications(true)).to be(false)
+    end
+
+    it 'memoizes across no-arg reads' do
+      config.track_ar_schema_notifications(true)
+      first = config.track_ar_schema_notifications
+      second = config.track_ar_schema_notifications
+
+      expect([first, second]).to eq([true, true])
+    end
+
+    it 'keeps the previous value when re-called with nil' do
+      config.track_ar_schema_notifications(true)
+      config.track_ar_schema_notifications(nil)
+
+      expect(config.track_ar_schema_notifications).to be(true)
+    end
+  end
+
   describe '#add_filter' do
     # Uses the isolated `config` instance (Class.new { include Configuration })
     # rather than the global RSpecTracer constant so a registered filter
