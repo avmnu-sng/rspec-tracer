@@ -236,6 +236,51 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#transitive_load_tracking' do
+    it 'defaults to true when never configured' do
+      expect(config.transitive_load_tracking).to be(true)
+    end
+
+    it 'returns the last value set via the DSL' do
+      config.transitive_load_tracking(false)
+
+      expect(config.transitive_load_tracking).to be(false)
+    end
+
+    it 'coerces a non-true-or-false argument to false' do
+      config.transitive_load_tracking('yes')
+
+      expect(config.transitive_load_tracking).to be(false)
+    end
+
+    it 'honors RSPEC_TRACER_TRANSITIVE_LOAD_TRACKING=false over the DSL' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_TRANSITIVE_LOAD_TRACKING' => 'false'))
+
+      expect(config.transitive_load_tracking(true)).to be(false)
+    end
+
+    it 'treats any non-"false" ENV value as true (default-true semantics)' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_TRANSITIVE_LOAD_TRACKING' => 'true'))
+
+      expect(config.transitive_load_tracking(false)).to be(true)
+    end
+
+    it 'memoizes across no-arg reads' do
+      config.transitive_load_tracking(false)
+      first = config.transitive_load_tracking
+      second = config.transitive_load_tracking
+
+      expect([first, second]).to eq([false, false])
+    end
+
+    it 'keeps the previous value when re-called with nil' do
+      config.transitive_load_tracking(false)
+      config.transitive_load_tracking(nil)
+
+      expect(config.transitive_load_tracking).to be(false)
+    end
+  end
+
   describe '#add_filter' do
     # Uses the isolated `config` instance (Class.new { include Configuration })
     # rather than the global RSpecTracer constant so a registered filter

@@ -37,6 +37,11 @@
       "p50": 8.1492,
       "p95": 8.3206,
       "iterations": 10
+    },
+    "loaded_files_tracker": {
+      "p50": 1.84,
+      "p95": 1.93,
+      "iterations": 10
     }
   }
 }

@@ -110,6 +110,13 @@ module BenchmarkHarness
       cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/file_read_hook.rb'],
       env: { 'REJECT_ITERS' => '100000', 'RECORD_ITERS' => '10000' },
       smoke: false
+    },
+    'loaded_files_tracker' => {
+      desc: 'Microbenchmark: Tracker::LoadedFilesTracker#stop_example overhead (<=1ms AC gate)',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/loaded_files_tracker.rb'],
+      env: { 'BOOT_FILES' => '500', 'STEADY_ITERS' => '10000', 'GROWING_ITERS' => '2000' },
+      smoke: false
     }
   }.freeze
 

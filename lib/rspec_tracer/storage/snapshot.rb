@@ -22,6 +22,15 @@ module RSpecTracer
     # Methods are defined on the reopened class body (not inside the
     # Struct.new block) so mutant can introspect them - same pattern
     # as Tracker::Input.
+    #
+    # M3.7 adds `boot_set` - Hash[relative_path => sha256_hex] of every
+    # project file loaded before any example runs (spec_helper
+    # requires, gem boot, eager autoload). Backs the constants-
+    # blind-spot fix: the M3.6 caller compares this against the
+    # previous run's boot_set and ORs any mismatch with
+    # WholeSuiteInvalidators when computing the whole_suite_invalidated
+    # bool. Per-example loaded-set attribution folds into `dependency`
+    # via the existing graph registration path - no separate field.
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -36,6 +45,7 @@ module RSpecTracer
       :dependency,
       :reverse_dependency,
       :examples_coverage,
+      :boot_set,
       keyword_init: true
     )
 
@@ -58,7 +68,8 @@ module RSpecTracer
           all_files: {},
           dependency: {},
           reverse_dependency: {},
-          examples_coverage: {}
+          examples_coverage: {},
+          boot_set: {}
         )
       end
     end

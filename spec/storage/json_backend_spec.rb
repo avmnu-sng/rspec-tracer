@@ -32,7 +32,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       all_files: { '/a.rb' => { file_name: 'a.rb', digest: 'abc' } },
       dependency: { 'ex1' => Set.new(['/a.rb', '/b.rb']) },
       reverse_dependency: { '/a.rb' => Set.new(['ex1']) },
-      examples_coverage: { 'ex1' => { '/a.rb' => [1, nil, 2] } }
+      examples_coverage: { 'ex1' => { '/a.rb' => [1, nil, 2] } },
+      boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' }
     )
   end
 
@@ -52,7 +53,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 11 per-run files (user-facing surface)' do
+    it 'lists exactly the 12 per-run files (user-facing surface; M3.7 added boot_set.json)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -62,7 +63,43 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         interrupted_examples.json flaky_examples.json failed_examples.json
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
+        boot_set.json
       ]
+    end
+  end
+
+  describe 'boot_set round-trip' do
+    it 'persists and reloads a non-empty boot_set' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.boot_set).to eq(sample_snapshot.boot_set)
+    end
+
+    it 'writes boot_set.json with a plain Hash[relative_path => digest] body' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'boot_set.json')
+
+      expect(JSON.parse(File.read(path)))
+        .to eq('lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d')
+    end
+
+    it 'tolerates a malformed boot_set.json (returns {})' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'boot_set.json')
+      File.binwrite(path, "\x00 garbage".b)
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.boot_set).to eq({})
+    end
+
+    it 'coerces a non-Hash JSON body (e.g. array) to {}' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'boot_set.json')
+      File.write(path, JSON.dump(%w[not a hash]))
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.boot_set).to eq({})
     end
   end
 

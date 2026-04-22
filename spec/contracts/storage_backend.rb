@@ -66,7 +66,8 @@ RSpec.shared_examples 'a Storage::Backend' do
       loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
       %i[all_examples duplicate_examples interrupted_examples flaky_examples failed_examples
-         pending_examples skipped_examples all_files dependency reverse_dependency examples_coverage]
+         pending_examples skipped_examples all_files dependency reverse_dependency examples_coverage
+         boot_set]
         .each { |field| expect(loaded.send(field)).to eq(sample_snapshot.send(field)) }
     end
 
