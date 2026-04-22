@@ -67,7 +67,7 @@ RSpec.shared_examples 'a Storage::Backend' do
 
       %i[all_examples duplicate_examples interrupted_examples flaky_examples failed_examples
          pending_examples skipped_examples all_files dependency reverse_dependency examples_coverage
-         boot_set]
+         boot_set wsi_snapshot]
         .each { |field| expect(loaded.send(field)).to eq(sample_snapshot.send(field)) }
     end
 

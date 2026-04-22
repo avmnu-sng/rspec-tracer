@@ -38,6 +38,11 @@
       "p95": 1.1474,
       "iterations": 10
     },
+    "cold_rails_v2": {
+      "p50": 2.938,
+      "p95": 3.566,
+      "iterations": 5
+    },
     "coverage_adapter": {
       "p50": 2.5691,
       "p95": 2.6305,

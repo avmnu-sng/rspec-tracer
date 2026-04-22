@@ -33,7 +33,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       dependency: { 'ex1' => Set.new(['/a.rb', '/b.rb']) },
       reverse_dependency: { '/a.rb' => Set.new(['ex1']) },
       examples_coverage: { 'ex1' => { '/a.rb' => [1, nil, 2] } },
-      boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' }
+      boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' },
+      wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' }
     )
   end
 
@@ -53,7 +54,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 12 per-run files (user-facing surface; M3.7 added boot_set.json)' do
+    it 'lists exactly the 13 per-run files (M3.7 added boot_set.json; M4.3 added wsi_snapshot.json)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -63,7 +64,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         interrupted_examples.json flaky_examples.json failed_examples.json
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
-        boot_set.json
+        boot_set.json wsi_snapshot.json
       ]
     end
   end

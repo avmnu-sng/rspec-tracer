@@ -3,15 +3,28 @@
 ENV['RAILS_ENV'] ||= 'test'
 
 # Enable rspec-tracer for this fixture when RSPEC_TRACER=1 is set (the
-# benchmark harness sets this for cold_rails measurements). Left off by
-# default so `task fixtures:rails:rspec` and the M4.3 integration tests
-# can opt in explicitly.
+# M4.3 integration matrix + the benchmark harness cold_rails_v2 both
+# flip this on). Load order matters:
+#
+#   1. SimpleCov.start (Coverage.start) BEFORE Rails loads, so every
+#      framework + app .rb file ends up in the tracker's
+#      LoadedFilesTracker boot_set.
+#   2. Rails loads (config/environment).
+#   3. RSpecTracer.start AFTER Rails is in the object graph, so
+#      `setup_rails`'s `defined?(::Rails::VERSION)` check resolves
+#      truthy and Engine.setup installs the Rails::Notifications +
+#      Rails::I18nTracking observers.
+if ENV['RSPEC_TRACER'] == '1'
+  require 'simplecov'
+  SimpleCov.start { add_filter(%r{^/spec/}) } unless SimpleCov.running
+end
+
+require_relative '../config/environment'
+
 if ENV['RSPEC_TRACER'] == '1'
   require 'rspec_tracer'
   RSpecTracer.start
 end
-
-require_relative '../config/environment'
 
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 

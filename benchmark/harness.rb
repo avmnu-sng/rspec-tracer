@@ -28,6 +28,7 @@ require 'optparse'
 require 'rbconfig'
 require 'time'
 
+# rubocop:disable Metrics/ModuleLength
 module BenchmarkHarness
   REPO_ROOT = File.expand_path('..', __dir__)
   RUBY_FIXTURE = File.join(REPO_ROOT, 'benchmark/fixtures/ruby_app')
@@ -106,7 +107,26 @@ module BenchmarkHarness
         'SIMPLECOV_VERSION' => '~> 0.22',
         'SQLITE3_VERSION' => '~> 1.4'
       },
-      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage],
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
+      setup: lambda do |cwd|
+        system('bundle', 'exec', 'rails', 'db:test:prepare',
+               chdir: cwd, out: File::NULL, err: File::NULL)
+      end,
+      smoke: false
+    },
+    'cold_rails_v2' => {
+      desc: 'Cold start: Rails fixture under rspec-tracer v2 engine (M4.3 AC3: <= 1.5x plain RSpec)',
+      cwd: RAILS_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color spec/models],
+      env: {
+        'RAILS_VERSION' => '~> 7.1.0',
+        'RSPEC_RAILS_VERSION' => '~> 6.1.0',
+        'SIMPLECOV_VERSION' => '~> 0.22',
+        'SQLITE3_VERSION' => '~> 1.4',
+        'RSPEC_TRACER' => '1',
+        'RSPEC_TRACER_USE_V2_TRACKER' => 'true'
+      },
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
       setup: lambda do |cwd|
         system('bundle', 'exec', 'rails', 'db:test:prepare',
                chdir: cwd, out: File::NULL, err: File::NULL)
@@ -374,5 +394,7 @@ module BenchmarkHarness
     exit(1) if any_fail && options[:enforce]
   end
 end
+
+# rubocop:enable Metrics/ModuleLength
 
 BenchmarkHarness.main if $PROGRAM_NAME == __FILE__
