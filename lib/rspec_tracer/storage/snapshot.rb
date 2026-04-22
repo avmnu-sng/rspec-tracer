@@ -41,6 +41,14 @@ module RSpecTracer
     # saved before M4.3 continue to load (missing wsi.json coerces to
     # `{}`, which compares unequal and triggers one cold re-run - safe
     # fallback, same cost as any other cache miss).
+    #
+    # M5.2 adds `env_snapshot` - Hash[env_name => md5_hex] produced by
+    # `Tracker::EnvSnapshot#digest_snapshot`. Covers env-var values
+    # declared via the per-example `tracks: { env: ... }` DSL.
+    # Without it, a warm run can't tell whether an env-gated example
+    # needs to re-run when the env changes. Same optional-in-JSON
+    # treatment as wsi_snapshot: missing file coerces to `{}`, no
+    # schema_version bump, one cold re-run on upgrade.
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -57,6 +65,7 @@ module RSpecTracer
       :examples_coverage,
       :boot_set,
       :wsi_snapshot,
+      :env_snapshot,
       keyword_init: true
     )
 
@@ -81,7 +90,8 @@ module RSpecTracer
           reverse_dependency: {},
           examples_coverage: {},
           boot_set: {},
-          wsi_snapshot: {}
+          wsi_snapshot: {},
+          env_snapshot: {}
         )
       end
     end

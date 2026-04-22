@@ -34,7 +34,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       reverse_dependency: { '/a.rb' => Set.new(['ex1']) },
       examples_coverage: { 'ex1' => { '/a.rb' => [1, nil, 2] } },
       boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' },
-      wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' }
+      wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' },
+      env_snapshot: { 'API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d' }
     )
   end
 
@@ -54,7 +55,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 13 per-run files (M3.7 added boot_set.json; M4.3 added wsi_snapshot.json)' do
+    it 'lists exactly the 14 per-run files (boot_set+wsi_snapshot+env_snapshot added in M3.7+M4.3+M5.2)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -64,7 +65,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         interrupted_examples.json flaky_examples.json failed_examples.json
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
-        boot_set.json wsi_snapshot.json
+        boot_set.json wsi_snapshot.json env_snapshot.json
       ]
     end
   end
@@ -101,6 +102,41 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
       expect(loaded.boot_set).to eq({})
+    end
+  end
+
+  describe 'env_snapshot round-trip (M5.2)' do
+    it 'persists and reloads a non-empty env_snapshot' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_snapshot).to eq(sample_snapshot.env_snapshot)
+    end
+
+    it 'writes env_snapshot.json with a plain Hash[env_name => digest] body' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_snapshot.json')
+
+      expect(JSON.parse(File.read(path)))
+        .to eq('API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d')
+    end
+
+    it 'tolerates a malformed env_snapshot.json (returns {})' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_snapshot.json')
+      File.binwrite(path, "\x00 garbage".b)
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_snapshot).to eq({})
+    end
+
+    it 'coerces a non-Hash JSON body (e.g. array) to {}' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_snapshot.json')
+      File.write(path, JSON.dump(%w[not a hash]))
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_snapshot).to eq({})
     end
   end
 
@@ -320,7 +356,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         reverse_dependency: { file_name => Set.new([example_id]) },
         examples_coverage: { example_id => { file_name => { '0' => 1, '2' => 3 } } },
         boot_set: { "lib/#{example_id}_boot.rb" => "boot#{example_id}" },
-        wsi_snapshot: { 'Gemfile.lock' => "wsi-#{run_id}" }
+        wsi_snapshot: { 'Gemfile.lock' => "wsi-#{run_id}" },
+        env_snapshot: { "ENV_#{example_id.upcase}" => "env-#{run_id}" }
       )
     end
 
@@ -336,7 +373,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(result).to be_nil
     end
 
-    it 'unions all_examples, all_files, dependency, boot_set, wsi across peers' do
+    it 'unions all_examples, all_files, dependency, boot_set, wsi, env across peers' do
       write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/lib/a.rb', 'digest-a'))
       write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/lib/b.rb', 'digest-b'))
 
@@ -351,6 +388,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(merged.dependency['ex2']).to include('/lib/b.rb')
       expect(merged.boot_set.keys).to include('lib/ex1_boot.rb', 'lib/ex2_boot.rb')
       expect(merged.wsi_snapshot['Gemfile.lock']).to be_a(String)
+      expect(merged.env_snapshot.keys).to include('ENV_EX1', 'ENV_EX2')
     end
 
     it 'unions example-status ID sets' do

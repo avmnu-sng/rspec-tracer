@@ -66,6 +66,22 @@ module BenchmarkHarness
       warmup: ->(cwd) { run_rspec_once(cwd, {}) },
       smoke: true
     },
+    'warm_env_mismatch' => {
+      # M5.2 env-snapshot mismatch: warmup primes the cache with the
+      # tracked env = 'baseline'; iterations run with the tracked env
+      # flipped to 'changed', which forces the env-annotated describe
+      # block (Calculator in calculator_spec.rb) through the env_changed
+      # filter path. First iteration hits the re-run path; subsequent
+      # iterations see env match the last cached value and fall back to
+      # warm_noop. Scenario pinned to smoke:false so `task check`
+      # stays under its fast-feedback budget.
+      desc: 'Warm run with env_snapshot mismatch on the first iteration (M5.2 overhead floor)',
+      cwd: RUBY_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color],
+      env: { 'RSPEC_TRACER_BENCH_ENV' => 'changed' },
+      warmup: ->(cwd) { run_rspec_once(cwd, { 'RSPEC_TRACER_BENCH_ENV' => 'baseline' }) },
+      smoke: false
+    },
     'parallel_tests_2_workers' => {
       desc: 'parallel_tests with 2 workers, cold: worker split + merge at exit',
       cwd: RUBY_FIXTURE,
