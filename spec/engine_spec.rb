@@ -309,6 +309,32 @@ RSpec.describe RSpecTracer::Engine do
 
       expect(snapshot.env_snapshot).to eq({})
     end
+
+    it 'persists env_dependency per example (M6.1 - reporter input)' do
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(%w[API_KEY ROLE]))
+      tracker.register_tracks('ex2', files: Set.new, env: Set.new(['API_KEY']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_dependency).to eq(
+        'ex1' => %w[API_KEY ROLE],
+        'ex2' => ['API_KEY']
+      )
+    end
+
+    it 'leaves env_dependency empty when no tracks were registered' do
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_dependency).to eq({})
+    end
+
+    it 'omits examples with empty env sets from env_dependency' do
+      tracker.register_tracks('ex_filesonly', files: Set.new(['config/*.yml']), env: Set.new)
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_dependency).to eq({})
+    end
   end
 
   describe '#register_tracks (M5.2 DSL hook)' do

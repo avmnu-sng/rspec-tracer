@@ -693,7 +693,8 @@ module RSpecTracer
         examples_coverage: @examples_coverage,
         boot_set: @loaded_files_tracker.boot_set_digest_snapshot,
         wsi_snapshot: @whole_suite_invalidators.digest_snapshot,
-        env_snapshot: env_snapshot_for_persistence
+        env_snapshot: env_snapshot_for_persistence,
+        env_dependency: env_dependency_for_persistence
       )
     end
 
@@ -706,6 +707,22 @@ module RSpecTracer
       return {} if @env_snapshot.nil? || @tracked_env_names.empty?
 
       @env_snapshot.digest_snapshot(@tracked_env_names)
+    end
+
+    # M6.1. Project the per-example `@tracks_env` map (Set<env_name>
+    # per example_id) into a JSON-friendly Hash[id => sorted Array]
+    # for persistence. Reporters consume this to render the env-
+    # dependency view on the Examples Dependency report. Empty sets
+    # drop out so the on-disk map stays narrow. Sort keeps the output
+    # deterministic for downstream diffs and golden tests.
+    def env_dependency_for_persistence
+      result = {}
+      @tracks_env.each do |example_id, names|
+        next if names.nil? || names.empty?
+
+        result[example_id] = names.to_a.sort
+      end
+      result
     end
 
     # Resolve one glob against the project root into a Set of

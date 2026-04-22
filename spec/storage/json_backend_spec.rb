@@ -35,7 +35,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       examples_coverage: { 'ex1' => { '/a.rb' => [1, nil, 2] } },
       boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' },
       wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' },
-      env_snapshot: { 'API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d' }
+      env_snapshot: { 'API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d' },
+      env_dependency: { 'ex1' => ['API_KEY'], 'ex2' => %w[ROLE_CONFIG API_KEY] }
     )
   end
 
@@ -55,7 +56,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 14 per-run files (boot_set+wsi_snapshot+env_snapshot added in M3.7+M4.3+M5.2)' do
+    it 'lists exactly the 15 per-run files (boot_set+wsi+env_snapshot+env_dependency added in M3.7+M4.3+M5.2+M6.1)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -65,7 +66,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         interrupted_examples.json flaky_examples.json failed_examples.json
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
-        boot_set.json wsi_snapshot.json env_snapshot.json
+        boot_set.json wsi_snapshot.json env_snapshot.json env_dependency.json
       ]
     end
   end
@@ -137,6 +138,49 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
       expect(loaded.env_snapshot).to eq({})
+    end
+  end
+
+  describe 'env_dependency round-trip (M6.1)' do
+    it 'persists and reloads a non-empty env_dependency' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_dependency).to eq(sample_snapshot.env_dependency)
+    end
+
+    it 'writes env_dependency.json with Hash[example_id => Array<env_name>] body' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_dependency.json')
+
+      expect(JSON.parse(File.read(path)))
+        .to eq('ex1' => ['API_KEY'], 'ex2' => %w[ROLE_CONFIG API_KEY])
+    end
+
+    it 'tolerates a malformed env_dependency.json (returns {})' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_dependency.json')
+      File.binwrite(path, "\x00 garbage".b)
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_dependency).to eq({})
+    end
+
+    it 'coerces a non-Hash JSON body to {}' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'env_dependency.json')
+      File.write(path, JSON.dump(%w[not a hash]))
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_dependency).to eq({})
+    end
+
+    it 'survives a pre-M6.1 cache (missing env_dependency.json) without a cold re-run signal' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      File.delete(File.join(cache_path, sample_snapshot.run_id, 'env_dependency.json'))
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.env_dependency).to eq({})
     end
   end
 
@@ -357,7 +401,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         examples_coverage: { example_id => { file_name => { '0' => 1, '2' => 3 } } },
         boot_set: { "lib/#{example_id}_boot.rb" => "boot#{example_id}" },
         wsi_snapshot: { 'Gemfile.lock' => "wsi-#{run_id}" },
-        env_snapshot: { "ENV_#{example_id.upcase}" => "env-#{run_id}" }
+        env_snapshot: { "ENV_#{example_id.upcase}" => "env-#{run_id}" },
+        env_dependency: { example_id => ["ENV_#{example_id.upcase}"] }
       )
     end
 
@@ -389,6 +434,37 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(merged.boot_set.keys).to include('lib/ex1_boot.rb', 'lib/ex2_boot.rb')
       expect(merged.wsi_snapshot['Gemfile.lock']).to be_a(String)
       expect(merged.env_snapshot.keys).to include('ENV_EX1', 'ENV_EX2')
+    end
+
+    it 'unions env_dependency entries per-example across peers (M6.1)' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/lib/a.rb', 'digest-a'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/lib/b.rb', 'digest-b'))
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.env_dependency).to include(
+        'ex1' => ['ENV_EX1'],
+        'ex2' => ['ENV_EX2']
+      )
+    end
+
+    it 'unions overlapping env_dependency arrays set-wise' do
+      shared_one = peer_snapshot('p1', 'ex1', '/lib/a.rb', 'da')
+      shared_two = peer_snapshot('p2', 'ex1', '/lib/a.rb', 'da')
+      shared_two.env_dependency = { 'ex1' => %w[ENV_EX1 ENV_EXTRA] }
+
+      write_peer(peer_one_path, shared_one)
+      write_peer(peer_two_path, shared_two)
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.env_dependency['ex1']).to match_array(%w[ENV_EX1 ENV_EXTRA])
     end
 
     it 'unions example-status ID sets' do

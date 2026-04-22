@@ -470,6 +470,64 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#add_reporter / #reporters (M6.1)' do
+    before { require 'rspec_tracer/reporters/registry' }
+
+    it 'returns nil for reporters when never configured' do
+      expect(config.reporters).to be_nil
+    end
+
+    it 'accumulates [name, opts] tuples across calls' do
+      config.add_reporter(:terminal)
+      config.add_reporter(:json)
+
+      expect(config.reporters.map(&:first)).to eq(%i[terminal json])
+    end
+
+    it 'passes **opts through to the reporter entry' do
+      config.add_reporter(:json, indent: 4)
+
+      expect(config.reporters.first.last).to eq(indent: 4)
+    end
+
+    it 'freezes the returned array' do
+      config.add_reporter(:terminal)
+
+      expect(config.reporters).to be_frozen
+    end
+
+    it 'raises InvalidUsageError on an unknown symbol' do
+      expect { config.add_reporter(:bogus) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown reporter/)
+    end
+
+    it 'raises InvalidUsageError on a non-Symbol / non-Class argument' do
+      expect { config.add_reporter(42) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /expected Symbol or Class/)
+    end
+
+    it 'accepts a Class value (custom reporter)' do
+      custom_class = Class.new
+
+      config.add_reporter(custom_class)
+
+      expect(config.reporters.first.first).to eq(custom_class)
+    end
+
+    it 'returns the (frozen) current list from add_reporter' do
+      result = config.add_reporter(:terminal)
+
+      expect(result).to be_frozen
+    end
+
+    it 'tolerates reporter validation when Registry is not loaded (fallback to no allowed)' do
+      hide_const('RSpecTracer::Reporters::Registry')
+
+      expect { config.add_reporter(:terminal) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown reporter/)
+    end
+  end
+
   describe '#add_filter' do
     # Uses the isolated `config` instance (Class.new { include Configuration })
     # rather than the global RSpecTracer constant so a registered filter
