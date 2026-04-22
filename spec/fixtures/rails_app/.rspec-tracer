@@ -1,3 +1,11 @@
-# Minimal rspec-tracer configuration for the reference Rails fixture.
-# Per-example Rails-aware tracking (`track_rails_defaults`) lands in M4.1.
-# For now this just ensures the tracer loads cleanly against the fixture.
+# rspec-tracer configuration for the reference Rails 7.1+ fixture.
+# `track_rails_defaults` wires the preset defined in
+# RSpecTracer::Rails::Preset: views, helpers, locales, config YAML,
+# routes, db/schema.rb, factories, and YAML fixtures. Per-category
+# opt-out via `except: [:views, :locales, ...]`.
+#
+# M4.1 ships the preset + Railtie scaffolding. M4.3 runs this fixture
+# under rspec-tracer and asserts the full behavior matrix.
+RSpecTracer.configure do
+  track_rails_defaults
+end

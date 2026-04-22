@@ -212,14 +212,47 @@ RSpec.describe RSpecTracer::Configuration do
   end
 
   describe '#track_rails_defaults' do
-    it 'is a no-op stub until M4.1 (returns nil)' do
-      expect(config.track_rails_defaults).to be_nil
-    end
+    before { require 'rspec_tracer/rails/preset' }
 
-    it 'does not accumulate any declared globs' do
+    it 'accumulates the full Rails preset glob set into declared_globs' do
       config.track_rails_defaults
 
-      expect(config.declared_globs).to eq([])
+      expect(config.declared_globs).to include(*RSpecTracer::Rails::Preset.globs)
+    end
+
+    it 'honors the except: kwarg to skip a category' do
+      config.track_rails_defaults(except: [:views])
+
+      RSpecTracer::Rails::Preset::DEFAULTS[:views].each do |view_glob|
+        expect(config.declared_globs).not_to include(view_glob)
+      end
+    end
+
+    it 'keeps non-excluded categories when except: is used' do
+      config.track_rails_defaults(except: [:views])
+
+      expect(config.declared_globs).to include(*RSpecTracer::Rails::Preset::DEFAULTS[:locales])
+    end
+
+    it 'raises for an unknown except: key' do
+      expect { config.track_rails_defaults(except: [:bogus]) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown track_rails_defaults/)
+    end
+
+    it 'is idempotent across repeat calls (de-duplicated via declared_globs)' do
+      config.track_rails_defaults
+      first = config.declared_globs.dup
+
+      config.track_rails_defaults
+
+      expect(config.declared_globs).to eq(first)
+    end
+
+    it 'composes with explicit track_files calls' do
+      config.track_files('custom/**/*.rb')
+      config.track_rails_defaults
+
+      expect(config.declared_globs).to include('custom/**/*.rb', *RSpecTracer::Rails::Preset.globs)
     end
   end
 

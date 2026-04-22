@@ -164,6 +164,15 @@ module RSpecTracer
       defined?(@parallel_tests) && @parallel_tests == true
     end
 
+    # True iff Rails is loaded in this process. Computed once during
+    # `initial_setup` (via `setup_rails`) and memoized; subsequent Rails
+    # activations within the same run are not re-detected. Matches the
+    # `simplecov?` / `parallel_tests?` shape so callers can branch on
+    # framework presence uniformly.
+    def rails?
+      defined?(@rails) && @rails == true
+    end
+
     private
 
     def valid_jruby_opts?
@@ -190,6 +199,7 @@ module RSpecTracer
       end
 
       setup_coverage
+      setup_rails
       setup_trace_point
 
       if RSpecTracer.use_v2_tracker && !parallel_tests?
@@ -263,6 +273,15 @@ module RSpecTracer
       require 'coverage'
 
       ::Coverage.start
+    end
+
+    # Detects Rails by the presence of `::Rails::VERSION`. Users who
+    # require `rspec_tracer/rails` transitively load the Railtie (when
+    # Rails is also present); this method only sets the flag consumed
+    # by `RSpecTracer.rails?`. Safe when Rails is absent - the
+    # `defined?` guard returns nil, flag stays false.
+    def setup_rails
+      @rails = defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
     end
 
     def setup_trace_point
