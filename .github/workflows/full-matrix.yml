@@ -224,6 +224,21 @@ jobs:
     name: benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Canonical benchmark cell: fix every ENV-driven fixture version at
+    # the job level so `task benchmark:bundle` (which runs `bundle
+    # install` inside spec/fixtures/rails_app) and the later
+    # `rails db:test:prepare` step resolve against the same Rails
+    # lockfile. A step-scoped env on the db:prepare step alone leaves
+    # benchmark:bundle to pick up the Gemfile default (Rails 7.2.3.1+
+    # since the activestorage CVE fix), which then conflicts with a
+    # 7.1-pinned resolver run. Keeps the benchmark pinned to Rails
+    # 7.1 for cross-run comparability regardless of the fixture's
+    # default moving forward.
+    env:
+      RAILS_VERSION: "~> 7.1.0"
+      RSPEC_RAILS_VERSION: "~> 6.1.0"
+      SIMPLECOV_VERSION: "~> 0.22"
+      SQLITE3_VERSION: "~> 1.4"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -248,11 +263,6 @@ jobs:
       - name: Prepare Rails fixture database
         run: bundle exec rails db:test:prepare
         working-directory: spec/fixtures/rails_app
-        env:
-          RAILS_VERSION: "~> 7.1.0"
-          RSPEC_RAILS_VERSION: "~> 6.1.0"
-          SIMPLECOV_VERSION: "~> 0.22"
-          SQLITE3_VERSION: "~> 1.4"
 
       - name: Benchmark — full (no enforcement; CI baseline not yet committed)
         # Ratchet file was generated on Apple M2 Max; GHA ubuntu-latest
