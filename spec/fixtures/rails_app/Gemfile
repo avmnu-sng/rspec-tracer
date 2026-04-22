@@ -4,8 +4,18 @@ source "https://rubygems.org"
 
 # Rails + the rspec-rails version are ENV-var driven so this single
 # fixture runs cleanly across the CI matrix (Rails 7.0 / 7.1 / 7.2 with
-# matching rspec-rails). Defaults target Rails 7.1 for local dev.
-gem "rails", ENV.fetch("RAILS_VERSION", "~> 7.1.0")
+# matching rspec-rails). Default pins Rails 7.2.3.1+ - the earliest
+# 7.2.x patched against HIGH-severity CVE-2026-33195 and
+# CVE-2026-33658 (activestorage), so `task fixtures:rails:bundle`
+# stays CVE-clean for local dev. The explicit `>= 7.2.3.1` lower
+# bound is necessary because bundler tie-breaks `~> 7.2.3` to the
+# 3-segment 7.2.3 over the 4-segment 7.2.3.1 patch. CI matrix cells
+# override RAILS_VERSION to cover 7.0 and 7.1.
+if (rails_version = ENV.fetch("RAILS_VERSION", nil))
+  gem "rails", rails_version
+else
+  gem "rails", "~> 7.2.3", ">= 7.2.3.1"
+end
 
 # Rails 7.0/7.1's activerecord locks `sqlite3 ~> 1.4` at load time
 # (inside sqlite3_adapter.rb), not in its gemspec, so bundler can resolve
