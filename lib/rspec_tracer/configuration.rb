@@ -192,6 +192,26 @@ module RSpecTracer
                             end
     end
 
+    # Opt in to the v2 core-engine pipeline (the in-tree
+    # Tracker + Storage + Filter stack). Default `false` keeps every
+    # existing run on the legacy Runner + CoverageReporter path, so
+    # users upgrading to 2.0.pre don't change behavior silently.
+    #
+    # Setting `true` activates the new engine for the RSpec process.
+    # The flag is a temporary bridge - removed once the RSpec
+    # integration rework lands and the legacy runner retires.
+    # Honors `RSPEC_TRACER_USE_V2_TRACKER` for CI that needs to flip
+    # the flag without editing `.rspec-tracer`.
+    def use_v2_tracker(new_flag = nil)
+      return @use_v2_tracker if defined?(@use_v2_tracker) && new_flag.nil?
+
+      @use_v2_tracker = if ENV.key?('RSPEC_TRACER_USE_V2_TRACKER')
+                          ENV['RSPEC_TRACER_USE_V2_TRACKER'] == 'true'
+                        else
+                          new_flag == true
+                        end
+    end
+
     # M3.7 transitive-load attribution (closes the constants blind
     # spot). Default `true` - the tracker observes files loaded during
     # the process and attributes them as transitive deps of every

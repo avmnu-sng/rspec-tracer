@@ -45,12 +45,31 @@ module RSpecTracer
     end
 
     def _duplicate_examples?
-      return false if RSpecTracer.runner.reporter.duplicate_examples.empty?
+      duplicates = _tracer_duplicate_examples
+      return false if duplicates.empty?
 
-      RSpecTracer.report_writer.print_duplicate_examples
+      _tracer_print_duplicate_examples(duplicates)
 
       RSpecTracer.running = true
       RSpecTracer.duplicate_examples = RSpecTracer.fail_on_duplicates
+    end
+
+    def _tracer_duplicate_examples
+      return RSpecTracer.engine.duplicate_examples if RSpecTracer.v2_engine?
+
+      RSpecTracer.runner.reporter.duplicate_examples
+    end
+
+    def _tracer_print_duplicate_examples(duplicates)
+      return RSpecTracer.report_writer.print_duplicate_examples if RSpecTracer.report_writer
+
+      # v2 mode has no legacy report_writer; surface the duplicates
+      # through the logger so the signal isn't lost.
+      total = duplicates.sum { |_, entries| entries.count }
+      hashes = duplicates.size
+      RSpecTracer.logger.error(
+        "RSpec tracer detected #{total} duplicate example(s) across #{hashes} identity hash(es)"
+      )
     end
   end
 end

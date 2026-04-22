@@ -236,6 +236,51 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#use_v2_tracker' do
+    it 'defaults to false when never configured' do
+      expect(config.use_v2_tracker).to be(false)
+    end
+
+    it 'returns the last value set via the DSL' do
+      config.use_v2_tracker(true)
+
+      expect(config.use_v2_tracker).to be(true)
+    end
+
+    it 'coerces any non-true value to false' do
+      config.use_v2_tracker('yes')
+
+      expect(config.use_v2_tracker).to be(false)
+    end
+
+    it 'honors RSPEC_TRACER_USE_V2_TRACKER=true over the DSL' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_USE_V2_TRACKER' => 'true'))
+
+      expect(config.use_v2_tracker(false)).to be(true)
+    end
+
+    it 'treats any non-"true" ENV value as false' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_USE_V2_TRACKER' => '1'))
+
+      expect(config.use_v2_tracker(true)).to be(false)
+    end
+
+    it 'memoizes across no-arg reads' do
+      config.use_v2_tracker(true)
+      first = config.use_v2_tracker
+      second = config.use_v2_tracker
+
+      expect([first, second]).to eq([true, true])
+    end
+
+    it 'keeps the previous value when re-called with nil' do
+      config.use_v2_tracker(true)
+      config.use_v2_tracker(nil)
+
+      expect(config.use_v2_tracker).to be(true)
+    end
+  end
+
   describe '#transitive_load_tracking' do
     it 'defaults to true when never configured' do
       expect(config.transitive_load_tracking).to be(true)

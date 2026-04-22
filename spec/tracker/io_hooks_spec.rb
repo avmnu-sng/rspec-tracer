@@ -73,6 +73,31 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
     end
   end
 
+  describe '.set_bucket / .clear_bucket' do
+    it 'set_bucket installs a bucket readable via current_bucket' do
+      bucket = {}
+      described_class.set_bucket(bucket)
+      expect(described_class.current_bucket).to be(bucket)
+    ensure
+      described_class.clear_bucket
+    end
+
+    it 'clear_bucket nils out the current bucket' do
+      described_class.set_bucket({})
+      described_class.clear_bucket
+
+      expect(described_class.current_bucket).to be_nil
+    end
+
+    it 'wires the bucket so record captures through it (parity with with_bucket)' do
+      bucket = {}
+      described_class.set_bucket(bucket)
+      described_class.record(write_fixture('a.yml'))
+      described_class.clear_bucket
+      expect(bucket).not_to be_empty
+    end
+  end
+
   describe '.record fast-reject' do
     it 'is a no-op when uninstalled' do
       described_class.uninstall
