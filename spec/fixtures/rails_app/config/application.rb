@@ -22,7 +22,17 @@ module RailsApp
     rails_version = ENV.fetch("RAILS_VERSION", "~> 7.1.0")
     config.load_defaults rails_version.sub(/[^\d]*/, "").split(".").first(2).join(".").to_f
 
-    config.autoload_lib(ignore: %w[assets tasks])
+    # `config.autoload_lib` is a Rails 7.1+ helper; guard for the
+    # Rails 7.0 matrix cell, which still supports the fixture via
+    # the manual autoload + eager_load path wiring.
+    if config.respond_to?(:autoload_lib)
+      config.autoload_lib(ignore: %w[assets tasks])
+    else
+      lib_path = root.join('lib').to_s
+      config.autoload_paths << lib_path
+      config.eager_load_paths << lib_path
+    end
+
     config.generators.system_tests = nil
 
     config.action_mailer.delivery_method = :test

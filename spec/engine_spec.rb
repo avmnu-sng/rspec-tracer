@@ -41,7 +41,7 @@ RSpec.describe RSpecTracer::Engine do
       root: root, cache_path: cache_path, logger: logger,
       filters: [], declared_globs: [],
       run_all_examples: false, transitive_load_tracking: false,
-      rails?: false, track_ar_schema_notifications: false
+      rails?: false, track_ar_schema_notifications?: false
     }
     double(**defaults, **overrides).tap do |config|
       allow(config).to receive(:freeze_declared_globs!)
@@ -430,7 +430,7 @@ RSpec.describe RSpecTracer::Engine do
       FileUtils.mkdir_p(File.join(root, 'db'))
       File.write(File.join(root, 'db/schema.rb'), "ActiveRecord::Schema.define { }\n")
 
-      build_tracker(stub_configuration(rails?: true, track_ar_schema_notifications: true))
+      build_tracker(stub_configuration(rails?: true, track_ar_schema_notifications?: true))
         .tap(&:setup)
 
       expect(fake_as_notifications.instance_variable_get(:@subscribers).keys)

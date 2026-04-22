@@ -16,8 +16,10 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
     end
 
     it 'defaults Hash-shaped fields to empty Hash' do
-      %i[all_examples duplicate_examples all_files dependency reverse_dependency examples_coverage boot_set]
-        .each { |field| expect(snapshot.send(field)).to eq({}) }
+      %i[
+        all_examples duplicate_examples all_files dependency reverse_dependency
+        examples_coverage boot_set wsi_snapshot
+      ].each { |field| expect(snapshot.send(field)).to eq({}) }
     end
 
     it 'defaults example-id collections to empty Set' do
@@ -27,6 +29,10 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
 
     it 'defaults boot_set to an empty Hash (schema_version 3 field)' do
       expect(snapshot.boot_set).to eq({})
+    end
+
+    it 'defaults wsi_snapshot to an empty Hash (M4.3 field)' do
+      expect(snapshot.wsi_snapshot).to eq({})
     end
   end
 

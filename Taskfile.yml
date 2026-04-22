@@ -173,7 +173,7 @@ tasks:
       - bundle exec rspec spec/contracts
 
   test:integration:
-    desc: Integration tests against reference Rails app
+    desc: Integration tests (ruby_app v2 parity + dogfood + constants regression)
     cmds:
       - bundle exec rspec spec/integration
 
@@ -329,9 +329,13 @@ tasks:
       - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @parallel-tests"
 
   test:features:rails:
-    desc: Cucumber features — Rails (@rails-app)
+    desc: >-
+      M4.3 Rails integration test against the reference Rails app. Excluded
+      from the default rspec sweep (via .rspec --exclude-pattern) because a
+      full cycle is 12 scenarios x cold+warm subprocess runs, ~2-3 minutes.
+      The CI `rails` job invokes this per Rails matrix cell.
     cmds:
-      - bundle exec cucumber --retry 1 --no-strict-flaky --tags @rails-app
+      - bundle exec rspec --no-color spec/integration/rails_app_spec.rb
 
   test:features:jruby:
     desc: Cucumber features on JRuby (@ruby-app, not @parallel-tests)

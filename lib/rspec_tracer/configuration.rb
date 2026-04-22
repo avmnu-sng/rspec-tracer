@@ -245,10 +245,17 @@ module RSpecTracer
     # M4.2 opt-in for narrow schema attribution. Default `false` - the
     # Preset `:schema` category already declared-glob-tracks db/schema.rb
     # + db/structure.sql as a safe over-approximation (any schema change
-    # re-runs every example). Setting this to `true` activates an
+    # re-runs every example). Calling this method opts in to an
     # `sql.active_record` subscriber that emits schema inputs only for
     # examples that actually touched AR during the run, narrowing the
     # re-run set to DB-touching examples.
+    #
+    # Shape: setter-only DSL (like `track_rails_defaults`, `track_files`).
+    # Bare `track_ar_schema_notifications` in `.rspec-tracer` enables;
+    # explicit `track_ar_schema_notifications(false)` disables for tests
+    # or config overrides. Read the resulting state via the `?` variant,
+    # which layers the `RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS` ENV
+    # override on top of the DSL value.
     #
     # To use the narrower behavior, pair with `track_rails_defaults
     # except: [:schema]` so the declared-glob path doesn't dominate the
@@ -256,14 +263,17 @@ module RSpecTracer
     # :schema category on alongside this flag is a no-op in terms of
     # the final re-run set - declared-glob attaches schema to every
     # example regardless of what this subscriber emits.
-    def track_ar_schema_notifications(new_flag = nil)
-      return @track_ar_schema_notifications if defined?(@track_ar_schema_notifications) && new_flag.nil?
+    def track_ar_schema_notifications(*args)
+      # Setter DSL: bare call enables, explicit `(false)` disables,
+      # any other positional coerces to false (defensive for typos).
+      @track_ar_schema_notifications = args.empty? || args.first == true
+    end
 
-      @track_ar_schema_notifications = if ENV.key?('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS')
-                                         ENV['RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS'] == 'true'
-                                       else
-                                         new_flag == true
-                                       end
+    def track_ar_schema_notifications?
+      return ENV['RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS'] == 'true' if ENV.key?('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS')
+      return false unless defined?(@track_ar_schema_notifications)
+
+      @track_ar_schema_notifications == true
     end
 
     def lock_file(new_file = nil)

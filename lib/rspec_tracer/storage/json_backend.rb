@@ -44,6 +44,13 @@ module RSpecTracer
       # boot_set.json lands at the end of the list - additive w.r.t.
       # 1.x and v2 readers that walked this enumeration. It carries
       # the project's transitive boot-load set (schema_version 3).
+      # wsi_snapshot.json (M4.3) persists the WholeSuiteInvalidators
+      # digest_snapshot so warm runs can tell whether Gemfile.lock /
+      # .ruby-version / .rspec-tracer / tracer-gem identity changed
+      # since the previous run. Without it, warm runs always saw a
+      # nil previous and treated every run as a cold first run.
+      # Missing file deserializes to `{}` so pre-M4.3 caches still
+      # load - the fallback path fires one full re-run (safe).
       FILENAMES = %w[
         all_examples.json
         duplicate_examples.json
@@ -57,6 +64,7 @@ module RSpecTracer
         reverse_dependency.json
         examples_coverage.json
         boot_set.json
+        wsi_snapshot.json
       ].freeze
 
       LAST_RUN_FILENAME = 'last_run.json'
@@ -71,13 +79,14 @@ module RSpecTracer
       ID_SET_FIELDS = %w[
         interrupted_examples flaky_examples failed_examples pending_examples skipped_examples
       ].freeze
-      HASH_FIELDS = %w[all_examples duplicate_examples all_files examples_coverage boot_set].freeze
+      HASH_FIELDS = %w[all_examples duplicate_examples all_files examples_coverage boot_set wsi_snapshot].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
       SYMBOLIZED_FIELDS = %w[all_examples all_files].freeze
       # Fields that round-trip as a plain Hash on both sides - no
       # key/value transformation. examples_coverage (1.x) preserved
-      # string keys; boot_set (M3.7) is simple path => digest.
-      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set].freeze
+      # string keys; boot_set (M3.7) + wsi_snapshot (M4.3) are simple
+      # name/path => digest maps.
+      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot].freeze
 
       attr_reader :cache_path
 

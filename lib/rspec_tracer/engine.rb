@@ -119,6 +119,7 @@ module RSpecTracer
       @declared_globs.walk
 
       @previous_snapshot = load_previous_snapshot
+      seed_state_from_previous(@previous_snapshot) if @previous_snapshot
       compute_filter_decisions
       self
     end
@@ -177,9 +178,10 @@ module RSpecTracer
       transitive_inputs = @loaded_files_tracker.loaded_set_inputs |
         @loaded_files_tracker.stop_example(example_id)
       coverage_inputs = @coverage_adapter.compute_diff(@before_peek, after_peek)
+      declared_inputs = @declared_globs.walk
       attribute_to_example(
         example_id,
-        coverage_inputs | transitive_inputs | io_inputs.to_set | rails_inputs.to_set
+        coverage_inputs | transitive_inputs | io_inputs.to_set | rails_inputs.to_set | declared_inputs
       )
 
       @before_peek = nil
@@ -358,9 +360,9 @@ module RSpecTracer
     end
 
     def ar_schema_notifications_enabled?
-      return false unless @configuration.respond_to?(:track_ar_schema_notifications)
+      return false unless @configuration.respond_to?(:track_ar_schema_notifications?)
 
-      @configuration.track_ar_schema_notifications == true
+      @configuration.track_ar_schema_notifications?
     end
 
     def ar_schema_path_probes
@@ -386,6 +388,67 @@ module RSpecTracer
 
     def load_previous_snapshot
       @storage_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+    end
+
+    # On warm runs, skipped examples don't re-populate @all_examples,
+    # @all_files, @graph, or @examples_coverage - only newly-run
+    # examples do. Without seeding, the next save would drop the
+    # skipped examples' metadata + deps, and the following warm run
+    # would see them as "not previously seen" and force a cold re-run
+    # of the entire suite. Seed the four state buckets from the
+    # previous snapshot so newly-run examples overwrite and skipped
+    # examples carry forward.
+    def seed_state_from_previous(prev)
+      seed_all_examples_from_previous(prev)
+      seed_all_files_from_previous(prev)
+      seed_graph_from_previous(prev)
+      seed_examples_coverage_from_previous(prev)
+    end
+
+    def seed_all_examples_from_previous(prev)
+      return unless prev.all_examples.is_a?(Hash)
+
+      prev.all_examples.each do |id, meta|
+        @all_examples[id] = meta
+      end
+    end
+
+    # prev.all_files is file-name-keyed; the engine's @all_files is
+    # abs-path-keyed (path_to_file_name round-trips via the root prefix).
+    def seed_all_files_from_previous(prev)
+      return unless prev.all_files.is_a?(Hash)
+
+      prev.all_files.each_value do |meta|
+        next unless meta.is_a?(Hash)
+
+        file_path = symbol_or_string(meta, :file_path)
+        next if file_path.nil?
+
+        @all_files[file_path] = {
+          file_name: symbol_or_string(meta, :file_name),
+          file_path: file_path,
+          digest: symbol_or_string(meta, :digest)
+        }
+      end
+    end
+
+    # prev.dependency keys on example_id, values are Set<file_name>.
+    # Register in @graph via absolute paths so the on-disk shape
+    # (file_name) converts at save time via dependency_by_name.
+    def seed_graph_from_previous(prev)
+      return unless prev.dependency.is_a?(Hash)
+
+      prev.dependency.each do |example_id, file_names|
+        paths = Set.new
+        file_names.each { |name| paths << absolute_path(name) }
+        @graph.register_example(example_id, paths)
+      end
+    end
+
+    def seed_examples_coverage_from_previous(prev)
+      return unless prev.examples_coverage.is_a?(Hash)
+
+      prev.examples_coverage.each { |id, cov| @examples_coverage[id] = cov }
     end
 
     def compute_filter_decisions
@@ -450,7 +513,7 @@ module RSpecTracer
     end
 
     def whole_suite_changed?(prev)
-      wsi_prev = prev.all_files.key?('__wsi__') ? prev.all_files['__wsi__'] : nil
+      wsi_prev = prev.wsi_snapshot if prev.respond_to?(:wsi_snapshot)
       @whole_suite_invalidators.invalidated?(wsi_prev) ||
         @loaded_files_tracker.boot_set_invalidated?(prev.boot_set)
     end
@@ -550,7 +613,8 @@ module RSpecTracer
         dependency: dependency_by_name,
         reverse_dependency: reverse_dependency_by_name,
         examples_coverage: @examples_coverage,
-        boot_set: @loaded_files_tracker.boot_set_digest_snapshot
+        boot_set: @loaded_files_tracker.boot_set_digest_snapshot,
+        wsi_snapshot: @whole_suite_invalidators.digest_snapshot
       )
     end
 

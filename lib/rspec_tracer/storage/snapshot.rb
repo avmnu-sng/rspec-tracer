@@ -31,6 +31,16 @@ module RSpecTracer
     # WholeSuiteInvalidators when computing the whole_suite_invalidated
     # bool. Per-example loaded-set attribution folds into `dependency`
     # via the existing graph registration path - no separate field.
+    #
+    # M4.3 adds `wsi_snapshot` - Hash[watch_name => sha256_hex] produced
+    # by `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm
+    # run can't tell whether Gemfile.lock / .ruby-version / .rspec-tracer
+    # (or the tracer gem identity) changed since the previous run, and
+    # the engine falls back to "first run = invalidate everything" on
+    # every warm run. The field is optional in the JSON layout so caches
+    # saved before M4.3 continue to load (missing wsi.json coerces to
+    # `{}`, which compares unequal and triggers one cold re-run - safe
+    # fallback, same cost as any other cache miss).
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -46,6 +56,7 @@ module RSpecTracer
       :reverse_dependency,
       :examples_coverage,
       :boot_set,
+      :wsi_snapshot,
       keyword_init: true
     )
 
@@ -69,7 +80,8 @@ module RSpecTracer
           dependency: {},
           reverse_dependency: {},
           examples_coverage: {},
-          boot_set: {}
+          boot_set: {},
+          wsi_snapshot: {}
         )
       end
     end
