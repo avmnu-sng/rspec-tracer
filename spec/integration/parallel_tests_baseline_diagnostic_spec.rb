@@ -43,7 +43,7 @@ module ParallelTestsBaselineDiagnosticHelpers
   end
 end
 
-# rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 RSpec.describe 'parallel_tests baseline (no rspec-tracer) diagnostic' do
   include ParallelTestsBaselineDiagnosticHelpers
 
@@ -62,4 +62,4 @@ RSpec.describe 'parallel_tests baseline (no rspec-tracer) diagnostic' do
     expect(@second_status.exitstatus).to eq(0), "second run output:\n#{@second_out}"
   end
 end
-# rubocop:enable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
