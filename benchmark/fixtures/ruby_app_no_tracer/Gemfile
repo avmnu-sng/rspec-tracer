@@ -1,8 +1,0 @@
-# frozen_string_literal: true
-
-source 'https://rubygems.org'
-
-parallel_tests_version = ENV.fetch('PARALLEL_TESTS_VERSION', '~> 4.7')
-
-gem 'parallel_tests', parallel_tests_version
-gem 'rspec', '~> 3.13'
