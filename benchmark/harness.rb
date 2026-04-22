@@ -58,12 +58,28 @@ module BenchmarkHarness
       cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage],
       smoke: true
     },
+    'cold_ruby_v2' => {
+      desc: 'Cold start (v2 engine): RSPEC_TRACER_USE_V2_TRACKER=true',
+      cwd: RUBY_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color],
+      env: { 'RSPEC_TRACER_USE_V2_TRACKER' => 'true' },
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage],
+      smoke: true
+    },
     'warm_noop' => {
       desc: 'Warm run: same fixture, cache populated, no file changes',
       cwd: RUBY_FIXTURE,
       cmd: %w[bundle exec rspec --no-color],
       env: {},
       warmup: ->(cwd) { run_rspec_once(cwd, {}) },
+      smoke: true
+    },
+    'warm_noop_v2' => {
+      desc: 'Warm run (v2 engine): same fixture, cache populated, no file changes',
+      cwd: RUBY_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color],
+      env: { 'RSPEC_TRACER_USE_V2_TRACKER' => 'true' },
+      warmup: ->(cwd) { run_rspec_once(cwd, 'RSPEC_TRACER_USE_V2_TRACKER' => 'true') },
       smoke: true
     },
     'cache_load' => {

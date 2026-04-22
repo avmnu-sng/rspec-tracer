@@ -14,6 +14,7 @@ require_relative 'rspec_tracer/coverage_merger'
 require_relative 'rspec_tracer/coverage_reporter'
 require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
+require_relative 'rspec_tracer/engine'
 require_relative 'rspec_tracer/example'
 require_relative 'rspec_tracer/html_reporter/reporter'
 require_relative 'rspec_tracer/load_config'
@@ -29,6 +30,12 @@ require_relative 'rspec_tracer/source_file'
 require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
 
+# The top-level entry point has grown past the rubocop default
+# over years of legacy accumulation; splitting across files would
+# scatter the start/at_exit lifecycle across unrelated modules for
+# zero readability win. Refactoring is queued with the Phase 5
+# RSpec-integration rework.
+# rubocop:disable Metrics/ModuleLength, Metrics/ClassLength
 module RSpecTracer
   class << self
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
@@ -45,10 +52,10 @@ module RSpecTracer
       initial_setup
     end
 
-    # rubocop:disable Metrics/AbcSize
     def filter_examples
       groups = Set.new
       to_run = Hash.new { |hash, group| hash[group] = [] }
+      filter_source = v2_engine? ? engine : runner
 
       RSpec.world.filtered_examples.each_pair do |example_group, examples|
         examples.each do |example|
@@ -56,26 +63,25 @@ module RSpecTracer
           example_id = tracer_example[:example_id]
           example.metadata[:rspec_tracer_example_id] = example_id
 
-          if runner.run_example?(example_id)
-            run_reason = runner.run_example_reason(example_id)
+          if filter_source.run_example?(example_id)
+            run_reason = filter_source.run_example_reason(example_id)
             tracer_example[:run_reason] = run_reason
             example.metadata[:description] = "#{example.description} (#{run_reason})"
 
             to_run[example_group] << example
             groups << example.example_group.parent_groups.last
 
-            runner.register_example(tracer_example)
+            filter_source.register_example(tracer_example)
           else
-            runner.on_example_skipped(example_id)
+            filter_source.on_example_skipped(example_id)
           end
         end
       end
 
-      runner.deregister_duplicate_examples
+      filter_source.deregister_duplicate_examples
 
       [to_run, groups.to_a]
     end
-    # rubocop:enable Metrics/AbcSize
 
     def at_exit_behavior
       return unless RSpecTracer.pid == Process.pid && RSpecTracer.running
@@ -102,6 +108,24 @@ module RSpecTracer
 
     def runner
       @runner if defined?(@runner)
+    end
+
+    # The v2 Engine instance when `use_v2_tracker` is true; nil
+    # otherwise. Lives alongside the legacy @runner / @coverage_reporter
+    # during the Phase 3 bridge period and drops out once the
+    # RSpec-hook rework retires the legacy path.
+    def engine
+      @engine if defined?(@engine)
+    end
+
+    # Per-process predicate consumed by RSpec hook modules and the
+    # top-level filter_examples dispatcher. Disabled under
+    # parallel_tests for M3.6 - the legacy parallel_tests merging
+    # path stays authoritative until the RSpec rework lands.
+    def v2_engine?
+      return false if parallel_tests?
+
+      !engine.nil?
     end
 
     def coverage_reporter
@@ -168,9 +192,21 @@ module RSpecTracer
       setup_coverage
       setup_trace_point
 
-      @runner = RSpecTracer::Runner.new
-      @coverage_reporter = RSpecTracer::CoverageReporter.new
-      @report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, @runner.reporter)
+      if RSpecTracer.use_v2_tracker && !parallel_tests?
+        # v2 bridge path: the Engine replaces Runner at the filter
+        # surface and owns cache write via JsonBackend. Legacy
+        # @coverage_reporter + @report_writer stay in the hot path
+        # so coverage.json + HTML reports are still produced
+        # identically - M3.6 deliberately does NOT re-implement the
+        # report surface.
+        @engine = RSpecTracer::Engine.new(configuration: RSpecTracer)
+        @engine.setup
+        @coverage_reporter = RSpecTracer::CoverageReporter.new
+      else
+        @runner = RSpecTracer::Runner.new
+        @coverage_reporter = RSpecTracer::CoverageReporter.new
+        @report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, @runner.reporter)
+      end
     end
 
     def parallel_tests_setup
@@ -241,6 +277,8 @@ module RSpecTracer
     def run_exit_tasks
       if RSpecTracer.no_examples
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
+      elsif v2_engine?
+        run_v2_finalize
       else
         generate_reports
       end
@@ -248,6 +286,24 @@ module RSpecTracer
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
 
       run_parallel_tests_exit_tasks
+    end
+
+    # M3.6 v2 finalize path: the Engine owns the 12-file JSON cache
+    # write via Storage::JsonBackend; CoverageReporter remains
+    # responsible for the legacy coverage.json surface. HTML /
+    # report_writer rework lives in Phase 6.
+    def run_v2_finalize
+      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      coverage_reporter.generate_final_examples_coverage
+      skipped_ids = engine.registry.ids_with_status(:skipped)
+      coverage_reporter.merge_coverage(engine.merge_skipped_coverage(skipped_ids))
+      engine.finalize
+
+      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
+
+      RSpecTracer.logger.debug "RSpec tracer (v2) persisted cache (took #{elapsed})"
     end
 
     def generate_reports
@@ -431,3 +487,4 @@ module RSpecTracer
     end
   end
 end
+# rubocop:enable Metrics/ModuleLength, Metrics/ClassLength

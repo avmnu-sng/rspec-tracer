@@ -1,0 +1,346 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'set'
+require 'tmpdir'
+require 'rspec_tracer/engine'
+
+# The Engine class is the v2 coordinator. Unit tests drive it with a
+# stubbed configuration so the subject doesn't depend on the global
+# RSpecTracer module's state. Integration coverage (real RSpec
+# fixture, subprocess) lives at spec/integration/ruby_app_v2_tracker_spec.rb.
+# rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
+RSpec.describe RSpecTracer::Engine do
+  let(:tmp_base) { Dir.mktmpdir }
+  let(:root) { File.join(tmp_base, 'project').tap { |p| FileUtils.mkdir_p(p) } }
+  let(:cache_path) { File.join(tmp_base, 'cache') }
+  let(:logger) { instance_double(RSpecTracer::Logger, debug: nil, info: nil, warn: nil, error: nil) }
+  let(:configuration) { stub_configuration }
+
+  before do
+    write_project_file('lib/a.rb', "module A; VALUE = 1; end\n")
+    write_project_file('lib/b.rb', "require_relative 'a'\nUSER = A::VALUE\n")
+  end
+
+  after do
+    RSpecTracer::Tracker::IOHooks.uninstall
+    RSpecTracer::Tracker::IOHooks.clear_bucket
+    FileUtils.rm_rf(tmp_base) if tmp_base
+  end
+
+  def write_project_file(rel, contents = "x\n")
+    path = File.join(root, rel)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, contents)
+    path
+  end
+
+  def stub_configuration(overrides = {})
+    defaults = {
+      root: root, cache_path: cache_path, logger: logger,
+      filters: [], declared_globs: [],
+      run_all_examples: false, transitive_load_tracking: false
+    }
+    double(**defaults, **overrides).tap do |config|
+      allow(config).to receive(:freeze_declared_globs!)
+    end
+  end
+
+  def build_tracker(configuration_override = configuration)
+    described_class.new(configuration: configuration_override)
+  end
+
+  def build_example(example_id, file_name = '/spec/thing_spec.rb', line = 1)
+    {
+      example_id: example_id,
+      file_name: file_name,
+      line_number: line,
+      rerun_file_name: file_name,
+      rerun_line_number: line,
+      full_description: "Example #{example_id}",
+      description: "Example #{example_id}",
+      example_group: 'Thing',
+      shared_group: []
+    }
+  end
+
+  def build_execution_result(status:, run_time: 0.01)
+    now = Time.now
+    double(
+      started_at: now, finished_at: now + run_time, run_time: run_time, status: status
+    )
+  end
+
+  describe '#initialize' do
+    it 'holds nothing until setup is called' do
+      tracker = build_tracker
+
+      expect(tracker.registry).to be_nil
+    end
+
+    it 'reports previous_snapshot_loaded? as false before setup' do
+      tracker = build_tracker
+
+      expect(tracker.previous_snapshot_loaded?).to be(false)
+    end
+  end
+
+  describe '#setup' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'freezes declared globs on the configuration' do
+      tracker
+
+      expect(configuration).to have_received(:freeze_declared_globs!)
+    end
+
+    it 'builds all seven observer instances' do
+      expect([
+        tracker.registry, tracker.graph, tracker.loaded_files_tracker,
+        tracker.coverage_adapter, tracker.declared_globs,
+        tracker.whole_suite_invalidators, tracker.new_file_detector
+      ]).to all(be_a(Object))
+    end
+
+    it 'constructs a JSON storage backend pointed at cache_path' do
+      expect(tracker.storage_backend).to be_a(RSpecTracer::Storage::JsonBackend)
+    end
+
+    it 'installs IOHooks' do
+      tracker
+
+      expect(RSpecTracer::Tracker::IOHooks.installed?).to be(true)
+    end
+
+    it 'captures the boot set via the LoadedFilesTracker' do
+      expect(tracker.loaded_files_tracker.boot_set).not_to be_nil
+    end
+
+    it 'returns self' do
+      tracker_instance = build_tracker
+      expect(tracker_instance.setup).to be(tracker_instance)
+    end
+  end
+
+  describe '#run_example? / #run_example_reason' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'runs every example when run_all_examples is true' do
+      tracker = build_tracker(stub_configuration(run_all_examples: true)).tap(&:setup)
+
+      expect(tracker.run_example?('new_id')).to be(true)
+      expect(tracker.run_example_reason('new_id')).to eq('Explicit run')
+    end
+
+    it 'runs an example not present in the previous snapshot (no cache case)' do
+      expect(tracker.run_example?('brand_new_id')).to be(true)
+    end
+
+    it 'reports no_cache as the reason for previously-unseen ids' do
+      expect(tracker.run_example_reason('brand_new_id')).to eq('No cache')
+    end
+  end
+
+  describe '#register_example / #deregister_duplicate_examples' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'adds an example to all_examples on first register' do
+      tracker.register_example(build_example('ex1'))
+
+      expect(tracker.all_examples).to have_key('ex1')
+    end
+
+    it 'deregister drops the singletons and keeps only real duplicates' do
+      tracker.register_example(build_example('ex1'))
+      tracker.register_example(build_example('ex2', '/spec/other_spec.rb'))
+      tracker.register_example(build_example('ex2', '/spec/dup_spec.rb'))
+
+      tracker.deregister_duplicate_examples
+
+      expect(tracker.duplicate_examples.keys).to eq(['ex2'])
+    end
+
+    it 'removes duplicated ids from all_examples after deregister' do
+      tracker.register_example(build_example('ex2'))
+      tracker.register_example(build_example('ex2'))
+      tracker.deregister_duplicate_examples
+
+      expect(tracker.all_examples).not_to have_key('ex2')
+    end
+  end
+
+  describe 'per-example lifecycle' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'example_started + example_finished record a coverage delta entry' do
+      a_path = File.join(root, 'lib/a.rb')
+      peeks = [
+        { a_path => [1, 0, 1] },
+        { a_path => [1, 1, 1] }
+      ]
+      allow(tracker.coverage_adapter).to receive(:peek).and_return(*peeks)
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+
+      expect(tracker.examples_coverage['ex1']).to have_key(a_path)
+    end
+
+    it 'example_finished installs a graph entry for the example' do
+      a_path = File.join(root, 'lib/a.rb')
+      peeks = [{ a_path => [1, 0, 1] }, { a_path => [1, 1, 1] }]
+      allow(tracker.coverage_adapter).to receive(:peek).and_return(*peeks)
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+
+      expect(tracker.graph.paths_for('ex1')).to include(a_path)
+    end
+
+    it 'clears the IOHooks bucket after example_finished' do
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+
+      expect(RSpecTracer::Tracker::IOHooks.current_bucket).to be_nil
+    end
+
+    it 'on_example_passed records the execution result on the metadata hash' do
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+      tracker.on_example_passed('ex1', build_execution_result(status: :passed))
+
+      expect(tracker.all_examples['ex1'][:execution_result][:status]).to eq('passed')
+    end
+
+    it 'on_example_failed updates registry status to :failed' do
+      tracker.register_example(build_example('ex1'))
+      tracker.on_example_failed('ex1', build_execution_result(status: :failed))
+
+      expect(tracker.registry.status_of('ex1')).to eq(:failed)
+    end
+
+    it 'on_example_pending updates registry status to :pending' do
+      tracker.register_example(build_example('ex1'))
+      tracker.on_example_pending('ex1', build_execution_result(status: :pending))
+
+      expect(tracker.registry.status_of('ex1')).to eq(:pending)
+    end
+
+    it 'on_example_skipped updates registry status without a prior register' do
+      tracker.on_example_skipped('stale_id')
+
+      expect(tracker.registry.status_of('stale_id')).to eq(:skipped)
+    end
+
+    it 'on_example_passed is a no-op for duplicate ids' do
+      tracker.register_example(build_example('dup'))
+      tracker.register_example(build_example('dup'))
+
+      tracker.on_example_passed('dup', build_execution_result(status: :passed))
+
+      expect(tracker.registry.status_of('dup')).to be_nil
+    end
+  end
+
+  describe '#finalize' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'writes a v2 cache under cache_path' do
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+      tracker.on_example_passed('ex1', build_execution_result(status: :passed))
+
+      tracker.finalize
+
+      expect(File).to exist(File.join(cache_path, 'last_run.json'))
+    end
+
+    it 'stamps the cache with schema_version 3' do
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example('ex1'))
+      tracker.example_started
+      tracker.example_finished('ex1')
+      tracker.on_example_passed('ex1', build_execution_result(status: :passed))
+
+      tracker.finalize
+
+      manifest = JSON.parse(File.read(File.join(cache_path, 'last_run.json')))
+      expect(manifest['schema_version']).to eq(3)
+    end
+
+    it 'flags ids without a terminal status as :interrupted at finalize' do
+      tracker.register_example(build_example('ex1'))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.interrupted_examples).to include('ex1')
+    end
+
+    it 'persists the boot_set digest snapshot alongside the run' do
+      snapshot = tracker.finalize
+
+      expect(snapshot.boot_set).to be_a(Hash)
+    end
+
+    it 'returns the Snapshot it persisted' do
+      expect(tracker.finalize).to be_a(RSpecTracer::Storage::Snapshot)
+    end
+  end
+
+  describe '#merge_skipped_coverage' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'returns {} when no previous coverage is available' do
+      expect(tracker.merge_skipped_coverage(%w[ex1])).to eq({})
+    end
+
+    it 'accumulates per-line strengths from previous coverage for skipped ids' do
+      previous = {
+        'ex1' => { '/lib/a.rb' => { '0' => 1, '2' => 3 } },
+        'ex2' => { '/lib/a.rb' => { '0' => 4 } }
+      }
+      result = tracker.merge_skipped_coverage(%w[ex1 ex2], previous)
+
+      expect(result['/lib/a.rb']).to eq(0 => 5, 2 => 3)
+    end
+
+    it 'skips entries for ids not present in the source map' do
+      result = tracker.merge_skipped_coverage(%w[missing], 'ex1' => { '/lib/a.rb' => { '0' => 1 } })
+
+      expect(result).to eq({})
+    end
+
+    it 'treats nil strengths as zero (legacy parity for non-executable lines)' do
+      previous = { 'ex1' => { '/lib/a.rb' => { '0' => nil, '1' => 2 } } }
+      result = tracker.merge_skipped_coverage(%w[ex1], previous)
+
+      expect(result['/lib/a.rb']).to eq(0 => 0, 1 => 2)
+    end
+
+    it 'falls back to the loaded previous snapshot when no explicit source is given' do
+      # Simulate a prior run by saving a snapshot the tracker can load.
+      prior = build_tracker
+      prior.setup
+      prior.register_example(build_example('ex1'))
+      allow(prior.coverage_adapter).to receive(:peek).and_return({}, {})
+      prior.example_started
+      prior.example_finished('ex1')
+      prior.on_example_passed('ex1', build_execution_result(status: :passed))
+      prior.finalize
+
+      # New tracker picks up the previous snapshot and merges.
+      RSpecTracer::Tracker::IOHooks.uninstall
+      next_run = build_tracker.tap(&:setup)
+
+      expect { next_run.merge_skipped_coverage(%w[ex1]) }.not_to raise_error
+    end
+  end
+end
+# rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations

@@ -19,7 +19,7 @@ require 'open3'
 # work, not several examples. Splitting to satisfy rspec-rubocop metric
 # cops would scatter the sequential narrative across unrelated `it`
 # blocks without clarifying anything.
-# rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength, RSpec/MultipleExpectations
+# rubocop:disable RSpec/DescribeClass
 RSpec.describe 'rspec-tracer dogfood' do
   let(:fixture_root) { File.expand_path('../../benchmark/fixtures/ruby_app', __dir__) }
   let(:cache_dir)    { File.join(fixture_root, 'rspec_tracer_cache') }
@@ -43,23 +43,26 @@ RSpec.describe 'rspec-tracer dogfood' do
     JSON.parse(File.read(File.join(cache_dir, 'last_run.json'))).fetch('run_id')
   end
 
-  it 'runs green cold and warm, and produces a reusable cache' do
-    # Ensure the fixture has its bundle installed; skip bundle install if
-    # it's already satisfied.
+  def ensure_bundle!
     Dir.chdir(fixture_root) do
       unless system('bundle check > /dev/null 2>&1')
         install_out, install_status = Open3.capture2e('bundle', 'install', '--quiet')
         raise "bundle install failed in #{fixture_root}:\n#{install_out}" unless install_status.success?
       end
     end
+  end
 
-    cold_out, cold_status = run_rspec_in_fixture(fixture_root)
-    expect(cold_status.exitstatus).to eq(0), "cold run failed:\n#{cold_out}"
+  # rubocop:disable Metrics/AbcSize, RSpec/NoExpectationExample
+  def dogfood_cycle(label, env = {})
+    ensure_bundle!
+
+    cold_out, cold_status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color', chdir: fixture_root)
+    expect(cold_status.exitstatus).to eq(0), "#{label} cold run failed:\n#{cold_out}"
     expect(File).to exist(File.join(cache_dir, 'last_run.json'))
     expect(last_run_id(cache_dir)).to match(/\A[0-9a-f]+\z/)
 
-    warm_out, warm_status = run_rspec_in_fixture(fixture_root)
-    expect(warm_status.exitstatus).to eq(0), "warm run failed:\n#{warm_out}"
+    warm_out, warm_status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color', chdir: fixture_root)
+    expect(warm_status.exitstatus).to eq(0), "#{label} warm run failed:\n#{warm_out}"
     expect(File).to exist(File.join(cache_dir, 'last_run.json'))
     expect(last_run_id(cache_dir)).to match(/\A[0-9a-f]+\z/)
     # Warm run prints tracer-authored output to STDOUT (skipped/cached
@@ -67,5 +70,14 @@ RSpec.describe 'rspec-tracer dogfood' do
     # "RSpec tracer" banner always appears.
     expect(warm_out).to include('RSpec tracer')
   end
+
+  it 'runs green cold and warm, and produces a reusable cache (legacy engine)' do
+    dogfood_cycle('legacy')
+  end
+
+  it 'runs green cold and warm under the v2 engine (RSPEC_TRACER_USE_V2_TRACKER=true)' do
+    dogfood_cycle('v2', 'RSPEC_TRACER_USE_V2_TRACKER' => 'true')
+  end
+  # rubocop:enable Metrics/AbcSize, RSpec/NoExpectationExample
 end
-# rubocop:enable RSpec/DescribeClass, RSpec/ExampleLength, RSpec/MultipleExpectations
+# rubocop:enable RSpec/DescribeClass

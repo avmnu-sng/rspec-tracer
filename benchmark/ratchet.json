@@ -13,10 +13,20 @@
       "p95": 0.4099,
       "iterations": 10
     },
+    "cold_ruby_v2": {
+      "p50": 0.254,
+      "p95": 0.259,
+      "iterations": 5
+    },
     "warm_noop": {
       "p50": 0.2327,
       "p95": 0.2744,
       "iterations": 10
+    },
+    "warm_noop_v2": {
+      "p50": 0.248,
+      "p95": 0.252,
+      "iterations": 5
     },
     "cache_load": {
       "p50": 0.2519,

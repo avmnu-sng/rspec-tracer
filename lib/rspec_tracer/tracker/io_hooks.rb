@@ -105,6 +105,22 @@ module RSpecTracer
           end
         end
 
+        # Non-block lifecycle for integration with RSpec hooks (which
+        # can't wrap the example body in a Ruby block). The Tracker
+        # coordinator calls set_bucket at example_started time and
+        # clear_bucket at example_finished time. Unlike with_bucket,
+        # these do not save/restore a prior bucket - the coordinator
+        # owns the Thread.current slot for the span of an example.
+        # rubocop:disable Naming/AccessorMethodName
+        def set_bucket(bucket)
+          Thread.current[BUCKET_KEY] = bucket
+        end
+        # rubocop:enable Naming/AccessorMethodName
+
+        def clear_bucket
+          Thread.current[BUCKET_KEY] = nil
+        end
+
         # Record a :data input (File/IO/YAML/JSON hooks). The
         # allow-predicate is the coordinator's default extension +
         # filter combo.
