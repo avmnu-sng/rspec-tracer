@@ -2,7 +2,7 @@
 
 # End-to-end integration for parallel_tests + the M5.1 hook rework.
 # Drives the benchmark ruby_app fixture via `parallel_rspec spec` in a
-# subprocess and asserts that:
+# subprocess, then asserts that:
 #
 #   - every worker exits green
 #   - per-worker cache dirs are purged at exit
@@ -11,13 +11,6 @@
 #   - the lock file is cleaned up after the last worker finishes
 #   - a warm run produces a zero-re-run filter decision
 #     (M4.3-style filter assertion, not just exit status)
-#
-# Design: runs `parallel_rspec` exactly twice (cold + warm) in
-# `before(:all)` and captures stdout/status + on-disk artifacts into
-# class instance vars. The `it` blocks are pure inspections - no
-# subprocess churn. This keeps CI exposure to the known-flaky
-# "repeated parallel_rspec on GHA 2-CPU runners" surface at 2
-# invocations per test file (same as the pre-M5.1 cucumber scenario).
 #
 # Depends on the `parallel_tests` gem being in the fixture's Gemfile.
 
@@ -73,65 +66,68 @@ module ParallelTestsSpecHelpers
   end
 end
 
-# rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll
 RSpec.describe 'parallel_tests v2 engine integration' do
   include ParallelTestsSpecHelpers
 
-  before(:all) do
-    ParallelTestsSpecHelpers.ensure_bundle!
+  before(:all) { ParallelTestsSpecHelpers.ensure_bundle! }
+
+  around do |example|
     ParallelTestsSpecHelpers.scrub!
-
-    @cold_out, @cold_status = ParallelTestsSpecHelpers.run_parallel
-    raise "cold parallel_rspec failed:\n#{@cold_out}" unless @cold_status.success?
-
-    # Capture cold-run disk state *before* the warm run overwrites it.
-    @cold_run_id = ParallelTestsSpecHelpers.load_last_run.fetch('run_id')
-    @cold_worker_dir_stragglers = Dir.glob(File.join(ParallelTestsSpecHelpers::CACHE_ROOT, 'parallel_tests_*'))
-    @cold_lock_present = File.exist?(ParallelTestsSpecHelpers::LOCK_FILE)
-    @cold_all_examples = ParallelTestsSpecHelpers.load_top_cache_file('all_examples.json')
-    @cold_files_present = RSpecTracer::Storage::JsonBackend::FILENAMES.to_h do |filename|
-      [filename, File.exist?(File.join(ParallelTestsSpecHelpers::CACHE_ROOT, @cold_run_id, filename))]
-    end
-
-    @warm_out, @warm_status = ParallelTestsSpecHelpers.run_parallel
-    raise "warm parallel_rspec failed:\n#{@warm_out}" unless @warm_status.success?
-
-    @warm_skipped_examples = ParallelTestsSpecHelpers.load_top_cache_file('skipped_examples.json')
+    example.run
+    ParallelTestsSpecHelpers.scrub!
   end
-
-  after(:all) { ParallelTestsSpecHelpers.scrub! }
 
   describe 'cold parallel run' do
     it 'exits green with every worker completing' do
-      expect(@cold_status.exitstatus).to eq(0), "cold parallel_rspec failed:\n#{@cold_out}"
+      out, status = run_parallel
+
+      expect(status.exitstatus).to eq(0), "parallel run failed:\n#{out}"
     end
 
     it 'purges per-worker parallel_tests_N directories on the last worker' do
-      expect(@cold_worker_dir_stragglers).to(be_empty,
-                                             "leftover worker dirs: #{@cold_worker_dir_stragglers.inspect}")
+      run_parallel
+
+      stragglers = Dir.glob(File.join(ParallelTestsSpecHelpers::CACHE_ROOT, 'parallel_tests_*'))
+      expect(stragglers).to be_empty, "leftover worker dirs: #{stragglers.inspect}"
     end
 
     it 'writes a merged top-level snapshot with every FILENAMES entry present' do
-      missing = @cold_files_present.reject { |_, present| present }.keys
-      expect(missing).to be_empty, "missing files: #{missing.inspect}"
+      run_parallel
+
+      run_id = load_last_run.fetch('run_id')
+      RSpecTracer::Storage::JsonBackend::FILENAMES.each do |filename|
+        expect(File).to exist(File.join(ParallelTestsSpecHelpers::CACHE_ROOT, run_id, filename)), "missing #{filename}"
+      end
     end
 
     it 'removes the lock file once the last worker completes' do
-      expect(@cold_lock_present).to be(false)
+      run_parallel
+
+      expect(File.exist?(ParallelTestsSpecHelpers::LOCK_FILE)).to be(false)
     end
 
     it 'unions example ids from both workers into the top-level snapshot' do
+      run_parallel
+
+      all_examples = load_top_cache_file('all_examples.json')
       # The fixture has 3 spec files; parallel_rspec distributes them
       # across 2 workers and the merge union gathers every example.
-      expect(@cold_all_examples.keys).not_to be_empty
-      expect(@cold_all_examples.keys.size).to be >= 3
+      expect(all_examples.keys).not_to be_empty
+      expect(all_examples.keys.size).to be >= 3
     end
   end
 
   describe 'warm parallel run' do
     it 'skips every example on the second invocation (cache round-trip via the merged snapshot)' do
-      expect(@warm_skipped_examples).to match_array(@cold_all_examples.keys)
+      run_parallel
+      cold_examples = load_top_cache_file('all_examples.json').keys
+
+      run_parallel
+      warm_skipped = load_top_cache_file('skipped_examples.json')
+
+      expect(warm_skipped).to match_array(cold_examples)
     end
   end
 end
-# rubocop:enable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:enable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/BeforeAfterAll

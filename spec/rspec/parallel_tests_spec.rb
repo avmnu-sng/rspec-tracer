@@ -16,22 +16,28 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
   let(:coverage_path) { File.join(tmp_base, 'rspec_tracer_coverage', 'parallel_tests_1') }
   let(:logger) { spy('Logger') }
 
+  # ENV scoping: snapshot + restore the three env vars this module reads
+  # so mutations inside an example cannot leak to other specs (either in
+  # the same file or across the suite). `around` guarantees the restore
+  # runs even on example failure or raised exceptions.
+  around do |example|
+    original_env = ENV.to_hash.slice('TEST_ENV_NUMBER', 'PARALLEL_TEST_GROUPS', 'RSPEC_TRACER_VERBOSE')
+    %w[TEST_ENV_NUMBER PARALLEL_TEST_GROUPS RSPEC_TRACER_VERBOSE].each { |k| ENV.delete(k) }
+
+    example.run
+  ensure
+    %w[TEST_ENV_NUMBER PARALLEL_TEST_GROUPS RSPEC_TRACER_VERBOSE].each { |k| ENV.delete(k) }
+    original_env.each { |k, v| ENV[k] = v }
+  end
+
   before do
     allow(RSpecTracer).to receive_messages(lock_file: lock_file, cache_path: cache_path,
                                            report_path: report_path, coverage_path: coverage_path,
                                            logger: logger, simplecov?: false)
-    ENV.delete('TEST_ENV_NUMBER')
-    ENV.delete('PARALLEL_TEST_GROUPS')
-    ENV.delete('RSPEC_TRACER_VERBOSE')
     [cache_path, report_path, coverage_path].each { |p| FileUtils.mkdir_p(File.dirname(p)) }
   end
 
-  after do
-    FileUtils.rm_rf(tmp_base) if tmp_base
-    ENV.delete('TEST_ENV_NUMBER')
-    ENV.delete('PARALLEL_TEST_GROUPS')
-    ENV.delete('RSPEC_TRACER_VERBOSE')
-  end
+  after { FileUtils.rm_rf(tmp_base) if tmp_base }
 
   describe '.active?' do
     it 'returns false when neither env var is set' do
@@ -155,34 +161,37 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
   end
 
   describe '.last_process?' do
-    before do
-      ENV['TEST_ENV_NUMBER'] = '3'
-      ENV['PARALLEL_TEST_GROUPS'] = '4'
-    end
+    before { ENV['PARALLEL_TEST_GROUPS'] = '4' }
 
     it 'is false when parallel_tests is inactive' do
-      ENV.delete('TEST_ENV_NUMBER')
       ENV.delete('PARALLEL_TEST_GROUPS')
       expect(described_class.last_process?).to be(false)
     end
 
-    it 'is false when the lock file does not exist' do
+    it 'is false when the parallel_tests gem is not loaded' do
+      ENV['TEST_ENV_NUMBER'] = ''
+      hide_const('ParallelTests')
+
       expect(described_class.last_process?).to be(false)
     end
 
-    it 'is true when TEST_ENV_NUMBER equals the max seen in the lock file' do
-      File.write(lock_file, "3\n")
+    it 'is true for the first worker (TEST_ENV_NUMBER empty)' do
+      ENV['TEST_ENV_NUMBER'] = ''
+      require 'parallel_tests'
+
       expect(described_class.last_process?).to be(true)
     end
 
-    it 'is false when TEST_ENV_NUMBER is less than the max' do
-      File.write(lock_file, "7\n")
-      expect(described_class.last_process?).to be(false)
+    it 'is true for the first worker (TEST_ENV_NUMBER == "1")' do
+      ENV['TEST_ENV_NUMBER'] = '1'
+      require 'parallel_tests'
+
+      expect(described_class.last_process?).to be(true)
     end
 
-    it 'returns false on SystemCallError (e.g. race on unlink)' do
-      File.write(lock_file, "3\n")
-      allow(File).to receive(:open).with(lock_file, 'r').and_raise(Errno::ENOENT)
+    it 'is false for any non-first worker regardless of PARALLEL_TEST_GROUPS' do
+      ENV['TEST_ENV_NUMBER'] = '2'
+      require 'parallel_tests'
 
       expect(described_class.last_process?).to be(false)
     end
@@ -227,10 +236,11 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
 
   describe '.finalize!' do
     before do
-      ENV['TEST_ENV_NUMBER'] = '2'
+      ENV['TEST_ENV_NUMBER'] = ''
       ENV['PARALLEL_TEST_GROUPS'] = '2'
       File.write(lock_file, "2\n")
-      stub_const('ParallelTests', Module.new { def self.wait_for_other_processes_to_finish; end })
+      require 'parallel_tests'
+      allow(ParallelTests).to receive(:wait_for_other_processes_to_finish)
       allow(described_class).to receive(:merge_snapshot!)
       allow(described_class).to receive(:merge_coverage!)
       allow(described_class).to receive(:purge_worker_dirs!)
@@ -242,13 +252,13 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class.finalize!).to be(false)
     end
 
-    it 'is a no-op when this process is not the last worker' do
-      ENV['TEST_ENV_NUMBER'] = '1'
+    it 'is a no-op when this process is not the first worker' do
+      ENV['TEST_ENV_NUMBER'] = '2'
       expect(described_class.finalize!).to be(false)
       expect(described_class).not_to have_received(:merge_snapshot!)
     end
 
-    it 'runs the merge + cleanup sequence on the last worker' do
+    it 'runs the merge + cleanup sequence on the first (elected) worker' do
       result = described_class.finalize!
 
       expect(result).to be(true)
