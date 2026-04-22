@@ -162,6 +162,50 @@ jobs:
           PARALLEL_TESTS_VERSION: "~> 5.0"
         run: task test:features:ruby-parallel
 
+  ruby-parallel-baseline:
+    # H7 diagnostic (PR #100): does `parallel_rspec spec` hang on GHA when
+    # rspec-tracer is absent entirely? Same matrix, same runner image, same
+    # Open3 harness — only the fixture differs. Revert together with the
+    # sibling fixture once the signal is collected.
+    name: ruby-parallel-baseline (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
+        rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test — Baseline (no rspec-tracer, parallel_tests 4.7)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          PARALLEL_TESTS_VERSION: "~> 4.7"
+        run: task test:integration:parallel-baseline
+
+      - name: Test — Baseline (no rspec-tracer, parallel_tests 5.x)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          PARALLEL_TESTS_VERSION: "~> 5.0"
+        run: task test:integration:parallel-baseline
+
   rails:
     name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
     needs: matrix-config

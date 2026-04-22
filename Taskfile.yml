@@ -191,6 +191,16 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/parallel_tests_spec.rb
 
+  test:integration:parallel-baseline:
+    desc: >-
+      H7 diagnostic (PR #100 CI flake investigation). Drives the sibling
+      ruby_app_no_tracer fixture — same parallel_rspec harness with NO
+      rspec-tracer loaded — to determine whether the ruby-parallel GHA hang
+      lives in our code path or upstream. Short-lived: reverted once H7 is
+      answered.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/parallel_tests_baseline_diagnostic_spec.rb
+
   test:property:
     desc: Property-based invariant tests
     cmds:
