@@ -43,8 +43,13 @@ module RSpecTracer
         RSpecTracer::Configuration.private_instance_methods(false).each do |method_name|
           alias_method :"_#{method_name}", method_name
 
-          define_method method_name do |*args, &block|
-            send(:"_#{method_name}", *args, &block)
+          # Forward `**kwargs` too so DSL methods can accept Ruby 3+
+          # keyword args (e.g. `track_rails_defaults except: [:views]`,
+          # M3.8's `storage_backend :json, serializer: :msgpack`).
+          # Before M4.1 this wrapper forwarded `*args, &block` only and
+          # silently stripped kwargs; see M3.4 handoff notes.
+          define_method method_name do |*args, **kwargs, &block|
+            send(:"_#{method_name}", *args, **kwargs, &block)
           end
         end
       end

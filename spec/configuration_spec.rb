@@ -7,6 +7,31 @@ RSpec.describe RSpecTracer::Configuration do
 
   let(:clazz) { Class.new { include RSpecTracer::Configuration } }
 
+  describe '#configure DSL wrapper' do
+    # The DSL wrapper aliases every private setter to `_name`, then
+    # redefines the public name as a thin forwarder. Before M4.1 the
+    # forwarder stripped keyword arguments silently; M4.1 threads
+    # `**kwargs` through so `track_rails_defaults except: [:views]`
+    # (and the deferred M3.4/M3.8 `storage_backend` opts) work.
+    it 'forwards keyword arguments through to the underlying setter' do
+      params = described_class
+        .instance_method(:track_rails_defaults)
+        .parameters
+        .map(&:first)
+
+      expect(params).to include(:keyrest)
+    end
+
+    it 'still forwards positional arguments and blocks' do
+      params = described_class
+        .instance_method(:track_rails_defaults)
+        .parameters
+        .map(&:first)
+
+      expect(params).to include(:rest, :block)
+    end
+  end
+
   describe '#root' do
     context 'when not configured' do
       it 'returns current working directory' do
