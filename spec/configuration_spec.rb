@@ -294,50 +294,91 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#use_v2_tracker' do
-    it 'defaults to false when never configured' do
-      expect(config.use_v2_tracker).to be(false)
+  # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength
+  describe '#ignore_spec_files' do
+    it 'returns a frozen empty array when never configured' do
+      result = config.ignore_spec_files
+
+      expect(result).to eq([])
+      expect(result).to be_frozen
     end
 
-    it 'returns the last value set via the DSL' do
-      config.use_v2_tracker(true)
+    it 'accumulates passed globs across calls' do
+      config.ignore_spec_files('spec/smoke/**/*_spec.rb')
+      config.ignore_spec_files('spec/legacy/**/*_spec.rb')
 
-      expect(config.use_v2_tracker).to be(true)
+      expect(config.ignore_spec_files).to contain_exactly(
+        'spec/smoke/**/*_spec.rb',
+        'spec/legacy/**/*_spec.rb'
+      )
     end
 
-    it 'coerces any non-true value to false' do
-      config.use_v2_tracker('yes')
+    it 'accepts mixed single-arg and splat forms and flattens nested arrays' do
+      config.ignore_spec_files('spec/a_spec.rb', ['spec/b_spec.rb', 'spec/c_spec.rb'])
 
-      expect(config.use_v2_tracker).to be(false)
+      expect(config.ignore_spec_files).to contain_exactly(
+        'spec/a_spec.rb', 'spec/b_spec.rb', 'spec/c_spec.rb'
+      )
     end
 
-    it 'honors RSPEC_TRACER_USE_V2_TRACKER=true over the DSL' do
-      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_USE_V2_TRACKER' => 'true'))
+    it 'coerces all entries to strings (supports Pathname etc)' do
+      config.ignore_spec_files(Pathname('spec/x_spec.rb'))
 
-      expect(config.use_v2_tracker(false)).to be(true)
+      expect(config.ignore_spec_files).to eq(['spec/x_spec.rb'])
     end
 
-    it 'treats any non-"true" ENV value as false' do
-      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_USE_V2_TRACKER' => '1'))
+    it 'drops nil entries silently' do
+      config.ignore_spec_files('spec/a.rb', nil, 'spec/b.rb')
 
-      expect(config.use_v2_tracker(true)).to be(false)
+      expect(config.ignore_spec_files).to contain_exactly('spec/a.rb', 'spec/b.rb')
     end
 
-    it 'memoizes across no-arg reads' do
-      config.use_v2_tracker(true)
-      first = config.use_v2_tracker
-      second = config.use_v2_tracker
+    it 'freezes the returned array so downstream consumers treat it as immutable' do
+      config.ignore_spec_files('spec/a.rb')
 
-      expect([first, second]).to eq([true, true])
-    end
-
-    it 'keeps the previous value when re-called with nil' do
-      config.use_v2_tracker(true)
-      config.use_v2_tracker(nil)
-
-      expect(config.use_v2_tracker).to be(true)
+      expect(config.ignore_spec_files).to be_frozen
     end
   end
+
+  describe '#ignore_spec_file?' do
+    it 'returns false when file_path is nil' do
+      expect(config.ignore_spec_file?(nil)).to be(false)
+    end
+
+    it 'returns false when file_path is empty' do
+      expect(config.ignore_spec_file?('')).to be(false)
+    end
+
+    it 'returns false when no globs are configured' do
+      expect(config.ignore_spec_file?('spec/foo_spec.rb')).to be(false)
+    end
+
+    it 'returns true on a direct glob match against the raw RSpec-shaped path' do
+      config.ignore_spec_files('spec/smoke/**/*_spec.rb')
+
+      expect(config.ignore_spec_file?('./spec/smoke/login_spec.rb')).to be(true)
+    end
+
+    it 'returns true after stripping a leading ./ from the RSpec-shaped path' do
+      config.ignore_spec_files('spec/legacy/**/*')
+
+      expect(config.ignore_spec_file?('./spec/legacy/old_spec.rb')).to be(true)
+    end
+
+    it 'returns true when matched via a root-relative normalization of an absolute path' do
+      config.root('/tmp/project')
+      config.ignore_spec_files('spec/smoke/**/*_spec.rb')
+
+      expect(config.ignore_spec_file?('/tmp/project/spec/smoke/login_spec.rb')).to be(true)
+    end
+
+    it 'returns false when no glob matches' do
+      config.ignore_spec_files('spec/legacy/**/*_spec.rb')
+
+      expect(config.ignore_spec_file?('./spec/regular/foo_spec.rb')).to be(false)
+    end
+  end
+  # rubocop:enable RSpec/MultipleExpectations, RSpec/ExampleLength
 
   describe '#transitive_load_tracking' do
     it 'defaults to true when never configured' do

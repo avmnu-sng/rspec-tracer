@@ -43,6 +43,13 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
   end
 
   describe '.with_bucket / .current_bucket' do
+    # The outer suite's Engine#example_started sets a bucket via
+    # ReporterHook on every example - post-M5.1, there is no
+    # use_v2_tracker gate. Explicitly clear before asserting the
+    # with_bucket lifecycle so `current_bucket` reads as `nil` when
+    # nothing else has touched it inside the test.
+    before { described_class.clear_bucket }
+
     it 'exposes the bucket inside the block' do
       bucket = {}
       captured = nil

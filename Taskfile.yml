@@ -173,9 +173,23 @@ tasks:
       - bundle exec rspec spec/contracts
 
   test:integration:
-    desc: Integration tests (ruby_app v2 parity + dogfood + constants regression)
+    desc: >-
+      Integration tests (ruby_app subprocess + dogfood + constants regression).
+      Excludes rails_app (see `test:features:rails`) and parallel_tests (see
+      `test:integration:parallel`) because both exceed the fast-feedback budget.
+      Files listed explicitly: `.rspec`'s --exclude-pattern does not apply when
+      positional paths are passed.
     cmds:
-      - bundle exec rspec spec/integration
+      - bundle exec rspec spec/integration/dogfood_spec.rb spec/integration/ruby_app_spec.rb spec/integration/constants_regression_spec.rb
+
+  test:integration:parallel:
+    desc: >-
+      M5.1 parallel_tests integration test. Drives the benchmark ruby_app fixture
+      under `parallel_rspec spec` and asserts the merged top-level cache shape.
+      Excluded from the default rspec sweep (via .rspec --exclude-pattern) because
+      each example spawns worker subprocesses.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/parallel_tests_spec.rb
 
   test:property:
     desc: Property-based invariant tests
@@ -324,9 +338,11 @@ tasks:
       - bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
 
   test:features:ruby-parallel:
-    desc: Cucumber features — parallel_tests (@ruby-app and @parallel-tests)
+    desc: >-
+      M5.1 parallel_tests integration test (swapped from cucumber; the legacy
+      cucumber scenarios asserted on 1.x cache layout that v2 no longer writes).
     cmds:
-      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @parallel-tests"
+      - task: test:integration:parallel
 
   test:features:rails:
     desc: >-

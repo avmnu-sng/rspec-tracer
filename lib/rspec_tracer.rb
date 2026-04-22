@@ -16,71 +16,45 @@ require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/engine'
 require_relative 'rspec_tracer/example'
-require_relative 'rspec_tracer/html_reporter/reporter'
 require_relative 'rspec_tracer/load_config'
 require_relative 'rspec_tracer/remote_cache/cache'
-require_relative 'rspec_tracer/report_generator'
-require_relative 'rspec_tracer/report_merger'
-require_relative 'rspec_tracer/report_writer'
-require_relative 'rspec_tracer/rspec_reporter'
-require_relative 'rspec_tracer/rspec_runner'
+require_relative 'rspec_tracer/rspec/installation'
+require_relative 'rspec_tracer/rspec/parallel_tests'
 require_relative 'rspec_tracer/ruby_coverage'
-require_relative 'rspec_tracer/runner'
 require_relative 'rspec_tracer/source_file'
 require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
 
-# The top-level entry point has grown past the rubocop default
-# over years of legacy accumulation; splitting across files would
-# scatter the start/at_exit lifecycle across unrelated modules for
-# zero readability win. Refactoring is queued with the Phase 5
-# RSpec-integration rework.
-# rubocop:disable Metrics/ModuleLength, Metrics/ClassLength
+# Top-level entry point. Drives the M5.1 lifecycle:
+#
+#   RSpecTracer.start
+#     → RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
+#     → setup_coverage                (::Coverage.start unless SimpleCov owns it)
+#     → setup_rails                   (detect ::Rails::VERSION)
+#     → Engine.new.setup              (observers + cache load + filter decisions)
+#     → coverage_reporter             (coverage.json emission)
+#
+#   at_exit_behavior (installed via `at_exit` elsewhere in the boot
+#   flow) runs the finalize stack: Engine#finalize writes the 13-file
+#   snapshot via Storage::JsonBackend, coverage_reporter writes
+#   coverage.json, ParallelTests#finalize! merges per-worker caches
+#   on the last worker.
 module RSpecTracer
   class << self
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
 
     def start
+      return if defined?(@started) && @started
+
       RSpecTracer.running = false
       RSpecTracer.pid = Process.pid
-
-      return if RUBY_ENGINE == 'jruby' && !valid_jruby_opts?
+      @started = true
 
       RSpecTracer.logger.debug "Started RSpec tracer (pid: #{RSpecTracer.pid})"
 
-      parallel_tests_setup
+      @parallel_tests = RSpecTracer::RSpec::ParallelTests.active?
+      RSpecTracer::RSpec::ParallelTests.setup! if parallel_tests?
       initial_setup
-    end
-
-    def filter_examples
-      groups = Set.new
-      to_run = Hash.new { |hash, group| hash[group] = [] }
-      filter_source = v2_engine? ? engine : runner
-
-      RSpec.world.filtered_examples.each_pair do |example_group, examples|
-        examples.each do |example|
-          tracer_example = RSpecTracer::Example.from(example)
-          example_id = tracer_example[:example_id]
-          example.metadata[:rspec_tracer_example_id] = example_id
-
-          if filter_source.run_example?(example_id)
-            run_reason = filter_source.run_example_reason(example_id)
-            tracer_example[:run_reason] = run_reason
-            example.metadata[:description] = "#{example.description} (#{run_reason})"
-
-            to_run[example_group] << example
-            groups << example.example_group.parent_groups.last
-
-            filter_source.register_example(tracer_example)
-          else
-            filter_source.on_example_skipped(example_id)
-          end
-        end
-      end
-
-      filter_source.deregister_duplicate_examples
-
-      [to_run, groups.to_a]
     end
 
     def at_exit_behavior
@@ -90,70 +64,20 @@ module RSpecTracer
 
       run_exit_tasks
     ensure
-      FileUtils.rm_f(RSpecTracer.lock_file) if parallel_tests_last_process?
+      if RSpecTracer::RSpec::ParallelTests.active? &&
+          RSpecTracer::RSpec::ParallelTests.last_process?
+        RSpecTracer::RSpec::ParallelTests.remove_lock_file!
+      end
 
       RSpecTracer.running = false
     end
 
-    def start_example_trace
-      trace_point.enable
-    end
-
-    def stop_example_trace(example_id)
-      trace_point.disable
-
-      @examples_traced_files[example_id] = @traced_files
-      @traced_files = Set.new
-    end
-
-    def runner
-      @runner if defined?(@runner)
-    end
-
-    # The v2 Engine instance when `use_v2_tracker` is true; nil
-    # otherwise. Lives alongside the legacy @runner / @coverage_reporter
-    # during the Phase 3 bridge period and drops out once the
-    # RSpec-hook rework retires the legacy path.
     def engine
       @engine if defined?(@engine)
     end
 
-    # Per-process predicate consumed by RSpec hook modules and the
-    # top-level filter_examples dispatcher. Disabled under
-    # parallel_tests for M3.6 - the legacy parallel_tests merging
-    # path stays authoritative until the RSpec rework lands.
-    def v2_engine?
-      return false if parallel_tests?
-
-      !engine.nil?
-    end
-
     def coverage_reporter
       @coverage_reporter if defined?(@coverage_reporter)
-    end
-
-    def report_writer
-      @report_writer if defined?(@report_writer)
-    end
-
-    def coverage_merger
-      @coverage_merger if defined?(@coverage_merger)
-    end
-
-    def report_merger
-      @report_merger if defined?(@report_merger)
-    end
-
-    def trace_point
-      @trace_point if defined?(@trace_point)
-    end
-
-    def traced_files
-      @traced_files if defined?(@traced_files)
-    end
-
-    def examples_traced_files
-      @examples_traced_files if defined?(@examples_traced_files)
     end
 
     def simplecov?
@@ -175,94 +99,15 @@ module RSpecTracer
 
     private
 
-    def valid_jruby_opts?
-      require 'jruby'
-
-      return true if Java::OrgJruby::RubyInstanceConfig.FULL_TRACE_ENABLED &&
-        JRuby.runtime.object_space_enabled?
-
-      RSpecTracer.logger.warn <<-WARN.strip.gsub(/\s+/, ' ')
-        RSpec Tracer is not running as it requires debug and object space enabled. Use
-        command line options "--debug" and "-X+O" or set the "debug.fullTrace=true" and
-        "objectspace.enabled=true" options in your .jrubyrc file. You can also use
-        JRUBY_OPTS="--debug -X+O".
-      WARN
-
-      false
-    end
-
     def initial_setup
-      unless setup_rspec?
-        RSpecTracer.logger.error 'Could not find a running RSpec process'
-
-        return
-      end
+      RSpecTracer::RSpec::Installation.install!
 
       setup_coverage
       setup_rails
-      setup_trace_point
 
-      if RSpecTracer.use_v2_tracker && !parallel_tests?
-        # v2 bridge path: the Engine replaces Runner at the filter
-        # surface and owns cache write via JsonBackend. Legacy
-        # @coverage_reporter + @report_writer stay in the hot path
-        # so coverage.json + HTML reports are still produced
-        # identically - M3.6 deliberately does NOT re-implement the
-        # report surface.
-        @engine = RSpecTracer::Engine.new(configuration: RSpecTracer)
-        @engine.setup
-        @coverage_reporter = RSpecTracer::CoverageReporter.new
-      else
-        @runner = RSpecTracer::Runner.new
-        @coverage_reporter = RSpecTracer::CoverageReporter.new
-        @report_writer = RSpecTracer::ReportWriter.new(RSpecTracer.cache_path, @runner.reporter)
-      end
-    end
-
-    def parallel_tests_setup
-      @parallel_tests = !(ENV.fetch('TEST_ENV_NUMBER', nil) && ENV.fetch('PARALLEL_TEST_GROUPS', nil)).nil?
-
-      return unless parallel_tests?
-
-      require 'parallel_tests' unless defined?(ParallelTests)
-
-      @coverage_merger = RSpecTracer::CoverageMerger.new
-      @report_merger = RSpecTracer::ReportMerger.new
-    rescue LoadError => e
-      RSpecTracer.logger.error "Failed to load parallel tests (Error: #{e.message})"
-    ensure
-      track_parallel_tests_test_env_number
-    end
-
-    def track_parallel_tests_test_env_number
-      return unless parallel_tests?
-
-      File.open(RSpecTracer.lock_file, File::RDWR | File::CREAT, 0o644) do |f|
-        f.flock(File::LOCK_EX)
-
-        test_num = [f.read.to_i, ENV['TEST_ENV_NUMBER'].to_i].max
-
-        f.rewind
-        f.write("#{test_num}\n")
-        f.flush
-        f.truncate(f.pos)
-      end
-    end
-
-    def setup_rspec?
-      runners = ObjectSpace.each_object(::RSpec::Core::Runner) do |runner|
-        runner_clazz = runner.singleton_class
-        clazz = RSpecTracer::RSpecRunner
-
-        runner_clazz.prepend(clazz) unless runner_clazz.ancestors.include?(clazz)
-
-        reporter_clazz = runner.configuration.reporter.singleton_class
-        clazz = RSpecTracer::RSpecReporter
-
-        reporter_clazz.prepend(clazz) unless reporter_clazz.ancestors.include?(clazz)
-      end
-
-      runners.positive?
+      @engine = RSpecTracer::Engine.new(configuration: RSpecTracer)
+      @engine.setup
+      @coverage_reporter = RSpecTracer::CoverageReporter.new
     end
 
     def setup_coverage
@@ -284,34 +129,26 @@ module RSpecTracer
       @rails = defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
     end
 
-    def setup_trace_point
-      @traced_files = Set.new
-      @examples_traced_files = {}
-
-      @trace_point = TracePoint.new(:call) do |tp|
-        RSpecTracer.traced_files << tp.path if tp.path.start_with?(RSpecTracer.root)
-      end
-    end
-
     def run_exit_tasks
       if RSpecTracer.no_examples
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
-      elsif v2_engine?
-        run_v2_finalize
       else
-        generate_reports
+        run_finalize
       end
 
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
 
-      run_parallel_tests_exit_tasks
+      RSpecTracer::RSpec::ParallelTests.finalize! if parallel_tests?
     end
 
-    # M3.6 v2 finalize path: the Engine owns the 12-file JSON cache
-    # write via Storage::JsonBackend; CoverageReporter remains
-    # responsible for the legacy coverage.json surface. HTML /
-    # report_writer rework lives in Phase 6.
-    def run_v2_finalize
+    # Engine-owned finalize path. Engine writes the 13-file JSON cache
+    # via Storage::JsonBackend; CoverageReporter still owns the
+    # coverage.json surface (M3.6 Decision 2 - reporter rework lives in
+    # Phase 6). The two paths share per-example coverage deltas via
+    # `merge_skipped_coverage`: skipped examples' prior-run coverage
+    # rolls forward into coverage.json so missed_coverage semantics
+    # match 1.x.
+    def run_finalize
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
       coverage_reporter.generate_final_examples_coverage
@@ -322,45 +159,7 @@ module RSpecTracer
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
-      RSpecTracer.logger.debug "RSpec tracer (v2) persisted cache (took #{elapsed})"
-    end
-
-    def generate_reports
-      RSpecTracer.logger.debug "RSpec tracer is generating reports (pid: #{RSpecTracer.pid})"
-
-      process_dependency
-      process_coverage
-
-      RSpecTracer::ReportGenerator.new(runner.reporter, runner.cache).generate_report
-      report_writer.write_report
-      RSpecTracer::HTMLReporter::Reporter.new(RSpecTracer.report_path, runner.reporter).generate_report
-    end
-
-    def process_dependency
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      runner.register_interrupted_examples
-      runner.register_deleted_examples
-      runner.register_dependency(coverage_reporter.examples_coverage)
-      runner.register_traced_dependency(@examples_traced_files)
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      RSpecTracer.logger.debug "RSpec tracer processed dependency (took #{elapsed})"
-    end
-
-    def process_coverage
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      coverage_reporter.generate_final_examples_coverage
-      coverage_reporter.merge_coverage(runner.generate_missed_coverage)
-      runner.register_examples_coverage(coverage_reporter.examples_coverage)
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      RSpecTracer.logger.debug "RSpec tracer processed coverage (took #{elapsed})"
+      RSpecTracer.logger.debug "RSpec tracer persisted cache (took #{elapsed})"
     end
 
     def run_simplecov_exit_task
@@ -388,122 +187,5 @@ module RSpecTracer
 
       coverage_writer.print_stats(ending - starting)
     end
-
-    def run_parallel_tests_exit_tasks
-      return unless parallel_tests_executed?
-
-      merge_parallel_tests_reports
-      write_parallel_tests_merged_report
-      merge_parallel_tests_coverage_reports
-      write_parallel_tests_coverage_report
-      purge_parallel_tests_reports
-    end
-
-    def merge_parallel_tests_reports
-      return unless parallel_tests_executed?
-
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      reports_dir = []
-
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        cache_path = File.dirname(RSpecTracer.cache_path)
-        cache_dir = File.join(cache_path, "parallel_tests_#{test_num}")
-
-        next unless File.directory?(cache_dir)
-
-        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))['run_id']
-
-        reports_dir << File.join(cache_dir, run_id)
-      end
-
-      report_merger.merge(reports_dir)
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      RSpecTracer.logger.debug "RSpec tracer merged parallel tests reports (took #{elapsed})"
-    end
-
-    def write_parallel_tests_merged_report
-      return unless parallel_tests_executed?
-
-      report_dir = File.dirname(RSpecTracer.cache_path)
-
-      RSpecTracer::ReportWriter.new(report_dir, report_merger).write_report
-
-      report_dir = File.dirname(RSpecTracer.report_path)
-
-      RSpecTracer::HTMLReporter::Reporter.new(report_dir, report_merger).generate_report
-    end
-
-    def merge_parallel_tests_coverage_reports
-      return unless parallel_tests_executed? && !simplecov?
-
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      reports_dir = []
-
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        coverage_path = File.dirname(RSpecTracer.coverage_path)
-        coverage_dir = File.join(coverage_path, "parallel_tests_#{test_num}")
-
-        reports_dir << coverage_dir if File.directory?(coverage_dir)
-      end
-
-      coverage_merger.merge(reports_dir)
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
-
-      RSpecTracer.logger.debug "RSpec tracer merged parallel tests coverage reports (took #{elapsed})"
-    end
-
-    def write_parallel_tests_coverage_report
-      return unless parallel_tests_executed? && !simplecov?
-
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      coverage_path = File.dirname(RSpecTracer.coverage_path)
-      file_name = File.join(coverage_path, 'coverage.json')
-      coverage_writer = RSpecTracer::CoverageWriter.new(file_name, coverage_merger)
-
-      coverage_writer.write_report
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      coverage_writer.print_stats(ending - starting)
-    end
-
-    def purge_parallel_tests_reports
-      return unless parallel_tests_executed?
-
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
-          FileUtils.rm_rf(File.join(File.dirname(path), "parallel_tests_#{test_num}"))
-        end
-      end
-    end
-
-    def parallel_tests_executed?
-      return false unless parallel_tests? && parallel_tests_last_process?
-
-      ParallelTests.wait_for_other_processes_to_finish
-
-      true
-    end
-
-    def parallel_tests_last_process?
-      return false unless parallel_tests?
-
-      max_test_num = 0
-
-      File.open(RSpecTracer.lock_file, 'r') do |f|
-        f.flock(File::LOCK_SH)
-
-        max_test_num = f.read.to_i
-      end
-
-      ENV['TEST_ENV_NUMBER'].to_i == max_test_num
-    end
   end
 end
-# rubocop:enable Metrics/ModuleLength, Metrics/ClassLength

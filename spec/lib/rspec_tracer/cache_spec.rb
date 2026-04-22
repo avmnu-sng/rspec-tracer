@@ -3,6 +3,10 @@
 require 'spec_helper'
 require 'tmpdir'
 
+# Legacy Cache is no longer auto-loaded post-M5.1 (see runner_spec.rb
+# for the same rationale). Load explicitly.
+require 'rspec_tracer/cache'
+
 RSpec.describe RSpecTracer::Cache do
   subject(:cache) { described_class.new }
 

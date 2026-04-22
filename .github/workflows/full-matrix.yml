@@ -155,6 +155,13 @@ jobs:
           PARALLEL_TESTS_VERSION: "~> 4.7"
         run: task test:features:ruby-parallel
 
+      - name: Test — Features (Ruby, parallel_tests 5.x)
+        env:
+          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+          SIMPLECOV_VERSION: "~> 0.22"
+          PARALLEL_TESTS_VERSION: "~> 5.0"
+        run: task test:features:ruby-parallel
+
   rails:
     name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
     needs: matrix-config

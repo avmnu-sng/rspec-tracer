@@ -28,7 +28,6 @@ require 'optparse'
 require 'rbconfig'
 require 'time'
 
-# rubocop:disable Metrics/ModuleLength
 module BenchmarkHarness
   REPO_ROOT = File.expand_path('..', __dir__)
   RUBY_FIXTURE = File.join(REPO_ROOT, 'benchmark/fixtures/ruby_app')
@@ -59,14 +58,6 @@ module BenchmarkHarness
       cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage],
       smoke: true
     },
-    'cold_ruby_v2' => {
-      desc: 'Cold start (v2 engine): RSPEC_TRACER_USE_V2_TRACKER=true',
-      cwd: RUBY_FIXTURE,
-      cmd: %w[bundle exec rspec --no-color],
-      env: { 'RSPEC_TRACER_USE_V2_TRACKER' => 'true' },
-      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage],
-      smoke: true
-    },
     'warm_noop' => {
       desc: 'Warm run: same fixture, cache populated, no file changes',
       cwd: RUBY_FIXTURE,
@@ -75,27 +66,16 @@ module BenchmarkHarness
       warmup: ->(cwd) { run_rspec_once(cwd, {}) },
       smoke: true
     },
-    'warm_noop_v2' => {
-      desc: 'Warm run (v2 engine): same fixture, cache populated, no file changes',
+    'parallel_tests_2_workers' => {
+      desc: 'parallel_tests with 2 workers, cold: worker split + merge at exit',
       cwd: RUBY_FIXTURE,
-      cmd: %w[bundle exec rspec --no-color],
-      env: { 'RSPEC_TRACER_USE_V2_TRACKER' => 'true' },
-      warmup: ->(cwd) { run_rspec_once(cwd, 'RSPEC_TRACER_USE_V2_TRACKER' => 'true') },
-      smoke: true
-    },
-    'cache_load' => {
-      desc: 'Cache-only boot: load + populate cache, no specs',
-      cwd: RUBY_FIXTURE,
-      cmd: ['bundle', 'exec', 'ruby', '-e', <<~RUBY],
-        require "rspec_tracer"
-        cache_dir = File.join(Dir.pwd, "rspec_tracer_cache")
-        if Dir.exist?(cache_dir)
-          RSpecTracer::Cache.new.populate_from_disk(cache_dir)
-        end
-      RUBY
-      env: {},
-      warmup: ->(cwd) { run_rspec_once(cwd, {}) },
-      smoke: true
+      cmd: %w[bundle exec parallel_rspec spec],
+      env: { 'PARALLEL_TEST_GROUPS' => '2' },
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage rspec_tracer.lock],
+      # smoke:false keeps `task check` under its fast-feedback budget -
+      # parallel_tests startup is ~1.5s per iteration, dominates the smoke
+      # wall clock. Runs on benchmark:full and CI.
+      smoke: false
     },
     'cold_rails' => {
       desc: 'Cold start: Rails fixture, empty cache',
@@ -105,26 +85,8 @@ module BenchmarkHarness
         'RAILS_VERSION' => '~> 7.1.0',
         'RSPEC_RAILS_VERSION' => '~> 6.1.0',
         'SIMPLECOV_VERSION' => '~> 0.22',
-        'SQLITE3_VERSION' => '~> 1.4'
-      },
-      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
-      setup: lambda do |cwd|
-        system('bundle', 'exec', 'rails', 'db:test:prepare',
-               chdir: cwd, out: File::NULL, err: File::NULL)
-      end,
-      smoke: false
-    },
-    'cold_rails_v2' => {
-      desc: 'Cold start: Rails fixture under rspec-tracer v2 engine (M4.3 AC3: <= 1.5x plain RSpec)',
-      cwd: RAILS_FIXTURE,
-      cmd: %w[bundle exec rspec --no-color spec/models],
-      env: {
-        'RAILS_VERSION' => '~> 7.1.0',
-        'RSPEC_RAILS_VERSION' => '~> 6.1.0',
-        'SIMPLECOV_VERSION' => '~> 0.22',
         'SQLITE3_VERSION' => '~> 1.4',
-        'RSPEC_TRACER' => '1',
-        'RSPEC_TRACER_USE_V2_TRACKER' => 'true'
+        'RSPEC_TRACER' => '1'
       },
       cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
       setup: lambda do |cwd|
@@ -394,7 +356,5 @@ module BenchmarkHarness
     exit(1) if any_fail && options[:enforce]
   end
 end
-
-# rubocop:enable Metrics/ModuleLength
 
 BenchmarkHarness.main if $PROGRAM_NAME == __FILE__

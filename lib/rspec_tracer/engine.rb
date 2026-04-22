@@ -30,7 +30,7 @@ module RSpecTracer
   # namespace is already taken by the sub-module that houses the
   # leaf observers (`Tracker::CoverageAdapter`, `Tracker::IOHooks`,
   # etc.). `RSpecTracer.engine` is the public accessor the RSpec
-  # hooks dispatch through when `use_v2_tracker` is enabled.
+  # hooks dispatch through during a run.
   #
   # Lifecycle (driven by RSpec hooks in `lib/rspec_tracer.rb`):
   #
@@ -386,8 +386,26 @@ module RSpecTracer
       nil
     end
 
+    # Under parallel_tests, each worker writes to its own per-worker
+    # cache dir (`rspec_tracer_cache/parallel_tests_N/`) but warm-run
+    # reads come from the MERGED top-level cache (`rspec_tracer_cache/`,
+    # one level up). Last-process finalize at exit purges the per-worker
+    # dirs, so only the merged snapshot survives between runs. Match
+    # 1.x Cache#load_cache_for_run's `File.dirname(cache_path) if
+    # parallel_tests?` behavior so warm runs under parallel_tests
+    # actually skip examples.
     def load_previous_snapshot
-      @storage_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      read_backend = build_read_backend
+      read_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+    end
+
+    def build_read_backend
+      return @storage_backend unless RSpecTracer.parallel_tests?
+
+      parent_cache_path = File.dirname(@configuration.cache_path)
+      RSpecTracer::Storage::JsonBackend.new(
+        cache_path: parent_cache_path, logger: @configuration.logger
+      )
     end
 
     # On warm runs, skipped examples don't re-populate @all_examples,

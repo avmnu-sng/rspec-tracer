@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require 'digest/md5'
 require 'fileutils'
 require 'json'
 require 'set'
+require 'time' # Time#iso8601 for last_run.json timestamp
 
 require_relative 'backend'
 require_relative 'schema'
@@ -161,6 +163,129 @@ module RSpecTracer
         return unless File.directory?(@cache_path)
 
         FileUtils.rm_rf(@cache_path)
+      end
+
+      # Merge per-worker snapshots (written to `peer_cache_paths`) into
+      # this backend's top-level cache and persist via `save_graph`.
+      # Read each peer via `load_graph` so schema + corruption policy
+      # (missing files yield nil, malformed JSON logs + returns nil)
+      # flows through the same path as a normal load.
+      #
+      # No peers / every peer nil → no-op returns nil. Partial peers
+      # merge what's available; graceful degradation is the entire
+      # point of running this at at_exit time.
+      #
+      # `schema_version` is passed through so peers saved under a
+      # different schema version are rejected without side effects
+      # (same semantics as a warm run under a mismatched cache).
+      def merge_from_peers(peer_cache_paths, schema_version:)
+        peer_snapshots = peer_cache_paths.filter_map do |path|
+          self.class.new(cache_path: path, logger: @logger).load_graph(schema_version: schema_version)
+        end
+
+        return nil if peer_snapshots.empty?
+
+        merged = Merger.call(peer_snapshots, schema_version: schema_version)
+        save_graph(merged, schema_version: schema_version)
+        merged
+      end
+
+      # Stateless snapshot union. parallel_tests partitions spec files
+      # across workers, so example IDs are disjoint in practice - the
+      # merge collision rules (first-wins for metadata, sum-of-ints for
+      # per-line coverage) only fire on collaborating workers that
+      # happened to observe the same input file.
+      module Merger
+        module_function
+
+        def call(snapshots, schema_version:)
+          state = empty_state
+          snapshots.each { |s| absorb(state, s) }
+
+          state[:reverse_dependency] = reverse_of(state[:dependency])
+          state[:run_id] = Digest::MD5.hexdigest(state[:all_examples].keys.sort.to_json)
+
+          Snapshot.new(
+            schema_version: schema_version,
+            run_id: state[:run_id],
+            all_examples: state[:all_examples],
+            duplicate_examples: state[:duplicate_examples],
+            interrupted_examples: state[:interrupted_examples],
+            flaky_examples: state[:flaky_examples],
+            failed_examples: state[:failed_examples],
+            pending_examples: state[:pending_examples],
+            skipped_examples: state[:skipped_examples],
+            all_files: state[:all_files],
+            dependency: state[:dependency],
+            reverse_dependency: state[:reverse_dependency],
+            examples_coverage: state[:examples_coverage],
+            boot_set: state[:boot_set],
+            wsi_snapshot: state[:wsi_snapshot]
+          )
+        end
+
+        def empty_state
+          {
+            all_examples: {},
+            duplicate_examples: Hash.new { |h, k| h[k] = [] },
+            interrupted_examples: Set.new,
+            flaky_examples: Set.new,
+            failed_examples: Set.new,
+            pending_examples: Set.new,
+            skipped_examples: Set.new,
+            all_files: {},
+            dependency: Hash.new { |h, k| h[k] = Set.new },
+            examples_coverage: {},
+            boot_set: {},
+            wsi_snapshot: {}
+          }
+        end
+
+        # Union every field from one peer snapshot into the running
+        # state. Each field has a distinct combine rule (merge-first-wins,
+        # Set#merge, concat, or summing coverage strengths), so the
+        # branching is inherent to the shape. Decomposing per-field would
+        # scatter the merge contract.
+        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def absorb(state, snapshot)
+          state[:all_examples].merge!(snapshot.all_examples || {}) { |_, v, _| v }
+          (snapshot.duplicate_examples || {}).each do |id, entries|
+            state[:duplicate_examples][id].concat(entries)
+          end
+          state[:interrupted_examples].merge(snapshot.interrupted_examples || Set.new)
+          state[:flaky_examples].merge(snapshot.flaky_examples || Set.new)
+          state[:failed_examples].merge(snapshot.failed_examples || Set.new)
+          state[:pending_examples].merge(snapshot.pending_examples || Set.new)
+          state[:skipped_examples].merge(snapshot.skipped_examples || Set.new)
+          state[:all_files].merge!(snapshot.all_files || {}) { |_, v, _| v }
+          (snapshot.dependency || {}).each do |id, paths|
+            state[:dependency][id].merge(paths)
+          end
+          merge_examples_coverage!(state[:examples_coverage], snapshot.examples_coverage || {})
+          state[:boot_set].merge!(snapshot.boot_set || {})
+          state[:wsi_snapshot].merge!(snapshot.wsi_snapshot || {})
+        end
+        # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+        def merge_examples_coverage!(target, source)
+          source.each do |id, per_file|
+            entry = target[id] ||= {}
+            per_file.each do |file_path, lines|
+              file_entry = entry[file_path] ||= {}
+              lines.each do |line_key, strength|
+                file_entry[line_key] = (file_entry[line_key] || 0) + (strength || 0)
+              end
+            end
+          end
+        end
+
+        def reverse_of(dependency)
+          reverse = Hash.new { |h, k| h[k] = Set.new }
+          dependency.each do |id, file_names|
+            file_names.each { |name| reverse[name] << id }
+          end
+          reverse
+        end
       end
 
       private

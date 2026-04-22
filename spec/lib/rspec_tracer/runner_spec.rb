@@ -3,6 +3,13 @@
 require 'spec_helper'
 require 'tmpdir'
 
+# Legacy Runner is no longer auto-loaded post-M5.1 (the RSpec hook
+# rework retired the use_v2_tracker bridge and stopped requiring
+# runner.rb from the top-level entry). Load it explicitly for this
+# unit-test module; the class stays in-tree until Phase 6 retires
+# the reporter stack.
+require 'rspec_tracer/runner'
+
 RSpec.describe RSpecTracer::Runner do
   subject(:runner) { described_class.new }
 

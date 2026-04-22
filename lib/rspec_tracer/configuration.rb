@@ -197,26 +197,6 @@ module RSpecTracer
                             end
     end
 
-    # Opt in to the v2 core-engine pipeline (the in-tree
-    # Tracker + Storage + Filter stack). Default `false` keeps every
-    # existing run on the legacy Runner + CoverageReporter path, so
-    # users upgrading to 2.0.pre don't change behavior silently.
-    #
-    # Setting `true` activates the new engine for the RSpec process.
-    # The flag is a temporary bridge - removed once the RSpec
-    # integration rework lands and the legacy runner retires.
-    # Honors `RSPEC_TRACER_USE_V2_TRACKER` for CI that needs to flip
-    # the flag without editing `.rspec-tracer`.
-    def use_v2_tracker(new_flag = nil)
-      return @use_v2_tracker if defined?(@use_v2_tracker) && new_flag.nil?
-
-      @use_v2_tracker = if ENV.key?('RSPEC_TRACER_USE_V2_TRACKER')
-                          ENV['RSPEC_TRACER_USE_V2_TRACKER'] == 'true'
-                        else
-                          new_flag == true
-                        end
-    end
-
     # M3.7 transitive-load attribution (closes the constants blind
     # spot). Default `true` - the tracker observes files loaded during
     # the process and attributes them as transitive deps of every
@@ -361,6 +341,60 @@ module RSpecTracer
     # silently accumulating into state that has already been read.
     def freeze_declared_globs!
       @declared_globs_frozen = true
+    end
+
+    # M5.1 per-spec-file exclusion (closes upstream #41). Accumulates
+    # glob patterns that match test files rspec-tracer should leave
+    # alone: matching examples pass through RSpec unchanged, but the
+    # tracer does not compute an identity hash, does not run
+    # duplicate detection, and does not include them in any filter
+    # decision. Distinct from `add_filter` - that excludes *source*
+    # files from dependency attribution; `ignore_spec_files` excludes
+    # *spec* files from tracer visibility entirely.
+    #
+    # Typical use: a smoke-test spec with intentionally duplicated
+    # descriptions that rspec-tracer's `fail_on_duplicates=true`
+    # gate would otherwise reject.
+    #
+    # Shape mirrors `track_files`: bare call returns the current
+    # frozen array, any arg call accumulates.
+    def ignore_spec_files(*globs)
+      @ignore_spec_files_globs ||= []
+      @ignore_spec_files_globs.concat(globs.flatten.compact.map(&:to_s)) unless globs.empty?
+      @ignore_spec_files_globs.dup.freeze
+    end
+
+    # Runtime matcher consumed by RunnerHook. Normalizes `file_path`
+    # to three candidate forms - the raw RSpec-emitted path (often
+    # `./spec/foo_spec.rb`), the same with `./` stripped, and the
+    # root-relative form - then compares each against each configured
+    # glob via `File.fnmatch?`. Public because the RSpec hook layer
+    # calls it from outside the configure block.
+    def ignore_spec_file?(file_path)
+      return false if file_path.nil? || file_path.empty?
+
+      globs = defined?(@ignore_spec_files_globs) ? @ignore_spec_files_globs : nil
+      return false if globs.nil? || globs.empty?
+
+      candidates = _ignore_spec_file_candidates(file_path)
+      globs.any? do |glob|
+        candidates.any? { |candidate| File.fnmatch?(glob, candidate, File::FNM_PATHNAME) }
+      end
+    end
+
+    def _ignore_spec_file_candidates(file_path)
+      candidates = [file_path]
+      stripped = file_path.delete_prefix('./')
+      candidates << stripped if stripped != file_path
+      relative = _relative_file_path(file_path)
+      candidates << relative if relative != file_path
+      candidates
+    end
+
+    def _relative_file_path(file_path)
+      return file_path unless defined?(@root) && @root && file_path.start_with?("#{@root}/")
+
+      file_path[(@root.length + 1)..]
     end
 
     # M3.4 storage backend selector. Symbol form

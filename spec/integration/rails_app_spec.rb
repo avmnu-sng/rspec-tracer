@@ -35,7 +35,7 @@ module RailsAppSpecHelpers
   COVERAGE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_coverage')
   REPORT_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_report')
   LOCAL_COVERAGE = File.join(FIXTURE_ROOT, 'coverage')
-  TRACER_ENV = { 'RSPEC_TRACER' => '1', 'RSPEC_TRACER_USE_V2_TRACKER' => 'true' }.freeze
+  TRACER_ENV = { 'RSPEC_TRACER' => '1' }.freeze
   SCRUB_DIRS = [CACHE_DIR, COVERAGE_DIR, REPORT_DIR, LOCAL_COVERAGE].freeze
 
   MUTATION_MARKER = "\n# rspec-tracer M4.3 behavior-matrix mutation marker\n"

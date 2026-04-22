@@ -289,4 +289,173 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
   rescue StandardError
     nil
   end
+
+  # rubocop:disable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations, RSpec/ExampleLength
+  describe '#merge_from_peers' do
+    let(:top_cache)     { File.join(tmp_base, 'top') }
+    let(:peer_one_path) { File.join(tmp_base, 'top', 'parallel_tests_1') }
+    let(:peer_two_path) { File.join(tmp_base, 'top', 'parallel_tests_2') }
+    let(:top_backend)   { described_class.new(cache_path: top_cache) }
+
+    def write_peer(path, snapshot)
+      FileUtils.mkdir_p(path)
+      described_class.new(cache_path: path).save_graph(
+        snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+    end
+
+    def peer_snapshot(run_id, example_id, file_name, digest)
+      RSpecTracer::Storage::Snapshot.new(
+        schema_version: RSpecTracer::Storage::Schema::CURRENT,
+        run_id: run_id,
+        all_examples: { example_id => { id: example_id, description: "ex #{example_id}" } },
+        duplicate_examples: {},
+        interrupted_examples: Set.new,
+        flaky_examples: Set.new,
+        failed_examples: Set.new([example_id]),
+        pending_examples: Set.new,
+        skipped_examples: Set.new,
+        all_files: { file_name => { file_name: file_name, digest: digest } },
+        dependency: { example_id => Set.new([file_name]) },
+        reverse_dependency: { file_name => Set.new([example_id]) },
+        examples_coverage: { example_id => { file_name => { '0' => 1, '2' => 3 } } },
+        boot_set: { "lib/#{example_id}_boot.rb" => "boot#{example_id}" },
+        wsi_snapshot: { 'Gemfile.lock' => "wsi-#{run_id}" }
+      )
+    end
+
+    it 'returns nil when no peer directories exist' do
+      expect(top_backend.merge_from_peers([], schema_version: RSpecTracer::Storage::Schema::CURRENT)).to be_nil
+    end
+
+    it 'returns nil when every peer path is missing / empty' do
+      result = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+      expect(result).to be_nil
+    end
+
+    it 'unions all_examples, all_files, dependency, boot_set, wsi across peers' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/lib/a.rb', 'digest-a'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/lib/b.rb', 'digest-b'))
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.all_examples.keys).to contain_exactly('ex1', 'ex2')
+      expect(merged.all_files.keys).to contain_exactly('/lib/a.rb', '/lib/b.rb')
+      expect(merged.dependency['ex1']).to include('/lib/a.rb')
+      expect(merged.dependency['ex2']).to include('/lib/b.rb')
+      expect(merged.boot_set.keys).to include('lib/ex1_boot.rb', 'lib/ex2_boot.rb')
+      expect(merged.wsi_snapshot['Gemfile.lock']).to be_a(String)
+    end
+
+    it 'unions example-status ID sets' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/a.rb', 'da'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/b.rb', 'db'))
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.failed_examples).to eq(Set.new(%w[ex1 ex2]))
+    end
+
+    it 'recomputes reverse_dependency from the unioned dependency map' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/a.rb', 'da'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/b.rb', 'db'))
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.reverse_dependency['/a.rb']).to include('ex1')
+      expect(merged.reverse_dependency['/b.rb']).to include('ex2')
+    end
+
+    it 'sums per-line coverage strengths across peers when they overlap' do
+      shared = peer_snapshot('p1', 'ex1', '/lib/shared.rb', 'dig')
+      other = peer_snapshot('p2', 'ex1', '/lib/shared.rb', 'dig')
+
+      write_peer(peer_one_path, shared)
+      write_peer(peer_two_path, other)
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.examples_coverage['ex1']['/lib/shared.rb']).to eq('0' => 2, '2' => 6)
+    end
+
+    it 'persists the merged snapshot under the top-level cache path' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/a.rb', 'da'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/b.rb', 'db'))
+
+      top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      reloaded = described_class.new(cache_path: top_cache)
+        .load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      expect(reloaded.all_examples.keys).to contain_exactly('ex1', 'ex2')
+    end
+
+    it 'derives run_id from the merged example id list (hex MD5)' do
+      write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/a.rb', 'da'))
+      write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/b.rb', 'db'))
+
+      merged = top_backend.merge_from_peers(
+        [peer_one_path, peer_two_path],
+        schema_version: RSpecTracer::Storage::Schema::CURRENT
+      )
+
+      expect(merged.run_id).to match(/\A[0-9a-f]{32}\z/)
+    end
+  end
+  # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations, RSpec/ExampleLength
+
+  # rubocop:disable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations
+  describe RSpecTracer::Storage::JsonBackend::Merger do
+    let(:schema) { RSpecTracer::Storage::Schema::CURRENT }
+
+    def make_snapshot(overrides = {})
+      base = {
+        schema_version: schema, run_id: 'r',
+        all_examples: {}, duplicate_examples: {},
+        interrupted_examples: Set.new, flaky_examples: Set.new,
+        failed_examples: Set.new, pending_examples: Set.new,
+        skipped_examples: Set.new,
+        all_files: {}, dependency: {}, reverse_dependency: {},
+        examples_coverage: {},
+        boot_set: {}, wsi_snapshot: {}
+      }
+      RSpecTracer::Storage::Snapshot.new(**base, **overrides)
+    end
+
+    it 'treats nil fields as empty collections (graceful under partial peers)' do
+      s1 = make_snapshot(all_examples: nil, dependency: nil, examples_coverage: nil)
+
+      merged = described_class.call([s1], schema_version: schema)
+
+      expect(merged.all_examples).to eq({})
+      expect(merged.dependency).to eq({})
+    end
+
+    it 'concatenates duplicate_examples entries across peers' do
+      s1 = make_snapshot(duplicate_examples: { 'ex' => [{ a: 1 }] })
+      s2 = make_snapshot(duplicate_examples: { 'ex' => [{ a: 2 }] })
+
+      merged = described_class.call([s1, s2], schema_version: schema)
+
+      expect(merged.duplicate_examples['ex']).to eq([{ a: 1 }, { a: 2 }])
+    end
+  end
+  # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations
 end
