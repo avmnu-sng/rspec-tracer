@@ -112,20 +112,40 @@ module RSpecTracer
         end
       end
 
+      # Elects the worker that performs the per-run merge. Delegates to
+      # `::ParallelTests.first_process?`, which returns true iff
+      # `TEST_ENV_NUMBER.to_i <= 1` — i.e. for exactly one worker
+      # (TEST_ENV_NUMBER == '' or '1'), regardless of how many workers
+      # were actually spawned vs. how many CPUs the runner reports.
+      #
+      # Two historical approaches do NOT work here:
+      #
+      #   1. The 1.x lock-file scheme (each worker wrote its
+      #      TEST_ENV_NUMBER to `rspec_tracer.lock` at RSpecTracer.start
+      #      time; last_process? picked the max) deadlocked under CI:
+      #      worker 1 could finish its examples before worker 2 even
+      #      loaded spec_helper, observe itself as the max, and enter
+      #      `wait_for_other_processes_to_finish` concurrently with
+      #      worker 2's own self-election — both workers spun on each
+      #      other's pid.
+      #
+      #   2. `::ParallelTests.last_process?` compares TEST_ENV_NUMBER
+      #      against PARALLEL_TEST_GROUPS. parallel_rspec's CLI sets
+      #      PARALLEL_TEST_GROUPS to the CPU-based *intended* process
+      #      count, NOT the actual worker count — so when fewer specs
+      #      than CPUs are present, no TEST_ENV_NUMBER ever matches
+      #      PARALLEL_TEST_GROUPS and the merge is silently skipped.
+      #
+      # `first_process?` avoids both: it is immutable across worker
+      # lifetime (set by the parent at spawn) and identifies exactly
+      # one worker regardless of CPU count. The elected worker still
+      # calls `wait_for_other_processes_to_finish` before merging, so
+      # peer caches are guaranteed on disk by merge time.
       def last_process?
         return false unless active?
-        return false unless ::File.file?(RSpecTracer.lock_file)
+        return false unless defined?(::ParallelTests)
 
-        max_test_num = 0
-
-        ::File.open(RSpecTracer.lock_file, 'r') do |f|
-          f.flock(::File::LOCK_SH)
-          max_test_num = f.read.to_i
-        end
-
-        ::ENV.fetch('TEST_ENV_NUMBER', '0').to_i == max_test_num
-      rescue SystemCallError
-        false
+        ::ParallelTests.first_process?
       end
 
       def remove_lock_file!

@@ -9,7 +9,7 @@
 #   - the top-level cache has every FILENAMES entry present and sees
 #     all example ids the workers observed (union-of-peers merge)
 #   - the lock file is cleaned up after the last worker finishes
-#   - a warm run produces no zero-re-run filter decisions
+#   - a warm run produces a zero-re-run filter decision
 #     (M4.3-style filter assertion, not just exit status)
 #
 # Depends on the `parallel_tests` gem being in the fixture's Gemfile.
@@ -88,7 +88,6 @@ RSpec.describe 'parallel_tests v2 engine integration' do
     it 'purges per-worker parallel_tests_N directories on the last worker' do
       run_parallel
 
-      # No parallel_tests_N subdirs should remain after the merge.
       stragglers = Dir.glob(File.join(ParallelTestsSpecHelpers::CACHE_ROOT, 'parallel_tests_*'))
       expect(stragglers).to be_empty, "leftover worker dirs: #{stragglers.inspect}"
     end
@@ -112,9 +111,9 @@ RSpec.describe 'parallel_tests v2 engine integration' do
       run_parallel
 
       all_examples = load_top_cache_file('all_examples.json')
-      expect(all_examples.keys).not_to be_empty
       # The fixture has 3 spec files; parallel_rspec distributes them
       # across 2 workers and the merge union gathers every example.
+      expect(all_examples.keys).not_to be_empty
       expect(all_examples.keys.size).to be >= 3
     end
   end

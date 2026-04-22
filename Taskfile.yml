@@ -333,9 +333,13 @@ tasks:
   # ── Cucumber features (legacy, removed in 2.0.0) ───────
 
   test:features:ruby:
-    desc: Cucumber features — pure Ruby (@ruby-app, not @parallel-tests)
+    desc: >-
+      M5.1 ruby_app integration test (swapped from cucumber; the legacy
+      cucumber scenarios asserted on 1.x cache layout - 10 files, spec_helper
+      in all_files - that v2 no longer produces). Same M4.3 c2 precedent as
+      test:features:rails.
     cmds:
-      - bundle exec cucumber --retry 1 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
 
   test:features:ruby-parallel:
     desc: >-
@@ -354,11 +358,14 @@ tasks:
       - bundle exec rspec --no-color spec/integration/rails_app_spec.rb
 
   test:features:jruby:
-    desc: Cucumber features on JRuby (@ruby-app, not @parallel-tests)
+    desc: >-
+      M5.1 ruby_app integration test on JRuby (swapped from cucumber for the
+      same reason as test:features:ruby). JRUBY_OPTS keeps the debug + object-
+      space flags required for the v2 engine's observer install on JRuby 9.4.
     env:
       JRUBY_OPTS: "--debug -X+O"
     cmds:
-      - bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
 
   # ── Benchmarks ─────────────────────────────────────────
 
