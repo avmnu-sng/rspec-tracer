@@ -5,42 +5,47 @@
     "os": "darwin24",
     "cpu": "Apple M2 Max",
     "cores": 12,
-    "recorded_at": "2026-04-22T00:00:00Z"
+    "recorded_at": "2026-04-22T21:13:41Z"
   },
   "scenarios": {
     "cold_ruby": {
-      "p50": 0.254,
-      "p95": 0.259,
-      "iterations": 5
+      "p50": 0.2455,
+      "p95": 0.2716,
+      "iterations": 10
     },
     "warm_noop": {
-      "p50": 0.248,
-      "p95": 0.252,
-      "iterations": 5
+      "p50": 0.2296,
+      "p95": 0.2446,
+      "iterations": 10
+    },
+    "warm_env_mismatch": {
+      "p50": 0.228,
+      "p95": 0.2296,
+      "iterations": 10
     },
     "parallel_tests_2_workers": {
-      "p50": 1.25,
-      "p95": 1.45,
-      "iterations": 5
+      "p50": 1.459,
+      "p95": 1.5059,
+      "iterations": 10
     },
     "cold_rails": {
-      "p50": 2.938,
-      "p95": 3.566,
-      "iterations": 5
+      "p50": 2.8459,
+      "p95": 3.4042,
+      "iterations": 10
     },
     "coverage_adapter": {
-      "p50": 2.5691,
-      "p95": 2.6305,
+      "p50": 2.4751,
+      "p95": 2.5077,
       "iterations": 10
     },
     "file_read_hook": {
-      "p50": 8.1492,
-      "p95": 8.3206,
+      "p50": 7.5968,
+      "p95": 7.9102,
       "iterations": 10
     },
     "loaded_files_tracker": {
-      "p50": 1.84,
-      "p95": 1.93,
+      "p50": 1.8274,
+      "p95": 1.852,
       "iterations": 10
     }
   }
