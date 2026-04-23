@@ -27,7 +27,11 @@ require_relative 'rspec_tracer/reporters/terminal_reporter'
 require_relative 'rspec_tracer/reporters/html_reporter'
 require_relative 'rspec_tracer/reporters/registry'
 require_relative 'rspec_tracer/load_config'
-require_relative 'rspec_tracer/remote_cache/cache'
+# RemoteCache is loaded lazily from its Rakefile shim (user-driven),
+# not at gem-load time. The user-facing tasks `rspec_tracer:remote_cache:*`
+# pull in `lib/rspec_tracer/remote_cache.rb` when the user's Rakefile
+# loads the shim. Test-suite runs that never invoke a cache task pay
+# zero load cost for aws/git subshell code.
 require_relative 'rspec_tracer/rspec/installation'
 require_relative 'rspec_tracer/rspec/parallel_tests'
 require_relative 'rspec_tracer/ruby_coverage'

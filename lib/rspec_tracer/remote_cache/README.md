@@ -5,30 +5,66 @@ graph so a fresh checkout (CI, new contributor) starts warm.
 
 ## Responsibilities
 
-- Download the cache for a given ref (branch, commit, tag).
-- Upload the current local cache under a ref.
-- List available refs, newest first.
+- Download the cache for a given ref (commit SHA) into the local cache
+  directory, with schema-version validation.
+- Upload the current local cache under the branch ref.
+- Persist branch refs so history rewrites (`git commit --amend`,
+  `git pull -r`) don't invalidate the next run.
+- Prune old entries per configured retention policy.
 
 ## Public protocol
 
 ```ruby
 module RSpecTracer::RemoteCache::Backend
-  def download(ref); end
-  def upload(ref); end
-  def list_refs; end
+  REQUIRED_METHODS = %i[
+    download upload branch_refs write_branch_refs prune!
+  ].freeze
+
+  def self.conforms?(backend); end
 end
 ```
 
-## Planned backends
+The shared-examples contract in
+`spec/contracts/remote_cache_backend.rb` asserts the full behavioral
+contract on every implementation.
 
-- `S3Backend` — primary target.
-- `LocalFsBackend` — shared mount / NFS.
-- `RedisBackend` — optional, for ephemeral CI agents.
+## Layout (S3 backend)
 
-## Status
+Two-tier S3 layout, paired with the `schema_version` bump (1.x caches
+are refused cleanly; one cold run on upgrade):
 
-This directory currently holds the 1.x remote-cache implementation
-(`aws.rb`, `cache.rb`, `repo.rb`, `validator.rb`, `Rakefile`). The 2.0
-backend-protocol split lands in Phase 7 (session M7.1). Legacy code and
-2.0 protocol will coexist here during the transition; legacy files are
-removed once M7.1 ships.
+```
+s3://<bucket>/<prefix>/
+  main/<sha>/[<test_suite_id>/]last_run.json
+  main/<sha>/[<test_suite_id>/]<run_id>/*.json
+  pr/<branch>/<sha>/[<test_suite_id>/]last_run.json
+  pr/<branch>/<sha>/[<test_suite_id>/]<run_id>/*.json
+  pr/<branch>/branch_refs.json
+```
+
+Tier is determined from `$GIT_BRANCH` vs `$GIT_DEFAULT_BRANCH`. PR
+downloads try their own `pr/<branch>/` tier first, then fall back to
+`main/` for the same ref (catches cherry-picks from main).
+
+## Shipped backends
+
+- `S3Backend` — primary target, shell-out to `aws`/`awslocal` CLI.
+
+## Planned backends (M7.2)
+
+- `LocalFsBackend` — shared mount / NFS for on-prem CI.
+- `RedisBackend` — ephemeral CI agents.
+
+## User-facing surface
+
+The Rakefile (`lib/rspec_tracer/remote_cache/Rakefile`) defines the
+two tasks `rspec_tracer:remote_cache:download` and `:upload`. Users
+load it from their own Rakefile:
+
+```ruby
+spec = Gem::Specification.find_by_name('rspec-tracer')
+load "#{spec.gem_dir}/lib/rspec_tracer/remote_cache/Rakefile"
+```
+
+Env vars required: `GIT_DEFAULT_BRANCH`, `GIT_BRANCH`, and
+`TEST_SUITE_ID` (optional; scopes the S3 path when set).

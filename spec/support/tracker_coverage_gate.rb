@@ -10,7 +10,7 @@
 # (e.g. spec/time_formatter_spec.rb) don't trigger at all.
 module TrackerCoverageGate
   LIB_ROOT = File.expand_path('../../lib/rspec_tracer', __dir__)
-  GATED_SUBDIRS = %w[tracker rails rspec reporters].freeze
+  GATED_SUBDIRS = %w[tracker rails rspec reporters remote_cache].freeze
   GATED_PREFIXES = GATED_SUBDIRS.map { |subdir| "#{File.join(LIB_ROOT, subdir)}/" }.freeze
   EPSILON = 0.001 # guard float equality of "100.0%"
 

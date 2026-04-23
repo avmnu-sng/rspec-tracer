@@ -380,6 +380,69 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/per_example_dsl_spec.rb
 
+  ci:localstack:ready:
+    desc: >-
+      Wait for LocalStack S3 to be healthy, then run a small smoke probe
+      (mb + cp + head + ls + rm + rb). Runs before test:integration:remote-cache.
+      Skips (exits 0) when `awslocal` or `curl` are absent so local dev
+      without LocalStack does not fail the broader test task graph.
+      LOCALSTACK_ENDPOINT controls the base URL (default http://localhost:4566).
+    vars:
+      ENDPOINT:
+        sh: echo "${LOCALSTACK_ENDPOINT:-http://localhost:4566}"
+    cmds:
+      - |
+        if ! command -v awslocal >/dev/null 2>&1; then
+          echo "skip: awslocal not on PATH (install: pipx install awscli-local)"
+          exit 0
+        fi
+        if ! command -v curl >/dev/null 2>&1; then
+          echo "skip: curl not on PATH"
+          exit 0
+        fi
+
+        # Step 1: poll /_localstack/health for up to 60s.
+        ready=0
+        for i in $(seq 1 60); do
+          body=$(curl -sSf "{{.ENDPOINT}}/_localstack/health" 2>/dev/null || true)
+          if [ -n "$body" ] && printf '%s' "$body" | grep -qE '"s3":[[:space:]]*"(running|available)"'; then
+            echo "localstack s3 ready in ${i}s"
+            ready=1
+            break
+          fi
+          sleep 1
+        done
+        if [ "$ready" -ne 1 ]; then
+          echo "ERROR: localstack s3 did not report ready within 60s" >&2
+          echo "health response: $body" >&2
+          exit 1
+        fi
+
+        # Step 2: smoke-probe the exact operations S3Backend uses.
+        bucket="rspec-tracer-smoke-$$"
+        tmp=$(mktemp)
+        echo "probe" > "$tmp"
+        trap 'rm -f "$tmp"; awslocal s3 rb "s3://${bucket}" --force >/dev/null 2>&1 || true' EXIT
+
+        awslocal s3 mb "s3://${bucket}" >/dev/null
+        awslocal s3 cp "$tmp" "s3://${bucket}/probe.txt" >/dev/null
+        awslocal s3api head-object --bucket "${bucket}" --key probe.txt >/dev/null
+        awslocal s3 ls "s3://${bucket}/" | grep -q probe.txt
+        awslocal s3 rm "s3://${bucket}/probe.txt" >/dev/null
+        awslocal s3 rb "s3://${bucket}" >/dev/null
+        echo "localstack s3 smoke probe OK"
+
+  test:integration:remote-cache:
+    desc: >-
+      M7.1 S3Backend integration test against LocalStack. End-to-end
+      round-trip (upload + download + branch_refs + retention) against
+      the real S3 API surface via awslocal. Excluded from the default
+      rspec sweep. Depends on ci:localstack:ready so CI fails fast with
+      a clear message if LocalStack is not reachable.
+    deps: [ci:localstack:ready]
+    cmds:
+      - bundle exec rspec --no-color spec/integration/remote_cache_spec.rb
+
   test:features:jruby:
     desc: >-
       M5.1 ruby_app integration test on JRuby (swapped from cucumber for the
