@@ -67,3 +67,10 @@ build-iPhoneSimulator/
 
 # mutant session history — per-run artifact, not source.
 /.mutant/
+
+# HTML reporter frontend toolchain - dist/ IS committed (users run
+# nothing), but node_modules + Vite's local caches must never be.
+/lib/rspec_tracer/reporters/html/node_modules/
+/lib/rspec_tracer/reporters/html/.vite/
+/lib/rspec_tracer/reporters/html/.vite-cache/
+/lib/rspec_tracer/reporters/html/.eslintcache

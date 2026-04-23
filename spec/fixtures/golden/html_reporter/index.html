@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content="rspec-tracer" />
+    <title>RSpec Tracer Report</title>
+    <script type="module" crossorigin src="./assets/index.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index.css">
+  </head>
+  <body>
+    <noscript>
+      <div class="noscript-banner">
+        JavaScript is disabled. Interactive search and sort are unavailable; the static tables below
+        contain the full run data.
+      </div>
+    </noscript>
+    <div id="app" data-hydrate="pending"></div>
+    <div id="fallback" class="fallback-root"><section class="fallback-section" id="fallback-all-examples">
+  <h2>All Examples</h2>
+  <table class="fallback-table">
+    <thead><tr><th scope="col">Description</th><th scope="col">Location</th><th scope="col">Status</th><th scope="col">Run reason</th><th scope="col">Result</th><th scope="col">Duration</th></tr></thead>
+    <tbody><tr><td>Golden example one</td><td><code>spec/gold_spec.rb:7</code></td><td>passed</td><td>Files changed</td><td>passed</td><td>50.0 ms</td></tr><tr><td>Golden example two</td><td><code>spec/gold_spec.rb:13</code></td><td>skipped</td><td></td><td></td><td></td></tr></tbody>
+  </table>
+</section>
+
+<section class="fallback-section" id="fallback-examples-dependency">
+  <h2>Examples Dependency</h2>
+  <table class="fallback-table">
+    <thead><tr><th scope="col">Example ID</th><th scope="col">Files</th><th scope="col">Env keys</th><th scope="col">Dependencies</th></tr></thead>
+    <tbody><tr><td><code>gx1</code></td><td>1</td><td>0</td><td class="cell-deps">/lib/gold.rb</td></tr></tbody>
+  </table>
+</section>
+
+<section class="fallback-section" id="fallback-files-dependency">
+  <h2>Files Dependency</h2>
+  <table class="fallback-table">
+    <thead><tr><th scope="col">File</th><th scope="col">Examples</th><th scope="col">Spec files</th><th scope="col">Dependent spec files</th></tr></thead>
+    <tbody><tr><td><code>/lib/gold.rb</code></td><td>1</td><td>1</td><td class="cell-deps">/spec/gold_spec.rb (1)</td></tr></tbody>
+  </table>
+</section>
+</div>
+    <script id="report-data" type="application/json">{"schema_version":1,"run_id":"goldfix","generated_at":"2026-01-01T00:15:00Z","summary":{"total_examples":2,"passed_examples":1,"failed_examples":0,"pending_examples":0,"skipped_examples":1,"interrupted_examples":0,"flaky_examples":0,"duplicate_examples":0,"tracked_env_keys":0,"run_time":1.5,"started_at":"2026-01-01T00:00:00Z","pid":99,"parallel_tests":false},"reports":{"all_examples":[{"id":"gx1","description":"Golden example one","location":"spec/gold_spec.rb:7","status":"passed","run_reason":"Files changed","execution_result":{"started_at":null,"finished_at":null,"run_time":0.05,"status":"passed"}},{"id":"gx2","description":"Golden example two","location":"spec/gold_spec.rb:13","status":"skipped","run_reason":null,"execution_result":null}],"duplicate_examples":[],"flaky_examples":[],"examples_dependency":[{"example_id":"gx1","files":["/lib/gold.rb"],"env_keys":[]}],"files_dependency":[{"file_name":"/lib/gold.rb","example_count":1,"spec_files":{"/spec/gold_spec.rb":1}}]}}</script>
+  </body>
+</html>

@@ -11,8 +11,8 @@ Fuzz runs are **not per-PR**: smoke is a local sanity check; the full
 
 ## Running
 
-    ITERATIONS=100   bundle exec ruby spec/fuzz/cache_loader_fuzz.rb   # smoke
-    ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb   # full
+    ITERATIONS=100   bundle exec ruby spec/fuzz/json_backend_fuzz.rb   # smoke
+    ITERATIONS=10000 bundle exec ruby spec/fuzz/json_backend_fuzz.rb   # full
     task test:fuzz:smoke        # wrapper (100 iter)
     task test:fuzz:full         # wrapper (10000 iter)
 
@@ -20,19 +20,19 @@ Fuzz runs are **not per-PR**: smoke is a local sanity check; the full
 
 Every run prints the PRNG seed. To replay:
 
-    SEED=<n> ITERATIONS=<n> bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
+    SEED=<n> ITERATIONS=<n> bundle exec ruby spec/fuzz/json_backend_fuzz.rb
 
 ## Current harnesses
 
-| File                     | Target                                  |
-|--------------------------|-----------------------------------------|
-| `cache_loader_fuzz.rb`   | `RSpecTracer::Cache#load_all_examples_cache` on arbitrary bytes |
+| File                     | Target                                                              |
+|--------------------------|---------------------------------------------------------------------|
+| `json_backend_fuzz.rb`   | `RSpecTracer::Storage::JsonBackend#load_graph` on arbitrary bytes   |
 
 Today the harness only fires truly-random bytes, so the outcome
-distribution is dominated by encoding/parser-level failures. Broader
-coverage (valid-UTF-8 garbage, valid-JSON/wrong-shape, structural
-corruption of deeper cache files) is deliberately deferred to a later
-dedicated fuzz milestone.
+distribution is dominated by parser-level failures that the backend
+rescues into nil. Broader coverage (valid-UTF-8 garbage,
+valid-JSON/wrong-shape, structural corruption of deeper cache files)
+is deliberately deferred to a later dedicated fuzz milestone.
 
 ## Writing a new harness
 
