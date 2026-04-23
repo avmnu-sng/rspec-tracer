@@ -118,12 +118,12 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
       write_local_cache(run_id: 'run-pr')
 
       backend.upload('feat-sha-1')
-      # Confirm the key lives under the pr tier via LIST.
+      # Confirm the key lives under the pr tier as a single archive.
       out, _err, status = Open3.capture3('awslocal', 's3', 'ls',
                                          "s3://#{@bucket}/#{backend.instance_variable_get(:@prefix)}/pr/feat-123/feat-sha-1/",
                                          '--recursive')
       expect(status.success?).to be(true)
-      expect(out).to match(/last_run\.json$/)
+      expect(out).to match(/cache\.tar\.gz$/)
 
       FileUtils.rm_rf(Dir.glob(File.join(@cache_path, '*')))
       expect(backend.download('feat-sha-1')).to be(true)
@@ -141,7 +141,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
                                          "s3://#{@bucket}/#{backend.instance_variable_get(:@prefix)}/main/ts-sha-1/",
                                          '--recursive')
       expect(status.success?).to be(true)
-      expect(out).to include('/ts-sha-1/3/last_run.json')
+      expect(out).to include('/ts-sha-1/3/cache.tar.gz')
     end
   end
 

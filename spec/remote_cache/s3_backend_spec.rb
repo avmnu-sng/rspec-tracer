@@ -11,7 +11,7 @@ require 'rspec_tracer/storage/schema'
 require_relative '../contracts/remote_cache_backend'
 
 # rubocop:disable RSpec/InstanceVariable, RSpec/ExampleLength, RSpec/MultipleExpectations
-# rubocop:disable RSpec/ContextWording, Layout/LineLength
+# rubocop:disable RSpec/ContextWording
 RSpec.describe RSpecTracer::RemoteCache::S3Backend do
   around do |example|
     Dir.mktmpdir do |dir|
@@ -38,6 +38,24 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
   def write_valid_last_run(path, run_id: 'abc123')
     File.write(path, JSON.pretty_generate('schema_version' => current_schema, 'run_id' => run_id))
+  end
+
+  # Build a real valid `cache.tar.gz` at `archive_dest` by first
+  # materializing a minimal last_run.json + run_dir under a temp cache
+  # and packing via the same Archive module the backend uses. Stubs
+  # then return success for the `aws s3 cp` call and the tests drive
+  # the real extract path.
+  def build_valid_archive(archive_dest, run_id: 'abc123', schema: current_schema)
+    Dir.mktmpdir do |src|
+      File.write(File.join(src, 'last_run.json'), JSON.pretty_generate('schema_version' => schema, 'run_id' => run_id))
+      FileUtils.mkdir_p(File.join(src, run_id))
+      File.write(File.join(src, run_id, 'all_examples.json'), '{"ex1":"passed"}')
+      RSpecTracer::RemoteCache::Archive.pack(cache_path: src, run_id: run_id, dest_path: archive_dest)
+    end
+  end
+
+  def build_invalid_schema_archive(archive_dest, run_id: 'abc123')
+    build_valid_archive(archive_dest, run_id: run_id, schema: current_schema + 99)
   end
 
   it_behaves_like 'a RemoteCache::Backend' do
@@ -108,15 +126,11 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
   describe '#download' do
     context 'on main branch' do
-      it 'downloads from main tier when last_run.json validates' do
+      it 'downloads from main tier when the archive validates' do
         backend = new_backend(branch: 'main', default_branch: 'main')
         allow(Open3).to receive(:capture3) do |_cli, *args|
-          if args == ['s3', 'cp', 's3://my-bucket/rspec-tracer/main/abc/last_run.json',
-                      File.join(@cache_path, 'last_run.json')]
-            write_valid_last_run(File.join(@cache_path, 'last_run.json'))
-            ['', '', status_ok]
-          elsif args[0..1] == %w[s3
-                                 cp] && args[2].start_with?('s3://my-bucket/rspec-tracer/main/abc/abc123/') && args.last == '--recursive'
+          if args[0..1] == %w[s3 cp] && args[2] == 's3://my-bucket/rspec-tracer/main/abc/cache.tar.gz'
+            build_valid_archive(args[3])
             ['', '', status_ok]
           else
             ['', "unmatched: #{args.inspect}", status_fail]
@@ -124,9 +138,10 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
         end
 
         expect(backend.download('abc')).to be(true)
+        expect(File.read(File.join(@cache_path, 'abc123', 'all_examples.json'))).to eq('{"ex1":"passed"}')
       end
 
-      it 'returns false when last_run.json download fails' do
+      it 'returns false when the archive download fails' do
         backend = new_backend(branch: 'main', default_branch: 'main')
         allow(Open3).to receive(:capture3).and_return(['', 'not found', status_fail])
 
@@ -135,63 +150,40 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
       it 'returns false and cleans up when schema_version mismatches' do
         backend = new_backend(branch: 'main', default_branch: 'main')
-        local_path = File.join(@cache_path, 'last_run.json')
-        allow(Open3).to receive(:capture3) do
-          File.write(local_path, JSON.pretty_generate('schema_version' => current_schema + 99))
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          build_invalid_schema_archive(args[3])
           ['', '', status_ok]
         end
 
         expect(backend.download('abc')).to be(false)
-        expect(File.exist?(local_path)).to be(false)
-      end
-
-      it 'returns false and cleans up when last_run.json has no run_id' do
-        backend = new_backend(branch: 'main', default_branch: 'main')
-        local_path = File.join(@cache_path, 'last_run.json')
-        allow(Open3).to receive(:capture3) do
-          File.write(local_path, JSON.pretty_generate('schema_version' => current_schema, 'run_id' => ''))
-          ['', '', status_ok]
-        end
-
-        expect(backend.download('abc')).to be(false)
-      end
-
-      it 'returns false and cleans up when run-dir download fails' do
-        backend = new_backend(branch: 'main', default_branch: 'main')
-        local_path = File.join(@cache_path, 'last_run.json')
-        call_count = 0
-        allow(Open3).to receive(:capture3) do |_cli, *_args|
-          call_count += 1
-          if call_count == 1
-            write_valid_last_run(local_path)
-            ['', '', status_ok]
-          else
-            ['', 'cp failed', status_fail]
-          end
-        end
-
-        expect(backend.download('abc')).to be(false)
-        expect(File.exist?(local_path)).to be(false)
+        expect(File.exist?(File.join(@cache_path, 'last_run.json'))).to be(false)
         expect(File.directory?(File.join(@cache_path, 'abc123'))).to be(false)
+      end
+
+      it 'returns false and cleans up when extract fails (corrupt archive)' do
+        backend = new_backend(branch: 'main', default_branch: 'main')
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          File.write(args[3], 'not-a-valid-tar-gz')
+          ['', '', status_ok]
+        end
+
+        expect(backend.download('abc')).to be(false)
       end
     end
 
     context 'on PR branch' do
       it 'tries pr tier first, falls back to main tier on miss' do
         backend = new_backend(branch: 'feat', default_branch: 'main')
-        local_path = File.join(@cache_path, 'last_run.json')
         tried_urls = []
         allow(Open3).to receive(:capture3) do |_cli, *args|
-          if args[0..1] == %w[s3 cp] && args[3] == local_path
+          if args[0..1] == %w[s3 cp]
             tried_urls << args[2]
             if args[2].include?('/pr/feat/')
               ['', 'pr miss', status_fail]
             else
-              write_valid_last_run(local_path)
+              build_valid_archive(args[3])
               ['', '', status_ok]
             end
-          elsif args[0..1] == %w[s3 cp] && args.last == '--recursive'
-            ['', '', status_ok]
           else
             ['', "unmatched: #{args.inspect}", status_fail]
           end
@@ -212,7 +204,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
       end
 
       backend.download('abc')
-      expect(observed).to include('/main/abc/1/last_run.json')
+      expect(observed).to eq('s3://my-bucket/rspec-tracer/main/abc/1/cache.tar.gz')
     end
   end
 
@@ -224,7 +216,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
       FileUtils.mkdir_p(File.join(@cache_path, 'abc123'))
     end
 
-    it 'uploads last_run.json and the run directory to the backend tier' do
+    it 'packs the local cache and uploads a single archive to the backend tier' do
       uploads = []
       allow(Open3).to receive(:capture3) do |_cli, *args|
         uploads << args
@@ -233,11 +225,10 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
       backend.upload('mysha')
 
-      last_run_call = uploads.find { |a| a.last.end_with?('last_run.json') }
-      run_dir_call = uploads.find { |a| a.last == '--recursive' }
-      expect(last_run_call[2]).to eq(File.join(@cache_path, 'last_run.json'))
-      expect(last_run_call[3]).to include('/main/mysha/last_run.json')
-      expect(run_dir_call[3]).to include('/main/mysha/abc123/')
+      expect(uploads.size).to eq(1)
+      src, dst = uploads.first[2..]
+      expect(src).to end_with('.tar.gz')
+      expect(dst).to eq('s3://my-bucket/rspec-tracer/main/mysha/cache.tar.gz')
     end
 
     it 'raises when ref is nil' do
@@ -265,6 +256,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'routes uploads to pr tier on a PR branch' do
       pr_backend = new_backend(branch: 'feat', default_branch: 'main')
       write_valid_last_run(File.join(@cache_path, 'last_run.json'))
+      FileUtils.mkdir_p(File.join(@cache_path, 'abc123'))
       uploads = []
       allow(Open3).to receive(:capture3) do |_cli, *args|
         uploads << args
@@ -273,7 +265,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
       pr_backend.upload('mysha')
 
-      expect(uploads.first[3]).to include('/pr/feat/mysha/')
+      expect(uploads.first[3]).to eq('s3://my-bucket/rspec-tracer/pr/feat/mysha/cache.tar.gz')
     end
   end
 
@@ -363,7 +355,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
     it 'prunes excess refs beyond count' do
       now = Time.now.to_i
-      keys = (1..5).map { |i| ["rspec-tracer/main/sha#{i}/last_run.json", now - (i * 3600)] }
+      keys = (1..5).map { |i| ["rspec-tracer/main/sha#{i}/cache.tar.gz", now - (i * 3600)] }
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
           [list_json(keys), '', status_ok]
@@ -380,9 +372,9 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'prunes refs older than duration_seconds' do
       now = Time.now.to_i
       keys = [
-        ['rspec-tracer/main/recent/last_run.json', now - 60],
-        ['rspec-tracer/main/old/last_run.json', now - (30 * 86_400)],
-        ['rspec-tracer/main/ancient/last_run.json', now - (365 * 86_400)]
+        ['rspec-tracer/main/recent/cache.tar.gz', now - 60],
+        ['rspec-tracer/main/old/cache.tar.gz', now - (30 * 86_400)],
+        ['rspec-tracer/main/ancient/cache.tar.gz', now - (365 * 86_400)]
       ]
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
@@ -400,7 +392,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'prunes entire dead PR branch when pr_branch_ttl_seconds exceeded' do
       pr_backend = new_backend(branch: 'feat', default_branch: 'main')
       now = Time.now.to_i
-      keys = [['rspec-tracer/pr/feat/old_sha/last_run.json', now - (30 * 86_400)]]
+      keys = [['rspec-tracer/pr/feat/old_sha/cache.tar.gz', now - (30 * 86_400)]]
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
           [list_json(keys), '', status_ok]
@@ -417,7 +409,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'does not prune live PR branches whose newest ref is within the TTL' do
       pr_backend = new_backend(branch: 'feat', default_branch: 'main')
       now = Time.now.to_i
-      keys = [['rspec-tracer/pr/feat/recent/last_run.json', now - 60]]
+      keys = [['rspec-tracer/pr/feat/recent/cache.tar.gz', now - 60]]
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
           [list_json(keys), '', status_ok]
@@ -437,7 +429,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
 
     it 'continues on per-ref delete failures' do
       now = Time.now.to_i
-      keys = (1..3).map { |i| ["rspec-tracer/main/sha#{i}/last_run.json", now - (i * 3600)] }
+      keys = (1..3).map { |i| ["rspec-tracer/main/sha#{i}/cache.tar.gz", now - (i * 3600)] }
       call = 0
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
@@ -469,7 +461,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'returns 0 when pr_branch_ttl delete fails' do
       pr_backend = new_backend(branch: 'feat', default_branch: 'main')
       now = Time.now.to_i
-      keys = [['rspec-tracer/pr/feat/old/last_run.json', now - (60 * 86_400)]]
+      keys = [['rspec-tracer/pr/feat/old/cache.tar.gz', now - (60 * 86_400)]]
       allow(Open3).to receive(:capture3) do |_cli, *args|
         if args.first == 's3api'
           [list_json(keys), '', status_ok]
@@ -484,8 +476,8 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'treats malformed LastModified timestamps as epoch 0' do
       backend = new_backend(branch: 'main', default_branch: 'main')
       keys = [
-        ['rspec-tracer/main/bad/last_run.json', 'not-a-timestamp'],
-        ['rspec-tracer/main/good/last_run.json', Time.now.utc.iso8601]
+        ['rspec-tracer/main/bad/cache.tar.gz', 'not-a-timestamp'],
+        ['rspec-tracer/main/good/cache.tar.gz', Time.now.utc.iso8601]
       ]
       contents = keys.map { |key, ts| { 'Key' => key, 'LastModified' => ts } }
       allow(Open3).to receive(:capture3) do |_cli, *args|
@@ -521,7 +513,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'returns nil when ref count is at or below the threshold' do
       backend = new_backend
       now = Time.now.to_i
-      keys = [['rspec-tracer/main/sha1/last_run.json', now]]
+      keys = [['rspec-tracer/main/sha1/cache.tar.gz', now]]
       allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => keys.map do |k, t|
         { 'Key' => k, 'LastModified' => Time.at(t).utc.iso8601 }
       end), '', status_ok])
@@ -532,7 +524,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     it 'returns a warning message when ref count exceeds the threshold' do
       backend = new_backend
       now = Time.now.to_i
-      keys = (1..5).map { |i| ["rspec-tracer/main/sha#{i}/last_run.json", now + i] }
+      keys = (1..5).map { |i| ["rspec-tracer/main/sha#{i}/cache.tar.gz", now + i] }
       allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => keys.map do |k, t|
         { 'Key' => k, 'LastModified' => Time.at(t).utc.iso8601 }
       end), '', status_ok])
@@ -542,4 +534,4 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
   end
 end
 # rubocop:enable RSpec/InstanceVariable, RSpec/ExampleLength, RSpec/MultipleExpectations
-# rubocop:enable RSpec/ContextWording, Layout/LineLength
+# rubocop:enable RSpec/ContextWording

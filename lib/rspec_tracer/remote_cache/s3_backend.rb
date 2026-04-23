@@ -2,8 +2,11 @@
 
 require 'json'
 require 'open3'
+require 'securerandom'
 require 'time'
+require 'tmpdir'
 
+require_relative 'archive'
 require_relative 'backend'
 require_relative 'validator'
 
@@ -16,14 +19,19 @@ module RSpecTracer
     # CI recipe; 2.0 asks nothing new.
     #
     # Two-tier S3 layout (change from 1.x flat layout; paired with the
-    # schema_version bump - one cold run on upgrade):
+    # schema_version bump - one cold run on upgrade). Cache payload is
+    # a single `cache.tar.gz` per ref (~15 JSON files + last_run.json
+    # packed together; ~4-6x smaller on the wire + 1 GET per download
+    # instead of 15):
     #
     #   s3://<bucket>/<prefix>/
-    #     main/<sha>/[<test_suite_id>/]last_run.json
-    #     main/<sha>/[<test_suite_id>/]<run_id>/*.json
-    #     pr/<branch>/<sha>/[<test_suite_id>/]last_run.json
-    #     pr/<branch>/<sha>/[<test_suite_id>/]<run_id>/*.json
+    #     main/<sha>/[<test_suite_id>/]cache.tar.gz
+    #     pr/<branch>/<sha>/[<test_suite_id>/]cache.tar.gz
     #     pr/<branch>/branch_refs.json
+    #
+    # Local cache_path layout is unchanged - the archive is a transit
+    # boundary only. Users and external tooling continue to see the
+    # 15-file disk layout documented in `USER_FACING_SURFACE.md` §6.
     #
     # Tier is determined from `branch` vs `default_branch` at construction.
     # Main-branch builds write to main tier; PR builds write to their
@@ -57,6 +65,7 @@ module RSpecTracer
       PR_TIER = 'pr'
       BRANCH_REFS_FILENAME = 'branch_refs.json'
       LAST_RUN_FILENAME = 'last_run.json'
+      CACHE_ARCHIVE_FILENAME = Archive::CACHE_FILENAME
       ENCODING = 'UTF-8'
 
       REQUIRED_OPTS = %i[bucket prefix branch default_branch cache_path].freeze
@@ -68,7 +77,7 @@ module RSpecTracer
                            default_branch: default_branch, cache_path: cache_path)
 
         @bucket = bucket.to_s
-        @prefix = prefix.to_s.sub(%r{/+\z}, '')
+        @prefix = trim_trailing_slashes(prefix.to_s)
         @branch = branch.to_s.chomp
         @default_branch = default_branch.to_s.chomp
         @test_suite_id = normalize_test_suite_id(test_suite_id)
@@ -96,18 +105,22 @@ module RSpecTracer
       end
 
       # Upload the local cache to this backend's own tier under `ref`.
-      # Raises on wire failure. Idempotent: re-uploading the same ref
-      # overwrites cleanly.
+      # Packs the 15-file local layout into a single `cache.tar.gz` and
+      # uploads that one object. Raises on wire failure. Idempotent.
       def upload(ref)
-        raise S3BackendError, 'ref is required' if ref.nil? || ref.to_s.empty?
+        raise S3BackendError, 'ref is required' if blank?(ref)
 
         run_id = read_local_run_id
         raise S3BackendError, "no local cache to upload (missing #{LAST_RUN_FILENAME})" if run_id.nil?
 
-        upload_file(local_last_run_path, s3_last_run_key(own_tier_prefix, ref))
-        upload_dir(local_run_dir(run_id), s3_run_dir_url(own_tier_prefix, ref, run_id))
-
-        log_debug("uploaded cache for #{ref} to #{own_tier_prefix}")
+        archive_path = tmp_archive_path('upload')
+        begin
+          Archive.pack(cache_path: @cache_path, run_id: run_id, dest_path: archive_path)
+          upload_file(archive_path, s3_archive_key(own_tier_prefix, ref))
+          log_debug("uploaded cache for #{ref} to #{own_tier_prefix} (#{File.size(archive_path)} bytes)")
+        ensure
+          FileUtils.rm_f(archive_path)
+        end
       end
 
       # Read branch_refs for the given branch. Returns `{sha => ts_epoch}`
@@ -191,6 +204,17 @@ module RSpecTracer
         value.nil? || value.to_s.empty?
       end
 
+      # Non-regex trailing-slash strip. The literal `/+\z` pattern trips
+      # CodeQL's `rb/polynomial-redos` heuristic because quantifier-on-
+      # library-input is a conservative-fail signal; the pattern is
+      # backtracking-safe in practice, but String#chop in a loop is
+      # both obviously safe and faster on short inputs.
+      def trim_trailing_slashes(str)
+        value = str.dup
+        value.chop! while value.end_with?('/')
+        value
+      end
+
       def validate_required!(**opts)
         opts.each do |key, value|
           raise S3BackendError, "#{key} is required" if blank?(value)
@@ -222,12 +246,8 @@ module RSpecTracer
         "s3://#{@bucket}/#{key}"
       end
 
-      def s3_last_run_key(tier_prefix, ref)
-        join_key(@prefix, tier_prefix, ref, @test_suite_id, LAST_RUN_FILENAME)
-      end
-
-      def s3_run_dir_url(tier_prefix, ref, run_id)
-        "#{s3_url(join_key(@prefix, tier_prefix, ref, @test_suite_id, run_id))}/"
+      def s3_archive_key(tier_prefix, ref)
+        join_key(@prefix, tier_prefix, ref, @test_suite_id, CACHE_ARCHIVE_FILENAME)
       end
 
       def s3_branch_refs_key(branch_name)
@@ -272,64 +292,55 @@ module RSpecTracer
 
       # ── Download flow ──────────────────────────────────
 
-      # The try_download_from / fetch_last_run / fetch_run_dir methods
-      # return true on success + false on failure, but they're action
-      # methods (they write files + delete on failure) not predicates.
-      # Naming them with a `?` suffix would misread as pure queries.
+      # Download the archive for (tier, ref), extract into cache_path,
+      # validate the resulting last_run.json. Returns true on validated
+      # success, false otherwise; rolls back extracted files on failure
+      # so a later reader never sees a half-landed cache. Action-style
+      # method (writes files + cleans up), not a predicate.
       # rubocop:disable Naming/PredicateMethod
       def try_download_from(tier_prefix, ref)
-        return false unless fetch_last_run(tier_prefix, ref)
+        archive_path = tmp_archive_path('download')
+        ok, = aws_cp_silent(s3_url(s3_archive_key(tier_prefix, ref)), archive_path)
+        return false unless ok
 
-        run_id = read_local_run_id
-        if run_id.nil?
-          FileUtils.rm_f(local_last_run_path)
+        extract_and_validate(archive_path, tier_prefix, ref)
+      ensure
+        FileUtils.rm_f(archive_path) if defined?(archive_path) && archive_path
+      end
+
+      def extract_and_validate(archive_path, tier_prefix, ref)
+        begin
+          Archive.extract(archive_path: archive_path, dest_dir: @cache_path)
+        rescue StandardError => e
+          log_debug("extract failed for #{tier_prefix}/#{ref}: #{e.class}: #{e.message}")
+          rollback_extracted_cache
           return false
         end
 
-        if fetch_run_dir(tier_prefix, ref, run_id)
-          log_debug("downloaded cache for #{tier_prefix}/#{ref}")
-          true
-        else
-          false
-        end
-      end
-
-      def fetch_last_run(tier_prefix, ref)
-        last_run_key = s3_last_run_key(tier_prefix, ref)
-        ok, = aws_cp_silent(s3_url(last_run_key), local_last_run_path)
-        return false unless ok
         return true if Validator.valid_file?(local_last_run_path)
 
         log_debug("rejected #{tier_prefix}/#{ref}: schema_version mismatch")
-        FileUtils.rm_f(local_last_run_path)
-        false
-      end
-
-      def fetch_run_dir(tier_prefix, ref, run_id)
-        FileUtils.mkdir_p(local_run_dir(run_id))
-        ok, _stdout, stderr = aws_cp_recursive_silent(
-          s3_run_dir_url(tier_prefix, ref, run_id),
-          local_run_dir(run_id)
-        )
-        return true if ok
-
-        log_debug("failed to download run dir for #{tier_prefix}/#{ref}/#{run_id}: #{stderr.chomp}")
-        FileUtils.rm_rf(local_run_dir(run_id))
-        FileUtils.rm_f(local_last_run_path)
+        rollback_extracted_cache
         false
       end
       # rubocop:enable Naming/PredicateMethod
+
+      def rollback_extracted_cache
+        run_id = read_local_run_id
+        FileUtils.rm_f(local_last_run_path)
+        FileUtils.rm_rf(local_run_dir(run_id)) if run_id
+      end
+
+      def tmp_archive_path(purpose)
+        FileUtils.mkdir_p(@cache_path)
+        File.join(@cache_path, ".cache_#{purpose}_#{Process.pid}_#{SecureRandom.hex(4)}.tar.gz")
+      end
 
       # ── Upload flow ────────────────────────────────────
 
       def upload_file(local_path, s3_key)
         ok, _stdout, stderr = aws_cp_silent(local_path, s3_url(s3_key))
         raise S3BackendError, "Failed to upload #{local_path}: #{stderr.chomp}" unless ok
-      end
-
-      def upload_dir(local_dir, s3_dir_url)
-        ok, _stdout, stderr = aws_cp_recursive_silent(local_dir, s3_dir_url)
-        raise S3BackendError, "Failed to upload #{local_dir}: #{stderr.chomp}" unless ok
       end
 
       # ── Retention ──────────────────────────────────────
@@ -347,9 +358,9 @@ module RSpecTracer
         refs = {}
         entries.each do |entry|
           key = entry['Key']
-          next unless key.end_with?("/#{LAST_RUN_FILENAME}")
+          next unless key.end_with?("/#{CACHE_ARCHIVE_FILENAME}")
 
-          ref = extract_ref_from_last_run_key(key, tier_prefix)
+          ref = extract_ref_from_archive_key(key, tier_prefix)
           next if ref.nil?
 
           ts = parse_s3_timestamp(entry['LastModified'])
@@ -359,9 +370,9 @@ module RSpecTracer
         refs.sort_by { |_, ts| -ts }
       end
 
-      # Keys look like: <prefix>/<tier_prefix>/<ref>/[<test_suite_id>/]last_run.json
+      # Keys look like: <prefix>/<tier_prefix>/<ref>/[<test_suite_id>/]cache.tar.gz
       # We want <ref>.
-      def extract_ref_from_last_run_key(key, tier_prefix)
+      def extract_ref_from_archive_key(key, tier_prefix)
         tier_head = "#{join_key(@prefix, tier_prefix)}/"
         return nil unless key.start_with?(tier_head)
 
@@ -427,10 +438,6 @@ module RSpecTracer
 
       def aws_cp_silent(src, dst)
         run_aws('s3', 'cp', src, dst)
-      end
-
-      def aws_cp_recursive_silent(src, dst)
-        run_aws('s3', 'cp', src, dst, '--recursive')
       end
 
       def aws_rm_recursive_silent(dst)

@@ -30,17 +30,22 @@ contract on every implementation.
 
 ## Layout (S3 backend)
 
-Two-tier S3 layout, paired with the `schema_version` bump (1.x caches
-are refused cleanly; one cold run on upgrade):
+Two-tier S3 layout with per-ref tar+gzip archives, paired with the
+`schema_version` bump (1.x caches are refused cleanly; one cold run on
+upgrade):
 
 ```
 s3://<bucket>/<prefix>/
-  main/<sha>/[<test_suite_id>/]last_run.json
-  main/<sha>/[<test_suite_id>/]<run_id>/*.json
-  pr/<branch>/<sha>/[<test_suite_id>/]last_run.json
-  pr/<branch>/<sha>/[<test_suite_id>/]<run_id>/*.json
+  main/<sha>/[<test_suite_id>/]cache.tar.gz
+  pr/<branch>/<sha>/[<test_suite_id>/]cache.tar.gz
   pr/<branch>/branch_refs.json
 ```
+
+Each `cache.tar.gz` packs `last_run.json` + the `<run_id>/` directory
+(the 15-file local layout documented in `USER_FACING_SURFACE.md` §6).
+Upload = 1 PUT; download = 1 GET. Local disk layout is unchanged
+after unpack — external tooling that walks `rspec_tracer_cache/` still
+sees the full 15-file breakdown.
 
 Tier is determined from `$GIT_BRANCH` vs `$GIT_DEFAULT_BRANCH`. PR
 downloads try their own `pr/<branch>/` tier first, then fall back to
