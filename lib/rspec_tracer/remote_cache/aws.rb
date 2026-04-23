@@ -8,6 +8,8 @@ module RSpecTracer
       def initialize
         @s3_bucket, @s3_path = setup_s3
         @aws_cli = RSpecTracer.use_local_aws ? 'awslocal' : 'aws'
+        @use_test_suite_id_cache = ENV.fetch('USE_TEST_SUITE_ID_CACHE', nil) == 'true'
+        @test_suite_id = ENV.fetch('TEST_SUITE_ID', nil) if @use_test_suite_id_cache
       end
 
       def branch_refs?(branch_name)
@@ -60,7 +62,11 @@ module RSpecTracer
       end
 
       def cache_files_list(ref)
-        prefix = "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
+        prefix = if @use_test_suite_id_cache && !@test_suite_id.nil?
+                   "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/#{@test_suite_id}/"
+                 else
+                   "s3://#{@s3_bucket}/#{@s3_path}/#{ref}/"
+                 end
 
         `#{@aws_cli} s3 ls #{prefix} --recursive`.chomp.split("\n")
       end
@@ -125,7 +131,7 @@ module RSpecTracer
         remote_dir = s3_dir(ref, run_id)
         local_dir = File.join(RSpecTracer.cache_path, run_id)
 
-        raise AwsError, "Failed to download files from #{local_dir}" unless system(
+        raise AwsError, "Failed to upload files from #{local_dir}" unless system(
           @aws_cli,
           's3',
           'cp',

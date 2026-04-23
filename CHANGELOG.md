@@ -1,3 +1,57 @@
+## [1.2.0] - 2026-04-24
+
+### Added
+
+- **`USE_TEST_SUITE_ID_CACHE` env flag** for per-suite remote-cache
+  validation. When set to the exact string `"true"`, the validator
+  accepts the current `TEST_SUITE_ID`'s cache independently of peer
+  suites' state — so an aborted suite on one CI run no longer forces
+  a cold run across every suite on the next. Default unset preserves
+  1.1.x behaviour byte-for-byte. Ports
+  [upstream PR #70](https://github.com/avmnu-sng/rspec-tracer/pull/70)
+  (kirpalsangha), with credit to the interviewstreet fork
+  ([PR #1](https://github.com/interviewstreet/rspec-tracer/pull/1))
+  where the same fix was shipped to HackerRank's production CI in 2024.
+
+### Fixed
+
+- **`SourceFile#file_path` silently dropped dependencies on external
+  absolute paths** (closes the issue behind upstream PRs
+  [#37](https://github.com/avmnu-sng/rspec-tracer/pull/37) and
+  [#67](https://github.com/avmnu-sng/rspec-tracer/pull/67)). When a
+  spec's `metadata[:file_path]` resolved to an absolute path **outside**
+  `RSpecTracer.root` — typical for shared examples from vendored gems
+  (`/opt/bundle/gems/rspec-rails-X/lib/shared_examples/...`) or for
+  monorepo spec files adjacent to the project tree — the method stripped
+  the leading `/` and expanded against `RSpecTracer.root`, producing a
+  non-existent path like `<root>/opt/bundle/...`. `File.file?` returned
+  false, `from_path` returned nil, and the tracer **silently skipped
+  dependency registration** for that file. Cache-staleness silent-
+  correctness bug: shared examples from external gems never appeared as
+  dependencies, so changes to them never invalidated the cache. The fix
+  returns the input unchanged only when it's an absolute path to an
+  existing file outside `RSpecTracer.root`; all other inputs (relative
+  paths, stripped-root forms, in-root absolute paths) continue through
+  the existing project-relative expansion, preserving byte-for-byte
+  behaviour for 1.1.x configurations.
+- **`ValidationError` constant now defined.** `remote_cache/validator.rb`
+  previously referenced `ValidationError` in its XOR-guard `raise` but
+  the constant was never declared anywhere. Tripping the guard
+  (setting exactly one of `TEST_SUITE_ID` / `TEST_SUITES`) raised
+  `NameError: uninitialized constant` instead of the intended
+  error class. Added `class ValidationError < StandardError` inside
+  `Validator`, mirroring `Aws::AwsError`.
+- **Typo in the XOR-guard error message** — `"enviornment"` →
+  `"environment"`.
+- **Single-suite `@cached_files_regex` now anchored** — `$` appended
+  so the pattern no longer matches extraneous-extension files like
+  `/ref/hash/foo.json.backup`. Multi-suite regex was already anchored
+  in 1.1.x.
+- **`remote_cache/aws.rb#upload_dir` error message** — reported
+  `"Failed to download files from …"` when the upload failed. Closes
+  upstream [PR #64](https://github.com/avmnu-sng/rspec-tracer/pull/64)
+  (C3).
+
 ## [1.1.2] - 2026-04-24
 
 ### Fixed

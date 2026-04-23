@@ -4,6 +4,39 @@ require 'spec_helper'
 require 'tmpdir'
 
 RSpec.describe RSpecTracer::SourceFile do
+  describe '.file_path' do
+    # C1 regression: when a shared_example (or any metadata[:file_path])
+    # lives OUTSIDE the project root — e.g. `/opt/bundle/gems/rspec-rails-X/...`
+    # for vendored gems, or monorepo spec files adjacent to the project —
+    # file_name() returns the absolute path unchanged (no root stripped).
+    # Pre-fix, file_path() then strips the leading "/" and expands against
+    # RSpecTracer.root, producing a non-existent `<root>/opt/bundle/...`
+    # path. File.file? returns false, from_path returns nil, and the tracer
+    # silently skips dependency registration for the file — a silent-
+    # correctness bug that leaves stale caches whenever an external
+    # shared example changes.
+    context 'when given an absolute path outside RSpecTracer.root' do
+      let(:tmp) { Dir.mktmpdir }
+
+      after { FileUtils.remove_entry(tmp) if File.directory?(tmp) }
+
+      it 'returns the absolute path unchanged when the file exists on disk' do
+        external = File.join(tmp, 'vendored_shared_example.rb')
+        File.write(external, "# shared example\n")
+
+        expect(described_class.file_path(external)).to eq(external)
+      end
+    end
+
+    context 'when given a project-relative path (leading / prefix stripped by file_name)' do
+      it 'expands the path against RSpecTracer.root' do
+        expanded = described_class.file_path('/spec/spec_helper.rb')
+
+        expect(expanded).to eq(File.expand_path('spec/spec_helper.rb', RSpecTracer.root))
+      end
+    end
+  end
+
   describe '.from_path' do
     let(:tmp) { Dir.mktmpdir }
 

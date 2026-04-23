@@ -149,6 +149,22 @@ uses cache for specific test suites and not merge them.
   TEST_SUITE_ID=2 bundle exec rspec spec/helpers
   ```
 
+- **`USE_TEST_SUITE_ID_CACHE`** (optional, default unset) changes how the remote
+cache validator treats per-suite caches. When set to the exact string `"true"`,
+the validator accepts the current `TEST_SUITE_ID`'s cache independently of the
+other suites' state — so if one suite aborts mid-CI, the remaining suites can
+still reuse their own cached results on the next run. When unset (the default),
+1.1.x behaviour is preserved byte-for-byte: the validator requires every
+`TEST_SUITES` slot to be present before accepting any cache.
+  ```sh
+  export TEST_SUITES=3
+  export TEST_SUITE_ID=1
+  export USE_TEST_SUITE_ID_CACHE=true
+  bundle exec rspec spec/models
+  ```
+  Only the literal string `"true"` activates the flag; `"1"`, `"yes"`, or any
+  other truthy value keeps the default behaviour.
+
 ## Advanced Configuration
 
 Configuration settings must be defined in **`.rspec-tracer`** file:
