@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'uri'
+
 require_relative 'filter'
 require_relative 'logger'
 
@@ -146,8 +148,178 @@ module RSpecTracer
       end
     end
 
+    # M7.1 canonical DSL for the remote cache backend. Single-entry
+    # accumulator; raises on a second call so a misconfigured
+    # `.rspec-tracer` fails fast instead of silently picking one.
+    #
+    # Shapes:
+    #   remote_cache_backend :s3, bucket: 'my-bucket', prefix: 'rspec-tracer'
+    #   remote_cache_backend :s3, bucket: 'x', prefix: 'y', local: true
+    #   remote_cache_backend MyBackend, some_opt: 'value'
+    #
+    # Symbol names are not validated at config time because M7.2
+    # backends (`:local_fs`, `:redis`) resolve at UserTasks build time;
+    # a typo there surfaces as an "unknown remote_cache_backend: :s3x"
+    # error in the Rake task, which is the right layer for the message.
+    def remote_cache_backend(name_or_class, **opts)
+      if defined?(@remote_cache_backend_entry) && @remote_cache_backend_entry
+        raise InvalidUsageError, 'remote_cache_backend already configured'
+      end
+
+      validate_remote_cache_backend(name_or_class)
+      @remote_cache_backend_entry = [name_or_class, opts.dup.freeze].freeze
+    end
+
+    # Reader: returns the [name_or_class, opts] pair or nil. Called
+    # from `RemoteCache::UserTasks` at task dispatch time.
+    def remote_cache_backend_entry
+      return nil unless defined?(@remote_cache_backend_entry)
+
+      @remote_cache_backend_entry
+    end
+
+    def validate_remote_cache_backend(name_or_class)
+      case name_or_class
+      when ::Symbol, ::Class
+        nil
+      else
+        raise InvalidUsageError,
+              "remote_cache_backend: expected Symbol or Class, got #{name_or_class.class}"
+      end
+    end
+
+    # Convenience DSL: `remote_cache_uri 's3://bucket/prefix'` parses
+    # the URI and calls `remote_cache_backend`. Also accepts ENV
+    # `RSPEC_TRACER_REMOTE_CACHE_URI`. Scheme dispatch is the extension
+    # point for M7.2's `:local_fs` / `:redis` backends.
+    def remote_cache_uri(uri = nil)
+      return @remote_cache_uri if defined?(@remote_cache_uri) && uri.nil?
+
+      value = ENV.fetch('RSPEC_TRACER_REMOTE_CACHE_URI', uri)
+      return nil if value.nil?
+
+      parsed = parse_remote_cache_uri(value)
+      case parsed.scheme
+      when 's3'
+        prefix = parsed.path.to_s.sub(%r{^/}, '')
+        remote_cache_backend(:s3, bucket: parsed.host, prefix: prefix)
+      else
+        raise InvalidUsageError,
+              "unsupported remote_cache_uri scheme: #{parsed.scheme.inspect} (only 's3' is supported in 2.0)"
+      end
+
+      @remote_cache_uri = value
+    end
+
+    def parse_remote_cache_uri(value)
+      parsed = URI.parse(value)
+      unless parsed.scheme && parsed.host && !parsed.host.empty?
+        raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect}"
+      end
+
+      parsed
+    rescue URI::InvalidURIError => e
+      raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect} (#{e.message})"
+    end
+
+    # Retention knobs (closes issue #20). Mutually exclusive: count
+    # and duration bound the main tier from different axes. PR tier
+    # uses `cache_retention_pr_branch_ttl` independently.
+    def cache_retention_count(count = nil)
+      return @cache_retention_count if defined?(@cache_retention_count) && count.nil?
+      return nil if count.nil?
+
+      raise_if_retention_conflict(:cache_retention_duration)
+      unless count.is_a?(::Integer) && count.positive?
+        raise InvalidUsageError, "cache_retention_count must be a positive integer, got #{count.inspect}"
+      end
+
+      @cache_retention_count = count
+    end
+
+    def cache_retention_duration(spec = nil)
+      return @cache_retention_duration_raw if defined?(@cache_retention_duration_raw) && spec.nil?
+      return nil if spec.nil?
+
+      raise_if_retention_conflict(:cache_retention_count)
+      seconds = parse_retention_duration_seconds(spec)
+      @cache_retention_duration_raw = spec
+      @cache_retention_duration_seconds = seconds
+    end
+
+    def cache_retention_duration_seconds
+      return nil unless defined?(@cache_retention_duration_seconds)
+
+      @cache_retention_duration_seconds
+    end
+
+    def cache_retention_pr_branch_ttl(spec = nil)
+      return @cache_retention_pr_branch_ttl_raw if defined?(@cache_retention_pr_branch_ttl_raw) && spec.nil?
+      return nil if spec.nil?
+
+      seconds = parse_retention_duration_seconds(spec)
+      @cache_retention_pr_branch_ttl_raw = spec
+      @cache_retention_pr_branch_ttl_seconds = seconds
+    end
+
+    def cache_retention_pr_branch_ttl_seconds
+      return nil unless defined?(@cache_retention_pr_branch_ttl_seconds)
+
+      @cache_retention_pr_branch_ttl_seconds
+    end
+
+    def raise_if_retention_conflict(other_method)
+      other_ivar =
+        case other_method
+        when :cache_retention_count then :@cache_retention_count
+        when :cache_retention_duration then :@cache_retention_duration_seconds
+        end
+      return unless instance_variable_defined?(other_ivar) && instance_variable_get(other_ivar)
+
+      raise InvalidUsageError,
+            'cache_retention_count and cache_retention_duration are mutually exclusive'
+    end
+
+    def parse_retention_duration_seconds(spec)
+      case spec
+      when ::Integer
+        raise InvalidUsageError, 'retention duration must be positive' unless spec.positive?
+
+        spec
+      when ::String
+        parse_retention_duration_from_string(spec)
+      else
+        raise InvalidUsageError,
+              "invalid retention duration: #{spec.inspect} (expected Integer seconds or String like '30 days')"
+      end
+    end
+
+    def parse_retention_duration_from_string(spec)
+      match = spec.strip.match(/\A(\d+)\s+(second|minute|hour|day|week)s?\z/i)
+      unless match
+        raise InvalidUsageError,
+              "invalid retention duration: #{spec.inspect} (expected e.g. '30 days', '2 weeks', '1 hour')"
+      end
+
+      units = { 'second' => 1, 'minute' => 60, 'hour' => 3600, 'day' => 86_400, 'week' => 604_800 }
+      count = match[1].to_i
+      raise InvalidUsageError, 'retention duration must be positive' unless count.positive?
+
+      count * units[match[2].downcase]
+    end
+
+    # Deprecated in 2.0. Kept per USER_FACING_SURFACE.md §3 "deprecated
+    # options keep working with one-time warnings." Migration target:
+    # `remote_cache_uri` (for the URI form) or
+    # `remote_cache_backend :s3, bucket:, prefix:` (for structured form).
     def reports_s3_path(s3_path = nil)
       return @reports_s3_path if defined?(@reports_s3_path) && s3_path.nil?
+
+      warn_once_deprecation(
+        :reports_s3_path,
+        '`reports_s3_path` / `RSPEC_TRACER_REPORTS_S3_PATH` is deprecated in 2.0; ' \
+        "use `remote_cache_uri 's3://bucket/prefix'` or `remote_cache_backend :s3, bucket:, prefix:` instead."
+      )
 
       path = if ENV.key?('RSPEC_TRACER_REPORTS_S3_PATH')
                ENV['RSPEC_TRACER_REPORTS_S3_PATH']
@@ -158,14 +330,31 @@ module RSpecTracer
       @reports_s3_path = path if valid_s3_path?(path)
     end
 
+    # Deprecated in 2.0. Migration: `remote_cache_backend :s3, ...,
+    # local: true`. Kept for backward compat; UserTasks derives the
+    # `local:` opt from this when `remote_cache_backend` is absent.
     def use_local_aws(new_flag = nil)
       return @use_local_aws if defined?(@use_local_aws) && new_flag.nil?
+
+      warn_once_deprecation(
+        :use_local_aws,
+        '`use_local_aws` / `RSPEC_TRACER_USE_LOCAL_AWS` is deprecated in 2.0; ' \
+        'use `remote_cache_backend :s3, ..., local: true` instead.'
+      )
 
       @use_local_aws = if ENV.key?('RSPEC_TRACER_USE_LOCAL_AWS')
                          ENV['RSPEC_TRACER_USE_LOCAL_AWS'] == 'true'
                        else
                          new_flag == true
                        end
+    end
+
+    def warn_once_deprecation(key, message)
+      @_deprecation_warnings ||= {}
+      return if @_deprecation_warnings.key?(key)
+
+      @_deprecation_warnings[key] = true
+      logger.warn("rspec-tracer deprecation: #{message}")
     end
 
     def upload_non_ci_reports(new_flag = nil)

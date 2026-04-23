@@ -11,7 +11,26 @@ jobs:
   lint-and-specs:
     name: lint-and-specs
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    services:
+      # LocalStack provides a real S3 API surface for the M7.1 remote-cache
+      # integration spec. We pin a specific image tag so a LocalStack
+      # release never silently breaks our CI. The `task ci:localstack:ready`
+      # step below layers a health-poll + smoke probe on top of the
+      # container health check before any spec runs.
+      localstack:
+        image: localstack/localstack:4.14.0
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: s3
+          DEBUG: '0'
+        options: >-
+          --health-cmd "curl -sSf http://localhost:4566/_localstack/health | grep -q '\"s3\"'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout
@@ -93,3 +112,12 @@ jobs:
 
       - name: Test — Dogfood
         run: task test:dogfood
+
+      - name: Install — awslocal (LocalStack CLI wrapper)
+        run: pip install --user awscli-local
+
+      - name: Wait — LocalStack ready + smoke probe
+        run: task ci:localstack:ready
+
+      - name: Test — Integration (remote cache + LocalStack)
+        run: task test:integration:remote-cache

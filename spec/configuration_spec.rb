@@ -556,4 +556,219 @@ RSpec.describe RSpecTracer::Configuration do
       end
     end
   end
+
+  describe '#remote_cache_backend' do
+    it 'stores a [name, opts] pair' do
+      config.remote_cache_backend(:s3, bucket: 'b', prefix: 'p')
+
+      expect(config.remote_cache_backend_entry).to eq([:s3, { bucket: 'b', prefix: 'p' }])
+    end
+
+    it 'accepts a Class value' do
+      backend_class = Class.new
+      config.remote_cache_backend(backend_class, some_opt: 1)
+
+      expect(config.remote_cache_backend_entry).to eq([backend_class, { some_opt: 1 }])
+    end
+
+    it 'raises when called a second time' do
+      config.remote_cache_backend(:s3, bucket: 'b', prefix: 'p')
+
+      expect { config.remote_cache_backend(:s3, bucket: 'other') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /already configured/)
+    end
+
+    it 'rejects invalid name types' do
+      expect { config.remote_cache_backend('not-symbol-or-class') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /Symbol or Class/)
+    end
+
+    it 'returns nil from the reader when never set' do
+      expect(config.remote_cache_backend_entry).to be_nil
+    end
+  end
+
+  describe '#remote_cache_uri' do
+    it 'parses an s3:// URI and delegates to remote_cache_backend' do
+      config.remote_cache_uri('s3://my-bucket/my/prefix')
+
+      expect(config.remote_cache_backend_entry)
+        .to eq([:s3, { bucket: 'my-bucket', prefix: 'my/prefix' }])
+    end
+
+    it 'reads RSPEC_TRACER_REMOTE_CACHE_URI when no arg is given' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_REMOTE_CACHE_URI' => 's3://env-bucket/env-prefix'))
+      config.remote_cache_uri
+
+      expect(config.remote_cache_backend_entry)
+        .to eq([:s3, { bucket: 'env-bucket', prefix: 'env-prefix' }])
+    end
+
+    it 'rejects unsupported schemes' do
+      expect { config.remote_cache_uri('ftp://bucket/x') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unsupported.*scheme/)
+    end
+
+    it 'rejects URIs without a host' do
+      expect { config.remote_cache_uri('s3://') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /invalid remote_cache_uri/)
+    end
+
+    it 'rejects malformed URIs' do
+      expect { config.remote_cache_uri('this-is-not-a-uri ${whatever}') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /invalid remote_cache_uri/)
+    end
+  end
+
+  describe '#cache_retention_count' do
+    it 'stores a positive integer' do
+      config.cache_retention_count(100)
+
+      expect(config.cache_retention_count).to eq(100)
+    end
+
+    it 'rejects zero' do
+      expect { config.cache_retention_count(0) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /positive integer/)
+    end
+
+    it 'rejects non-integers' do
+      expect { config.cache_retention_count('100') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /positive integer/)
+    end
+
+    it 'raises when cache_retention_duration is already set' do
+      config.cache_retention_duration('30 days')
+
+      expect { config.cache_retention_count(100) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /mutually exclusive/)
+    end
+
+    it 'returns nil when not set' do
+      expect(config.cache_retention_count).to be_nil
+    end
+  end
+
+  describe '#cache_retention_duration' do
+    it 'stores an integer as seconds directly' do
+      config.cache_retention_duration(3600)
+
+      expect(config.cache_retention_duration_seconds).to eq(3600)
+    end
+
+    it 'parses "30 days"' do
+      config.cache_retention_duration('30 days')
+
+      expect(config.cache_retention_duration_seconds).to eq(30 * 86_400)
+    end
+
+    it 'parses "2 weeks"' do
+      config.cache_retention_duration('2 weeks')
+
+      expect(config.cache_retention_duration_seconds).to eq(2 * 604_800)
+    end
+
+    it 'parses "1 hour"' do
+      config.cache_retention_duration('1 hour')
+
+      expect(config.cache_retention_duration_seconds).to eq(3600)
+    end
+
+    it 'parses "60 seconds"' do
+      config.cache_retention_duration('60 seconds')
+
+      expect(config.cache_retention_duration_seconds).to eq(60)
+    end
+
+    it 'parses "15 minutes"' do
+      config.cache_retention_duration('15 minutes')
+
+      expect(config.cache_retention_duration_seconds).to eq(15 * 60)
+    end
+
+    it 'rejects malformed strings' do
+      expect { config.cache_retention_duration('forever') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /invalid retention duration/)
+    end
+
+    it 'rejects negative integers' do
+      expect { config.cache_retention_duration(-1) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /positive/)
+    end
+
+    it 'rejects zero' do
+      expect { config.cache_retention_duration('0 days') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /positive/)
+    end
+
+    it 'rejects unsupported input types' do
+      expect { config.cache_retention_duration(3.14) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /invalid retention duration/)
+    end
+
+    it 'raises when cache_retention_count is already set' do
+      config.cache_retention_count(100)
+
+      expect { config.cache_retention_duration('30 days') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /mutually exclusive/)
+    end
+
+    it 'returns nil from the seconds reader when never set' do
+      expect(config.cache_retention_duration_seconds).to be_nil
+    end
+  end
+
+  describe '#cache_retention_pr_branch_ttl' do
+    it 'stores a duration string' do
+      config.cache_retention_pr_branch_ttl('14 days')
+
+      expect(config.cache_retention_pr_branch_ttl_seconds).to eq(14 * 86_400)
+    end
+
+    it 'returns nil when not set' do
+      expect(config.cache_retention_pr_branch_ttl_seconds).to be_nil
+    end
+
+    it 'coexists with cache_retention_count (not mutually exclusive)' do
+      config.cache_retention_count(100)
+
+      expect { config.cache_retention_pr_branch_ttl('14 days') }.not_to raise_error
+    end
+  end
+
+  describe '#reports_s3_path (deprecated)' do
+    it 'still stores a valid s3:// URI' do
+      allow(config.logger).to receive(:warn)
+      config.reports_s3_path('s3://bucket/prefix')
+
+      expect(config.reports_s3_path).to eq('s3://bucket/prefix')
+    end
+
+    it 'emits a one-time deprecation warning' do
+      allow(config.logger).to receive(:warn)
+
+      config.reports_s3_path('s3://bucket/prefix')
+      config.reports_s3_path('s3://bucket/prefix') # getter path, no warn
+
+      expect(config.logger).to have_received(:warn).with(/reports_s3_path.*deprecated/).once
+    end
+  end
+
+  describe '#use_local_aws (deprecated)' do
+    it 'still stores a boolean' do
+      allow(config.logger).to receive(:warn)
+      config.use_local_aws(true)
+
+      expect(config.use_local_aws).to be(true)
+    end
+
+    it 'emits a one-time deprecation warning' do
+      allow(config.logger).to receive(:warn)
+
+      config.use_local_aws(true)
+      config.use_local_aws(true)
+
+      expect(config.logger).to have_received(:warn).with(/use_local_aws.*deprecated/).once
+    end
+  end
 end

@@ -1,37 +1,53 @@
 # frozen_string_literal: true
 
+# User-facing Rake task shim. The canonical loading pattern in a
+# user's own Rakefile (preserved from 1.x, documented in README.md
+# "Configuring CI"):
+#
+#   spec = Gem::Specification.find_by_name('rspec-tracer')
+#   load "#{spec.gem_dir}/lib/rspec_tracer/remote_cache/Rakefile"
+#
+# This file must remain at the same path and continue to define the
+# same two tasks. The `require 'rspec_tracer'` + `require
+# 'rspec_tracer/remote_cache'` pair lazy-loads the M7.1 backend tree
+# only when the user actually invokes a cache task.
+
+require 'rspec_tracer'
+require 'rspec_tracer/remote_cache'
+
+# rubocop:disable Metrics/BlockLength
 namespace :rspec_tracer do
   namespace :remote_cache do
     desc 'Download cache'
     task :download do
-      require 'rspec_tracer'
-
-      unless system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
+      unless RSpecTracer::RemoteCache::UserTasks.git_repo?
         RSpecTracer.logger.error 'Not a git repository'
-
         exit
       end
 
-      RSpecTracer::RemoteCache::Cache.new.download
+      RSpecTracer::RemoteCache::UserTasks.download!(
+        configuration: RSpecTracer,
+        env: ENV
+      )
     end
 
     desc 'Upload cache'
     task :upload do
-      require 'rspec_tracer'
-
-      unless system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
+      unless RSpecTracer::RemoteCache::UserTasks.git_repo?
         RSpecTracer.logger.error 'Not a git repository'
-
         exit
       end
 
       unless ENV['CI'] == 'true' || RSpecTracer.upload_non_ci_reports
         RSpecTracer.logger.warn 'Uploading reports from a non CI environment is disabled'
-
         exit
       end
 
-      RSpecTracer::RemoteCache::Cache.new.upload
+      RSpecTracer::RemoteCache::UserTasks.upload!(
+        configuration: RSpecTracer,
+        env: ENV
+      )
     end
   end
 end
+# rubocop:enable Metrics/BlockLength

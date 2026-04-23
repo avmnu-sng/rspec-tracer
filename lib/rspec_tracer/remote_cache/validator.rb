@@ -1,51 +1,47 @@
 # frozen_string_literal: true
 
+require 'json'
+
+require_relative '../storage/schema'
+
 module RSpecTracer
   module RemoteCache
-    class Validator
-      CACHE_FILES_PER_TEST_SUITE = 11
+    # Cache validator. Replaces 1.x's CACHE_FILES_PER_TEST_SUITE=11
+    # file-count check, which broke under any FILENAMES change (v2
+    # grew from 11 to 15 files across Phase 3-6, so the old validator
+    # refused every v2 cache).
+    #
+    # New signal: `schema_version` in `last_run.json`. The storage
+    # backend writes `Storage::Schema::CURRENT` on every save; this
+    # validator accepts only `Storage::Schema::SUPPORTED` values. Same
+    # policy as `Storage::JsonBackend#load_graph`: mismatch means "cold
+    # run," no migrators, one free cold run on upgrade.
+    #
+    # Atomicity note: `last_run.json` is written last via tmp+rename
+    # (see `Storage::JsonBackend#write_last_run_atomic`). If
+    # `last_run.json` exists, every other file in the run was present
+    # at write time. So the file-count sanity check 1.x did was already
+    # redundant with the atomicity guarantee; we drop it cleanly.
+    module Validator
+      # True when the given parsed last_run manifest is acceptable to
+      # this tracer version. Missing / unparseable / wrong-shape inputs
+      # all return false without raising.
+      def self.valid?(manifest)
+        return false unless manifest.is_a?(Hash)
 
-      def initialize
-        @test_suite_id = ENV.fetch('TEST_SUITE_ID', nil)
-        @test_suites = ENV.fetch('TEST_SUITES', nil)
-
-        if @test_suite_id.nil? ^ @test_suites.nil?
-          raise(
-            ValidationError,
-            'Both the enviornment variables TEST_SUITE_ID and TEST_SUITES are not set'
-          )
-        end
-
-        setup
+        RSpecTracer::Storage::Schema.supported?(manifest['schema_version'])
       end
 
-      def valid?(ref, cache_files)
-        last_run_regex = Regexp.new(format(@last_run_files_regex, ref: ref))
+      # Read + parse + validate a last_run.json file on disk. Returns
+      # true iff the file exists, parses as JSON, has a Hash root, and
+      # carries a supported schema_version. Any I/O or parse failure
+      # returns false (graceful degradation).
+      def self.valid_file?(path)
+        return false unless File.file?(path)
 
-        return false if cache_files.count { |file| file.match?(last_run_regex) } != @last_run_files_count
-
-        cache_regex = Regexp.new(format(@cached_files_regex, ref: ref))
-
-        cache_files.count { |file| file.match?(cache_regex) } == @cached_files_count
-      end
-
-      private
-
-      def setup
-        if @test_suites.nil?
-          @last_run_files_count = 1
-          @last_run_files_regex = '/%<ref>s/last_run.json$'
-          @cached_files_count = CACHE_FILES_PER_TEST_SUITE
-          @cached_files_regex = '/%<ref>s/[0-9a-f]{32}/.+.json'
-        else
-          @test_suites = @test_suites.to_i
-          @test_suites_regex = (1..@test_suites).to_a.join('|')
-
-          @last_run_files_count = @test_suites
-          @last_run_files_regex = "/%<ref>s/(#{@test_suites_regex})/last_run.json$"
-          @cached_files_count = CACHE_FILES_PER_TEST_SUITE * @test_suites
-          @cached_files_regex = "/%<ref>s/(#{@test_suites_regex})/[0-9a-f]{32}/.+.json$"
-        end
+        valid?(JSON.parse(File.read(path, encoding: 'UTF-8')))
+      rescue StandardError
+        false
       end
     end
   end
