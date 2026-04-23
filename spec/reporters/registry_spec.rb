@@ -249,10 +249,11 @@ RSpec.describe RSpecTracer::Reporters::Registry do
       expect(described_class::BUILT_INS).to be_frozen
     end
 
-    it 'maps :terminal and :json to their reporter class constant names' do
+    it 'maps :terminal, :json, and :html to their reporter class constant names' do
       expect(described_class::BUILT_INS).to include(
         terminal: 'RSpecTracer::Reporters::TerminalReporter',
-        json: 'RSpecTracer::Reporters::JsonReporter'
+        json: 'RSpecTracer::Reporters::JsonReporter',
+        html: 'RSpecTracer::Reporters::HtmlReporter'
       )
     end
   end
@@ -262,8 +263,8 @@ RSpec.describe RSpecTracer::Reporters::Registry do
       expect(described_class::DEFAULTS).to be_frozen
     end
 
-    it 'matches the brief-literal default list' do
-      expect(described_class::DEFAULTS).to eq(%i[terminal json])
+    it 'matches the terminal + JSON + HTML default list' do
+      expect(described_class::DEFAULTS).to eq(%i[terminal json html])
     end
   end
 end

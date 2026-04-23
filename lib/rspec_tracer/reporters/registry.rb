@@ -26,10 +26,11 @@ module RSpecTracer
       # `storage_backend`'s Configuration DSL defers backend resolution.
       BUILT_INS = {
         terminal: 'RSpecTracer::Reporters::TerminalReporter',
-        json: 'RSpecTracer::Reporters::JsonReporter'
+        json: 'RSpecTracer::Reporters::JsonReporter',
+        html: 'RSpecTracer::Reporters::HtmlReporter'
       }.freeze
 
-      DEFAULTS = %i[terminal json].freeze
+      DEFAULTS = %i[terminal json html].freeze
 
       def self.emit_all(configuration:, snapshot:, report_dir:, run_metadata:)
         new(configuration: configuration).emit_all(

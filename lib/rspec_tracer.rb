@@ -21,8 +21,10 @@ require_relative 'rspec_tracer/example'
 # `Reporters::Registry::BUILT_INS` when a user `.rspec-tracer` calls
 # it at configure time (M6.1).
 require_relative 'rspec_tracer/reporters/base'
+require_relative 'rspec_tracer/reporters/payload_builder'
 require_relative 'rspec_tracer/reporters/json_reporter'
 require_relative 'rspec_tracer/reporters/terminal_reporter'
+require_relative 'rspec_tracer/reporters/html_reporter'
 require_relative 'rspec_tracer/reporters/registry'
 require_relative 'rspec_tracer/load_config'
 require_relative 'rspec_tracer/remote_cache/cache'

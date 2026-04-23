@@ -23,6 +23,13 @@ jobs:
           ruby-version: '.ruby-version'
           bundler-cache: true
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: lib/rspec_tracer/reporters/html/package-lock.json
+
       - name: Setup Task
         uses: go-task/setup-task@v2
         with:
@@ -44,6 +51,9 @@ jobs:
         run: |
           echo "$(pwd)/bin" >> "$GITHUB_PATH"
 
+      - name: Install — HTML reporter npm deps
+        run: task reporters:html:install
+
       - name: Lint — Ruby
         run: task lint:ruby
 
@@ -53,11 +63,21 @@ jobs:
       - name: Lint — YAML
         run: task lint:yaml
 
+      - name: Lint — Node (HTML reporter frontend)
+        run: task lint:node
+
       - name: Check — Bundle
         run: task check:bundle
 
+      - name: Check — HTML reporter dist drift
+        run: task reporters:html:check
+
       - name: Security — bundle-audit
         run: task security:bundle-audit
+
+      - name: Security — npm audit (HTML reporter)
+        run: npm audit --audit-level=high
+        working-directory: lib/rspec_tracer/reporters/html
 
       - name: Security — trivy
         run: task security:trivy

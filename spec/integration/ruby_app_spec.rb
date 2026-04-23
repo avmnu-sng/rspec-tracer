@@ -95,6 +95,32 @@ RSpec.describe 'ruby_app v2 engine integration' do
     end
   end
 
+  describe 'HTML reporter output' do
+    it 'emits index.html plus the committed asset bundle' do
+      run_rspec
+
+      expect(File).to exist(File.join(report_dir, 'index.html'))
+      expect(File).to exist(File.join(report_dir, 'assets', 'index.js'))
+      expect(File).to exist(File.join(report_dir, 'assets', 'index.css'))
+    end
+
+    it 'embeds the payload run_id matching report.json' do
+      run_rspec
+      report_json_run_id = JSON.parse(File.read(File.join(report_dir, 'report.json')))['run_id']
+      html = File.read(File.join(report_dir, 'index.html'))
+
+      expect(html).to include(%("run_id":"#{report_json_run_id}"))
+    end
+
+    it 'renders server-side fallback tables so JavaScript-disabled readers see data' do
+      run_rspec
+      html = File.read(File.join(report_dir, 'index.html'))
+
+      expect(html).to include('id="fallback-all-examples"')
+      expect(html).not_to include('<!-- RSPEC_TRACER_FALLBACK -->')
+    end
+  end
+
   describe 'warm run' do
     it 'exits cleanly on the second run (cache round-trip works)' do
       _, cold_status = run_rspec

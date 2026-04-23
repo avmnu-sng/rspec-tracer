@@ -1,0 +1,19 @@
+# Per-subdirectory gitignore for the HTML reporter frontend toolchain.
+#
+# Committed: src/, dist/, package.json, package-lock.json,
+#            vite.config.js, eslint.config.js, .prettierrc.json,
+#            .prettierignore, README.md.
+# Not committed: node_modules/ (reproduced from package-lock.json),
+#                .vite/ (local Vite cache), build/test artifacts.
+
+node_modules/
+.vite/
+.vite-cache/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.DS_Store
