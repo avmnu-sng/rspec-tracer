@@ -13,11 +13,16 @@ group :development do
   gem 'rantly', '~> 2.0'
   # redis is a dev dep so we can exercise RedisBackend's real wire path
   # in the integration spec (spec/integration/remote_cache_spec.rb)
-  # against a localhost Redis service, and so the GEM_AVAILABLE=true
-  # branch in the backend file is exercisable in unit specs. End users
+  # against a localhost Redis service, and so the lazy `require 'redis'`
+  # path in the backend file is exercisable in unit specs. End users
   # who want RedisBackend add the gem to their OWN Gemfile - we do not
   # ship it as a runtime dep per USER_FACING_SURFACE.md.
   gem 'redis', '~> 5.3'
+  # connection_pool is a transitive dep of redis-client. 3.x requires
+  # Ruby >= 3.2, which breaks our Ruby 3.1 + JRuby 9.4 matrix cells
+  # at `bundle install` time. redis-client accepts any connection_pool
+  # version, so pinning 2.x here keeps the whole matrix installable.
+  gem 'connection_pool', '~> 2.5'
   gem 'rspec', '~> 3.13'
   gem 'rubocop', '~> 1.60'
   gem 'rubocop-performance', '~> 1.20'
