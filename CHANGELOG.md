@@ -1,3 +1,21 @@
+## [1.1.2] - 2026-04-24
+
+### Fixed
+
+- **Encoding crash on locale-unset shells** — legacy cache, report, and
+  coverage paths called `File.read` / `File.write` without an explicit
+  encoding. Ruby fell back to `Encoding.default_external`, which
+  resolves to `US-ASCII` on shells launched without `LANG` set (the
+  default for macOS GUI terminals and many LaunchAgent contexts). Any
+  spec description containing a non-ASCII byte (e.g. `§`, typographic
+  quotes) wrote UTF-8 into `all_examples.json`; the next warm run
+  crashed at `Cache#load_*_cache` with
+  `Encoding::InvalidByteSequenceError: "\xC2" on US-ASCII`, taking
+  `spec_helper` down before any example ran. Every legacy JSON / ERB /
+  Ruby-source read and write now pins `encoding: 'UTF-8'`;
+  `SourceFile.from_path` switches to `File.binread` so the MD5 digest
+  hashes raw bytes regardless of process locale.
+
 ## [1.1.1] - 2026-04-23
 
 ### Fixed
