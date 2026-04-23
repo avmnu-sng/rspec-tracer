@@ -32,6 +32,19 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      # Redis provides the real wire surface for the M7.2 RedisBackend
+      # integration spec. 7.4 is the current stable; pin the minor to
+      # keep CI reproducible across Redis's periodic protocol tweaks.
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping | grep -q PONG"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -116,8 +129,21 @@ jobs:
       - name: Install — awslocal (LocalStack CLI wrapper)
         run: pip install --user awscli-local
 
+      - name: Install — redis-cli (for health probe + local smoke)
+        run: sudo apt-get install -y --no-install-recommends redis-tools
+
       - name: Wait — LocalStack ready + smoke probe
         run: task ci:localstack:ready
 
       - name: Test — Integration (remote cache + LocalStack)
         run: task test:integration:remote-cache
+
+      - name: Wait — Redis ready + smoke probe
+        env:
+          REDIS_URL: redis://localhost:6379/15
+        run: task ci:redis:ready
+
+      - name: Test — Integration (remote cache + Redis)
+        env:
+          REDIS_URL: redis://localhost:6379/15
+        run: task test:integration:remote-cache:redis

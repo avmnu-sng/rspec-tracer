@@ -9,6 +9,8 @@
 require_relative 'remote_cache/backend'
 require_relative 'remote_cache/validator'
 require_relative 'remote_cache/git_ancestry'
+require_relative 'remote_cache/local_fs_backend'
+require_relative 'remote_cache/redis_backend'
 require_relative 'remote_cache/s3_backend'
 require_relative 'remote_cache/user_tasks'
 

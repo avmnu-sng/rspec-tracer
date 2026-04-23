@@ -2,11 +2,10 @@
 
 module RSpecTracer
   module RemoteCache
-    # Protocol every remote-cache backend must satisfy. S3Backend is the
-    # only shipping implementation in M7.1; LocalFsBackend + RedisBackend
-    # arrive in M7.2. The shared-examples group in
-    # `spec/contracts/remote_cache_backend.rb` asserts the full contract
-    # on every implementation.
+    # Protocol every remote-cache backend must satisfy. S3Backend,
+    # LocalFsBackend, and RedisBackend all implement it. The shared-
+    # examples group in `spec/contracts/remote_cache_backend.rb` asserts
+    # the full contract on every implementation.
     #
     # Tier routing lives inside each backend, not in the protocol. A
     # backend is constructed with branch + default_branch + test_suite_id
@@ -22,13 +21,19 @@ module RSpecTracer
     #     report a meaningful exit status, but the orchestrator wraps
     #     the call in a rescue so test runs never propagate non-zero.
     #   - `branch_refs(branch_name)` returns `{}` when no refs file
-    #     exists. Missing !=  error.
+    #     exists. Missing is not an error.
     #   - `write_branch_refs(branch_name, refs)` is a no-op for main
-    #     tier writes (main branches don't use branch_refs — history
+    #     tier writes (main branches do not use branch_refs; history
     #     rewrites are not expected on the default branch).
     #   - `prune!(...)` returns the count of refs removed and never
     #     raises on a LIST / DELETE wire error (logs + returns what it
-    #     managed to delete).
+    #     managed to delete). Scoped to the backend's own tier.
+    #   - `prune_all!(pr_branch_ttl_seconds:)` walks every PR branch
+    #     under the configured prefix, applies the ttl to each, and
+    #     deletes dead branches whole. Cross-tier (every pr branch),
+    #     unlike `prune!` which is own-tier only. Returns the count of
+    #     refs removed across all branches. Never raises. No-op when
+    #     ttl is nil / non-positive.
     #
     # This module is intentionally documentation-only - it does not
     # define stubs that raise NotImplementedError, because mutant would
@@ -41,6 +46,7 @@ module RSpecTracer
         branch_refs
         write_branch_refs
         prune!
+        prune_all!
       ].freeze
 
       def self.conforms?(backend)

@@ -75,6 +75,11 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
                              pr_branch_ttl_seconds: pr_branch_ttl_seconds }
         @prune_return
       end
+
+      def prune_all!(pr_branch_ttl_seconds: nil)
+        @calls[:prune_all!] << { pr_branch_ttl_seconds: pr_branch_ttl_seconds }
+        @prune_return
+      end
     end
   end
 
@@ -395,6 +400,86 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
 
       expect(result).to be(false)
       expect(captured_logs.any? { |_l, m| m.include?('invalid remote_cache_backend') }).to be(true)
+    end
+
+    it 'resolves :local_fs to LocalFsBackend' do
+      expect(described_class::BUILT_IN_BACKENDS[:local_fs]).to eq(RSpecTracer::RemoteCache::LocalFsBackend)
+    end
+
+    it 'resolves :redis to RedisBackend' do
+      expect(described_class::BUILT_IN_BACKENDS[:redis]).to eq(RSpecTracer::RemoteCache::RedisBackend)
+    end
+  end
+
+  describe '#prune_all!' do
+    let(:backend_entry) { [fake_backend_class, {}] }
+
+    it 'returns 0 when cache_retention_pr_branch_ttl_seconds is unset' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: nil)
+      stub_ancestry
+
+      result = described_class.new(configuration: config, env: build_env).prune_all!
+
+      expect(result).to eq(0)
+      expect(captured_logs.any? { |_l, m| m.include?('prune_all requires cache_retention_pr_branch_ttl') }).to be(true)
+    end
+
+    it 'dispatches to backend.prune_all! with the configured ttl when set' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: 7200)
+      stub_ancestry
+
+      tasks = described_class.new(configuration: config, env: build_env)
+      allow_any_instance_of(fake_backend_class).to receive(:prune_all!).and_return(5) # rubocop:disable RSpec/AnyInstance
+
+      expect(tasks.prune_all!).to eq(5)
+    end
+
+    it 'returns 0 and logs on StandardError from the backend' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: 3600)
+      stub_ancestry
+      allow_any_instance_of(fake_backend_class).to receive(:prune_all!).and_raise(RuntimeError, 'boom') # rubocop:disable RSpec/AnyInstance
+
+      result = described_class.new(configuration: config, env: build_env).prune_all!
+
+      expect(result).to eq(0)
+      expect(captured_logs.any? { |_l, m| m.include?('prune_all failed') }).to be(true)
+    end
+
+    it 'allows GIT_BRANCH to be unset and defaults it to GIT_DEFAULT_BRANCH' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: 3600)
+      stub_ancestry
+
+      env = { 'GIT_DEFAULT_BRANCH' => 'main' } # GIT_BRANCH intentionally omitted
+
+      expect { described_class.new(configuration: config, env: env).prune_all! }.not_to raise_error
+    end
+
+    it 'requires GIT_DEFAULT_BRANCH to be set (graceful failure logs)' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: 3600)
+
+      env = {} # both GIT_BRANCH and GIT_DEFAULT_BRANCH omitted
+
+      result = described_class.new(configuration: config, env: env).prune_all!
+
+      expect(result).to eq(0)
+      expect(captured_logs.any? do |_l, m|
+        m.include?('prune_all failed') && m.include?('GIT_DEFAULT_BRANCH')
+      end).to be(true)
+    end
+  end
+
+  describe '.prune_all!' do
+    it 'is a class-level convenience that dispatches to an instance' do
+      config = build_config(remote_cache_backend_entry: [fake_backend_class, {}],
+                            cache_retention_pr_branch_ttl_seconds: nil)
+      stub_ancestry
+
+      expect(described_class.prune_all!(configuration: config, env: build_env)).to eq(0)
     end
   end
 

@@ -3,6 +3,7 @@
 require 'json'
 require 'open3'
 require 'securerandom'
+require 'set'
 require 'time'
 require 'tmpdir'
 
@@ -58,6 +59,10 @@ module RSpecTracer
     #   - `branch_refs` returns `{}` on missing file.
     #   - `prune!` returns count removed, never raises.
     #
+    # S3 shells out via `aws` CLI - a single class is the natural unit
+    # of composition here. M8.3 mutation-smoke addition may push this
+    # over the limit further; splitting would be cosmetic.
+    # rubocop:disable Metrics/ClassLength
     class S3Backend
       class S3BackendError < StandardError; end
 
@@ -185,6 +190,22 @@ module RSpecTracer
         removed += prune_by_duration!(duration_seconds) if duration_seconds&.positive?
         removed += prune_dead_pr_branch!(pr_branch_ttl_seconds) if pr_tier? && pr_branch_ttl_seconds&.positive?
         removed
+      end
+
+      # Cross-tier PR-branch cleanup. Enumerates every PR branch under
+      # the configured prefix by listing the `pr/` subtree, applies the
+      # TTL to each branch, deletes dead branches whole. Returns total
+      # refs removed. No-op on nil / non-positive TTL. Never raises
+      # (graceful-degradation contract).
+      def prune_all!(pr_branch_ttl_seconds: nil)
+        return 0 unless pr_branch_ttl_seconds&.positive?
+
+        cutoff = Time.now.to_i - pr_branch_ttl_seconds.to_i
+        branches = discover_pr_branches
+        branches.sum { |branch| maybe_prune_branch(branch, cutoff) }
+      rescue StandardError => e
+        log_warn("prune_all! failed (#{e.class}: #{e.message})")
+        0
       end
 
       # Check whether the backend's own tier has accumulated more than
@@ -418,14 +439,76 @@ module RSpecTracer
         newest_ts = refs.first[1]
         return 0 if newest_ts >= Time.now.to_i - ttl_seconds.to_i
 
-        ok, _stdout, stderr = aws_rm_recursive_silent(s3_tier_prefix_url(own_tier_prefix))
+        delete_branch_prefix(own_tier_prefix, refs.length)
+      end
+
+      # Delete every object under `<prefix>/<tier_prefix>/` (cache refs
+      # + branch_refs.json). Returns the supplied `ref_count` on
+      # success, 0 on failure.
+      def delete_branch_prefix(tier_prefix, ref_count)
+        ok, _stdout, stderr = aws_rm_recursive_silent(s3_tier_prefix_url(tier_prefix))
         if ok
-          log_debug("pruned dead PR branch #{own_tier_prefix}")
-          refs.length
+          log_debug("pruned dead PR branch #{tier_prefix} (#{ref_count} refs)")
+          ref_count
         else
-          log_warn("failed to prune dead PR branch #{own_tier_prefix}: #{stderr.chomp}")
+          log_warn("failed to prune dead PR branch #{tier_prefix}: #{stderr.chomp}")
           0
         end
+      end
+
+      # Enumerate PR branches under the configured prefix. Returns an
+      # Array<String> of branch names (one per unique `pr/<branch>/`
+      # segment). Uses `list-objects-v2 --prefix pr/ --delimiter /` so
+      # we pay for one bucket listing instead of walking every object.
+      def discover_pr_branches
+        prefix_head = "#{join_key(@prefix, PR_TIER)}/"
+        common_prefixes = list_common_prefixes(prefix_head)
+        return [] if common_prefixes.empty?
+
+        branches = Set.new
+        common_prefixes.each do |entry|
+          value = entry['Prefix']
+          next if value.nil? || !value.start_with?(prefix_head)
+
+          branch = value[prefix_head.length..].delete_suffix('/')
+          branches << branch unless branch.empty?
+        end
+        branches.to_a
+      end
+
+      def list_common_prefixes(prefix)
+        stdout, stderr, status = Open3.capture3(
+          @cli_binary, 's3api', 'list-objects-v2',
+          '--bucket', @bucket,
+          '--prefix', prefix,
+          '--delimiter', '/',
+          '--output', 'json'
+        )
+        unless status.success?
+          log_debug("list-objects-v2 (delimited) #{prefix} failed: #{stderr.chomp}")
+          return []
+        end
+        return [] if stdout.strip.empty?
+
+        parsed = JSON.parse(stdout)
+        Array(parsed['CommonPrefixes'])
+      rescue StandardError => e
+        log_debug("list-objects-v2 (delimited) parse failed: #{e.class}: #{e.message}")
+        []
+      end
+
+      # Apply the TTL to a single PR branch. Deletes whole branch when
+      # its newest ref is older than `cutoff`. Returns the count of
+      # refs removed (0 when branch is alive).
+      def maybe_prune_branch(branch_name, cutoff)
+        tier_prefix = "#{PR_TIER}/#{branch_name}"
+        refs = list_refs_in_tier(tier_prefix)
+        return 0 if refs.empty?
+
+        newest_ts = refs.first[1]
+        return 0 if newest_ts >= cutoff
+
+        delete_branch_prefix(tier_prefix, refs.length)
       end
 
       def parse_s3_timestamp(iso_string)
@@ -479,5 +562,6 @@ module RSpecTracer
         @logger&.warn("rspec-tracer remote_cache: #{message}")
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
