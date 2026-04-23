@@ -4,6 +4,8 @@ require 'time'
 require 'uri'
 
 require_relative 'git_ancestry'
+require_relative 'local_fs_backend'
+require_relative 'redis_backend'
 require_relative 's3_backend'
 
 module RSpecTracer
@@ -26,7 +28,11 @@ module RSpecTracer
     #     the tests already passed; cache miss is recoverable next run.
     #
     class UserTasks
-      BUILT_IN_BACKENDS = { s3: S3Backend }.freeze
+      BUILT_IN_BACKENDS = {
+        s3: S3Backend,
+        local_fs: LocalFsBackend,
+        redis: RedisBackend
+      }.freeze
 
       def self.download!(configuration: RSpecTracer, env: ENV)
         new(configuration: configuration, env: env).download!
@@ -34,6 +40,10 @@ module RSpecTracer
 
       def self.upload!(configuration: RSpecTracer, env: ENV)
         new(configuration: configuration, env: env).upload!
+      end
+
+      def self.prune_all!(configuration: RSpecTracer, env: ENV)
+        new(configuration: configuration, env: env).prune_all!
       end
 
       def self.git_repo?
@@ -84,6 +94,30 @@ module RSpecTracer
         false
       end
 
+      # Cross-tier PR-branch prune. Walks every branch under the
+      # configured prefix and deletes whole branches idle longer than
+      # `cache_retention_pr_branch_ttl_seconds`. Designed as a periodic
+      # maintenance task (nightly cron) - dead PR branches whose tip is
+      # never re-uploaded otherwise accumulate forever because
+      # `maybe_prune` only scopes to the current upload's tier. Returns
+      # the total refs removed across all branches, or 0 on graceful
+      # failure.
+      def prune_all!
+        ttl = safe_config(:cache_retention_pr_branch_ttl_seconds)
+        if ttl.nil?
+          @logger.warn 'rspec-tracer remote_cache: prune_all requires cache_retention_pr_branch_ttl; skipping'
+          return 0
+        end
+
+        backend = build_backend(build_admin_ancestry)
+        removed = backend.prune_all!(pr_branch_ttl_seconds: ttl)
+        @logger.debug "rspec-tracer remote_cache: prune_all removed #{removed} refs"
+        removed
+      rescue StandardError => e
+        @logger.warn "rspec-tracer remote_cache: prune_all failed (#{e.class}: #{e.message})"
+        0
+      end
+
       private
 
       def build_ancestry
@@ -91,6 +125,20 @@ module RSpecTracer
           default_branch: require_env('GIT_DEFAULT_BRANCH'),
           branch: require_env('GIT_BRANCH')
         )
+      end
+
+      # Ancestry for cross-tier admin tasks (prune_all). Only
+      # GIT_DEFAULT_BRANCH is required; GIT_BRANCH defaults to it so
+      # the backend constructs in main-tier mode (prune_all walks every
+      # pr/ branch regardless of the backend's own tier, so the branch
+      # value does not affect behavior). Running prune_all from a
+      # cron/workflow that is not tied to a specific PR should work
+      # with just GIT_DEFAULT_BRANCH set.
+      def build_admin_ancestry
+        default = require_env('GIT_DEFAULT_BRANCH')
+        branch = @env['GIT_BRANCH']
+        branch = default if branch.nil? || branch.to_s.empty?
+        GitAncestry.new(default_branch: default, branch: branch)
       end
 
       def require_env(name)

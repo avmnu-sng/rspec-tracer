@@ -111,8 +111,10 @@ module RSpecTracer
       private_class_method :write_entry
 
       # Refuse absolute paths or `..` traversal. Both are illegal in a
-      # well-formed cache archive; silently dropping them beats trusting
-      # an S3-sourced blob to write anywhere on disk.
+      # well-formed cache entry name; silently dropping them beats
+      # trusting a remote-sourced value to write anywhere on disk.
+      # Public because RedisBackend reuses the same guard on hash field
+      # names (the Redis equivalent of tar entry names).
       def self.safe_entry_name(name)
         return nil if name.nil? || name.empty?
         return nil if name.start_with?('/')
@@ -120,7 +122,6 @@ module RSpecTracer
 
         name
       end
-      private_class_method :safe_entry_name
     end
   end
 end

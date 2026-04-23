@@ -188,10 +188,15 @@ module RSpecTracer
       end
     end
 
-    # Convenience DSL: `remote_cache_uri 's3://bucket/prefix'` parses
-    # the URI and calls `remote_cache_backend`. Also accepts ENV
-    # `RSPEC_TRACER_REMOTE_CACHE_URI`. Scheme dispatch is the extension
-    # point for M7.2's `:local_fs` / `:redis` backends.
+    # Convenience DSL: `remote_cache_uri '<scheme>://...'` parses the
+    # URI and calls `remote_cache_backend` with the right backend +
+    # connection params. Also accepts ENV `RSPEC_TRACER_REMOTE_CACHE_URI`.
+    # Supported schemes:
+    #   s3://<bucket>/<prefix>             -> S3Backend
+    #   file:///absolute/path              -> LocalFsBackend (root:)
+    #   redis://[user:pass@]host:port/<db> -> RedisBackend (prefix: 'rspec-tracer')
+    # Users who need finer control (custom Redis prefix, LocalFs on a
+    # relative path) use `remote_cache_backend` directly.
     def remote_cache_uri(uri = nil)
       return @remote_cache_uri if defined?(@remote_cache_uri) && uri.nil?
 
@@ -199,27 +204,48 @@ module RSpecTracer
       return nil if value.nil?
 
       parsed = parse_remote_cache_uri(value)
-      case parsed.scheme
-      when 's3'
-        prefix = parsed.path.to_s.sub(%r{^/}, '')
-        remote_cache_backend(:s3, bucket: parsed.host, prefix: prefix)
-      else
-        raise InvalidUsageError,
-              "unsupported remote_cache_uri scheme: #{parsed.scheme.inspect} (only 's3' is supported in 2.0)"
-      end
+      dispatch_remote_cache_uri(parsed)
 
       @remote_cache_uri = value
     end
 
+    def dispatch_remote_cache_uri(parsed)
+      case parsed.scheme
+      when 's3'
+        prefix = parsed.path.to_s.sub(%r{^/}, '')
+        remote_cache_backend(:s3, bucket: parsed.host, prefix: prefix)
+      when 'file'
+        remote_cache_backend(:local_fs, root: parsed.path.to_s)
+      when 'redis', 'rediss'
+        remote_cache_backend(:redis, url: parsed.to_s, prefix: 'rspec-tracer')
+      else
+        raise InvalidUsageError,
+              "unsupported remote_cache_uri scheme: #{parsed.scheme.inspect} " \
+              "(supported: 's3', 'file', 'redis', 'rediss')"
+      end
+    end
+
+    # Validate a parsed URI per the active scheme. Host presence is the
+    # common structural signal for S3 / Redis; `file://` uses path
+    # instead (host is optional and usually empty).
     def parse_remote_cache_uri(value)
       parsed = URI.parse(value)
-      unless parsed.scheme && parsed.host && !parsed.host.empty?
-        raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect}"
-      end
+      raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect}" unless valid_remote_cache_uri?(parsed)
 
       parsed
     rescue URI::InvalidURIError => e
       raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect} (#{e.message})"
+    end
+
+    def valid_remote_cache_uri?(parsed)
+      return false if parsed.scheme.nil?
+
+      case parsed.scheme
+      when 'file'
+        !parsed.path.to_s.empty?
+      else
+        !parsed.host.nil? && !parsed.host.empty?
+      end
     end
 
     # Retention knobs (closes issue #20). Mutually exclusive: count

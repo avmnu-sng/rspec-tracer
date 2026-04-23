@@ -443,6 +443,55 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/remote_cache_spec.rb
 
+  ci:redis:ready:
+    desc: >-
+      Wait for Redis to be healthy on REDIS_URL (default redis://localhost:6379/15)
+      and run a small smoke probe. Skips (exits 0) when `redis-cli` is absent
+      so local dev without Redis does not fail the broader task graph.
+    vars:
+      URL:
+        sh: echo "${REDIS_URL:-redis://localhost:6379/15}"
+    cmds:
+      - |
+        if ! command -v redis-cli >/dev/null 2>&1; then
+          echo "skip: redis-cli not on PATH (install: brew install redis)"
+          exit 0
+        fi
+
+        # Step 1: poll PING for up to 30s.
+        ready=0
+        for _ in $(seq 1 30); do
+          if redis-cli -u "{{.URL}}" PING 2>/dev/null | grep -q PONG; then
+            echo "redis ready"
+            ready=1
+            break
+          fi
+          sleep 1
+        done
+        if [ "$ready" -ne 1 ]; then
+          echo "ERROR: redis did not respond to PING within 30s at {{.URL}}" >&2
+          exit 1
+        fi
+
+        # Step 2: smoke probe the exact op set RedisBackend uses.
+        bucket="rspec-tracer-smoke-$$"
+        redis-cli -u "{{.URL}}" SET "${bucket}:probe" "probe-value" >/dev/null
+        redis-cli -u "{{.URL}}" GET "${bucket}:probe" | grep -q probe-value
+        redis-cli -u "{{.URL}}" HSET "${bucket}:hash" field value >/dev/null
+        redis-cli -u "{{.URL}}" HGET "${bucket}:hash" field | grep -q value
+        redis-cli -u "{{.URL}}" DEL "${bucket}:probe" "${bucket}:hash" >/dev/null
+        echo "redis smoke probe OK"
+
+  test:integration:remote-cache:redis:
+    desc: >-
+      M7.2 RedisBackend integration test against a real Redis server.
+      End-to-end round-trip (upload + download + branch_refs + retention
+      + prune_all) against localhost:6379 (override via REDIS_URL).
+      Depends on ci:redis:ready so CI fails fast if Redis is not reachable.
+    deps: [ci:redis:ready]
+    cmds:
+      - bundle exec rspec --no-color spec/integration/remote_cache_redis_spec.rb
+
   test:features:jruby:
     desc: >-
       M5.1 ruby_app integration test on JRuby (swapped from cucumber for the

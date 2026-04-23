@@ -13,7 +13,7 @@ RSpec.describe RSpecTracer::RemoteCache::Backend do
 
     it 'lists the protocol methods' do
       expect(described_class::REQUIRED_METHODS).to match_array(%i[
-        download upload branch_refs write_branch_refs prune!
+        download upload branch_refs write_branch_refs prune! prune_all!
       ])
     end
   end
@@ -26,6 +26,7 @@ RSpec.describe RSpecTracer::RemoteCache::Backend do
         def branch_refs(_name); end
         def write_branch_refs(_name, _refs); end
         def prune!(**_opts); end
+        def prune_all!(**_opts); end
       end.new
 
       expect(described_class.conforms?(conformer)).to be(true)
@@ -35,7 +36,7 @@ RSpec.describe RSpecTracer::RemoteCache::Backend do
       partial = Class.new do
         def download(_ref); end
         def upload(_ref); end
-        # missing branch_refs, write_branch_refs, prune!
+        # missing branch_refs, write_branch_refs, prune!, prune_all!
       end.new
 
       expect(described_class.conforms?(partial)).to be(false)

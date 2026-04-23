@@ -76,4 +76,22 @@ RSpec.shared_examples 'a RemoteCache::Backend' do
       expect(backend.prune!(count: 0, duration_seconds: 0, pr_branch_ttl_seconds: 0)).to eq(0)
     end
   end
+
+  describe '#prune_all!' do
+    it 'returns 0 when pr_branch_ttl_seconds is nil' do
+      expect(backend.prune_all!(pr_branch_ttl_seconds: nil)).to eq(0)
+    end
+
+    it 'returns 0 when pr_branch_ttl_seconds is zero' do
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 0)).to eq(0)
+    end
+
+    it 'returns 0 when pr_branch_ttl_seconds is negative' do
+      expect(backend.prune_all!(pr_branch_ttl_seconds: -1)).to eq(0)
+    end
+
+    it 'accepts a bare call (no kwargs) without raising' do
+      expect { backend.prune_all! }.not_to raise_error
+    end
+  end
 end

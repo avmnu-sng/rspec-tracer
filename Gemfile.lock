@@ -20,6 +20,7 @@ GEM
     builder (3.3.0)
     coderay (1.1.3)
     concurrent-ruby (1.3.6)
+    connection_pool (2.5.5)
     contracts (0.17.3)
     cucumber (9.2.1)
       builder (~> 3.2)
@@ -128,6 +129,10 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
+    redis (5.4.1)
+      redis-client (>= 0.22.0)
+    redis-client (0.28.0)
+      connection_pool
     regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
@@ -217,6 +222,7 @@ PLATFORMS
 
 DEPENDENCIES
   aruba (~> 2.2)
+  connection_pool (~> 2.5)
   cucumber (~> 9.2)
   mutant-rspec (~> 0.16)
   parallel (~> 1.26)
@@ -224,6 +230,7 @@ DEPENDENCIES
   pry (~> 0.14)
   rake (~> 13.2)
   rantly (~> 2.0)
+  redis (~> 5.3)
   rspec (~> 3.13)
   rspec-tracer!
   rubocop (~> 1.60)

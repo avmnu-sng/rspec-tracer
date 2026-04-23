@@ -48,6 +48,14 @@ namespace :rspec_tracer do
         env: ENV
       )
     end
+
+    desc 'Prune dead PR branches across the whole remote cache (maintenance task)'
+    task :prune_all do
+      RSpecTracer::RemoteCache::UserTasks.prune_all!(
+        configuration: RSpecTracer,
+        env: ENV
+      )
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength

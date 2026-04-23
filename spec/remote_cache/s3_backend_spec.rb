@@ -509,6 +509,112 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     end
   end
 
+  describe '#prune_all!' do
+    let(:backend) { new_backend(branch: 'main', default_branch: 'main') }
+
+    def common_prefixes_json(branches)
+      contents = branches.map { |b| { 'Prefix' => "rspec-tracer/pr/#{b}/" } }
+      JSON.generate('CommonPrefixes' => contents)
+    end
+
+    def list_json(keys_with_ts)
+      contents = keys_with_ts.map { |key, ts| { 'Key' => key, 'LastModified' => Time.at(ts).utc.iso8601 } }
+      JSON.generate('Contents' => contents)
+    end
+
+    it 'returns 0 when pr_branch_ttl_seconds is nil' do
+      expect(backend.prune_all!).to eq(0)
+    end
+
+    it 'returns 0 when pr_branch_ttl_seconds is zero or negative' do
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 0)).to eq(0)
+      expect(backend.prune_all!(pr_branch_ttl_seconds: -1)).to eq(0)
+    end
+
+    it 'discovers every PR branch via list-objects delimiter and prunes dead ones' do
+      now = Time.now.to_i
+      # Two branches: live (recent) and dead (ancient)
+      call_args = []
+      allow(Open3).to receive(:capture3) do |_cli, *args|
+        call_args << args
+        if args.include?('--delimiter')
+          [common_prefixes_json(%w[live dead]), '', status_ok]
+        elsif args.include?('list-objects-v2') && args.any? { |a| a.to_s.include?('pr/live') }
+          [list_json([['rspec-tracer/pr/live/sha1/cache.tar.gz', now - 60]]), '', status_ok]
+        elsif args.include?('list-objects-v2') && args.any? { |a| a.to_s.include?('pr/dead') }
+          [list_json([['rspec-tracer/pr/dead/sha2/cache.tar.gz', now - (30 * 86_400)]]), '', status_ok]
+        else
+          ['', '', status_ok]
+        end
+      end
+
+      removed = backend.prune_all!(pr_branch_ttl_seconds: 14 * 86_400)
+
+      expect(removed).to eq(1)
+      rm_calls = call_args.select { |a| a.first == 's3' && a[1] == 'rm' }
+      expect(rm_calls.any? { |a| a[2].include?('/pr/dead/') }).to be(true)
+      expect(rm_calls.none? { |a| a[2].include?('/pr/live/') }).to be(true)
+    end
+
+    it 'returns 0 when no PR branches exist' do
+      allow(Open3).to receive(:capture3) do |_cli, *args|
+        if args.include?('--delimiter')
+          [JSON.generate('CommonPrefixes' => []), '', status_ok]
+        else
+          ['', '', status_ok]
+        end
+      end
+
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 3600)).to eq(0)
+    end
+
+    it 'rescues StandardError from the outer prune_all walk and returns 0' do
+      # Inner Open3 calls have their own rescues; to hit prune_all!'s
+      # top-level rescue, force maybe_prune_branch itself to raise after
+      # discover_pr_branches returned a branch.
+      allow(backend).to receive(:discover_pr_branches).and_return(['feat'])
+      allow(backend).to receive(:maybe_prune_branch).and_raise(RuntimeError, 'network fire')
+
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 3600)).to eq(0)
+    end
+
+    it 'skips malformed CommonPrefixes entries' do
+      allow(Open3).to receive(:capture3) do |_cli, *args|
+        if args.include?('--delimiter')
+          [JSON.generate('CommonPrefixes' => [{ 'Prefix' => nil }, { 'Prefix' => 'outside/' }]), '', status_ok]
+        else
+          ['', '', status_ok]
+        end
+      end
+
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 3600)).to eq(0)
+    end
+
+    it 'returns 0 when list-common-prefixes stdout fails to parse' do
+      allow(Open3).to receive(:capture3) do |_cli, *args|
+        if args.include?('--delimiter')
+          ['{not json', '', status_ok]
+        else
+          ['', '', status_ok]
+        end
+      end
+
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 3600)).to eq(0)
+    end
+
+    it 'returns 0 when list-common-prefixes stderr signals failure' do
+      allow(Open3).to receive(:capture3) do |_cli, *args|
+        if args.include?('--delimiter')
+          ['', 'access denied', status_fail]
+        else
+          ['', '', status_ok]
+        end
+      end
+
+      expect(backend.prune_all!(pr_branch_ttl_seconds: 3600)).to eq(0)
+    end
+  end
+
   describe '#unbounded_warning' do
     it 'returns nil when ref count is at or below the threshold' do
       backend = new_backend
