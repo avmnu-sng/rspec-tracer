@@ -16,6 +16,14 @@ require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/engine'
 require_relative 'rspec_tracer/example'
+# Reporters must load before load_config so the Configuration DSL's
+# `add_reporter` can validate symbol names against
+# `Reporters::Registry::BUILT_INS` when a user `.rspec-tracer` calls
+# it at configure time (M6.1).
+require_relative 'rspec_tracer/reporters/base'
+require_relative 'rspec_tracer/reporters/json_reporter'
+require_relative 'rspec_tracer/reporters/terminal_reporter'
+require_relative 'rspec_tracer/reporters/registry'
 require_relative 'rspec_tracer/load_config'
 require_relative 'rspec_tracer/remote_cache/cache'
 require_relative 'rspec_tracer/rspec/installation'
@@ -48,6 +56,8 @@ module RSpecTracer
 
       RSpecTracer.running = false
       RSpecTracer.pid = Process.pid
+      @run_started_at = ::Time.now.utc
+      @run_monotonic_start = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC)
       @started = true
 
       RSpecTracer.logger.debug "Started RSpec tracer (pid: #{RSpecTracer.pid})"
@@ -133,7 +143,8 @@ module RSpecTracer
       if RSpecTracer.no_examples
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
       else
-        run_finalize
+        snapshot = run_finalize
+        emit_reporters(snapshot) if snapshot
       end
 
       simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
@@ -141,7 +152,7 @@ module RSpecTracer
       RSpecTracer::RSpec::ParallelTests.finalize! if parallel_tests?
     end
 
-    # Engine-owned finalize path. Engine writes the 13-file JSON cache
+    # Engine-owned finalize path. Engine writes the 15-file JSON cache
     # via Storage::JsonBackend; CoverageReporter still owns the
     # coverage.json surface (M3.6 Decision 2 - reporter rework lives in
     # Phase 6). The two paths share per-example coverage deltas via
@@ -154,12 +165,50 @@ module RSpecTracer
       coverage_reporter.generate_final_examples_coverage
       skipped_ids = engine.registry.ids_with_status(:skipped)
       coverage_reporter.merge_coverage(engine.merge_skipped_coverage(skipped_ids))
-      engine.finalize
+      snapshot = engine.finalize
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
       RSpecTracer.logger.debug "RSpec tracer persisted cache (took #{elapsed})"
+      snapshot
+    end
+
+    # M6.1. Fire the configured reporters against the persisted
+    # Snapshot. Fires per-worker under parallel_tests (same cadence as
+    # coverage.json emission); each worker produces its own report.json
+    # under its per-worker report_dir. The Registry rescues every
+    # reporter individually, so a buggy reporter warns and continues -
+    # never propagates a non-zero exit into the user's test suite
+    # (graceful degradation contract, same as Storage backends).
+    def emit_reporters(snapshot)
+      RSpecTracer::Reporters::Registry.emit_all(
+        configuration: RSpecTracer,
+        snapshot: snapshot,
+        report_dir: RSpecTracer.report_path,
+        run_metadata: build_run_metadata
+      )
+    rescue StandardError => e
+      RSpecTracer.logger.warn(
+        "rspec-tracer: reporter pipeline failed (#{e.class}: #{e.message})"
+      )
+    end
+
+    def build_run_metadata
+      {
+        pid: RSpecTracer.pid,
+        run_time: run_elapsed_seconds,
+        started_at: defined?(@run_started_at) ? @run_started_at : nil,
+        cache_path: RSpecTracer.cache_path,
+        parallel_tests: RSpecTracer.parallel_tests?,
+        rails: RSpecTracer.rails?
+      }
+    end
+
+    def run_elapsed_seconds
+      return nil unless defined?(@run_monotonic_start) && @run_monotonic_start
+
+      (::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @run_monotonic_start).round(4)
     end
 
     def run_simplecov_exit_task

@@ -49,6 +49,16 @@ module RSpecTracer
     # needs to re-run when the env changes. Same optional-in-JSON
     # treatment as wsi_snapshot: missing file coerces to `{}`, no
     # schema_version bump, one cold re-run on upgrade.
+    #
+    # M6.1 adds `env_dependency` - Hash[example_id => Array<env_name>]
+    # capturing which env keys each tracked example declared. The
+    # per-run `env_snapshot` stores the digest of each key; this map
+    # stores the example-to-key attribution that the reporter layer
+    # needs to render "which env vars does this example depend on."
+    # Without it, reports can't surface env dependencies - Engine's
+    # per-run `@tracks_env` map would otherwise be lost at finalize.
+    # Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
+    # missing file coerces to `{}`, no schema_version bump.
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -66,6 +76,7 @@ module RSpecTracer
       :boot_set,
       :wsi_snapshot,
       :env_snapshot,
+      :env_dependency,
       keyword_init: true
     )
 
@@ -91,7 +102,8 @@ module RSpecTracer
           examples_coverage: {},
           boot_set: {},
           wsi_snapshot: {},
-          env_snapshot: {}
+          env_snapshot: {},
+          env_dependency: {}
         )
       end
     end

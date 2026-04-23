@@ -4,6 +4,7 @@ require_relative 'filter'
 require_relative 'logger'
 
 module RSpecTracer
+  # rubocop:disable Metrics/ModuleLength
   module Configuration
     class InvalidUsageError < StandardError; end
 
@@ -419,6 +420,62 @@ module RSpecTracer
       @storage_backend_name = resolved
     end
 
+    # M6.1 reporter DSL. Accumulates each call onto an internal list of
+    # `[name_or_class, opts]` pairs that `Reporters::Registry` walks
+    # at finalize-time. Matches the `track_files` accumulator shape.
+    #
+    # Shapes:
+    #   add_reporter :terminal
+    #   add_reporter :json
+    #   add_reporter MyCustomReporter, color: false
+    #
+    # Symbol names must match `Reporters::Registry::BUILT_INS.keys`
+    # (`:terminal`, `:json`; M6.2 adds `:html`). Class values are
+    # trusted - they must subclass / duck-type `Reporters::Base` but
+    # validation is deferred to initialize-time so custom reporters
+    # defined in user code don't have to exist at DSL-validate time.
+    #
+    # If the user never calls `add_reporter`, `Registry.emit_all`
+    # falls back to `Registry::DEFAULTS` (`[:terminal, :json]`).
+    def add_reporter(name_or_class, **opts)
+      validate_reporter_entry(name_or_class)
+      @reporters ||= []
+      @reporters << [name_or_class, opts]
+      @reporters.dup.freeze
+    end
+
+    # Readonly access to the accumulated reporter entries. Returns
+    # `nil` when no `add_reporter` calls were made - the Registry
+    # distinguishes nil (fall back to defaults) from `[]` (user
+    # opted out of every reporter).
+    def reporters
+      return nil unless defined?(@reporters)
+
+      @reporters.dup.freeze
+    end
+
+    def validate_reporter_entry(name_or_class)
+      case name_or_class
+      when ::Symbol
+        allowed = reporter_builtins_keys
+        return if allowed.include?(name_or_class)
+
+        raise InvalidUsageError,
+              "unknown reporter: #{name_or_class.inspect}; allowed: #{allowed.inspect}"
+      when ::Class
+        nil
+      else
+        raise InvalidUsageError,
+              "add_reporter: expected Symbol or Class, got #{name_or_class.class}"
+      end
+    end
+
+    def reporter_builtins_keys
+      return [] unless defined?(RSpecTracer::Reporters::Registry)
+
+      RSpecTracer::Reporters::Registry::BUILT_INS.keys
+    end
+
     def add_filter(filter = nil, &)
       filters << parse_filter(filter, &)
     end
@@ -467,4 +524,5 @@ module RSpecTracer
       RSpecTracer::Filter.register(arg)
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 end

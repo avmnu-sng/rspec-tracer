@@ -57,6 +57,10 @@ module RSpecTracer
       # digest map for env-var values the per-example `tracks:
       # { env: ... }` DSL declares. Same missing-coerces-to-`{}`
       # fallback as wsi_snapshot - no schema bump.
+      # env_dependency.json (M6.1) persists the per-example tracked-env
+      # attribution map that reporters need for the Examples Dependency
+      # report. Missing file coerces to `{}`; pre-M6.1 caches load
+      # without a cold re-run.
       FILENAMES = %w[
         all_examples.json
         duplicate_examples.json
@@ -72,6 +76,7 @@ module RSpecTracer
         boot_set.json
         wsi_snapshot.json
         env_snapshot.json
+        env_dependency.json
       ].freeze
 
       LAST_RUN_FILENAME = 'last_run.json'
@@ -88,7 +93,7 @@ module RSpecTracer
       ].freeze
       HASH_FIELDS = %w[
         all_examples duplicate_examples all_files examples_coverage
-        boot_set wsi_snapshot env_snapshot
+        boot_set wsi_snapshot env_snapshot env_dependency
       ].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
       SYMBOLIZED_FIELDS = %w[all_examples all_files].freeze
@@ -96,7 +101,10 @@ module RSpecTracer
       # key/value transformation. examples_coverage (1.x) preserved
       # string keys; boot_set (M3.7), wsi_snapshot (M4.3), and
       # env_snapshot (M5.2) are simple name/path => digest maps.
-      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot env_snapshot].freeze
+      # env_dependency (M6.1) is Hash[example_id => Array<env_name>] -
+      # JSON-native on both sides, no Set reconstruction needed since
+      # only reporters consume it (iteration-only surface).
+      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot env_snapshot env_dependency].freeze
 
       attr_reader :cache_path
 
@@ -229,7 +237,8 @@ module RSpecTracer
             examples_coverage: state[:examples_coverage],
             boot_set: state[:boot_set],
             wsi_snapshot: state[:wsi_snapshot],
-            env_snapshot: state[:env_snapshot]
+            env_snapshot: state[:env_snapshot],
+            env_dependency: state[:env_dependency]
           )
         end
 
@@ -247,7 +256,8 @@ module RSpecTracer
             examples_coverage: {},
             boot_set: {},
             wsi_snapshot: {},
-            env_snapshot: {}
+            env_snapshot: {},
+            env_dependency: {}
           }
         end
 
@@ -275,8 +285,20 @@ module RSpecTracer
           state[:boot_set].merge!(snapshot.boot_set || {})
           state[:wsi_snapshot].merge!(snapshot.wsi_snapshot || {})
           state[:env_snapshot].merge!(snapshot.env_snapshot || {})
+          merge_env_dependency!(state[:env_dependency], snapshot.env_dependency || {})
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+        # Per-example env attribution unions set-wise: an example that
+        # declared `tracks: { env: [A, B] }` on one worker and
+        # `tracks: { env: [B, C] }` on another (edge case; parallel_tests
+        # workers rarely run the same example) collapses to [A, B, C].
+        def merge_env_dependency!(target, source)
+          source.each do |id, names|
+            existing = target[id] || []
+            target[id] = (existing | Array(names)).sort
+          end
+        end
 
         def merge_examples_coverage!(target, source)
           source.each do |id, per_file|
