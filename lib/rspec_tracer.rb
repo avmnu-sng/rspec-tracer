@@ -336,7 +336,7 @@ module RSpecTracer
 
         next unless File.directory?(cache_dir)
 
-        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json')))['run_id']
+        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))['run_id']
 
         reports_dir << File.join(cache_dir, run_id)
       end

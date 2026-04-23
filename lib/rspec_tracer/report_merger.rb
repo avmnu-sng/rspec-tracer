@@ -57,7 +57,7 @@ module RSpecTracer
 
     def merge_last_run_report(cache_dir)
       file_name = File.join(cache_dir, 'last_run.json')
-      cached_last_run = JSON.parse(File.read(file_name), symbolize_names: true)
+      cached_last_run = JSON.parse(File.read(file_name, encoding: 'UTF-8'), symbolize_names: true)
       cached_last_run[:pid] = [cached_last_run[:pid]]
 
       cached_last_run.delete_if { |key, _| %i[run_id timestamp].include?(key) }
