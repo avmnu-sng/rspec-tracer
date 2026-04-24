@@ -8,10 +8,10 @@ module RSpecTracer
       attr_reader :branch_name, :branch_ref, :branch_refs, :ancestry_refs, :cache_refs
 
       def initialize(aws)
+        raise RepoError, 'GIT_BRANCH environment variable is not set' if ENV['GIT_BRANCH'].nil?
+
         @aws = aws
         @branch_name = ENV['GIT_BRANCH'].chomp
-
-        raise RepoError, 'GIT_BRANCH environment variable is not set' if @branch_name.nil?
 
         fetch_head_ref
         fetch_branch_ref
@@ -135,7 +135,7 @@ module RSpecTracer
         file_name = File.join(RSpecTracer.cache_path, 'branch_refs.json')
 
         if @aws.download_branch_refs(branch_name, file_name)
-          @branch_refs = JSON.parse(File.read(file_name)).transform_values(&:to_i)
+          @branch_refs = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values(&:to_i)
 
           return if @branch_refs.empty?
 
@@ -144,7 +144,7 @@ module RSpecTracer
         else
           @branch_refs = {}
 
-          File.rm_f(file_name)
+          FileUtils.rm_f(file_name)
 
           puts "Failed to fetch branch refs for #{@branch_name} branch"
         end

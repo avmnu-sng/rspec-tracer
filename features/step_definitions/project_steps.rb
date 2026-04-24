@@ -134,7 +134,7 @@ end
 
 Then('I validate simplecov version') do
   cd('.') do
-    expected = Gem::Dependency.new('simplecov', ENV['SIMPLECOV_VERSION'])
+    expected = Gem::Dependency.new('simplecov', ENV.fetch('SIMPLECOV_VERSION', nil))
     actual = Gem::Dependency.new(
       'simplecov',
       `bundle show simplecov`.chomp.split("\n").first.split('/').last.split('-').last
@@ -149,7 +149,7 @@ Then('I validate rspec or rspec rails version') do
     case @project
     when 'rails_app'
       rspec_gem = 'rspec-rails'
-      expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_RAILS_VERSION'])
+      expected = Gem::Dependency.new(rspec_gem, ENV.fetch('RSPEC_RAILS_VERSION', nil))
     when 'parallel_tests_ruby_app',
          'parallel_tests_ruby_app_many_spec_files',
          'ruby_app',
@@ -157,7 +157,7 @@ Then('I validate rspec or rspec rails version') do
          'calculator_2_app',
          'calculator_3_app'
       rspec_gem = 'rspec'
-      expected = Gem::Dependency.new(rspec_gem, ENV['RSPEC_VERSION'])
+      expected = Gem::Dependency.new(rspec_gem, ENV.fetch('RSPEC_VERSION', nil))
     end
 
     actual = Gem::Dependency.new(

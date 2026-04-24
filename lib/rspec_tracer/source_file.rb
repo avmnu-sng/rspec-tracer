@@ -12,7 +12,7 @@ module RSpecTracer
       {
         file_path: file_path,
         file_name: file_name(file_path),
-        digest: Digest::MD5.hexdigest(File.read(file_path))
+        digest: Digest::MD5.hexdigest(File.binread(file_path))
       }
     end
 
@@ -25,7 +25,15 @@ module RSpecTracer
     end
 
     def file_path(file_name)
+      return file_name if absolute_external_file?(file_name)
+
       File.expand_path(file_name.sub(%r{^/}, ''), RSpecTracer.root)
+    end
+
+    def absolute_external_file?(file_name)
+      file_name.start_with?('/') &&
+        !file_name.start_with?(RSpecTracer.root) &&
+        File.file?(file_name)
     end
   end
 end

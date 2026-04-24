@@ -77,7 +77,7 @@ module RSpecTracer
         end
       end
 
-      @cache.cached_examples_coverage.each_pair do |example_id, example_coverage|
+      (@cache.cached_examples_coverage || {}).each_pair do |example_id, example_coverage|
         example_coverage.each_pair do |file_path, line_coverage|
           next if @reporter.example_interrupted?(example_id) ||
             @reporter.duplicate_example?(example_id)
@@ -89,7 +89,7 @@ module RSpecTracer
           next if @reporter.file_deleted?(file_name)
 
           line_coverage.each_pair do |line_number, strength|
-            missed_coverage[file_path][line_number] += strength
+            missed_coverage[file_path][line_number] += strength || 0
           end
         end
       end
@@ -271,6 +271,11 @@ module RSpecTracer
 
       source_file = RSpecTracer::SourceFile.from_name(file_name)
 
+      if source_file.nil?
+        puts "Skipping missing source file #{file_name} for example #{example_id}" if RSpecTracer.verbose?
+        return
+      end
+
       @reporter.register_source_file(source_file)
       @reporter.register_dependency(example_id, file_name)
     end
@@ -280,6 +285,11 @@ module RSpecTracer
         @reporter.duplicate_example?(example_id)
 
       source_file = RSpecTracer::SourceFile.from_path(file_path)
+
+      if source_file.nil?
+        puts "Skipping missing source file #{file_path} for example #{example_id}" if RSpecTracer.verbose?
+        return false
+      end
 
       return false if RSpecTracer.filters.any? { |filter| filter.match?(source_file) }
 

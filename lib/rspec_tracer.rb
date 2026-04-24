@@ -111,27 +111,27 @@ module RSpecTracer
     end
 
     def runner
-      return @runner if defined?(@runner)
+      @runner if defined?(@runner)
     end
 
     def coverage_reporter
-      return @coverage_reporter if defined?(@coverage_reporter)
+      @coverage_reporter if defined?(@coverage_reporter)
     end
 
     def coverage_merger
-      return @coverage_merger if defined?(@coverage_merger)
+      @coverage_merger if defined?(@coverage_merger)
     end
 
     def report_merger
-      return @report_merger if defined?(@report_merger)
+      @report_merger if defined?(@report_merger)
     end
 
     def trace_point
-      return @trace_point if defined?(@trace_point)
+      @trace_point if defined?(@trace_point)
     end
 
     def traced_files
-      return @traced_files if defined?(@traced_files)
+      @traced_files if defined?(@traced_files)
     end
 
     def trace_example?
@@ -139,11 +139,11 @@ module RSpecTracer
     end
 
     def simplecov?
-      return @simplecov if defined?(@simplecov)
+      defined?(@simplecov) && @simplecov == true
     end
 
     def parallel_tests?
-      return @parallel_tests if defined?(@parallel_tests)
+      defined?(@parallel_tests) && @parallel_tests == true
     end
 
     private
@@ -165,7 +165,7 @@ module RSpecTracer
     end
 
     def initial_setup
-      unless setup_rspec
+      unless setup_rspec?
         puts 'Could not find a running RSpec process'
 
         return
@@ -179,7 +179,7 @@ module RSpecTracer
     end
 
     def parallel_tests_setup
-      @parallel_tests = !(ENV['TEST_ENV_NUMBER'] && ENV['PARALLEL_TEST_GROUPS']).nil?
+      @parallel_tests = !(ENV.fetch('TEST_ENV_NUMBER', nil) && ENV.fetch('PARALLEL_TEST_GROUPS', nil)).nil?
 
       return unless parallel_tests?
 
@@ -208,7 +208,7 @@ module RSpecTracer
       end
     end
 
-    def setup_rspec
+    def setup_rspec?
       runners = ObjectSpace.each_object(::RSpec::Core::Runner) do |runner|
         runner_clazz = runner.singleton_class
         clazz = RSpecTracer::RSpecRunner
@@ -345,7 +345,7 @@ module RSpecTracer
 
         next unless File.directory?(cache_dir)
 
-        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json')))['run_id']
+        run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))['run_id']
 
         reports_dir << File.join(cache_dir, run_id)
       end
@@ -425,18 +425,25 @@ module RSpecTracer
       true
     end
 
+    # Elects the worker that performs the per-run merge. Delegates to
+    # `::ParallelTests.first_process?`, which returns true iff
+    # `TEST_ENV_NUMBER.to_i <= 1` — i.e. for exactly one worker per run,
+    # regardless of how many workers were spawned vs. CPU count.
+    #
+    # The prior lock-file-max election deadlocked under slow CI: a fast
+    # worker could finish before a slow worker loaded spec_helper and
+    # registered its TEST_ENV_NUMBER; both then self-elected and spun on
+    # each other's pid inside wait_for_other_processes_to_finish.
+    #
+    # `track_parallel_tests_test_env_number` and the lock-file cleanup
+    # in at_exit_behavior are retained so that users observing
+    # `parallel_tests.lock` see no behavior change — the file is still
+    # written and removed, just no longer consulted for election.
     def parallel_tests_last_process?
       return false unless parallel_tests?
+      return false unless defined?(::ParallelTests)
 
-      max_test_num = 0
-
-      File.open(RSpecTracer.parallel_tests_lock_file, 'r') do |f|
-        f.flock(File::LOCK_SH)
-
-        max_test_num = f.read.to_i
-      end
-
-      ENV['TEST_ENV_NUMBER'].to_i == max_test_num
+      ::ParallelTests.first_process?
     end
   end
 end

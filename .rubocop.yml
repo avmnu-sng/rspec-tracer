@@ -56,7 +56,13 @@ Metrics/MethodLength:
 Metrics/ModuleLength:
   Max: 300
 
-RSpec/FilePath:
+Metrics/PerceivedComplexity:
+  Max: 10
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/SpecFilePathSuffix:
   Enabled: false
 
 RSpec/NestedGroups:

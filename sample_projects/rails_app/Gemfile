@@ -3,19 +3,22 @@
 source 'https://rubygems.org'
 
 gem 'rails', ENV['RAILS_VERSION']
-gem 'sqlite3', '~> 1.4'
-gem 'puma', '~> 5.0'
+# Rails 7.0/7.1's activerecord locks `sqlite3 ~> 1.4` at load time
+# (inside sqlite3_adapter.rb), not in its gemspec, so bundler can resolve
+# to 2.x and then the gem activation blows up. Rails 8.0 needs
+# sqlite3 >= 2.1. Pick the right major via env var from the workflow.
+gem 'sqlite3', ENV.fetch('SQLITE3_VERSION', '~> 1.4')
+# Puma 6 needs Ruby 2.7+ and is required by Rails 7.1 (puma 5 rejects
+# Rack 3). Rails 6.1 / 7.0 use Rack 2 and run fine on puma 5, which is
+# the only line that installs on Ruby 2.5 / 2.6. The workflow drives
+# the pin per matrix row.
+gem 'puma', ENV.fetch('PUMA_VERSION', '~> 5.0')
 gem 'jbuilder', '~> 2.7'
 gem 'bootsnap', '>= 1.4.4', require: false
 
 group :development, :test do
   gem 'pry'
   gem 'simplecov', ENV['SIMPLECOV_VERSION']
-end
-
-group :development do
-  gem 'web-console'
-  gem 'spring'
 end
 
 group :test do

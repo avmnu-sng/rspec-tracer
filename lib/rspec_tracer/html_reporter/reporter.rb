@@ -211,7 +211,7 @@ module RSpecTracer
       end
 
       def template(name)
-        ERB.new(File.read(File.join(File.dirname(__FILE__), 'views/', "#{name}.erb")))
+        ERB.new(File.read(File.join(File.dirname(__FILE__), 'views/', "#{name}.erb"), encoding: 'UTF-8'))
       end
 
       def example_status_css_class(example_status)

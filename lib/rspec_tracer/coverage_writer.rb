@@ -15,7 +15,7 @@ module RSpecTracer
         }
       }
 
-      File.write(@file_name, JSON.pretty_generate(report))
+      File.write(@file_name, JSON.pretty_generate(report), encoding: 'UTF-8')
     end
 
     def print_stats(elapsed_time)

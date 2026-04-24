@@ -1,0 +1,65 @@
+name: spec
+
+on:
+  push:
+    branches: [ '1.0-stable' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-spec
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    name: spec-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { group: 1, ruby: '2.5' }
+          - { group: 2, ruby: '2.6' }
+          - { group: 3, ruby: '2.7' }
+          - { group: 4, ruby: '3.0' }
+          - { group: 5, ruby: '3.1' }
+          - { group: 6, ruby: '3.2' }
+          - { group: 7, ruby: '3.3' }
+          - { group: 8, ruby: '3.4' }
+          - { group: 9, ruby: '4.0' }
+
+    env:
+      # Skip cucumber group — aruba 2.0 caps bundler < 3, which
+      # conflicts with Ruby 4.0's shipped Bundler 4 at resolver time
+      # (BUNDLE_WITHOUT still RESOLVES excluded groups so the cap
+      # applies; the only reliable fix is to pin Bundler 2.x below
+      # via explicit `bundle _2.3.27_`).
+      BUNDLE_WITHOUT: 'cucumber'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: false
+
+      # Pin Bundler 2.3.27: last version supported across Ruby 2.5 -
+      # 4.0 that also satisfies aruba 2.0's `bundler < 3` runtime cap.
+      # Ruby 4.0 ships Bundler 4 as a default gem; without this pin
+      # the shipped Bundler 4 runs the resolver and fails the aruba
+      # cap check.
+      - name: Pin Bundler 2.3.27
+        run: gem install bundler -v 2.3.27 --no-document
+
+      - name: Bundle install
+        run: bundle _2.3.27_ install --jobs 4 --retry 3
+
+      - name: Run RSpec
+        run: bundle _2.3.27_ exec rspec

@@ -1,0 +1,45 @@
+name: lint
+
+on:
+  push:
+    branches: [ '1.0-stable' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-lint
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # Skip cucumber group — aruba 2.0 caps bundler < 3, which would
+      # clash if lint ever runs on a Ruby that ships Bundler 4 (not
+      # today — lint is pinned to Ruby 3.4 — but stays consistent with
+      # spec.yml's bundler strategy).
+      BUNDLE_WITHOUT: 'cucumber'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: false
+
+      - name: Pin Bundler 2.3.27
+        run: gem install bundler -v 2.3.27 --no-document
+
+      - name: Bundle install
+        run: bundle _2.3.27_ install --jobs 4 --retry 3
+
+      - name: Run RuboCop
+        run: bundle _2.3.27_ exec rubocop

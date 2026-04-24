@@ -25,7 +25,7 @@ module RSpecTracer
     end
 
     def cache_dir
-      @cache_dir ||= (ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR)
+      @cache_dir ||= ENV['RSPEC_TRACER_CACHE_DIR'] || DEFAULT_CACHE_DIR
     end
 
     def cache_path
@@ -41,7 +41,7 @@ module RSpecTracer
     end
 
     def report_dir
-      @report_dir ||= (ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR)
+      @report_dir ||= ENV['RSPEC_TRACER_REPORT_DIR'] || DEFAULT_REPORT_DIR
     end
 
     def report_path
@@ -57,7 +57,7 @@ module RSpecTracer
     end
 
     def coverage_dir
-      @coverage_dir ||= (ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR)
+      @coverage_dir ||= ENV['RSPEC_TRACER_COVERAGE_DIR'] || DEFAULT_COVERAGE_DIR
     end
 
     def coverage_path
@@ -114,7 +114,7 @@ module RSpecTracer
       if ParallelTests.first_process?
         'parallel_tests_1'
       else
-        "parallel_tests_#{ENV['TEST_ENV_NUMBER']}"
+        "parallel_tests_#{ENV.fetch('TEST_ENV_NUMBER', nil)}"
       end
     end
 
