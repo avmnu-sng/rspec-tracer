@@ -8,8 +8,8 @@ module RSpecTracer
       CACHE_FILES_PER_TEST_SUITE = 11
 
       def initialize
-        @test_suite_id = ENV['TEST_SUITE_ID']
-        @test_suites = ENV['TEST_SUITES']
+        @test_suite_id = ENV.fetch('TEST_SUITE_ID', nil)
+        @test_suites = ENV.fetch('TEST_SUITES', nil)
 
         if @test_suite_id.nil? ^ @test_suites.nil?
           raise(

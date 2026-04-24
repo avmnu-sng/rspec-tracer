@@ -5,7 +5,7 @@ def setup_simplecov
 
   require 'simplecov'
 
-  SimpleCov.command_name "#{ENV['SIMPLECOV_COMMAND_NAME']}:#{Process.pid}"
+  SimpleCov.command_name "#{ENV.fetch('SIMPLECOV_COMMAND_NAME', nil)}:#{Process.pid}"
   SimpleCov.root File.expand_path('..', __dir__)
 
   SimpleCov.start do

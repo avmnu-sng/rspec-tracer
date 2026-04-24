@@ -70,7 +70,7 @@ module RSpecTracer
       @reporter.register_deleted_examples(@cache.all_examples)
     end
 
-    def generate_missed_coverage
+    def generate_missed_coverage # rubocop:disable Metrics/PerceivedComplexity -- nested hash-of-hash building reads clearly; refactor out of scope for 1.0.1 patch
       missed_coverage = Hash.new do |files_coverage, file_path|
         files_coverage[file_path] = Hash.new do |strength, line_number|
           strength[line_number] = 0

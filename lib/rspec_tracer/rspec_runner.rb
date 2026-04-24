@@ -9,7 +9,7 @@ module RSpecTracer
       if RSpecTracer.no_examples
         RSpecTracer.running = true
 
-        super(example_groups)
+        super
 
         return
       end

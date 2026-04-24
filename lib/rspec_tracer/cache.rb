@@ -66,7 +66,7 @@ module RSpecTracer
 
       puts "RSpec tracer loaded cached examples coverage (took #{elapsed})" if RSpecTracer.verbose?
 
-      @examples_coverage ||= {}
+      @examples_coverage ||= {} # rubocop:disable Naming/MemoizedInstanceVariableName -- @examples_coverage name is load-bearing for ReportMerger#load_cache side-effect
     end
 
     private

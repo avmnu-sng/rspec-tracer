@@ -75,7 +75,7 @@ RSpec.describe RSpecTracer::Configuration do
   describe '#coverage_tracked_files' do
     context 'when not configured' do
       it 'returns current nil' do
-        expect(config.coverage_tracked_files).to eq(nil)
+        expect(config.coverage_tracked_files).to eq(nil) # rubocop:disable RSpec/BeEq
       end
     end
 
@@ -92,7 +92,7 @@ RSpec.describe RSpecTracer::Configuration do
         before { config.coverage_track_files(nil) }
 
         it 'returns nil' do
-          expect(config.coverage_tracked_files).to eq(nil)
+          expect(config.coverage_tracked_files).to eq(nil) # rubocop:disable RSpec/BeEq
         end
       end
     end

@@ -12,7 +12,7 @@ module RSpecTracer
       raise "#{self.class.name}#match? is not intended for direct use"
     end
 
-    def self.register(filter)
+    def self.register(filter) # rubocop:disable Layout/ClassStructure -- class methods after instance; reordering risks callers
       return filter if filter.is_a?(Filter)
 
       filter_class(filter).new(filter)

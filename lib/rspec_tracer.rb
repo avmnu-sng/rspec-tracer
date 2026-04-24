@@ -111,39 +111,39 @@ module RSpecTracer
     end
 
     def runner
-      return @runner if defined?(@runner)
+      @runner if defined?(@runner)
     end
 
     def coverage_reporter
-      return @coverage_reporter if defined?(@coverage_reporter)
+      @coverage_reporter if defined?(@coverage_reporter)
     end
 
     def coverage_merger
-      return @coverage_merger if defined?(@coverage_merger)
+      @coverage_merger if defined?(@coverage_merger)
     end
 
     def report_merger
-      return @report_merger if defined?(@report_merger)
+      @report_merger if defined?(@report_merger)
     end
 
     def trace_point
-      return @trace_point if defined?(@trace_point)
+      @trace_point if defined?(@trace_point)
     end
 
     def traced_files
-      return @traced_files if defined?(@traced_files)
+      @traced_files if defined?(@traced_files)
     end
 
     def trace_example?
       defined?(@trace_example) ? @trace_example : false
     end
 
-    def simplecov?
-      return @simplecov if defined?(@simplecov)
+    def simplecov? # rubocop:disable Naming/PredicateMethod -- may return non-boolean (@simplecov value); kept for API compatibility
+      @simplecov if defined?(@simplecov)
     end
 
-    def parallel_tests?
-      return @parallel_tests if defined?(@parallel_tests)
+    def parallel_tests? # rubocop:disable Naming/PredicateMethod -- may return non-boolean (@parallel_tests value); kept for API compatibility
+      @parallel_tests if defined?(@parallel_tests)
     end
 
     private
@@ -179,7 +179,7 @@ module RSpecTracer
     end
 
     def parallel_tests_setup
-      @parallel_tests = !(ENV['TEST_ENV_NUMBER'] && ENV['PARALLEL_TEST_GROUPS']).nil?
+      @parallel_tests = !(ENV.fetch('TEST_ENV_NUMBER', nil) && ENV.fetch('PARALLEL_TEST_GROUPS', nil)).nil?
 
       return unless parallel_tests?
 
@@ -208,7 +208,7 @@ module RSpecTracer
       end
     end
 
-    def setup_rspec
+    def setup_rspec # rubocop:disable Naming/PredicateMethod -- returns boolean but rename would be a public-ish API change
       runners = ObjectSpace.each_object(::RSpec::Core::Runner) do |runner|
         runner_clazz = runner.singleton_class
         clazz = RSpecTracer::RSpecRunner

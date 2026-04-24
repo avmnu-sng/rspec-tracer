@@ -41,7 +41,7 @@ end
 # Rubies is the only reliable way. lint.yml runs on Ruby 3.4 so this
 # gate doesn't reduce lint coverage.
 if RUBY_VERSION >= '2.7.0'
-  group :development do
+  group :development do # rubocop:disable Bundler/DuplicatedGroup -- load-bearing conditional split; see comment above
     gem 'rubocop', '~> 1.60'
     gem 'rubocop-performance', '~> 1.20'
     gem 'rubocop-rake', '~> 0.6'
