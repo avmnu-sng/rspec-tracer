@@ -125,7 +125,7 @@ module RSpecTracer
         remote_dir = s3_dir(ref, run_id)
         local_dir = File.join(RSpecTracer.cache_path, run_id)
 
-        raise AwsError, "Failed to download files from #{local_dir}" unless system(
+        raise AwsError, "Failed to upload files from #{local_dir}" unless system(
           @aws_cli,
           's3',
           'cp',
