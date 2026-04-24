@@ -48,8 +48,10 @@ group :development do
   # uses stable sqlite3 API (Database.new / execute / get_first_row /
   # transaction(:immediate)) that is identical across 1.x and 2.x, so
   # either pin satisfies the backend's runtime needs.
-  # JRuby uses a different driver entirely; skip via the outer gate.
-  install_if -> { RUBY_ENGINE == 'ruby' } do
+  # JRuby uses a different driver entirely; gate at PARSE time (not
+  # install_if) so Bundler does not even try to resolve sqlite3 on
+  # JRuby - install_if only gates install, not resolution.
+  if RUBY_ENGINE == 'ruby'
     if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
       gem 'sqlite3', '~> 2.0'
     else
@@ -62,12 +64,13 @@ group :development do
 
   # Mutation testing — MRI >= 3.3 only. mutant 0.16's own README says
   # "3.2+", but its transitive dep `unparser 0.9.0` declares
-  # `required_ruby_version >= 3.3`, so bundle install fails on Ruby
-  # 3.2 despite mutant's claim. Also doesn't target JRuby. `install_if`
-  # keeps bundle install quiet on 3.1 / 3.2 / JRuby cells.
-  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3') } do
-    gem 'mutant-rspec', '~> 0.16'
-  end
+  # `required_ruby_version >= 3.3`, so resolve fails on Ruby 3.2
+  # despite mutant's claim. Also doesn't target JRuby. Use a parse-time
+  # `if` (not `install_if`) so the gem is not declared at all on
+  # incompatible cells; `install_if` only gates install time and
+  # Bundler would still refuse to resolve the dep graph when the lock
+  # is not committed.
+  gem 'mutant-rspec', '~> 0.16' if RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3')
 end
 
 gemspec
