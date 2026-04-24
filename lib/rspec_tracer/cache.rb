@@ -17,6 +17,7 @@ module RSpecTracer
       @pending_examples = Set.new
       @all_files = {}
       @dependency = Hash.new { |hash, key| hash[key] = Set.new }
+      @examples_coverage = {}
     end
 
     def load_cache_for_run
@@ -50,13 +51,15 @@ module RSpecTracer
     end
 
     def cached_examples_coverage
-      return @examples_coverage if defined?(@examples_coverage)
+      return @examples_coverage if @examples_coverage_loaded
+
+      @examples_coverage_loaded = true
 
       cache_path = RSpecTracer.cache_path
       cache_path = File.dirname(cache_path) if RSpecTracer.parallel_tests?
       run_id = last_run_id(cache_path)
 
-      return @examples_coverage = {} if run_id.nil?
+      return @examples_coverage if run_id.nil?
 
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       cache_dir = File.join(cache_path, run_id)
@@ -66,7 +69,7 @@ module RSpecTracer
 
       puts "RSpec tracer loaded cached examples coverage (took #{elapsed})" if RSpecTracer.verbose?
 
-      @examples_coverage ||= {} # rubocop:disable Naming/MemoizedInstanceVariableName -- @examples_coverage name is load-bearing for ReportMerger#load_cache side-effect
+      @examples_coverage
     end
 
     private
