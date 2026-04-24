@@ -1,3 +1,92 @@
+## [1.2.0] - 2026-04-24
+
+### Added
+
+- **`USE_TEST_SUITE_ID_CACHE` env flag** for per-suite remote-cache
+  validation. When set to the exact string `"true"`, the validator
+  accepts the current `TEST_SUITE_ID`'s cache independently of peer
+  suites' state — so an aborted suite on one CI run no longer forces
+  a cold run across every suite on the next. Default unset preserves
+  1.1.x behaviour byte-for-byte. Ports
+  [upstream PR #70](https://github.com/avmnu-sng/rspec-tracer/pull/70)
+  (kirpalsangha), with credit to the interviewstreet fork
+  ([PR #1](https://github.com/interviewstreet/rspec-tracer/pull/1))
+  where the same fix was shipped to HackerRank's production CI in 2024.
+
+### Fixed
+
+- **`SourceFile#file_path` silently dropped dependencies on external
+  absolute paths** (closes the issue behind upstream PRs
+  [#37](https://github.com/avmnu-sng/rspec-tracer/pull/37) and
+  [#67](https://github.com/avmnu-sng/rspec-tracer/pull/67)). When a
+  spec's `metadata[:file_path]` resolved to an absolute path **outside**
+  `RSpecTracer.root` — typical for shared examples from vendored gems
+  (`/opt/bundle/gems/rspec-rails-X/lib/shared_examples/...`) or for
+  monorepo spec files adjacent to the project tree — the method stripped
+  the leading `/` and expanded against `RSpecTracer.root`, producing a
+  non-existent path like `<root>/opt/bundle/...`. `File.file?` returned
+  false, `from_path` returned nil, and the tracer **silently skipped
+  dependency registration** for that file. Cache-staleness silent-
+  correctness bug: shared examples from external gems never appeared as
+  dependencies, so changes to them never invalidated the cache. The fix
+  returns the input unchanged only when it's an absolute path to an
+  existing file outside `RSpecTracer.root`; all other inputs (relative
+  paths, stripped-root forms, in-root absolute paths) continue through
+  the existing project-relative expansion, preserving byte-for-byte
+  behaviour for 1.1.x configurations.
+- **`ValidationError` constant now defined.** `remote_cache/validator.rb`
+  previously referenced `ValidationError` in its XOR-guard `raise` but
+  the constant was never declared anywhere. Tripping the guard
+  (setting exactly one of `TEST_SUITE_ID` / `TEST_SUITES`) raised
+  `NameError: uninitialized constant` instead of the intended
+  error class. Added `class ValidationError < StandardError` inside
+  `Validator`, mirroring `Aws::AwsError`.
+- **Typo in the XOR-guard error message** — `"enviornment"` →
+  `"environment"`.
+- **Single-suite `@cached_files_regex` now anchored** — `$` appended
+  so the pattern no longer matches extraneous-extension files like
+  `/ref/hash/foo.json.backup`. Multi-suite regex was already anchored
+  in 1.1.x.
+- **`remote_cache/aws.rb#upload_dir` error message** — reported
+  `"Failed to download files from …"` when the upload failed. Closes
+  upstream [PR #64](https://github.com/avmnu-sng/rspec-tracer/pull/64)
+  (C3).
+
+## [1.1.2] - 2026-04-24
+
+### Fixed
+
+- **Encoding crash on locale-unset shells** — legacy cache, report, and
+  coverage paths called `File.read` / `File.write` without an explicit
+  encoding. Ruby fell back to `Encoding.default_external`, which
+  resolves to `US-ASCII` on shells launched without `LANG` set (the
+  default for macOS GUI terminals and many LaunchAgent contexts). Any
+  spec description containing a non-ASCII byte (e.g. `§`, typographic
+  quotes) wrote UTF-8 into `all_examples.json`; the next warm run
+  crashed at `Cache#load_*_cache` with
+  `Encoding::InvalidByteSequenceError: "\xC2" on US-ASCII`, taking
+  `spec_helper` down before any example ran. Every legacy JSON / ERB /
+  Ruby-source read and write now pins `encoding: 'UTF-8'`;
+  `SourceFile.from_path` switches to `File.binread` so the MD5 digest
+  hashes raw bytes regardless of process locale.
+
+## [1.1.1] - 2026-04-23
+
+### Fixed
+
+- **parallel_tests at-exit deadlock** — `parallel_tests_last_process?`
+  relied on a lock file written during `RSpecTracer.start` to identify
+  the last worker. If a fast worker reached `at_exit` before a slower
+  peer had loaded `spec_helper` and registered its `TEST_ENV_NUMBER`,
+  both workers could self-elect as the last process, both entered
+  `::ParallelTests.wait_for_other_processes_to_finish`, and deadlocked
+  on each other's pid. The elector now delegates to
+  `::ParallelTests.first_process?`, which reads immutable env vars set
+  by the parent at worker spawn. Exactly one worker is elected per run,
+  regardless of boot-time ordering or runner CPU count. No public-API
+  change — the `rspec_tracer.lock` file is still written and cleaned
+  up, just no longer consulted.
+
 ## [1.1.0] - 2026-04-20
 
 ### Added
