@@ -425,18 +425,25 @@ module RSpecTracer
       true
     end
 
+    # Elects the worker that performs the per-run merge. Delegates to
+    # `::ParallelTests.first_process?`, which returns true iff
+    # `TEST_ENV_NUMBER.to_i <= 1` — i.e. for exactly one worker per run,
+    # regardless of how many workers were spawned vs. CPU count.
+    #
+    # The prior lock-file-max election deadlocked under slow CI: a fast
+    # worker could finish before a slow worker loaded spec_helper and
+    # registered its TEST_ENV_NUMBER; both then self-elected and spun on
+    # each other's pid inside wait_for_other_processes_to_finish.
+    #
+    # `track_parallel_tests_test_env_number` and the lock-file cleanup
+    # in at_exit_behavior are retained so that users observing
+    # `parallel_tests.lock` see no behavior change — the file is still
+    # written and removed, just no longer consulted for election.
     def parallel_tests_last_process?
       return false unless parallel_tests?
+      return false unless defined?(::ParallelTests)
 
-      max_test_num = 0
-
-      File.open(RSpecTracer.parallel_tests_lock_file, 'r') do |f|
-        f.flock(File::LOCK_SH)
-
-        max_test_num = f.read.to_i
-      end
-
-      ENV['TEST_ENV_NUMBER'].to_i == max_test_num
+      ::ParallelTests.first_process?
     end
   end
 end
