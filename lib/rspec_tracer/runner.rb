@@ -271,6 +271,11 @@ module RSpecTracer
 
       source_file = RSpecTracer::SourceFile.from_name(file_name)
 
+      if source_file.nil?
+        puts "Skipping missing source file #{file_name} for example #{example_id}" if RSpecTracer.verbose?
+        return
+      end
+
       @reporter.register_source_file(source_file)
       @reporter.register_dependency(example_id, file_name)
     end
@@ -280,6 +285,11 @@ module RSpecTracer
         @reporter.duplicate_example?(example_id)
 
       source_file = RSpecTracer::SourceFile.from_path(file_path)
+
+      if source_file.nil?
+        puts "Skipping missing source file #{file_path} for example #{example_id}" if RSpecTracer.verbose?
+        return false
+      end
 
       return false if RSpecTracer.filters.any? { |filter| filter.match?(source_file) }
 

@@ -54,4 +54,61 @@ RSpec.describe RSpecTracer::Runner do
       end
     end
   end
+
+  describe '#register_file_dependency (private)' do
+    let(:example_id) { 'ex_1' }
+
+    before do
+      allow(runner.reporter).to receive_messages(
+        example_interrupted?: false,
+        duplicate_example?: false
+      )
+    end
+
+    context 'when SourceFile.from_path returns nil (gem-generated example)' do
+      before do
+        allow(RSpecTracer::SourceFile).to receive(:from_path).and_return(nil)
+        allow(runner.reporter).to receive(:register_source_file)
+        allow(runner.reporter).to receive(:register_dependency)
+      end
+
+      it 'returns false and registers neither source file nor dependency (regression for B3)',
+         :aggregate_failures do
+        result = runner.send(:register_file_dependency, example_id, '/nonexistent/file.rb')
+
+        expect(result).to be(false)
+        expect(runner.reporter).not_to have_received(:register_source_file)
+        expect(runner.reporter).not_to have_received(:register_dependency)
+      end
+    end
+  end
+
+  describe '#register_example_file_dependency (private)' do
+    let(:example_id) { 'ex_1' }
+
+    before do
+      allow(runner.reporter).to receive_messages(
+        example_interrupted?: false,
+        duplicate_example?: false
+      )
+    end
+
+    context 'when SourceFile.from_name returns nil' do
+      before do
+        allow(RSpecTracer::SourceFile).to receive(:from_name).and_return(nil)
+        allow(runner.reporter).to receive(:register_source_file)
+        allow(runner.reporter).to receive(:register_dependency)
+      end
+
+      it 'returns early and registers neither source file nor dependency (regression for B3)',
+         :aggregate_failures do
+        expect do
+          runner.send(:register_example_file_dependency, example_id, '/nonexistent.rb')
+        end.not_to raise_error
+
+        expect(runner.reporter).not_to have_received(:register_source_file)
+        expect(runner.reporter).not_to have_received(:register_dependency)
+      end
+    end
+  end
 end
