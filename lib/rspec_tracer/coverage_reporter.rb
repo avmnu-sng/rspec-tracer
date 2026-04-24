@@ -72,7 +72,8 @@ module RSpecTracer
                             end
 
         line_coverage.each_pair do |line_number, strength|
-          line_coverage_dup[line_number.to_i] += strength
+          index = line_number.to_i
+          line_coverage_dup[index] = (line_coverage_dup[index] || 0) + strength
         end
 
         @coverage[file_path] = line_coverage_dup.freeze
