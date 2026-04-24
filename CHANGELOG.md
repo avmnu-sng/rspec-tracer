@@ -47,6 +47,17 @@ fixes from 1.1.x / 1.2.x onto the v1.0.0 foundation so users on Ruby 2.5 -
 - `RemoteCache::Validator`'s single-suite `@cached_files_regex` anchored
   with a trailing `$` so files with extensions beyond `.json` (e.g.
   `.json.backup`) no longer match as cache files. (from v1.2.0)
+- `RemoteCache::Repo#initialize` guards `ENV['GIT_BRANCH']` for nil
+  before calling `.chomp`; previously a `NoMethodError: undefined
+  method 'chomp' for nil:NilClass` crashed the init path and masked
+  the intended `RepoError` message when `GIT_BRANCH` was not set in
+  the environment. (from v1.1.0 PR #51)
+- `RemoteCache::Repo#download_branch_refs` uses `FileUtils.rm_f`
+  (not `File.rm_f`) to clean up a partial `branch_refs.json` on a
+  failed AWS download. `File.rm_f` is undefined — `rm_f` is a
+  FileUtils method — so the failing-download branch would crash with
+  `NoMethodError` instead of cleaning up and logging. (from v1.1.0
+  PR #65)
 
 ### Note on exclusions
 
