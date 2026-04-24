@@ -60,13 +60,13 @@ module RSpecTracer
 
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       cache_dir = File.join(cache_path, run_id)
-      coverage = load_examples_coverage_cache(cache_dir)
+      load_examples_coverage_cache(cache_dir)
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)
 
       puts "RSpec tracer loaded cached examples coverage (took #{elapsed})" if RSpecTracer.verbose?
 
-      coverage
+      @examples_coverage ||= {}
     end
 
     private
