@@ -14,9 +14,19 @@ end
 # skip the aruba 2.0 / cucumber 7.0 chain that caps `bundler < 3`,
 # which otherwise fails resolution on Ruby 4.0 (ships Bundler 4 as a
 # default gem).
+#
+# Cucumber 7.x's `multiline_argument/data_table.rb` passes `:strict` /
+# `:proc` as kwargs to `Hash.new`, which Ruby 3.4+ rejects
+# (ArgumentError: unknown keywords). Bump to cucumber 9.x (+ aruba 2.2)
+# on Ruby 3.4+; keep 7.x on older Rubies (cucumber 9.x drops Ruby < 3.0).
 group :cucumber do
-  gem 'aruba', '~> 2.0'
-  gem 'cucumber', '~> 7.0'
+  if RUBY_VERSION >= '3.4.0'
+    gem 'aruba', '~> 2.2'
+    gem 'cucumber', '~> 9.2'
+  else
+    gem 'aruba', '~> 2.0'
+    gem 'cucumber', '~> 7.0'
+  end
   gem 'parallel_tests', '~> 3.7'
   gem 'sprockets', '~> 4.0'
   gem 'uglifier', '~> 4.2'

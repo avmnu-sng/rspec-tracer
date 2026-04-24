@@ -3,6 +3,15 @@
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
 
+# Rails 6.1's active_support/logger_thread_safe_level.rb references the
+# stdlib `Logger` constant without requiring it. Works on older Ruby
+# where the autoload resolves in time; on Ruby 3.x with bootsnap the
+# require chain evaluates the module body first and Rails boot dies
+# with `NameError: uninitialized constant ActiveSupport::LoggerThread
+# SafeLevel::Logger`. Fixed upstream in Rails 7.0, so this require is a
+# no-op on Rails 7.x cells. In /spec/ so SimpleCov's filter ignores it.
+require 'logger'
+
 require File.expand_path('../config/environment', __dir__)
 
 # Prevent database truncation if the environment is production

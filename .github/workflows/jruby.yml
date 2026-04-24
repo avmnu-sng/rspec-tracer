@@ -1,0 +1,56 @@
+name: jruby
+
+on:
+  push:
+    branches: [ '1.0-stable' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-jruby
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    name: jruby-group-${{ matrix.group }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # v1.0.0 supported JRuby 9.2.10.0+. 9.2.19 is the last in
+          # the 9.2 line and works with Bundler 2.3. The 9.2.x binary
+          # is no longer published for ubuntu-24.04, so pin 22.04.
+          - { group: 1, jruby: 'jruby-9.2.19.0', os: 'ubuntu-22.04' }
+          # 9.4 is the current stable line; matches 1.1-stable. Keep
+          # on ubuntu-latest so we catch regressions on newer OS images.
+          - { group: 2, jruby: 'jruby-9.4',      os: 'ubuntu-latest' }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools for JRuby native extensions
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.jruby }}
+          bundler-cache: false
+
+      - name: Pin Bundler 2.3.27
+        run: gem install bundler -v 2.3.27 --no-document
+
+      - name: Bundle install
+        run: bundle _2.3.27_ install --jobs 4 --retry 3
+
+      - name: Run Features
+        env:
+          RSPEC_VERSION: '~> 3.10.0'
+          SIMPLECOV_VERSION: '~> 0.21.0'
+        run: JRUBY_OPTS="--debug -X+O" bundle _2.3.27_ exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"

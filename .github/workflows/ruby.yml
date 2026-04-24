@@ -1,0 +1,55 @@
+name: ruby
+
+on:
+  push:
+    branches: [ '1.0-stable' ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}-ruby
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    name: ruby-group-${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { group: 1, ruby: '2.5' }
+          - { group: 2, ruby: '2.6' }
+          - { group: 3, ruby: '2.7' }
+          - { group: 4, ruby: '3.0' }
+          - { group: 5, ruby: '3.1' }
+          - { group: 6, ruby: '3.2' }
+          - { group: 7, ruby: '3.3' }
+          - { group: 8, ruby: '3.4' }
+          - { group: 9, ruby: '4.0' }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: false
+
+      - name: Pin Bundler 2.3.27
+        run: gem install bundler -v 2.3.27 --no-document
+
+      - name: Bundle install
+        run: bundle _2.3.27_ install --jobs 4 --retry 3
+
+      - name: Run Features
+        env:
+          RSPEC_VERSION: '~> 3.10.0'
+          SIMPLECOV_VERSION: '~> 0.21.0'
+        run: bundle _2.3.27_ exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and not @parallel-tests"
