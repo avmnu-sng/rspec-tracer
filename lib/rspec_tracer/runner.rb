@@ -77,7 +77,7 @@ module RSpecTracer
         end
       end
 
-      @cache.cached_examples_coverage.each_pair do |example_id, example_coverage|
+      (@cache.cached_examples_coverage || {}).each_pair do |example_id, example_coverage|
         example_coverage.each_pair do |file_path, line_coverage|
           next if @reporter.example_interrupted?(example_id) ||
             @reporter.duplicate_example?(example_id)
@@ -89,7 +89,7 @@ module RSpecTracer
           next if @reporter.file_deleted?(file_name)
 
           line_coverage.each_pair do |line_number, strength|
-            missed_coverage[file_path][line_number] += strength
+            missed_coverage[file_path][line_number] += strength || 0
           end
         end
       end
