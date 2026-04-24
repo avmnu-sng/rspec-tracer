@@ -36,13 +36,20 @@ group :development do
   # USER_FACING_SURFACE.md's optional-dep convention.
   gem 'msgpack', '~> 1.7'
   # sqlite3 is a dev dep so spec/storage/sqlite_backend_spec exercises
-  # the real DB write/read path. MRI >= 3.2 only: sqlite3 2.x declares
-  # required_ruby_version >= 3.2, which would fail `bundle install` on
-  # our Ruby 3.1 cell. JRuby's jdbc-sqlite3 has a different API that
-  # SqliteBackend does not target in 2.0. End users who want the
-  # :sqlite backend add the gem to their own Gemfile (MRI >= 3.2).
-  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2') } do
-    gem 'sqlite3', '~> 2.0'
+  # the real DB write/read path on every MRI matrix cell. SqliteBackend
+  # uses only stable sqlite3 API (Database.new / execute / get_first_row
+  # / transaction(:immediate)) that is identical across 1.x and 2.x, so
+  # we pin per-cell: sqlite3 2.x on Ruby >= 3.2 (where it installs) and
+  # 1.x on Ruby 3.1 (2.x declares required_ruby_version >= 3.2 and would
+  # fail bundle install). JRuby uses a different driver entirely; skip.
+  # End users add whichever sqlite3 version matches their Ruby to their
+  # own Gemfile; the backend is version-agnostic.
+  install_if -> { RUBY_ENGINE == 'ruby' } do
+    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
+      gem 'sqlite3', '~> 2.0'
+    else
+      gem 'sqlite3', '~> 1.7'
+    end
   end
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'

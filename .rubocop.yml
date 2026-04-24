@@ -55,6 +55,7 @@ Metrics/BlockLength:
   Exclude:
     - "tasks/**/*"
     - "spec/**/*"
+    - "Gemfile"
 
 Metrics/ClassLength:
   Max: 300

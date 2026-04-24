@@ -7,11 +7,11 @@ require 'rspec_tracer/storage/snapshot'
 
 require_relative '../contracts/storage_backend'
 
-# SqliteBackend is MRI >= 3.2 only. JRuby, MRI 3.1, or any MRI
-# whose Gemfile lacks the sqlite3 gem skips the whole file so the
-# matrix stays green without the optional dep.
+# SqliteBackend is MRI-only (sqlite3 gem targets MRI's C API; JRuby
+# uses a different driver entirely). Gemfile pins per-cell: ~> 2.0
+# on Ruby >= 3.2, ~> 1.7 on Ruby 3.1. Skip when the gem can't be
+# required so the JRuby matrix stays green.
 return unless RUBY_ENGINE == 'ruby'
-return unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
 
 begin
   require 'sqlite3'

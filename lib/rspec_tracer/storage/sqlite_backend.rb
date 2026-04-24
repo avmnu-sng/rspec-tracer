@@ -194,8 +194,9 @@ module RSpecTracer
         require 'sqlite3'
       rescue LoadError
         raise SqliteBackendError,
-              "sqlite3 gem is not installed; add `gem 'sqlite3', '~> 2.0'` to your Gemfile " \
-              '(MRI >= 3.2 only) or switch to `storage_backend :json`.'
+              "sqlite3 gem is not installed; add `gem 'sqlite3'` to your Gemfile " \
+              '(MRI only; pin `~> 2.0` on Ruby >= 3.2 or `~> 1.7` on Ruby 3.1) ' \
+              'or switch to `storage_backend :json`.'
       end
 
       def with_connection
