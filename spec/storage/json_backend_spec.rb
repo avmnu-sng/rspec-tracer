@@ -364,6 +364,225 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
     end
   end
 
+  # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength, RSpec/MultipleMemoizedHelpers
+  describe 'lazy loading' do
+    it 'returns a LazySnapshot from load_graph' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded).to be_a(RSpecTracer::Storage::LazySnapshot)
+    end
+
+    it 'does not read a field until it is accessed' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      allow(other_backend).to receive(:read_field).and_call_original
+
+      loaded.schema_version
+      loaded.run_id
+
+      expect(other_backend).not_to have_received(:read_field)
+    end
+
+    it 'reads only the touched field' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      allow(other_backend).to receive(:read_field).and_call_original
+
+      loaded.dependency
+
+      expect(other_backend).to have_received(:read_field).with(kind_of(String), :dependency).once
+    end
+  end
+
+  describe '#read_field' do
+    before { backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT) }
+
+    let(:run_dir) { File.join(cache_path, sample_snapshot.run_id) }
+
+    it 'raises ArgumentError on an unknown field name' do
+      expect { backend.read_field(run_dir, :not_a_field) }
+        .to raise_error(ArgumentError, /unknown snapshot field/)
+    end
+
+    it 'deserializes id-set fields as Set' do
+      expect(backend.read_field(run_dir, :interrupted_examples)).to be_a(Set)
+    end
+
+    it 'deserializes dependency fields as Hash[id => Set]' do
+      value = backend.read_field(run_dir, :dependency)
+      expect(value.values.first).to be_a(Set)
+    end
+
+    it 'returns the empty default when the file is missing' do
+      File.delete(File.join(run_dir, 'dependency.json'))
+      expect(backend.read_field(run_dir, :dependency)).to eq({})
+    end
+  end
+
+  describe 'deep_intern' do
+    it 'interns repeated path strings into a single object' do
+      snapshot = build_sample_snapshot('run-intern')
+      repeated = '/very/long/path/that/repeats.rb'
+      snapshot.dependency = (1..50).to_h { |i| ["ex#{i}", Set.new([repeated])] }
+      backend.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      paths = loaded.dependency.values.flat_map(&:to_a)
+      expect(paths.size).to eq(50)
+      expect(paths.map(&:object_id).uniq.size).to eq(1)
+    end
+
+    it 'returns non-String scalars unchanged' do
+      snapshot = build_sample_snapshot('run-intern-num')
+      snapshot.examples_coverage = { 'ex1' => { '/a.rb' => { '1' => 42 } } }
+      backend.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      expect(loaded.examples_coverage['ex1']['/a.rb']['1']).to eq(42)
+    end
+  end
+
+  describe '#prune_run_dirs!' do
+    def write_run(run_id, mtime: nil)
+      snap = build_sample_snapshot(run_id)
+      backend.save_graph(snap, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      File.utime(mtime, mtime, File.join(cache_path, run_id)) if mtime
+    end
+
+    it 'keeps the N most-recently-modified run-id directories' do
+      write_run('run-1', mtime: Time.now - 300)
+      write_run('run-2', mtime: Time.now - 200)
+      write_run('run-3', mtime: Time.now - 100)
+      write_run('run-4', mtime: Time.now - 50)
+      # run-4 is the current (last save); prune should keep run-4 + the 1 newest besides it.
+
+      removed = backend.prune_run_dirs!(keep: 2)
+
+      expect(removed).to eq(2)
+      expect(Dir.exist?(File.join(cache_path, 'run-1'))).to be(false)
+      expect(Dir.exist?(File.join(cache_path, 'run-2'))).to be(false)
+      expect(Dir.exist?(File.join(cache_path, 'run-3'))).to be(true)
+      expect(Dir.exist?(File.join(cache_path, 'run-4'))).to be(true)
+    end
+
+    it 'always keeps the dir that last_run.json points at, even if it is not newest' do
+      write_run('run-live', mtime: Time.now - 1000)
+      FileUtils.mkdir_p(File.join(cache_path, 'run-fresh-1'))
+      FileUtils.mkdir_p(File.join(cache_path, 'run-fresh-2'))
+
+      backend.prune_run_dirs!(keep: 1)
+
+      expect(Dir.exist?(File.join(cache_path, 'run-live'))).to be(true)
+    end
+
+    it 'is a no-op when keep is nil' do
+      write_run('run-x')
+      expect(backend.prune_run_dirs!(keep: nil)).to eq(0)
+    end
+
+    it 'is a no-op when keep is 0' do
+      write_run('run-x')
+      expect(backend.prune_run_dirs!(keep: 0)).to eq(0)
+      expect(Dir.exist?(File.join(cache_path, 'run-x'))).to be(true)
+    end
+
+    it 'is a no-op when the cache path does not exist' do
+      FileUtils.rm_rf(cache_path)
+      expect(backend.prune_run_dirs!(keep: 5)).to eq(0)
+    end
+
+    it 'ignores non-directory children (last_run.json, lock file)' do
+      write_run('run-x')
+      # last_run.json already exists and is a non-directory; ensure we don't delete it
+      backend.prune_run_dirs!(keep: 1)
+      expect(File.file?(File.join(cache_path, described_class::LAST_RUN_FILENAME))).to be(true)
+    end
+
+    it 'swallows and logs unexpected errors' do
+      logger = instance_double(RSpecTracer::Logger, warn: nil)
+      logged_backend = described_class.new(cache_path: cache_path, logger: logger)
+      FileUtils.mkdir_p(cache_path)
+      allow(logged_backend).to receive(:collect_run_dirs).and_raise(StandardError, 'boom')
+
+      result = logged_backend.prune_run_dirs!(keep: 1)
+
+      expect(result).to eq(0)
+      expect(logger).to have_received(:warn).with(/prune failed.*boom/)
+    end
+  end
+
+  describe 'save_graph prune-on-save' do
+    it 'prunes after a successful save when retention_local_count is set' do
+      retaining = described_class.new(
+        cache_path: cache_path, retention_local_count: 1
+      )
+      retaining.save_graph(build_sample_snapshot('run-a'), schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      retaining.save_graph(build_sample_snapshot('run-b'), schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(Dir.exist?(File.join(cache_path, 'run-a'))).to be(false)
+      expect(Dir.exist?(File.join(cache_path, 'run-b'))).to be(true)
+    end
+
+    it 'does not prune when retention_local_count is nil' do
+      unretained = described_class.new(cache_path: cache_path)
+      unretained.save_graph(build_sample_snapshot('run-a'), schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      unretained.save_graph(build_sample_snapshot('run-b'), schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(Dir.exist?(File.join(cache_path, 'run-a'))).to be(true)
+      expect(Dir.exist?(File.join(cache_path, 'run-b'))).to be(true)
+    end
+  end
+
+  describe 'size budget warnings' do
+    let(:logger) { instance_double(RSpecTracer::Logger, warn: nil) }
+
+    it 'emits a per-file warning when a file exceeds the per-file threshold' do
+      budgeted = described_class.new(cache_path: cache_path, logger: logger, warn_per_file_mb: 1)
+      snapshot = build_sample_snapshot('run-fat')
+      snapshot.all_files = (1..50_000).to_h do |i|
+        ["/app/file_#{i}.rb", { file_name: "/app/file_#{i}.rb", digest: 'd' * 64 }]
+      end
+
+      budgeted.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(logger).to have_received(:warn).with(/per-file threshold/).at_least(:once)
+    end
+
+    it 'emits a total warning when cache total exceeds the total threshold' do
+      budgeted = described_class.new(cache_path: cache_path, logger: logger, warn_total_mb: 1)
+      snapshot = build_sample_snapshot('run-total')
+      snapshot.all_files = (1..50_000).to_h do |i|
+        ["/app/file_#{i}.rb", { file_name: "/app/file_#{i}.rb", digest: 'd' * 64 }]
+      end
+
+      budgeted.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(logger).to have_received(:warn).with(/total threshold/).at_least(:once)
+    end
+
+    it 'does not warn when thresholds are nil' do
+      unbudgeted = described_class.new(cache_path: cache_path, logger: logger)
+
+      unbudgeted.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(logger).not_to have_received(:warn)
+    end
+
+    it 'does not warn when thresholds are 0 (opt-out)' do
+      unbudgeted = described_class.new(
+        cache_path: cache_path, logger: logger,
+        warn_per_file_mb: 0, warn_total_mb: 0
+      )
+
+      unbudgeted.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(logger).not_to have_received(:warn)
+    end
+  end
+  # rubocop:enable RSpec/MultipleExpectations, RSpec/ExampleLength, RSpec/MultipleMemoizedHelpers
+
   def ignore_raise
     yield
   rescue StandardError

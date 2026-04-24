@@ -41,7 +41,9 @@ RSpec.describe RSpecTracer::Engine do
       root: root, cache_path: cache_path, logger: logger,
       filters: [], declared_globs: [],
       run_all_examples: false, transitive_load_tracking: false,
-      rails?: false, track_ar_schema_notifications?: false
+      rails?: false, track_ar_schema_notifications?: false,
+      cache_retention_local_count: nil,
+      cache_size_warn_per_file_mb: nil, cache_size_warn_total_mb: nil
     }
     double(**defaults, **overrides).tap do |config|
       allow(config).to receive(:freeze_declared_globs!)

@@ -511,7 +511,7 @@ tasks:
       - cd spec/fixtures/rails_app && bundle install
 
   benchmark:smoke:
-    desc: Smoke benchmark (~3s — cold_ruby + warm_noop + cache_load)
+    desc: Smoke benchmark (~3s — cold_ruby + warm_noop)
     deps: [benchmark:bundle]
     cmds:
       - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json

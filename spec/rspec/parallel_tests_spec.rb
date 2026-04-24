@@ -33,7 +33,10 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
   before do
     allow(RSpecTracer).to receive_messages(lock_file: lock_file, cache_path: cache_path,
                                            report_path: report_path, coverage_path: coverage_path,
-                                           logger: logger, simplecov?: false)
+                                           logger: logger, simplecov?: false,
+                                           cache_retention_local_count: nil,
+                                           cache_size_warn_per_file_mb: nil,
+                                           cache_size_warn_total_mb: nil)
     [cache_path, report_path, coverage_path].each { |p| FileUtils.mkdir_p(File.dirname(p)) }
   end
 
@@ -304,7 +307,8 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
     it 'delegates to JsonBackend#merge_from_peers against the top-level cache dir' do
       backend = instance_double(RSpecTracer::Storage::JsonBackend, merge_from_peers: nil)
       expect(RSpecTracer::Storage::JsonBackend)
-        .to receive(:new).with(cache_path: base_dir, logger: logger).and_return(backend)
+        .to receive(:new).with(hash_including(cache_path: base_dir, logger: logger))
+        .and_return(backend)
 
       described_class.merge_snapshot!
 
