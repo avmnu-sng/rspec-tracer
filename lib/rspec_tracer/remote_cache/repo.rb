@@ -144,7 +144,7 @@ module RSpecTracer
         else
           @branch_refs = {}
 
-          File.rm_f(file_name)
+          FileUtils.rm_f(file_name)
 
           puts "Failed to fetch branch refs for #{@branch_name} branch"
         end
