@@ -45,5 +45,47 @@ RSpec.describe RSpecTracer::Cache do
         expect(cache.instance_variable_get(:@examples_coverage)).not_to be_nil
       end
     end
+
+    # Cache JSON files contain UTF-8 bytes whenever a spec description
+    # uses a non-ASCII character. Without `encoding: 'UTF-8'` on the
+    # File.read call, a shell with `LANG=` unset makes Ruby default to
+    # US-ASCII, and JSON.parse raises Encoding::InvalidByteSequenceError
+    # on the first xC2 byte — taking spec_helper down before any example
+    # runs.
+    context 'when the cache JSON contains UTF-8 bytes under a US-ASCII default external' do
+      let(:run_id) { 'utf8abc' }
+      let(:utf8_key) { "example with \u00A7" }
+
+      around do |example|
+        original_external = Encoding.default_external
+        original_verbose = $VERBOSE
+        $VERBOSE = nil
+        Encoding.default_external = Encoding::US_ASCII
+        example.run
+      ensure
+        Encoding.default_external = original_external
+        $VERBOSE = original_verbose
+      end
+
+      before do
+        File.write(File.join(tmp, 'last_run.json'), JSON.dump('run_id' => run_id), encoding: 'UTF-8')
+        run_dir = File.join(tmp, run_id)
+        Dir.mkdir(run_dir)
+        File.write(
+          File.join(run_dir, 'examples_coverage.json'),
+          JSON.dump(utf8_key => { '/lib/foo.rb' => [1, 0, 1] }),
+          encoding: 'UTF-8'
+        )
+        allow(RSpecTracer).to receive_messages(cache_path: tmp, parallel_tests?: false)
+      end
+
+      it 'reads the cache without raising Encoding::InvalidByteSequenceError' do
+        expect { cache.cached_examples_coverage }.not_to raise_error
+      end
+
+      it 'preserves UTF-8 keys through the JSON round-trip' do
+        expect(cache.cached_examples_coverage).to have_key(utf8_key)
+      end
+    end
   end
 end

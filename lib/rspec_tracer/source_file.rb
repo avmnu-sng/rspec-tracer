@@ -12,7 +12,7 @@ module RSpecTracer
       {
         file_path: file_path,
         file_name: file_name(file_path),
-        digest: Digest::MD5.hexdigest(File.read(file_path))
+        digest: Digest::MD5.hexdigest(File.binread(file_path))
       }
     end
 

@@ -76,7 +76,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      JSON.parse(File.read(file_name))['run_id']
+      JSON.parse(File.read(file_name, encoding: 'UTF-8'))['run_id']
     end
 
     def load_all_examples_cache(cache_dir, discard_run_reason: true)
@@ -84,7 +84,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @all_examples = JSON.parse(File.read(file_name)).transform_values do |examples|
+      @all_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values do |examples|
         examples.transform_keys(&:to_sym)
       end
 
@@ -99,7 +99,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @duplicate_examples = JSON.parse(File.read(file_name)).transform_values do |examples|
+      @duplicate_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values do |examples|
         examples.map { |example| example.transform_keys(&:to_sym) }
       end
     end
@@ -109,7 +109,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @interrupted_examples = JSON.parse(File.read(file_name)).to_set
+      @interrupted_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).to_set
     end
 
     def load_flaky_examples_cache(cache_dir)
@@ -117,7 +117,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @flaky_examples = JSON.parse(File.read(file_name)).to_set
+      @flaky_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).to_set
     end
 
     def load_failed_examples_cache(cache_dir)
@@ -125,7 +125,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @failed_examples = JSON.parse(File.read(file_name)).to_set
+      @failed_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).to_set
     end
 
     def load_pending_examples_cache(cache_dir)
@@ -133,7 +133,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @pending_examples = JSON.parse(File.read(file_name)).to_set
+      @pending_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).to_set
     end
 
     def load_skipped_examples_cache(cache_dir)
@@ -141,7 +141,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @skipped_examples = JSON.parse(File.read(file_name)).to_set
+      @skipped_examples = JSON.parse(File.read(file_name, encoding: 'UTF-8')).to_set
     end
 
     def load_all_files_cache(cache_dir)
@@ -149,7 +149,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @all_files = JSON.parse(File.read(file_name)).transform_values do |files|
+      @all_files = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values do |files|
         files.transform_keys(&:to_sym)
       end
     end
@@ -159,7 +159,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @dependency = JSON.parse(File.read(file_name)).transform_values(&:to_set)
+      @dependency = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values(&:to_set)
     end
 
     def load_examples_coverage_cache(cache_dir)
@@ -167,7 +167,7 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @examples_coverage = JSON.parse(File.read(file_name))
+      @examples_coverage = JSON.parse(File.read(file_name, encoding: 'UTF-8'))
     end
   end
 end

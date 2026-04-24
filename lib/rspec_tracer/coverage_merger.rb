@@ -14,7 +14,7 @@ module RSpecTracer
       reports_dir.each do |report_dir|
         next unless File.directory?(report_dir)
 
-        cache_coverage = JSON.parse(File.read("#{report_dir}/coverage.json"))['RSpecTracer']['coverage']
+        cache_coverage = JSON.parse(File.read("#{report_dir}/coverage.json", encoding: 'UTF-8'))['RSpecTracer']['coverage']
 
         cache_coverage.each_pair do |file_name, line_coverage|
           unless @coverage.key?(file_name)
