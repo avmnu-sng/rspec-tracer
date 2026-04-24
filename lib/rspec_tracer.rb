@@ -138,12 +138,12 @@ module RSpecTracer
       defined?(@trace_example) ? @trace_example : false
     end
 
-    def simplecov? # rubocop:disable Naming/PredicateMethod -- may return non-boolean (@simplecov value); kept for API compatibility
-      @simplecov if defined?(@simplecov)
+    def simplecov?
+      defined?(@simplecov) && @simplecov == true
     end
 
-    def parallel_tests? # rubocop:disable Naming/PredicateMethod -- may return non-boolean (@parallel_tests value); kept for API compatibility
-      @parallel_tests if defined?(@parallel_tests)
+    def parallel_tests?
+      defined?(@parallel_tests) && @parallel_tests == true
     end
 
     private
@@ -165,7 +165,7 @@ module RSpecTracer
     end
 
     def initial_setup
-      unless setup_rspec
+      unless setup_rspec?
         puts 'Could not find a running RSpec process'
 
         return
@@ -208,7 +208,7 @@ module RSpecTracer
       end
     end
 
-    def setup_rspec # rubocop:disable Naming/PredicateMethod -- returns boolean but rename would be a public-ish API change
+    def setup_rspec?
       runners = ObjectSpace.each_object(::RSpec::Core::Runner) do |runner|
         runner_clazz = runner.singleton_class
         clazz = RSpecTracer::RSpecRunner

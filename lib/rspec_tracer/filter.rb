@@ -4,15 +4,7 @@ module RSpecTracer
   class Filter
     attr_reader :filter
 
-    def initialize(filter)
-      @filter = filter
-    end
-
-    def match?(_source_file)
-      raise "#{self.class.name}#match? is not intended for direct use"
-    end
-
-    def self.register(filter) # rubocop:disable Layout/ClassStructure -- class methods after instance; reordering risks callers
+    def self.register(filter)
       return filter if filter.is_a?(Filter)
 
       filter_class(filter).new(filter)
@@ -31,6 +23,14 @@ module RSpecTracer
       else
         raise ArgumentError, 'Unknow filter'
       end
+    end
+
+    def initialize(filter)
+      @filter = filter
+    end
+
+    def match?(_source_file)
+      raise "#{self.class.name}#match? is not intended for direct use"
     end
   end
 

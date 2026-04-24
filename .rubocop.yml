@@ -56,6 +56,9 @@ Metrics/MethodLength:
 Metrics/ModuleLength:
   Max: 300
 
+Metrics/PerceivedComplexity:
+  Max: 10
+
 RSpec/SpecFilePathFormat:
   Enabled: false
 
