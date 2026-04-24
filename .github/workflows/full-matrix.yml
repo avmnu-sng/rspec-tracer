@@ -330,7 +330,7 @@ jobs:
             --summary-md benchmark/ci-summary.md
 
       - name: Upload benchmark summary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-summary
           path: benchmark/ci-summary.md
