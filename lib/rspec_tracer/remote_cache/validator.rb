@@ -3,6 +3,8 @@
 module RSpecTracer
   module RemoteCache
     class Validator
+      class ValidationError < StandardError; end
+
       CACHE_FILES_PER_TEST_SUITE = 11
 
       def initialize
@@ -12,7 +14,7 @@ module RSpecTracer
         if @test_suite_id.nil? ^ @test_suites.nil?
           raise(
             ValidationError,
-            'Both the enviornment variables TEST_SUITE_ID and TEST_SUITES are not set'
+            'Both the environment variables TEST_SUITE_ID and TEST_SUITES are not set'
           )
         end
 
@@ -36,7 +38,7 @@ module RSpecTracer
           @last_run_files_count = 1
           @last_run_files_regex = '/%<ref>s/last_run.json$'
           @cached_files_count = CACHE_FILES_PER_TEST_SUITE
-          @cached_files_regex = '/%<ref>s/[0-9a-f]{32}/.+.json'
+          @cached_files_regex = '/%<ref>s/[0-9a-f]{32}/.+.json$'
         else
           @test_suites = @test_suites.to_i
           @test_suites_regex = (1..@test_suites).to_a.join('|')
