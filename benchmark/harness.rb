@@ -118,6 +118,20 @@ module BenchmarkHarness
       env: { 'ITERATIONS' => '1000' },
       smoke: false
     },
+    'cache_load' => {
+      # M3.8 AC #1: 500-example cache loads fast under the lazy +
+      # string-interning path. Times N Storage::JsonBackend#load_graph
+      # + full field materialization against a representative
+      # populated cache. smoke:false because subprocess boot dominates
+      # the inner work enough that 3-iter variance regularly trips
+      # the 1.20x fail ratio against its own ratchet. Runs in
+      # benchmark:full and benchmark:ratchet:update.
+      desc: 'Microbenchmark: Storage::JsonBackend#load_graph over a 500-example populated cache',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/cache_load.rb'],
+      env: { 'ITERATIONS' => '20' },
+      smoke: false
+    },
     'file_read_hook' => {
       desc: 'Microbenchmark: Tracker::IOHooks File.read overhead (reject + record paths)',
       cwd: REPO_ROOT,

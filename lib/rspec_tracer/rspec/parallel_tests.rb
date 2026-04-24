@@ -171,7 +171,12 @@ module RSpecTracer
 
         starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        top = RSpecTracer::Storage::JsonBackend.new(cache_path: base_dir, logger: RSpecTracer.logger)
+        top = RSpecTracer::Storage::JsonBackend.new(
+          cache_path: base_dir, logger: RSpecTracer.logger,
+          retention_local_count: RSpecTracer.cache_retention_local_count,
+          warn_per_file_mb: RSpecTracer.cache_size_warn_per_file_mb,
+          warn_total_mb: RSpecTracer.cache_size_warn_total_mb
+        )
         top.merge_from_peers(peer_paths, schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)

@@ -736,6 +736,103 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#cache_retention_local_count (M3.8)' do
+    it 'defaults to DEFAULT_CACHE_RETENTION_LOCAL_COUNT when never set' do
+      expect(config.cache_retention_local_count)
+        .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_RETENTION_LOCAL_COUNT)
+    end
+
+    it 'stores a non-negative integer' do
+      config.cache_retention_local_count(3)
+      expect(config.cache_retention_local_count).to eq(3)
+    end
+
+    it 'accepts 0 as an opt-out signal' do
+      config.cache_retention_local_count(0)
+      expect(config.cache_retention_local_count).to eq(0)
+    end
+
+    it 'rejects negative integers' do
+      expect { config.cache_retention_local_count(-1) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+
+    it 'rejects non-integers' do
+      expect { config.cache_retention_local_count('5') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+
+    it 'honors RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT ENV override' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT' => '2'))
+      expect(config.cache_retention_local_count(99)).to eq(2)
+    end
+
+    it 'rejects a non-numeric ENV override' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT' => 'oops'))
+      expect { config.cache_retention_local_count }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+  end
+
+  describe '#cache_size_warn_per_file_mb (M3.8)' do
+    it 'defaults to DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB when never set' do
+      expect(config.cache_size_warn_per_file_mb)
+        .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB)
+    end
+
+    it 'stores a non-negative integer' do
+      config.cache_size_warn_per_file_mb(25)
+      expect(config.cache_size_warn_per_file_mb).to eq(25)
+    end
+
+    it 'accepts 0 as an opt-out signal' do
+      config.cache_size_warn_per_file_mb(0)
+      expect(config.cache_size_warn_per_file_mb).to eq(0)
+    end
+
+    it 'rejects negative integers' do
+      expect { config.cache_size_warn_per_file_mb(-1) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+
+    it 'rejects non-integers' do
+      expect { config.cache_size_warn_per_file_mb('25') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+
+    it 'honors the ENV override' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_CACHE_SIZE_WARN_PER_FILE_MB' => '10'))
+      expect(config.cache_size_warn_per_file_mb).to eq(10)
+    end
+  end
+
+  describe '#cache_size_warn_total_mb (M3.8)' do
+    it 'defaults to DEFAULT_CACHE_SIZE_WARN_TOTAL_MB when never set' do
+      expect(config.cache_size_warn_total_mb)
+        .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_SIZE_WARN_TOTAL_MB)
+    end
+
+    it 'stores a non-negative integer' do
+      config.cache_size_warn_total_mb(250)
+      expect(config.cache_size_warn_total_mb).to eq(250)
+    end
+
+    it 'accepts 0 as an opt-out signal' do
+      config.cache_size_warn_total_mb(0)
+      expect(config.cache_size_warn_total_mb).to eq(0)
+    end
+
+    it 'rejects negative integers' do
+      expect { config.cache_size_warn_total_mb(-1) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /non-negative integer/)
+    end
+
+    it 'honors the ENV override' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_CACHE_SIZE_WARN_TOTAL_MB' => '750'))
+      expect(config.cache_size_warn_total_mb).to eq(750)
+    end
+  end
+
   describe '#reports_s3_path (deprecated)' do
     it 'still stores a valid s3:// URI' do
       allow(config.logger).to receive(:warn)

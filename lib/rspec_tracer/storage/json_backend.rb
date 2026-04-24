@@ -7,6 +7,7 @@ require 'set'
 require 'time' # Time#iso8601 for last_run.json timestamp
 
 require_relative 'backend'
+require_relative 'lazy_snapshot'
 require_relative 'schema'
 require_relative 'snapshot'
 
@@ -42,6 +43,7 @@ module RSpecTracer
     # This fixes the M3.1-flagged `Encoding::InvalidByteSequenceError`
     # that bit the dogfood path when an example title contained a
     # non-ASCII byte on a US-ASCII-defaulted filesystem.
+    # rubocop:disable Metrics/ClassLength
     class JsonBackend
       # boot_set.json lands at the end of the list - additive w.r.t.
       # 1.x and v2 readers that walked this enumeration. It carries
@@ -83,11 +85,49 @@ module RSpecTracer
       LOCK_FILENAME = '.rspec_tracer.lock'
       ENCODING = 'UTF-8'
 
-      # Field groups for the shape-reconstruction in build_snapshot and
-      # write_run_files. The big lists are the price of preserving 1.x's
-      # per-field serialization (symbolize-inner-keys, set-from-array,
-      # hash-of-set). Grouping them keeps both reader and writer data-
-      # driven instead of spelled out row-by-row.
+      # Symbol -> on-disk filename mapping. Drives per-field lazy
+      # reads (via FieldReader) so `LazySnapshot#field` resolves to
+      # exactly one disk file. Kept in step with FILENAMES above;
+      # both constants are frozen and the specs assert they agree.
+      FIELD_FILENAMES = {
+        all_examples: 'all_examples.json',
+        duplicate_examples: 'duplicate_examples.json',
+        interrupted_examples: 'interrupted_examples.json',
+        flaky_examples: 'flaky_examples.json',
+        failed_examples: 'failed_examples.json',
+        pending_examples: 'pending_examples.json',
+        skipped_examples: 'skipped_examples.json',
+        all_files: 'all_files.json',
+        dependency: 'dependency.json',
+        reverse_dependency: 'reverse_dependency.json',
+        examples_coverage: 'examples_coverage.json',
+        boot_set: 'boot_set.json',
+        wsi_snapshot: 'wsi_snapshot.json',
+        env_snapshot: 'env_snapshot.json',
+        env_dependency: 'env_dependency.json'
+      }.freeze
+
+      # Binds a backend + run directory so `LazySnapshot` readers
+      # call exactly one public entry point (`backend.read_field`).
+      # Keeping this as a nested class (not a Proc) so mutant can
+      # introspect the reader contract.
+      class FieldReader
+        def initialize(backend:, dir:)
+          @backend = backend
+          @dir = dir
+        end
+
+        def read(field)
+          @backend.read_field(@dir, field)
+        end
+      end
+
+      # Write-side field groups. Each group dispatches to one
+      # serializer (Hash pass-through, Set->sorted Array, or the
+      # Hash[id => Set<path>] -> Hash[id => Array<path>] flavor
+      # shared by dependency + reverse_dependency). Kept data-driven
+      # so a schema_version bump adds one entry instead of a new
+      # branch. Read-side uses FIELD_KINDS below.
       ID_SET_FIELDS = %w[
         interrupted_examples flaky_examples failed_examples pending_examples skipped_examples
       ].freeze
@@ -96,21 +136,45 @@ module RSpecTracer
         boot_set wsi_snapshot env_snapshot env_dependency
       ].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
-      SYMBOLIZED_FIELDS = %w[all_examples all_files].freeze
-      # Fields that round-trip as a plain Hash on both sides - no
-      # key/value transformation. examples_coverage (1.x) preserved
-      # string keys; boot_set (M3.7), wsi_snapshot (M4.3), and
-      # env_snapshot (M5.2) are simple name/path => digest maps.
-      # env_dependency (M6.1) is Hash[example_id => Array<env_name>] -
-      # JSON-native on both sides, no Set reconstruction needed since
-      # only reporters consume it (iteration-only surface).
-      PLAIN_HASH_FIELDS = %w[examples_coverage boot_set wsi_snapshot env_snapshot env_dependency].freeze
+
+      # Read-side field -> deserializer-kind map. Drives
+      # `decode_field` so the lazy reader looks up one shape
+      # per field instead of spelling out a case/when that
+      # has to stay in sync with FILENAMES. `:symbolized` =
+      # Hash whose inner Hash values get symbolized keys
+      # (1.x's all_examples / all_files convention);
+      # `:dupe_examples` = same but Array-of-inner-Hash;
+      # `:id_set` = Array on disk -> Set in memory;
+      # `:dependency` = Hash[id => Array] -> Hash[id => Set];
+      # `:plain_hash` = pass-through (examples_coverage, the
+      # digest maps, env_dependency).
+      FIELD_KINDS = {
+        all_examples: :symbolized,
+        all_files: :symbolized,
+        duplicate_examples: :dupe_examples,
+        interrupted_examples: :id_set,
+        flaky_examples: :id_set,
+        failed_examples: :id_set,
+        pending_examples: :id_set,
+        skipped_examples: :id_set,
+        dependency: :dependency,
+        reverse_dependency: :dependency,
+        examples_coverage: :plain_hash,
+        boot_set: :plain_hash,
+        wsi_snapshot: :plain_hash,
+        env_snapshot: :plain_hash,
+        env_dependency: :plain_hash
+      }.freeze
 
       attr_reader :cache_path
 
-      def initialize(cache_path:, logger: nil)
+      def initialize(cache_path:, logger: nil, retention_local_count: nil,
+                     warn_per_file_mb: nil, warn_total_mb: nil)
         @cache_path = File.expand_path(cache_path)
         @logger = logger
+        @retention_local_count = retention_local_count
+        @warn_per_file_mb = warn_per_file_mb
+        @warn_total_mb = warn_total_mb
       end
 
       def last_run_id
@@ -139,10 +203,33 @@ module RSpecTracer
         dir = File.join(@cache_path, run_id)
         return nil unless File.directory?(dir)
 
-        build_snapshot(schema_version: stored, run_id: run_id, dir: dir)
+        LazySnapshot.new(
+          schema_version: stored, run_id: run_id,
+          reader: FieldReader.new(backend: self, dir: dir)
+        )
       rescue StandardError => e
         info("failed to load cache: #{e.class}: #{e.message}; cold run")
         nil
+      end
+
+      # Read and deserialize one per-run field. Public so
+      # `FieldReader` (constructed by `load_graph`) can dispatch.
+      # Missing file -> same default value the eager read previously
+      # produced (Set.new for ID-set fields, {} for hashes) -
+      # preserves the "malformed cache loads gracefully" contract.
+      #
+      # `deep_intern` runs before the decode so String dedup
+      # happens once per on-disk path / example_id regardless of
+      # how many times the value appears in the parsed tree.
+      # RAM win on large caches is the whole point of this method;
+      # see json_backend_spec.rb "string interning" for the
+      # measurable assertion.
+      def read_field(dir, field)
+        filename = FIELD_FILENAMES.fetch(field) do
+          raise ArgumentError, "unknown snapshot field: #{field.inspect}"
+        end
+        raw = read_run_file(dir, filename)
+        decode_field(field, deep_intern(raw))
       end
 
       def save_graph(snapshot, schema_version:)
@@ -162,7 +249,37 @@ module RSpecTracer
           write_last_run_atomic(schema_version: schema_version, run_id: run_id)
         end
 
+        maybe_prune_after_save
+        maybe_warn_size_budget(run_id)
         snapshot
+      end
+
+      # Retain the `keep` most-recently-modified run-id directories
+      # under cache_path and delete older ones. Always preserves the
+      # run-id that `last_run.json` points at (deleting it would make
+      # the next reader cold-run). Returns the count removed. Never
+      # raises - a prune failure is logged at warn level and treated
+      # as best-effort cleanup, same graceful-degradation contract
+      # the remote cache backends use.
+      #
+      # `keep` nil / non-positive -> no-op. Called automatically from
+      # `save_graph` when the backend was constructed with
+      # `retention_local_count:`; also exposed via `rake
+      # rspec_tracer:cache:gc` for one-off cleanup.
+      def prune_run_dirs!(keep:)
+        return 0 if keep.nil? || keep <= 0
+        return 0 unless File.directory?(@cache_path)
+
+        current = last_run_id
+        candidates = collect_run_dirs
+        return 0 if candidates.empty?
+
+        _keep, pruned = partition_dirs_to_prune(candidates, keep: keep, current: current)
+        pruned.each { |path| FileUtils.rm_rf(path) }
+        pruned.size
+      rescue StandardError => e
+        @logger&.warn("rspec-tracer cache gc: prune failed (#{e.class}: #{e.message})")
+        0
       end
 
       def transactional_save(&block)
@@ -331,6 +448,113 @@ module RSpecTracer
         File.join(@cache_path, LOCK_FILENAME)
       end
 
+      def maybe_prune_after_save
+        prune_run_dirs!(keep: @retention_local_count) if @retention_local_count
+      end
+
+      BYTES_PER_MB = 1_048_576
+      private_constant :BYTES_PER_MB
+
+      # Emit a warn-level log line for each just-saved file that
+      # exceeded the per-file budget, and one total-budget line when
+      # the whole cache tree exceeds that threshold. Both thresholds
+      # are MiB; 0 / nil disables. The warning suggests the most
+      # effective remediations in order: add_filter for vendor paths
+      # (usually the biggest win), transitive_load_tracking off
+      # (cuts the constants-blind-spot overhead), and the `:msgpack`
+      # serializer (PR B). Budgets surface B11 symptoms (issue #15 /
+      # #20) without forcing behavior change.
+      def maybe_warn_size_budget(run_id)
+        warn_oversized_run_files(run_id) if positive_threshold?(@warn_per_file_mb)
+        warn_oversized_cache_total if positive_threshold?(@warn_total_mb)
+      end
+
+      def positive_threshold?(value)
+        value.is_a?(::Integer) && value.positive?
+      end
+
+      def warn_oversized_run_files(run_id)
+        run_dir = File.join(@cache_path, run_id)
+        return unless File.directory?(run_dir)
+
+        threshold_bytes = @warn_per_file_mb * BYTES_PER_MB
+        Dir[File.join(run_dir, '*.json')].each do |path|
+          size = File.size(path)
+          next unless size > threshold_bytes
+
+          @logger&.warn(
+            "rspec-tracer cache: #{File.basename(path)} is #{format_mib(size)} " \
+            "(> #{@warn_per_file_mb} MiB per-file threshold); remediations (in order): " \
+            'add_filter for vendor paths, `transitive_load_tracking false`, ' \
+            '`storage_backend :json, serializer: :msgpack` (PR B)'
+          )
+        end
+      end
+
+      def warn_oversized_cache_total
+        total = total_cache_size_bytes
+        threshold_bytes = @warn_total_mb * BYTES_PER_MB
+        return unless total > threshold_bytes
+
+        @logger&.warn(
+          "rspec-tracer cache: total size is #{format_mib(total)} " \
+          "(> #{@warn_total_mb} MiB total threshold); remediations (in order): " \
+          '`cache_retention_local_count N` to cap history, ' \
+          'add_filter for vendor paths, ' \
+          '`storage_backend :json, serializer: :msgpack` (PR B)'
+        )
+      end
+
+      def total_cache_size_bytes
+        total = 0
+        Dir[File.join(@cache_path, '**', '*.json')].each do |path|
+          total += File.size(path) if File.file?(path)
+        end
+        total
+      rescue StandardError
+        0
+      end
+
+      def format_mib(bytes)
+        "#{(bytes.to_f / BYTES_PER_MB).round(1)} MiB"
+      end
+
+      # Enumerate run-id subdirectories of cache_path, newest first
+      # by mtime. Non-directory children (last_run.json, lock file)
+      # and dotfiles are excluded so a stray `.DS_Store` or editor
+      # swap file doesn't confuse the prune math.
+      def collect_run_dirs
+        entries = Dir.children(@cache_path).filter_map do |name|
+          next if name.start_with?('.')
+
+          path = File.join(@cache_path, name)
+          next unless File.directory?(path)
+
+          [path, File.mtime(path).to_f]
+        end
+        entries.sort_by { |(_, mtime)| -mtime }.map(&:first)
+      end
+
+      # Split a newest-first list of run directories into (keep,
+      # prune). The live `current` run-id is always retained even if
+      # it fell off the top-N by mtime (defensive: an external
+      # `touch` on an old dir must not force deletion of the live
+      # one). Inputs are absolute paths; `current` is the basename
+      # reported by `last_run_id` (may be nil if last_run.json is
+      # missing or corrupt).
+      def partition_dirs_to_prune(candidates, keep:, current:)
+        keep_paths = []
+        prune_paths = []
+        candidates.each do |path|
+          if keep_paths.size < keep || File.basename(path) == current
+            keep_paths << path
+          else
+            prune_paths << path
+          end
+        end
+        [keep_paths, prune_paths]
+      end
+
       def read_last_run_manifest
         return nil unless File.file?(last_run_path)
 
@@ -367,18 +591,18 @@ module RSpecTracer
         write_json_atomic(last_run_path, manifest)
       end
 
-      # Field-by-field shape reconstruction. Each field is decoded by
-      # whichever deserializer round-trips its write-side serializer.
-      # The big dispatch is the price of preserving 1.x's idiosyncratic
-      # symbolize-inner-keys + set-from-array rules.
-      def build_snapshot(schema_version:, run_id:, dir:)
-        fields = { schema_version: schema_version, run_id: run_id }
-        SYMBOLIZED_FIELDS.each { |f| fields[f.to_sym] = deserialize_symbolized(read_run_file(dir, "#{f}.json")) }
-        fields[:duplicate_examples] = deserialize_dupe_examples(read_run_file(dir, 'duplicate_examples.json'))
-        ID_SET_FIELDS.each { |f| fields[f.to_sym] = deserialize_id_set(read_run_file(dir, "#{f}.json")) }
-        DEPENDENCY_FIELDS.each { |f| fields[f.to_sym] = deserialize_dependency(read_run_file(dir, "#{f}.json")) }
-        PLAIN_HASH_FIELDS.each { |f| fields[f.to_sym] = deserialize_plain_hash(read_run_file(dir, "#{f}.json")) }
-        Snapshot.new(**fields)
+      # Dispatch one field's raw JSON body through the right
+      # deserializer. Paired with FIELD_KINDS. Kept here rather
+      # than on the reader so all shape knowledge stays in one
+      # class; mutant sees one AST node per kind branch.
+      def decode_field(field, raw)
+        case FIELD_KINDS.fetch(field)
+        when :symbolized    then deserialize_symbolized(raw)
+        when :dupe_examples then deserialize_dupe_examples(raw)
+        when :id_set        then deserialize_id_set(raw)
+        when :dependency    then deserialize_dependency(raw)
+        when :plain_hash    then deserialize_plain_hash(raw)
+        end
       end
 
       # Plain-hash round-trip: JSON.parse returns nil on failure, and
@@ -386,6 +610,32 @@ module RSpecTracer
       # Snapshot field. Treat anything non-Hash as the empty default.
       def deserialize_plain_hash(raw)
         raw.is_a?(Hash) ? raw : {}
+      end
+
+      # Walk a parsed JSON tree and replace every String with its
+      # frozen-string-table entry via `String#-@`. Idempotent on
+      # already-frozen Strings. Portable across every matrix Ruby
+      # (json-gem's `freeze: true` option only arrived in 2.8 /
+      # Ruby 3.4); the explicit walk keeps behavior identical on
+      # Ruby 3.1 + 3.2 cells.
+      #
+      # Big win on dependency.json where the same file path repeats
+      # across every example that depends on it - 2000 unique paths
+      # may appear 1M+ times; interning collapses that to 2000
+      # objects + refs. Small overhead on fields where strings are
+      # unique (description text in all_examples) but the RAM
+      # savings on the path-heavy fields dominate.
+      def deep_intern(obj)
+        case obj
+        when Hash
+          obj.each_with_object({}) { |(k, v), h| h[k.is_a?(String) ? -k : k] = deep_intern(v) }
+        when Array
+          obj.map { |v| deep_intern(v) }
+        when String
+          -obj
+        else
+          obj
+        end
       end
 
       def read_run_file(dir, name)
@@ -450,5 +700,6 @@ module RSpecTracer
         @logger&.info(message)
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

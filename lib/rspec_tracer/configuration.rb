@@ -23,6 +23,18 @@ module RSpecTracer
     DEFAULT_STORAGE_BACKEND = :json
     # M3.8 adds :sqlite. Keep the list closed so typos raise early.
     STORAGE_BACKEND_NAMES = %i[json].freeze
+    # Per-save retention on the local cache's run-id directories.
+    # 5 keeps enough history for rollback debugging without letting
+    # the cache grow unbounded (issue #20). 0 opts out entirely.
+    DEFAULT_CACHE_RETENTION_LOCAL_COUNT = 5
+    # Size budgets (MiB). Warn at save time when any single cache
+    # file exceeds the per-file threshold or when the cache total
+    # exceeds the aggregate threshold. Surfaces B11 symptoms
+    # (dependency.json ballooning past the few-MB range) while
+    # the user can still act on them. Set to 0 to disable either
+    # individually.
+    DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB = 50
+    DEFAULT_CACHE_SIZE_WARN_TOTAL_MB = 500
 
     LOG_LEVEL = {
       off: 0,
@@ -612,6 +624,96 @@ module RSpecTracer
 
       file_path[(@root.length + 1)..]
     end
+
+    # M3.8 local-cache run-id retention. Default 5 keeps enough
+    # history for rollback debugging without letting the cache grow
+    # unbounded on long-lived machines (issue #20). 0 opts out (1.x
+    # behavior - dirs accumulate forever). ENV
+    # RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT wins over the DSL
+    # argument, matching the other cache_* precedence conventions.
+    #
+    # Prune-on-save is handled by JsonBackend; this DSL just carries
+    # the configured value so the engine can pass it through on
+    # backend construction. One-off cleanup lives in the
+    # `rspec_tracer:cache:gc` Rake task.
+    # rubocop:disable Metrics/PerceivedComplexity
+    def cache_retention_local_count(count = nil)
+      return @cache_retention_local_count if defined?(@cache_retention_local_count) && count.nil?
+
+      if ENV.key?('RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT')
+        env_value = ENV['RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT']
+        unless env_value.match?(/\A\d+\z/)
+          raise InvalidUsageError,
+                "RSPEC_TRACER_CACHE_RETENTION_LOCAL_COUNT must be a non-negative integer, got #{env_value.inspect}"
+        end
+        @cache_retention_local_count = env_value.to_i
+      elsif count.nil?
+        @cache_retention_local_count = DEFAULT_CACHE_RETENTION_LOCAL_COUNT
+      elsif count.is_a?(::Integer) && count >= 0
+        @cache_retention_local_count = count
+      else
+        raise InvalidUsageError,
+              "cache_retention_local_count must be a non-negative integer, got #{count.inspect}"
+      end
+
+      @cache_retention_local_count
+    end
+    # rubocop:enable Metrics/PerceivedComplexity
+
+    # M3.8 size budgets. Both return non-negative Integer MiB.
+    # Shape identical to cache_retention_local_count:
+    # defined-and-nil-arg returns memo, ENV wins, then DSL arg, then
+    # module default. 0 disables the respective check.
+    #
+    # Duplicated body rather than factored to a private helper
+    # because configure's alias loop would wrap the helper as a
+    # public `_name` DSL surface (see
+    # feedback_configure_dsl_private_leak).
+    # rubocop:disable Metrics/PerceivedComplexity
+    def cache_size_warn_per_file_mb(size_mb = nil)
+      return @cache_size_warn_per_file_mb if defined?(@cache_size_warn_per_file_mb) && size_mb.nil?
+
+      if ENV.key?('RSPEC_TRACER_CACHE_SIZE_WARN_PER_FILE_MB')
+        env_value = ENV['RSPEC_TRACER_CACHE_SIZE_WARN_PER_FILE_MB']
+        unless env_value.match?(/\A\d+\z/)
+          raise InvalidUsageError,
+                "RSPEC_TRACER_CACHE_SIZE_WARN_PER_FILE_MB must be a non-negative integer, got #{env_value.inspect}"
+        end
+        @cache_size_warn_per_file_mb = env_value.to_i
+      elsif size_mb.nil?
+        @cache_size_warn_per_file_mb = DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB
+      elsif size_mb.is_a?(::Integer) && size_mb >= 0
+        @cache_size_warn_per_file_mb = size_mb
+      else
+        raise InvalidUsageError,
+              "cache_size_warn_per_file_mb must be a non-negative integer, got #{size_mb.inspect}"
+      end
+
+      @cache_size_warn_per_file_mb
+    end
+
+    def cache_size_warn_total_mb(size_mb = nil)
+      return @cache_size_warn_total_mb if defined?(@cache_size_warn_total_mb) && size_mb.nil?
+
+      if ENV.key?('RSPEC_TRACER_CACHE_SIZE_WARN_TOTAL_MB')
+        env_value = ENV['RSPEC_TRACER_CACHE_SIZE_WARN_TOTAL_MB']
+        unless env_value.match?(/\A\d+\z/)
+          raise InvalidUsageError,
+                "RSPEC_TRACER_CACHE_SIZE_WARN_TOTAL_MB must be a non-negative integer, got #{env_value.inspect}"
+        end
+        @cache_size_warn_total_mb = env_value.to_i
+      elsif size_mb.nil?
+        @cache_size_warn_total_mb = DEFAULT_CACHE_SIZE_WARN_TOTAL_MB
+      elsif size_mb.is_a?(::Integer) && size_mb >= 0
+        @cache_size_warn_total_mb = size_mb
+      else
+        raise InvalidUsageError,
+              "cache_size_warn_total_mb must be a non-negative integer, got #{size_mb.inspect}"
+      end
+
+      @cache_size_warn_total_mb
+    end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     # M3.4 storage backend selector. Symbol form
     # (`storage_backend :json`); ENV `RSPEC_TRACER_STORAGE` wins over

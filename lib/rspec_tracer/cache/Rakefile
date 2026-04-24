@@ -1,0 +1,43 @@
+# frozen_string_literal: true
+
+# User-facing Rake task shim for local-cache maintenance. Load from
+# the user's own Rakefile when they want one-off cleanup:
+#
+#   spec = Gem::Specification.find_by_name('rspec-tracer')
+#   load "#{spec.gem_dir}/lib/rspec_tracer/cache/Rakefile"
+#
+# Defines `rspec_tracer:cache:gc` which prunes old run-id
+# directories under the local cache while retaining the `N`
+# most-recent configured via `cache_retention_local_count` (default
+# 5). Prune-on-save already handles the steady-state cleanup; this
+# task is for catching up after retention was opted-out-of and the
+# cache grew beyond the configured cap.
+
+require 'rspec_tracer'
+require 'rspec_tracer/storage/json_backend'
+
+namespace :rspec_tracer do
+  namespace :cache do
+    desc 'Prune old run-id directories under the local cache ' \
+         '(respects cache_retention_local_count)'
+    task :gc do
+      count = RSpecTracer.cache_retention_local_count
+      if count.nil? || count.zero?
+        RSpecTracer.logger.warn(
+          'rspec-tracer cache gc: cache_retention_local_count is 0 (opt-out); nothing to prune'
+        )
+        next
+      end
+
+      backend = RSpecTracer::Storage::JsonBackend.new(
+        cache_path: RSpecTracer.cache_path,
+        logger: RSpecTracer.logger,
+        retention_local_count: count
+      )
+      removed = backend.prune_run_dirs!(keep: count)
+      RSpecTracer.logger.info(
+        "rspec-tracer cache gc: pruned #{removed} run-id dir(s); kept #{count} most-recent"
+      )
+    end
+  end
+end

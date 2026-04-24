@@ -349,7 +349,10 @@ module RSpecTracer
         root: @configuration.root, enabled: @configuration.transitive_load_tracking
       )
       @storage_backend = RSpecTracer::Storage::JsonBackend.new(
-        cache_path: @configuration.cache_path, logger: @configuration.logger
+        cache_path: @configuration.cache_path, logger: @configuration.logger,
+        retention_local_count: @configuration.cache_retention_local_count,
+        warn_per_file_mb: @configuration.cache_size_warn_per_file_mb,
+        warn_total_mb: @configuration.cache_size_warn_total_mb
       )
     end
 
