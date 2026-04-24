@@ -292,6 +292,54 @@ RSpec.describe RSpecTracer::Configuration do
 
       expect([first, second]).to eq(%i[json json])
     end
+
+    it 'accepts :sqlite as a backend name' do
+      expect(config.storage_backend(:sqlite)).to eq(:sqlite)
+    end
+
+    describe 'opts validation' do
+      it 'stores serializer: :msgpack for the :json backend' do
+        config.storage_backend(:json, serializer: :msgpack)
+
+        expect(config.storage_backend_opts).to eq(serializer: :msgpack)
+      end
+
+      it 'defaults storage_backend_opts to an empty hash' do
+        expect(config.storage_backend_opts).to eq({})
+      end
+
+      it 'freezes the default storage_backend_opts hash' do
+        expect(config.storage_backend_opts).to be_frozen
+      end
+
+      it 'defaults serializer to :json when :json is chosen without opts' do
+        config.storage_backend(:json)
+
+        expect(config.storage_backend_opts).to eq(serializer: :json)
+      end
+
+      it 'rejects an unknown opt key' do
+        expect { config.storage_backend(:json, foo: :bar) }
+          .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown storage_backend options/)
+      end
+
+      it 'rejects an unknown serializer' do
+        expect { config.storage_backend(:json, serializer: :toml) }
+          .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown storage serializer/)
+      end
+
+      it 'rejects any opts for the :sqlite backend' do
+        expect { config.storage_backend(:sqlite, serializer: :msgpack) }
+          .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /sqlite does not accept options/)
+      end
+
+      it 'honors RSPEC_TRACER_STORAGE_SERIALIZER over the opt' do
+        stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_STORAGE_SERIALIZER' => 'msgpack'))
+        config.storage_backend(:json, serializer: :json)
+
+        expect(config.storage_backend_opts).to eq(serializer: :msgpack)
+      end
+    end
   end
 
   # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength

@@ -43,7 +43,8 @@ RSpec.describe RSpecTracer::Engine do
       run_all_examples: false, transitive_load_tracking: false,
       rails?: false, track_ar_schema_notifications?: false,
       cache_retention_local_count: nil,
-      cache_size_warn_per_file_mb: nil, cache_size_warn_total_mb: nil
+      cache_size_warn_per_file_mb: nil, cache_size_warn_total_mb: nil,
+      storage_backend: :json, storage_backend_opts: {}
     }
     double(**defaults, **overrides).tap do |config|
       allow(config).to receive(:freeze_declared_globs!)
@@ -109,6 +110,35 @@ RSpec.describe RSpecTracer::Engine do
 
     it 'constructs a JSON storage backend pointed at cache_path' do
       expect(tracker.storage_backend).to be_a(RSpecTracer::Storage::JsonBackend)
+    end
+
+    it 'constructs a SQLite storage backend when configuration selects :sqlite' do
+      skip 'sqlite3 gem not available' unless Gem.loaded_specs.key?('sqlite3')
+
+      sqlite_tracker = build_tracker(stub_configuration(storage_backend: :sqlite)).tap(&:setup)
+
+      expect(sqlite_tracker.storage_backend).to be_a(RSpecTracer::Storage::SqliteBackend)
+    end
+
+    it 'falls back to JsonBackend with a warn when sqlite3 is missing' do
+      # allow_any_instance_of intercepts the constructor's require.
+      # sqlite3 is already loaded in this process, so any other
+      # technique would be an elaborate detour for one assertion.
+      allow_any_instance_of(RSpecTracer::Storage::SqliteBackend) # rubocop:disable RSpec/AnyInstance
+        .to receive(:require).with('sqlite3').and_raise(LoadError)
+      fallback_tracker = build_tracker(stub_configuration(storage_backend: :sqlite)).tap(&:setup)
+
+      expect(fallback_tracker.storage_backend).to be_a(RSpecTracer::Storage::JsonBackend)
+      expect(logger).to have_received(:warn).with(/sqlite backend unavailable/)
+    end
+
+    it 'threads serializer: :msgpack through to the JSON backend' do
+      msgpack_tracker = build_tracker(
+        stub_configuration(storage_backend: :json, storage_backend_opts: { serializer: :msgpack })
+      ).tap(&:setup)
+
+      expect(msgpack_tracker.storage_backend.serializer)
+        .to eq(RSpecTracer::Storage::Serializer::Msgpack)
     end
 
     it 'installs IOHooks' do
@@ -336,6 +366,68 @@ RSpec.describe RSpecTracer::Engine do
       snapshot = tracker.finalize
 
       expect(snapshot.env_dependency).to eq({})
+    end
+  end
+
+  describe 'examples_coverage finalize-time merge (M3.8 Part B)' do
+    let(:previous_coverage) do
+      { 'prev_only' => { '/lib/a.rb' => { '0' => 1, '1' => 2 } },
+        'overwritten' => { '/lib/a.rb' => { '0' => 9 } } }
+    end
+    let(:previous_snapshot) do
+      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+        s.examples_coverage = previous_coverage
+      end
+    end
+
+    def prime_previous_cache
+      backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
+      backend.save_graph(previous_snapshot, schema_version: 3)
+    end
+
+    it 'leaves @examples_coverage empty after setup (no eager seed)' do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+
+      expect(tracker.examples_coverage).to be_empty
+    end
+
+    it 'carries forward prev-only entries in the final snapshot' do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.examples_coverage['prev_only']).to eq('/lib/a.rb' => { '0' => 1, '1' => 2 })
+    end
+
+    it 'new-run entries overwrite prev entries for the same example id' do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      new_peek = [{}, { '/lib/b.rb' => [nil, 1] }]
+      allow(tracker.coverage_adapter).to receive(:peek).and_return(*new_peek)
+      tracker.register_example(build_example('overwritten'))
+      tracker.example_started
+      tracker.example_finished('overwritten')
+      tracker.on_example_passed('overwritten', build_execution_result(status: :passed))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.examples_coverage['overwritten']).to eq('/lib/b.rb' => { 1 => 1 })
+    end
+
+    it 'is an identity merge when there is no previous snapshot (cold run)' do
+      tracker = build_tracker.tap(&:setup)
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example('ex_cold'))
+      tracker.example_started
+      tracker.example_finished('ex_cold')
+      tracker.on_example_passed('ex_cold', build_execution_result(status: :passed))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.examples_coverage).to have_key('ex_cold')
+      expect(snapshot.examples_coverage.size).to eq(1)
     end
   end
 

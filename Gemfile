@@ -29,6 +29,21 @@ group :development do
   gem 'rubocop-rake', '~> 0.6'
   gem 'rubocop-rspec', '~> 3.0'
   gem 'simplecov', '~> 0.22'
+  # msgpack is a dev dep so json_backend_msgpack_spec exercises the real
+  # wire path (encode -> zlib deflate -> disk -> inflate -> decode). End
+  # users who want the :msgpack serializer add `gem 'msgpack'` to their
+  # own Gemfile - we do not ship it as a runtime dep per
+  # USER_FACING_SURFACE.md's optional-dep convention.
+  gem 'msgpack', '~> 1.7'
+  # sqlite3 is a dev dep so spec/storage/sqlite_backend_spec exercises
+  # the real DB write/read path. MRI >= 3.2 only: sqlite3 2.x declares
+  # required_ruby_version >= 3.2, which would fail `bundle install` on
+  # our Ruby 3.1 cell. JRuby's jdbc-sqlite3 has a different API that
+  # SqliteBackend does not target in 2.0. End users who want the
+  # :sqlite backend add the gem to their own Gemfile (MRI >= 3.2).
+  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2') } do
+    gem 'sqlite3', '~> 2.0'
+  end
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
   gem 'yui-compressor', '~> 0.12'

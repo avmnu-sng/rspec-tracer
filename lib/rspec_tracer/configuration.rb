@@ -21,8 +21,13 @@ module RSpecTracer
     DEFAULT_REPORT_DIR = 'rspec_tracer_report'
     DEFAULT_LOCK_FILE = 'rspec_tracer.lock'
     DEFAULT_STORAGE_BACKEND = :json
-    # M3.8 adds :sqlite. Keep the list closed so typos raise early.
-    STORAGE_BACKEND_NAMES = %i[json].freeze
+    # :sqlite opt-in: MRI >= 3.2 only (sqlite3 2.x gem requirement).
+    # Kept closed so typos raise early.
+    STORAGE_BACKEND_NAMES = %i[json sqlite].freeze
+    # Keys allowed in `storage_backend`'s opts hash. `:serializer` is
+    # accepted only for the :json backend (see validate_storage_opts!).
+    STORAGE_BACKEND_OPT_KEYS = %i[serializer].freeze
+    STORAGE_BACKEND_SERIALIZERS = %i[json msgpack].freeze
     # Per-save retention on the local cache's run-id directories.
     # 5 keeps enough history for rollback debugging without letting
     # the cache grow unbounded (issue #20). 0 opts out entirely.
@@ -715,16 +720,25 @@ module RSpecTracer
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    # M3.4 storage backend selector. Symbol form
-    # (`storage_backend :json`); ENV `RSPEC_TRACER_STORAGE` wins over
+    # M3.4 storage backend selector, extended in M3.8 to accept a
+    # kwarg opts hash. Symbol form: `storage_backend :json` or
+    # `storage_backend :sqlite`. ENV `RSPEC_TRACER_STORAGE` wins over
     # the DSL argument, matching the `cache_dir` / `coverage_dir`
     # precedence convention so CI can swap backends without editing
-    # `.rspec-tracer`. Backend-specific options are intentionally not
-    # accepted here - the `configure` DSL wrapper strips Ruby 3+
-    # kwargs (it forwards `*args, &block` only), so any opts interface
-    # has to wait for the wrapper upgrade. M3.8 (SQLite) reopens this.
-    def storage_backend(name = nil)
-      return @storage_backend_name if defined?(@storage_backend_name) && @storage_backend_name && name.nil?
+    # `.rspec-tracer`.
+    #
+    # Options (:json only):
+    #   serializer: :json | :msgpack    on-disk payload format;
+    #                                   ENV RSPEC_TRACER_STORAGE_SERIALIZER
+    #                                   wins over the opt.
+    #
+    # :sqlite does not accept any opts - its storage layout is a
+    # single sqlite3 file with a normalized schema; serializer
+    # substitution does not apply.
+    def storage_backend(name = nil, **opts)
+      if defined?(@storage_backend_name) && @storage_backend_name && name.nil? && opts.empty?
+        return @storage_backend_name
+      end
 
       env = ENV.fetch('RSPEC_TRACER_STORAGE', nil)
       resolved = (env || name || DEFAULT_STORAGE_BACKEND).to_sym
@@ -735,6 +749,46 @@ module RSpecTracer
       end
 
       @storage_backend_name = resolved
+      @storage_backend_opts = validate_and_resolve_storage_opts(resolved, opts).freeze
+      @storage_backend_name
+    end
+
+    # Accessor for the opts hash passed to `storage_backend`.
+    # Returns a frozen empty Hash when the DSL was called without
+    # opts (or not called at all) so the backend dispatch can splat
+    # `**storage_backend_opts` unconditionally.
+    def storage_backend_opts
+      return EMPTY_STORAGE_BACKEND_OPTS unless defined?(@storage_backend_opts) && @storage_backend_opts
+
+      @storage_backend_opts
+    end
+
+    EMPTY_STORAGE_BACKEND_OPTS = {}.freeze
+    private_constant :EMPTY_STORAGE_BACKEND_OPTS
+
+    def validate_and_resolve_storage_opts(backend, opts)
+      unknown = opts.keys - STORAGE_BACKEND_OPT_KEYS
+      unless unknown.empty?
+        raise InvalidUsageError,
+              "unknown storage_backend options: #{unknown.inspect}; allowed: #{STORAGE_BACKEND_OPT_KEYS.inspect}"
+      end
+
+      if backend == :sqlite && !opts.empty?
+        raise InvalidUsageError,
+              "storage_backend :sqlite does not accept options (got #{opts.keys.inspect})"
+      end
+
+      return {} unless backend == :json
+
+      env_ser = ENV.fetch('RSPEC_TRACER_STORAGE_SERIALIZER', nil)
+      serializer = (env_ser || opts[:serializer] || :json).to_sym
+
+      unless STORAGE_BACKEND_SERIALIZERS.include?(serializer)
+        raise InvalidUsageError,
+              "unknown storage serializer: #{serializer.inspect}; allowed: #{STORAGE_BACKEND_SERIALIZERS.inspect}"
+      end
+
+      { serializer: serializer }
     end
 
     # M6.1 reporter DSL. Accumulates each call onto an internal list of

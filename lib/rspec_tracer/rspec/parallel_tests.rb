@@ -164,7 +164,15 @@ module RSpecTracer
       end
 
       # Merge the per-worker v2 snapshots into the top-level cache.
+      # SqliteBackend has no merge surface (single-file, latest-run
+      # only); the elected worker persists its own run via Engine
+      # finalize and the per-worker files accumulate next to it
+      # untouched. The JSON merge path stays authoritative for the
+      # default `:json` backend which is what parallel_tests fixtures
+      # exercise in CI.
       def merge_snapshot!
+        return unless RSpecTracer.storage_backend == :json
+
         base_dir = ::File.dirname(RSpecTracer.cache_path)
         peer_paths = peer_paths_for(base_dir)
         return if peer_paths.empty?
@@ -175,7 +183,8 @@ module RSpecTracer
           cache_path: base_dir, logger: RSpecTracer.logger,
           retention_local_count: RSpecTracer.cache_retention_local_count,
           warn_per_file_mb: RSpecTracer.cache_size_warn_per_file_mb,
-          warn_total_mb: RSpecTracer.cache_size_warn_total_mb
+          warn_total_mb: RSpecTracer.cache_size_warn_total_mb,
+          serializer: RSpecTracer.storage_backend_opts[:serializer] || :json
         )
         top.merge_from_peers(peer_paths, schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
