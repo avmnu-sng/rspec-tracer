@@ -130,7 +130,7 @@ jobs:
 
       - name: Post benchmark PR comment
         if: hashFiles('benchmark-summary/ci-summary.md') != ''
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: benchmark
           path: benchmark-summary/ci-summary.md
