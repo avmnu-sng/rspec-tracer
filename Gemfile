@@ -36,18 +36,25 @@ group :development do
   # USER_FACING_SURFACE.md's optional-dep convention.
   gem 'msgpack', '~> 1.7'
   # sqlite3 is a dev dep so spec/storage/sqlite_backend_spec exercises
-  # the real DB write/read path on every MRI matrix cell (3.1 - 4.0).
-  # Pinned to the 1.x line because sqlite3 2.x declares
-  # required_ruby_version >= 3.2 and would break the Ruby 3.1 cell at
-  # bundle-install time; a per-Ruby Gemfile conditional would need a
-  # per-cell lockfile which conflicts with ruby/setup-ruby@v1's frozen
-  # bundler-cache. SqliteBackend uses only the stable sqlite3 API
-  # (Database.new / execute / get_first_row / transaction(:immediate))
-  # that is identical across 1.x and 2.x; end users on Ruby >= 3.2 who
-  # pin `gem 'sqlite3', '~> 2.0'` in their own Gemfile exercise the
-  # 2.x path unchanged. JRuby uses a different driver entirely; skip.
+  # the real DB write/read path on every MRI matrix cell. Pin per-Ruby:
+  # - 1.x precompiled binaries cap at `< 3.4.dev`, so they cover Ruby
+  #   3.0-3.3. Used for the 3.1 cell.
+  # - 2.x precompiled binaries require `>= 3.2` with no upper bound.
+  #   Used for 3.2+.
+  # There is no single sqlite3 version whose precompiled binaries
+  # span our whole matrix (3.1 - 4.0), hence the Ruby-version
+  # conditional. Safe to do at Gemfile parse time because Gemfile.lock
+  # is NOT committed (each CI cell re-resolves). SqliteBackend only
+  # uses stable sqlite3 API (Database.new / execute / get_first_row /
+  # transaction(:immediate)) that is identical across 1.x and 2.x, so
+  # either pin satisfies the backend's runtime needs.
+  # JRuby uses a different driver entirely; skip via the outer gate.
   install_if -> { RUBY_ENGINE == 'ruby' } do
-    gem 'sqlite3', '~> 1.7'
+    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
+      gem 'sqlite3', '~> 2.0'
+    else
+      gem 'sqlite3', '~> 1.7'
+    end
   end
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'

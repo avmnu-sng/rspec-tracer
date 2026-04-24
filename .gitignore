@@ -47,9 +47,12 @@ build-iPhoneSimulator/
 /vendor/bundle
 /lib/bundler/man/
 
-# for a library or gem, you might want to ignore these files since the code is
-# intended to run in multiple environments; otherwise, check them in:
-# Gemfile.lock
+# rspec-tracer is a library: Gemfile.lock is not committed so each
+# consumer / CI cell / supported Ruby version resolves its own
+# compatible dep set (cf. Bundler's own `bundle gem` scaffold).
+# Frees us to pin Ruby-version-conditional gems like sqlite3 without
+# the committed lock forcing a single resolution across the matrix.
+Gemfile.lock
 # .ruby-version
 # .ruby-gemset
 
