@@ -1,0 +1,69 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*.pre.*'
+
+permissions:
+  contents: write  # required to create the GitHub release
+
+jobs:
+  publish:
+    name: publish ${{ github.ref_name }} to rubygems
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches gemspec version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          gem_version=$(ruby -Ilib -rrspec_tracer/version -e 'print RSpecTracer::VERSION')
+          if [ "$tag" != "$gem_version" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} (stripped: ${tag}) does not match RSpecTracer::VERSION (${gem_version})"
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} matches RSpecTracer::VERSION ${gem_version}"
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Build gem
+        run: gem build rspec-tracer.gemspec
+
+      - name: Publish to RubyGems
+        if: env.GEM_HOST_API_KEY != ''
+        run: gem push rspec-tracer-*.gem
+
+      - name: Fail if RUBYGEMS_API_KEY secret is missing
+        if: env.GEM_HOST_API_KEY == ''
+        run: |
+          echo "::error::RUBYGEMS_API_KEY secret is not set. Add it under Settings \u2192 Secrets and variables \u2192 Actions."
+          exit 1
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: |
+            See [CHANGELOG.md](https://github.com/avmnu-sng/rspec-tracer/blob/1.0-stable/CHANGELOG.md) for the full release notes.
+
+            Install:
+
+            ```
+            gem install rspec-tracer -v ${{ github.ref_name }}
+            ```
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '.pre.') }}
+          generate_release_notes: false

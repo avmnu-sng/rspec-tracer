@@ -46,7 +46,7 @@ end
 # future refactor of the alias-method wrapper around `add_filter` /
 # `add_coverage_filter` can't silently drop the block the way the 1.1.0
 # DSL refactor did before its own B6 fix landed.
-RSpec.describe 'RSpecTracer.configure block forwarding' do
+RSpec.describe 'RSpecTracer.configure block forwarding' do # rubocop:disable RSpec/DescribeClass
   around do |example|
     previous_filters = RSpecTracer.filters.dup
     previous_coverage_filters = RSpecTracer.coverage_filters.dup
