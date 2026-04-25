@@ -78,6 +78,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          # Bundler 4.x needs Ruby >= 3.2; Bundler 2.7+ needs Ruby >= 3.2.
+          # 2.6.9 is the last 2.x line that supports Ruby 3.1.
+          bundler: ${{ matrix.ruby == '3.1' && '2.6.9' || '4.0.10' }}
           bundler-cache: true
 
       - name: Setup Task
@@ -94,6 +97,14 @@ jobs:
     needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Job-level env so `bundle install` (in setup-ruby) sees
+    # RSPEC_VERSION too — the root Gemfile reads it via ENV.fetch.
+    # Setting only at the test step would resolve to the default rspec
+    # at install time and the test step's env would have no effect.
+    env:
+      RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+      SIMPLECOV_VERSION: "~> 0.22"
+      BRANCH_COVERAGE: 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -107,6 +118,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: ${{ matrix.ruby == '3.1' && '2.6.9' || '4.0.10' }}
           bundler-cache: true
 
       - name: Setup Task
@@ -116,10 +128,6 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test — Features (Ruby)
-        env:
-          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
-          SIMPLECOV_VERSION: "~> 0.22"
-          BRANCH_COVERAGE: 'true'
         run: task test:features:ruby
 
   ruby-parallel:
@@ -127,6 +135,12 @@ jobs:
     needs: matrix-config
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Job-level env so RSPEC_VERSION reaches setup-ruby's bundle install
+    # (root Gemfile reads it via ENV.fetch). PARALLEL_TESTS_VERSION
+    # stays per-step because the two test steps vary it.
+    env:
+      RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
+      SIMPLECOV_VERSION: "~> 0.22"
     strategy:
       fail-fast: false
       matrix:
@@ -140,6 +154,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: ${{ matrix.ruby == '3.1' && '2.6.9' || '4.0.10' }}
           bundler-cache: true
 
       - name: Setup Task
@@ -150,15 +165,11 @@ jobs:
 
       - name: Test — Features (Ruby, parallel_tests)
         env:
-          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
-          SIMPLECOV_VERSION: "~> 0.22"
           PARALLEL_TESTS_VERSION: "~> 4.7"
         run: task test:features:ruby-parallel
 
       - name: Test — Features (Ruby, parallel_tests 5.x)
         env:
-          RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
-          SIMPLECOV_VERSION: "~> 0.22"
           PARALLEL_TESTS_VERSION: "~> 5.0"
         run: task test:features:ruby-parallel
 
@@ -182,6 +193,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: ${{ matrix.ruby == '3.1' && '2.6.9' || '4.0.10' }}
           bundler-cache: true
 
       - name: Setup Task
@@ -213,6 +225,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ needs.matrix-config.outputs.jruby }}
+          # JRuby 9.4 emulates Ruby 3.1; pin to last Bundler 2.x that
+          # supports it (Bundler 2.7+ and 4.x both require Ruby >= 3.2).
+          bundler: '2.6.9'
           bundler-cache: true
 
       - name: Setup Task
@@ -256,6 +271,7 @@ jobs:
           # Canonical benchmark cell — comparing across Rubies adds noise
           # without signal, so pin to the .ruby-version floor.
           ruby-version: '.ruby-version'
+          bundler: '4.0.10'
           bundler-cache: true
 
       - name: Setup Task

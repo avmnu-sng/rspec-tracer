@@ -9,6 +9,8 @@ require 'time' # Time#iso8601 for last_run.json timestamp
 require_relative 'backend'
 require_relative 'lazy_snapshot'
 require_relative 'schema'
+require_relative 'serializer/json'
+require_relative 'serializer/msgpack'
 require_relative 'snapshot'
 
 module RSpecTracer
@@ -45,6 +47,13 @@ module RSpecTracer
     # non-ASCII byte on a US-ASCII-defaulted filesystem.
     # rubocop:disable Metrics/ClassLength
     class JsonBackend
+      # On-disk filenames under the default `:json` serializer. This
+      # is the user-facing surface documented in
+      # USER_FACING_SURFACE.md §6 - external tooling that walks
+      # `rspec_tracer_cache/` relies on exactly these names.
+      # The `:msgpack` serializer substitutes `.msgpack.gz` for the
+      # `.json` suffix (one file per field on disk); the file stems
+      # and per-field semantics do not change.
       # boot_set.json lands at the end of the list - additive w.r.t.
       # 1.x and v2 readers that walked this enumeration. It carries
       # the project's transitive boot-load set (schema_version 3).
@@ -85,27 +94,29 @@ module RSpecTracer
       LOCK_FILENAME = '.rspec_tracer.lock'
       ENCODING = 'UTF-8'
 
-      # Symbol -> on-disk filename mapping. Drives per-field lazy
-      # reads (via FieldReader) so `LazySnapshot#field` resolves to
-      # exactly one disk file. Kept in step with FILENAMES above;
-      # both constants are frozen and the specs assert they agree.
-      FIELD_FILENAMES = {
-        all_examples: 'all_examples.json',
-        duplicate_examples: 'duplicate_examples.json',
-        interrupted_examples: 'interrupted_examples.json',
-        flaky_examples: 'flaky_examples.json',
-        failed_examples: 'failed_examples.json',
-        pending_examples: 'pending_examples.json',
-        skipped_examples: 'skipped_examples.json',
-        all_files: 'all_files.json',
-        dependency: 'dependency.json',
-        reverse_dependency: 'reverse_dependency.json',
-        examples_coverage: 'examples_coverage.json',
-        boot_set: 'boot_set.json',
-        wsi_snapshot: 'wsi_snapshot.json',
-        env_snapshot: 'env_snapshot.json',
-        env_dependency: 'env_dependency.json'
-      }.freeze
+      # Known snapshot field symbols. Derived directly from FIELD_KINDS
+      # below (the write-side and read-side shape tables both enumerate
+      # the same set, so a divergence would already blow up write
+      # paths). Kept as an Array of Symbol so `#read_field` can dispatch
+      # without constructing a per-serializer filename table; the
+      # filename is computed as "#{field}.#{@serializer.extension}".
+      FIELD_NAMES = %i[
+        all_examples
+        duplicate_examples
+        interrupted_examples
+        flaky_examples
+        failed_examples
+        pending_examples
+        skipped_examples
+        all_files
+        dependency
+        reverse_dependency
+        examples_coverage
+        boot_set
+        wsi_snapshot
+        env_snapshot
+        env_dependency
+      ].freeze
 
       # Binds a backend + run directory so `LazySnapshot` readers
       # call exactly one public entry point (`backend.read_field`).
@@ -166,15 +177,19 @@ module RSpecTracer
         env_dependency: :plain_hash
       }.freeze
 
-      attr_reader :cache_path
+      attr_reader :cache_path, :serializer, :serializer_name
 
+      # rubocop:disable Metrics/ParameterLists
       def initialize(cache_path:, logger: nil, retention_local_count: nil,
-                     warn_per_file_mb: nil, warn_total_mb: nil)
+                     warn_per_file_mb: nil, warn_total_mb: nil, serializer: :json)
+        # rubocop:enable Metrics/ParameterLists
         @cache_path = File.expand_path(cache_path)
         @logger = logger
         @retention_local_count = retention_local_count
         @warn_per_file_mb = warn_per_file_mb
         @warn_total_mb = warn_total_mb
+        @serializer = resolve_serializer(serializer)
+        @serializer_name = serializer
       end
 
       def last_run_id
@@ -225,11 +240,19 @@ module RSpecTracer
       # see json_backend_spec.rb "string interning" for the
       # measurable assertion.
       def read_field(dir, field)
-        filename = FIELD_FILENAMES.fetch(field) do
-          raise ArgumentError, "unknown snapshot field: #{field.inspect}"
-        end
-        raw = read_run_file(dir, filename)
+        raise ArgumentError, "unknown snapshot field: #{field.inspect}" unless FIELD_KINDS.key?(field)
+
+        raw = read_run_file(dir, field_filename(field))
         decode_field(field, deep_intern(raw))
+      end
+
+      # Per-serializer on-disk filename for a snapshot field.
+      # `:json` -> `all_examples.json`; `:msgpack` ->
+      # `all_examples.msgpack.gz`. Public so integration specs /
+      # reporters can resolve the expected path without reaching
+      # into @serializer.
+      def field_filename(field)
+        "#{field}.#{@serializer.extension}"
       end
 
       def save_graph(snapshot, schema_version:)
@@ -313,7 +336,8 @@ module RSpecTracer
       # (same semantics as a warm run under a mismatched cache).
       def merge_from_peers(peer_cache_paths, schema_version:)
         peer_snapshots = peer_cache_paths.filter_map do |path|
-          self.class.new(cache_path: path, logger: @logger).load_graph(schema_version: schema_version)
+          self.class.new(cache_path: path, logger: @logger, serializer: @serializer_name)
+            .load_graph(schema_version: schema_version)
         end
 
         return nil if peer_snapshots.empty?
@@ -478,7 +502,7 @@ module RSpecTracer
         return unless File.directory?(run_dir)
 
         threshold_bytes = @warn_per_file_mb * BYTES_PER_MB
-        Dir[File.join(run_dir, '*.json')].each do |path|
+        per_file_glob(run_dir).each do |path|
           size = File.size(path)
           next unless size > threshold_bytes
 
@@ -486,7 +510,7 @@ module RSpecTracer
             "rspec-tracer cache: #{File.basename(path)} is #{format_mib(size)} " \
             "(> #{@warn_per_file_mb} MiB per-file threshold); remediations (in order): " \
             'add_filter for vendor paths, `transitive_load_tracking false`, ' \
-            '`storage_backend :json, serializer: :msgpack` (PR B)'
+            '`storage_backend :json, serializer: :msgpack` for disk reduction'
           )
         end
       end
@@ -501,13 +525,21 @@ module RSpecTracer
           "(> #{@warn_total_mb} MiB total threshold); remediations (in order): " \
           '`cache_retention_local_count N` to cap history, ' \
           'add_filter for vendor paths, ' \
-          '`storage_backend :json, serializer: :msgpack` (PR B)'
+          '`storage_backend :json, serializer: :msgpack` for disk reduction'
         )
+      end
+
+      # Glob matching this backend's serializer extension. Surfaces
+      # the active on-disk layout so size-budget warnings stay
+      # accurate when the user switches to `:msgpack` (.msgpack.gz
+      # files instead of .json).
+      def per_file_glob(run_dir)
+        Dir[File.join(run_dir, "*.#{@serializer.extension}")]
       end
 
       def total_cache_size_bytes
         total = 0
-        Dir[File.join(@cache_path, '**', '*.json')].each do |path|
+        Dir[File.join(@cache_path, '**', "*.#{@serializer.extension}")].each do |path|
           total += File.size(path) if File.file?(path)
         end
         total
@@ -563,6 +595,10 @@ module RSpecTracer
         nil
       end
 
+      # last_run.json is always plain JSON regardless of serializer -
+      # it is the human-debuggable + CI-script-compatible pointer that
+      # USER_FACING_SURFACE.md §6 locks. Helper stays narrow so the
+      # serializer dispatch can not accidentally reach it.
       def read_json(path)
         contents = File.read(path, encoding: ENCODING)
         JSON.parse(contents)
@@ -583,7 +619,19 @@ module RSpecTracer
       end
 
       def write_run_field(dir, name, payload)
-        write_json_atomic(File.join(dir, "#{name}.json"), payload)
+        write_payload_atomic(File.join(dir, field_filename(name.to_sym)), payload)
+      end
+
+      # Atomic write for a per-field payload. Encodes via the active
+      # serializer; writes binary so msgpack + zlib bytes are not
+      # re-encoded by Ruby's IO layer. Same tmp-rename pattern as
+      # write_json_atomic (last_run.json commit point).
+      def write_payload_atomic(path, data)
+        tmp_path = "#{path}.tmp.#{Process.pid}.#{rand(1_000_000)}"
+        File.binwrite(tmp_path, @serializer.encode(data))
+        File.rename(tmp_path, path)
+      ensure
+        File.delete(tmp_path) if tmp_path && File.file?(tmp_path)
       end
 
       def write_last_run_atomic(schema_version:, run_id:)
@@ -642,7 +690,7 @@ module RSpecTracer
         path = File.join(dir, name)
         return nil unless File.file?(path)
 
-        read_json(path)
+        @serializer.decode(File.binread(path))
       rescue StandardError
         nil
       end
@@ -698,6 +746,31 @@ module RSpecTracer
 
       def info(message)
         @logger&.info(message)
+      end
+
+      # Map the user-facing `:json` / `:msgpack` name onto the
+      # concrete Serializer class. A `:msgpack` request with the
+      # msgpack gem absent warns once and falls back to `:json` so
+      # the user's test suite keeps running (graceful-degradation
+      # contract; same posture as the remote-cache optional deps).
+      def resolve_serializer(name)
+        case name
+        when :json
+          Serializer::Json
+        when :msgpack
+          Serializer::Msgpack.available? ? Serializer::Msgpack : msgpack_unavailable_fallback
+        else
+          raise ArgumentError,
+                "unknown serializer: #{name.inspect}; allowed: [:json, :msgpack]"
+        end
+      end
+
+      def msgpack_unavailable_fallback
+        @logger&.warn(
+          'rspec-tracer cache: msgpack gem is not installed; falling back to :json. ' \
+          "Add `gem 'msgpack'` to your Gemfile to use the :msgpack serializer."
+        )
+        Serializer::Json
       end
     end
     # rubocop:enable Metrics/ClassLength

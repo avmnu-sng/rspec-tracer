@@ -23,24 +23,57 @@ group :development do
   # at `bundle install` time. redis-client accepts any connection_pool
   # version, so pinning 2.x here keeps the whole matrix installable.
   gem 'connection_pool', '~> 2.5'
-  gem 'rspec', '~> 3.13'
+  # rspec is env-overridable so the `ruby-project` and `ruby-parallel`
+  # CI cells can exercise both 3.12 and 3.13 against every Ruby cell
+  # via `RSPEC_VERSION="~> 3.12.0"` / `RSPEC_VERSION="~> 3.13.0"`.
+  gem 'rspec', ENV.fetch('RSPEC_VERSION', '~> 3.13')
   gem 'rubocop', '~> 1.60'
   gem 'rubocop-performance', '~> 1.20'
   gem 'rubocop-rake', '~> 0.6'
   gem 'rubocop-rspec', '~> 3.0'
   gem 'simplecov', '~> 0.22'
+  # msgpack is a dev dep so json_backend_msgpack_spec exercises the real
+  # wire path (encode -> zlib deflate -> disk -> inflate -> decode). End
+  # users who want the :msgpack serializer add `gem 'msgpack'` to their
+  # own Gemfile - we do not ship it as a runtime dep per
+  # USER_FACING_SURFACE.md's optional-dep convention.
+  gem 'msgpack', '~> 1.7'
+  # sqlite3 is a dev dep so spec/storage/sqlite_backend_spec exercises
+  # the real DB write/read path on every MRI matrix cell. Pin per-Ruby:
+  # - 1.x precompiled binaries cap at `< 3.4.dev`, so they cover Ruby
+  #   3.0-3.3. Used for the 3.1 cell.
+  # - 2.x precompiled binaries require `>= 3.2` with no upper bound.
+  #   Used for 3.2+.
+  # There is no single sqlite3 version whose precompiled binaries
+  # span our whole matrix (3.1 - 4.0), hence the Ruby-version
+  # conditional. Safe to do at Gemfile parse time because Gemfile.lock
+  # is NOT committed (each CI cell re-resolves). SqliteBackend only
+  # uses stable sqlite3 API (Database.new / execute / get_first_row /
+  # transaction(:immediate)) that is identical across 1.x and 2.x, so
+  # either pin satisfies the backend's runtime needs.
+  # JRuby uses a different driver entirely; gate at PARSE time (not
+  # install_if) so Bundler does not even try to resolve sqlite3 on
+  # JRuby - install_if only gates install, not resolution.
+  if RUBY_ENGINE == 'ruby'
+    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
+      gem 'sqlite3', '~> 2.0'
+    else
+      gem 'sqlite3', '~> 1.7'
+    end
+  end
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
   gem 'yui-compressor', '~> 0.12'
 
   # Mutation testing — MRI >= 3.3 only. mutant 0.16's own README says
   # "3.2+", but its transitive dep `unparser 0.9.0` declares
-  # `required_ruby_version >= 3.3`, so bundle install fails on Ruby
-  # 3.2 despite mutant's claim. Also doesn't target JRuby. `install_if`
-  # keeps bundle install quiet on 3.1 / 3.2 / JRuby cells.
-  install_if -> { RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3') } do
-    gem 'mutant-rspec', '~> 0.16'
-  end
+  # `required_ruby_version >= 3.3`, so resolve fails on Ruby 3.2
+  # despite mutant's claim. Also doesn't target JRuby. Use a parse-time
+  # `if` (not `install_if`) so the gem is not declared at all on
+  # incompatible cells; `install_if` only gates install time and
+  # Bundler would still refuse to resolve the dep graph when the lock
+  # is not committed.
+  gem 'mutant-rspec', '~> 0.16' if RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3')
 end
 
 gemspec

@@ -28,6 +28,7 @@ require 'optparse'
 require 'rbconfig'
 require 'time'
 
+# rubocop:disable Metrics/ModuleLength
 module BenchmarkHarness
   REPO_ROOT = File.expand_path('..', __dir__)
   RUBY_FIXTURE = File.join(REPO_ROOT, 'benchmark/fixtures/ruby_app')
@@ -129,7 +130,28 @@ module BenchmarkHarness
       desc: 'Microbenchmark: Storage::JsonBackend#load_graph over a 500-example populated cache',
       cwd: REPO_ROOT,
       cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/cache_load.rb'],
-      env: { 'ITERATIONS' => '20' },
+      env: { 'ITERATIONS' => '20', 'BACKEND' => 'json', 'SERIALIZER' => 'json' },
+      smoke: false
+    },
+    'cache_load_msgpack' => {
+      # Same fixture as `cache_load`, with `:msgpack` serializer. Baseline
+      # for the disk-reduction claim; also catches regressions in the
+      # zlib + msgpack path at load time.
+      desc: 'Microbenchmark: JsonBackend(serializer: :msgpack) load_graph over a 500-example populated cache',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/cache_load.rb'],
+      env: { 'ITERATIONS' => '20', 'BACKEND' => 'json', 'SERIALIZER' => 'msgpack' },
+      smoke: false
+    },
+    'cache_load_sqlite' => {
+      # SqliteBackend variant. Verifies the normalized-schema load path
+      # stays competitive with the JSON serializers at 500-example
+      # scale; the RAM win dominates at larger sizes (not captured
+      # here, the microbench is wall-clock focused).
+      desc: 'Microbenchmark: Storage::SqliteBackend#load_graph over a 500-example populated cache',
+      cwd: REPO_ROOT,
+      cmd: ['bundle', 'exec', 'ruby', 'benchmark/scenarios/cache_load.rb'],
+      env: { 'ITERATIONS' => '20', 'BACKEND' => 'sqlite' },
       smoke: false
     },
     'file_read_hook' => {
@@ -386,5 +408,6 @@ module BenchmarkHarness
     exit(1) if any_fail && options[:enforce]
   end
 end
+# rubocop:enable Metrics/ModuleLength
 
 BenchmarkHarness.main if $PROGRAM_NAME == __FILE__

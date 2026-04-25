@@ -19,6 +19,7 @@ require_relative 'tracker/whole_suite_invalidators'
 require_relative 'storage/json_backend'
 require_relative 'storage/schema'
 require_relative 'storage/snapshot'
+require_relative 'storage/sqlite_backend'
 
 module RSpecTracer
   # Top-level coordinator for the v2 core engine. Wires
@@ -348,12 +349,45 @@ module RSpecTracer
       @loaded_files_tracker = RSpecTracer::Tracker::LoadedFilesTracker.new(
         root: @configuration.root, enabled: @configuration.transitive_load_tracking
       )
-      @storage_backend = RSpecTracer::Storage::JsonBackend.new(
-        cache_path: @configuration.cache_path, logger: @configuration.logger,
+      @storage_backend = build_storage_backend(@configuration.cache_path)
+    end
+
+    # Resolve the configured storage backend to a concrete instance.
+    # JsonBackend threads the retention / size-budget knobs and the
+    # serializer opt; SqliteBackend ignores them (single-file,
+    # latest-run only). A missing sqlite3 gem or JRuby / MRI < 3.2
+    # host raises SqliteBackendError; we warn and fall back to the
+    # default :json backend so the user's suite still runs - same
+    # graceful-degradation contract as the remote cache backends.
+    def build_storage_backend(cache_path)
+      case @configuration.storage_backend
+      when :sqlite
+        build_sqlite_backend(cache_path)
+      else
+        build_json_backend(cache_path)
+      end
+    end
+
+    def build_json_backend(cache_path)
+      RSpecTracer::Storage::JsonBackend.new(
+        cache_path: cache_path,
+        logger: @configuration.logger,
         retention_local_count: @configuration.cache_retention_local_count,
         warn_per_file_mb: @configuration.cache_size_warn_per_file_mb,
-        warn_total_mb: @configuration.cache_size_warn_total_mb
+        warn_total_mb: @configuration.cache_size_warn_total_mb,
+        serializer: @configuration.storage_backend_opts[:serializer] || :json
       )
+    end
+
+    def build_sqlite_backend(cache_path)
+      RSpecTracer::Storage::SqliteBackend.new(
+        cache_path: cache_path, logger: @configuration.logger
+      )
+    rescue RSpecTracer::Storage::SqliteBackend::SqliteBackendError => e
+      @configuration.logger.warn(
+        "rspec-tracer: sqlite backend unavailable (#{e.message}); falling back to :json"
+      )
+      build_json_backend(cache_path)
     end
 
     def install_io_hooks
@@ -466,24 +500,27 @@ module RSpecTracer
       return @storage_backend unless RSpecTracer.parallel_tests?
 
       parent_cache_path = File.dirname(@configuration.cache_path)
-      RSpecTracer::Storage::JsonBackend.new(
-        cache_path: parent_cache_path, logger: @configuration.logger
-      )
+      build_storage_backend(parent_cache_path)
     end
 
     # On warm runs, skipped examples don't re-populate @all_examples,
-    # @all_files, @graph, or @examples_coverage - only newly-run
-    # examples do. Without seeding, the next save would drop the
-    # skipped examples' metadata + deps, and the following warm run
-    # would see them as "not previously seen" and force a cold re-run
-    # of the entire suite. Seed the four state buckets from the
-    # previous snapshot so newly-run examples overwrite and skipped
-    # examples carry forward.
+    # @all_files, or @graph - only newly-run examples do. Without
+    # seeding, the next save would drop the skipped examples'
+    # metadata + deps, and the following warm run would see them as
+    # "not previously seen" and force a cold re-run of the entire
+    # suite. Seed the three state buckets from the previous snapshot
+    # so newly-run examples overwrite and skipped examples carry
+    # forward.
+    #
+    # examples_coverage is NOT seeded here. A populated cache can
+    # carry a large examples_coverage map; eagerly materializing it
+    # at setup defeats LazySnapshot's whole point for the SQLite
+    # backend. The merge happens at build_snapshot time via
+    # merge_examples_coverage_with_previous instead.
     def seed_state_from_previous(prev)
       seed_all_examples_from_previous(prev)
       seed_all_files_from_previous(prev)
       seed_graph_from_previous(prev)
-      seed_examples_coverage_from_previous(prev)
     end
 
     def seed_all_examples_from_previous(prev)
@@ -524,12 +561,6 @@ module RSpecTracer
         file_names.each { |name| paths << absolute_path(name) }
         @graph.register_example(example_id, paths)
       end
-    end
-
-    def seed_examples_coverage_from_previous(prev)
-      return unless prev.examples_coverage.is_a?(Hash)
-
-      prev.examples_coverage.each { |id, cov| @examples_coverage[id] = cov }
     end
 
     def compute_filter_decisions
@@ -693,12 +724,34 @@ module RSpecTracer
         all_files: all_files_by_name,
         dependency: dependency_by_name,
         reverse_dependency: reverse_dependency_by_name,
-        examples_coverage: @examples_coverage,
+        examples_coverage: merge_examples_coverage_with_previous,
         boot_set: @loaded_files_tracker.boot_set_digest_snapshot,
         wsi_snapshot: @whole_suite_invalidators.digest_snapshot,
         env_snapshot: env_snapshot_for_persistence,
         env_dependency: env_dependency_for_persistence
       )
+    end
+
+    # Merge the current run's per-example coverage with the previous
+    # run's. Re-run examples contribute their freshly-computed map
+    # (record_coverage_delta overwrote per-line strengths, so
+    # @examples_coverage[id] is the authoritative new coverage).
+    # Skipped examples don't appear in @examples_coverage, so the
+    # prev map carries them forward unchanged. Previously in
+    # seed_state_from_previous; moved here so large caches don't
+    # pay the full examples_coverage materialization cost at setup
+    # time. Preserves 1.x semantics: the saved map is the union of
+    # (prev minus this-run's keys) + this-run's entries.
+    def merge_examples_coverage_with_previous
+      merged = {}
+      if @previous_snapshot
+        prev = @previous_snapshot.examples_coverage
+        if prev.is_a?(Hash)
+          prev.each { |id, cov| merged[id] = cov unless @examples_coverage.key?(id) }
+        end
+      end
+      @examples_coverage.each { |id, cov| merged[id] = cov }
+      merged
     end
 
     # Snapshot only the env keys THIS run tracked - persisting keys
