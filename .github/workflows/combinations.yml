@@ -31,6 +31,16 @@ on:
     # catch when a contributor next pushes.
     - cron: '0 2 * * 0'
   workflow_dispatch: {}
+  # ONE-SHOT validation trigger: workflow_dispatch only works for
+  # workflows registered on the default branch (`main`). Until this
+  # PR merges, manually triggering combinations from the GitHub UI or
+  # `gh workflow run` returns HTTP 404. This `push` trigger lets the
+  # workflow run once on the feature branch so we can validate the
+  # full ~496-cell cross-product before merging. REMOVE THIS BEFORE
+  # MERGE - leaving it in would re-trigger the matrix on every push
+  # to a hypothetical future branch matching the same name.
+  push:
+    branches: [m3.8/part-c-runtime-dep-matrix]
 
 permissions:
   contents: read
