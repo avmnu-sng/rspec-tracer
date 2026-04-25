@@ -109,10 +109,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      RSPEC_TRACER_REDIS_VERSION: "~> 4.8"
+      RSPEC_TRACER_REDIS_VERSION: "~> 4.8.0"
       RSPEC_VERSION: "~> 3.12.0"
       RSPEC_TRACER_MSGPACK_VERSION: "~> 1.7.0"
-      RSPEC_TRACER_PARALLEL_TESTS_VERSION: "~> 4.10"
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: "~> 4.10.0"
       # connection_pool 3.x and parallel 2.x are gated by Ruby >= 3.2 /
       # 3.3 respectively; on Ruby 3.1 Bundler picks the only available
       # major. No explicit pin needed.
@@ -216,12 +216,12 @@ jobs:
 
       - name: Test — Features (Ruby, parallel_tests 4.10)
         env:
-          PARALLEL_TESTS_VERSION: "~> 4.10"
+          PARALLEL_TESTS_VERSION: "~> 4.10.0"
         run: task test:features:ruby-parallel
 
       - name: Test — Features (Ruby, parallel_tests 5.7)
         env:
-          PARALLEL_TESTS_VERSION: "~> 5.7"
+          PARALLEL_TESTS_VERSION: "~> 5.7.0"
         run: task test:features:ruby-parallel
 
   rails:

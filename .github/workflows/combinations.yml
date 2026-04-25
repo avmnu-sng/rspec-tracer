@@ -50,16 +50,16 @@ jobs:
         #   - sqlite3 1.7 (only line whose PC ceiling fits 3.1)
         #   - connection_pool 2.x (3.x needs Ruby >= 3.2)
         #   - parallel 1.x (2.x needs Ruby >= 3.3)
-        redis: ['~> 4.8', '~> 5.4']
+        redis: ['~> 4.8.0', '~> 5.4.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
       RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
       RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -91,12 +91,12 @@ jobs:
       fail-fast: false
       matrix:
         # Ruby 3.2: parallel 2.x still gated (needs Ruby >= 3.3).
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
-        sqlite3: ['~> 1.7', '~> 2.0']
+        sqlite3: ['~> 1.7.0', '~> 2.9.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
       RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
@@ -135,13 +135,13 @@ jobs:
       fail-fast: false
       matrix:
         # Ruby 3.3: every modern major-line resolvable (the widest cell).
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel: ['~> 1.28', '~> 2.1']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
-        sqlite3: ['~> 1.7', '~> 2.0']
+        sqlite3: ['~> 1.7.0', '~> 2.9.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
       RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
@@ -181,11 +181,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel: ['~> 1.28', '~> 2.1']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
@@ -194,7 +194,7 @@ jobs:
       RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
       RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.0"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -228,11 +228,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel: ['~> 1.28', '~> 2.1']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
@@ -241,7 +241,7 @@ jobs:
       RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
       RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -275,11 +275,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel: ['~> 1.28', '~> 2.1']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
@@ -288,7 +288,7 @@ jobs:
       RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
       RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.0"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -319,11 +319,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel: ['~> 1.28', '~> 2.1']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
@@ -332,7 +332,7 @@ jobs:
       RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
       RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -370,9 +370,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
+        redis: ['~> 4.8.0', '~> 5.4.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
-        parallel_tests: ['~> 4.10', '~> 5.7']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
       RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
@@ -426,8 +426,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis: ['~> 4.8', '~> 5.4']
-        connection_pool: ['~> 2.5', '~> 3.0']
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
         msgpack: ['~> 1.7.0', '~> 1.8.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
