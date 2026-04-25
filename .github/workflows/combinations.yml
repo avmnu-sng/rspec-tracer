@@ -51,15 +51,15 @@ jobs:
         #   - connection_pool 2.x (3.x needs Ruby >= 3.2)
         #   - parallel 1.x (2.x needs Ruby >= 3.3)
         redis: ['~> 4.8', '~> 5.4']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -93,17 +93,17 @@ jobs:
         # Ruby 3.2: parallel 2.x still gated (needs Ruby >= 3.3).
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
         sqlite3: ['~> 1.7', '~> 2.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: ${{ matrix.sqlite3 }}
+      RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -137,19 +137,19 @@ jobs:
         # Ruby 3.3: every modern major-line resolvable (the widest cell).
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel: ['~> 1.28', '~> 2.1']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
         sqlite3: ['~> 1.7', '~> 2.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_VERSION: ${{ matrix.parallel }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: ${{ matrix.sqlite3 }}
+      RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -183,18 +183,18 @@ jobs:
       matrix:
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel: ['~> 1.28', '~> 2.1']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_VERSION: ${{ matrix.parallel }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: "~> 2.0"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -230,18 +230,18 @@ jobs:
       matrix:
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel: ['~> 1.28', '~> 2.1']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_VERSION: ${{ matrix.parallel }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -277,18 +277,18 @@ jobs:
       matrix:
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel: ['~> 1.28', '~> 2.1']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_VERSION: ${{ matrix.parallel }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: "~> 2.0"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -321,18 +321,18 @@ jobs:
       matrix:
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel: ['~> 1.28', '~> 2.1']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_VERSION: ${{ matrix.parallel }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
-      SQLITE3_VERSION: "~> 1.7"
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -371,13 +371,13 @@ jobs:
       fail-fast: false
       matrix:
         redis: ['~> 4.8', '~> 5.4']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         parallel_tests: ['~> 4.10', '~> 5.7']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
-      PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
       RSPEC_VERSION: ${{ matrix.rspec }}
     steps:
       - name: Checkout
@@ -428,12 +428,12 @@ jobs:
       matrix:
         redis: ['~> 4.8', '~> 5.4']
         connection_pool: ['~> 2.5', '~> 3.0']
-        msgpack: ['~> 1.7', '~> 1.8']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
         rspec: ['~> 3.12.0', '~> 3.13.0']
     env:
-      REDIS_VERSION: ${{ matrix.redis }}
-      CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
-      MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
       RSPEC_VERSION: ${{ matrix.rspec }}
       REDIS_URL: redis://localhost:6379/15
     steps:
