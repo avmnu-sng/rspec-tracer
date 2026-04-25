@@ -35,6 +35,7 @@ jobs:
         with:
           # Mutation requires MRI >= 3.2; pin to .ruby-version (3.3.10).
           ruby-version: '.ruby-version'
+          bundler: '4.0.10'
           bundler-cache: true
 
       - name: Setup Task
