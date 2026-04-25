@@ -48,5 +48,7 @@ group :test do
   gem "factory_bot_rails", "~> 6.4"
   gem "rspec-rails", ENV.fetch("RSPEC_RAILS_VERSION", "~> 6.1.0")
   gem "rspec-tracer", path: "../../..", require: false
-  gem "simplecov", ENV.fetch("SIMPLECOV_VERSION", "~> 0.22")
+  # simplecov is hardcoded across the matrix - only one supported line
+  # (0.22) and no plan to widen support, so no env override.
+  gem "simplecov", "~> 0.22"
 end

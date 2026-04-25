@@ -142,7 +142,7 @@ end
 
 Then('I validate simplecov version') do
   cd('.') do
-    expected = Gem::Dependency.new('simplecov', ENV.fetch('SIMPLECOV_VERSION', nil))
+    expected = Gem::Dependency.new('simplecov', '~> 0.22')
     actual = Gem::Dependency.new(
       'simplecov',
       `bundle show simplecov`.chomp.split("\n").first.split('/').last.split('-').last

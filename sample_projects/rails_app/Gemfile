@@ -14,7 +14,7 @@ gem 'bootsnap', '>= 1.4.4', require: false
 
 group :development, :test do
   gem 'pry'
-  gem 'simplecov', ENV['SIMPLECOV_VERSION']
+  gem 'simplecov', '~> 0.22'
 end
 
 group :test do

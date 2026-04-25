@@ -6,4 +6,4 @@ gem 'pry'
 gem 'rspec', ENV['RSPEC_VERSION']
 gem 'parallel_tests', ENV['PARALLEL_TESTS_VERSION']
 gem 'rspec-tracer', path: '../../..', require: false
-gem 'simplecov', ENV['SIMPLECOV_VERSION']
+gem 'simplecov', '~> 0.22'

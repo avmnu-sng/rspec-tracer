@@ -1,0 +1,466 @@
+---
+name: combinations
+
+# Exhaustive cross-product of every supported runtime-dep major-line
+# combination on every supported Ruby. Per-PR + per-main runs use
+# Option-A relaxed pins (root Gemfile uses `>= floor` for each
+# multi-line dep, so Bundler resolves latest-of-everything-installable
+# per cell - matching what an end user gets). This workflow flips that:
+# every dep is explicitly pinned per cell so the matrix actually probes
+# every (redis x conn_pool x msgpack x parallel x parallel_tests x
+# rspec x sqlite3) corner the user could land on.
+#
+# Cell count (~496):
+#   - combinations-3.1:        16  (no conn_pool 3.x; no parallel 2.x; sqlite3 1.7 only)
+#   - combinations-3.2:        64  (no parallel 2.x)
+#   - combinations-3.3:       128
+#   - combinations-3.4-pc:     64  (sqlite3 PC only)
+#   - combinations-3.4-src:    64  (sqlite3 1.7 source-build via build-essential)
+#   - combinations-4.0-pc:     64
+#   - combinations-4.0-src:    64
+#   - combinations-jruby:      16  (no sqlite3 specs; no conn_pool 3.x; no parallel 2.x)
+#   - combinations-redis-service: 16  (real-wire Redis 7.4 server x redis-gem 4.8/5.4)
+#
+# See docs/revamp/sessions/M3.8-part-c-runtime-dep-matrix.md (local) for
+# the full design rationale.
+
+on:
+  schedule:
+    # Weekly: Sunday 02:00 UTC. Detection window for upstream-dep
+    # regressions that the relaxed-pin per-PR/per-main runs would only
+    # catch when a contributor next pushes.
+    - cron: '0 2 * * 0'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  combinations_3_1:
+    # GHA appends the matrix axis values to the job name automatically;
+    # `name:` keeps the static prefix so the cell label stays compact.
+    name: combo-3.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ruby 3.1 fixed pins (per Gemfile per-Ruby gating + dep
+        # required_ruby_version):
+        #   - sqlite3 1.7 (only line whose PC ceiling fits 3.1)
+        #   - connection_pool 2.x (3.x needs Ruby >= 3.2)
+        #   - parallel 1.x (2.x needs Ruby >= 3.3)
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler: '2.6.9'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_3_2:
+    name: combo-3.2
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ruby 3.2: parallel 2.x still gated (needs Ruby >= 3.3).
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+        sqlite3: ['~> 1.7.0', '~> 2.9.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_3_3:
+    name: combo-3.3
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ruby 3.3: every modern major-line resolvable (the widest cell).
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+        sqlite3: ['~> 1.7.0', '~> 2.9.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_3_4_pc:
+    # Ruby 3.4 with sqlite3 2.x precompiled binaries (no source build).
+    name: combo-3.4-pc
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_3_4_src:
+    # Ruby 3.4 with sqlite3 1.7 source-build (precompiled 1.7 caps at
+    # `< 3.4.dev`). Needs build-essential + libsqlite3-dev for the
+    # native extension build.
+    name: combo-3.4-src
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install build tools for sqlite3 1.7 source-build
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential libsqlite3-dev
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_4_0_pc:
+    name: combo-4.0-pc
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_4_0_src:
+    name: combo-4.0-src
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel: ['~> 1.28.0', '~> 2.1.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_VERSION: ${{ matrix.parallel }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install build tools for sqlite3 1.7 source-build
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential libsqlite3-dev
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  combinations_jruby:
+    # JRuby 9.4 emulates Ruby 3.1 - same gating (no conn_pool 3.x, no
+    # parallel 2.x). sqlite3 has no -java platform variant; root Gemfile
+    # gates with `if RUBY_ENGINE == 'ruby'` so SqliteBackend specs are
+    # not exercised here. msgpack uses its -java platform variant.
+    name: combo-jruby
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        parallel_tests: ['~> 4.10.0', '~> 5.7.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: ${{ matrix.parallel_tests }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install build tools for JRuby native extensions
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 'jruby-9.4'
+          bundler: '2.6.9'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Features (JRuby)
+        run: task test:features:jruby
+
+  combinations_redis_service:
+    # Real-wire Redis combinations on Ruby 3.3 (the .ruby-version cell):
+    # exercises every (redis-gem x conn_pool x msgpack x rspec) corner
+    # against a localhost Redis 7.4-alpine service, with the actual
+    # remote-cache:redis integration spec.
+    name: combo-redis-service
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping | grep -q PONG"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        redis: ['~> 4.8.0', '~> 5.4.0']
+        connection_pool: ['~> 2.5.0', '~> 3.0.0']
+        msgpack: ['~> 1.7.0', '~> 1.8.0']
+        rspec: ['~> 3.12.0', '~> 3.13.0']
+    env:
+      RSPEC_TRACER_REDIS_VERSION: ${{ matrix.redis }}
+      RSPEC_TRACER_CONNECTION_POOL_VERSION: ${{ matrix.connection_pool }}
+      RSPEC_TRACER_MSGPACK_VERSION: ${{ matrix.msgpack }}
+      RSPEC_VERSION: ${{ matrix.rspec }}
+      REDIS_URL: redis://localhost:6379/15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install — redis-cli (for health probe)
+        run: sudo apt-get install -y --no-install-recommends redis-tools
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Wait — Redis ready + smoke probe
+        run: task ci:redis:ready
+
+      - name: Test — Integration (remote cache + Redis)
+        run: task test:integration:remote-cache:redis

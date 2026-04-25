@@ -11,7 +11,12 @@ jobs:
   lint-and-specs:
     name: lint-and-specs
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 45 min headroom: the previous 20 min budget was tight before
+    # `Test - Mutation (full)` and `Test - Fuzz (full)` moved here from
+    # the (now-deleted) nightly workflow. Combined wall clock with the
+    # full mutation pass on TimeFormatter + 10k-iter property fuzz is
+    # typically ~30 min.
+    timeout-minutes: 45
 
     services:
       # LocalStack provides a real S3 API surface for the M7.1 remote-cache
@@ -123,6 +128,12 @@ jobs:
 
       - name: Test — Mutation (smoke)
         run: task test:mutation:smoke
+
+      - name: Test — Mutation (full, whole TimeFormatter module)
+        run: task test:mutation:full
+
+      - name: Test — Fuzz (full, 10000 iterations)
+        run: task test:fuzz:full
 
       - name: Test — Dogfood
         run: task test:dogfood

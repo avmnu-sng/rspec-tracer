@@ -89,6 +89,53 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Unit
+        run: task test:unit
+
+  spec-floor:
+    # Floor-pin sanity cell: pins every multi-line dep to its currently
+    # maintained legacy major (redis 4.8, msgpack 1.7, parallel_tests
+    # 4.10, rspec 3.12) on the oldest supported Ruby (3.1). Catches
+    # regressions in the "user with org-mandated pins to legacy stack"
+    # scenario that the relaxed-pin default cells would not exercise
+    # (they pick latest-of-each-major). Per-PR + per-main cadence runs
+    # this single cell; the weekly combinations.yml does the full
+    # cross-product.
+    name: spec-floor (ruby-3.1, redis-4.8, rspec-3.12, msgpack-1.7, parallel_tests-4.10)
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RSPEC_TRACER_REDIS_VERSION: "~> 4.8.0"
+      RSPEC_VERSION: "~> 3.12.0"
+      RSPEC_TRACER_MSGPACK_VERSION: "~> 1.7.0"
+      RSPEC_TRACER_PARALLEL_TESTS_VERSION: "~> 4.10.0"
+      # connection_pool 3.x and parallel 2.x are gated by Ruby >= 3.2 /
+      # 3.3 respectively; on Ruby 3.1 Bundler picks the only available
+      # major. No explicit pin needed.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler: '2.6.9'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
       - name: Test — Unit
         run: task test:unit
 
@@ -103,7 +150,6 @@ jobs:
     # at install time and the test step's env would have no effect.
     env:
       RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
-      SIMPLECOV_VERSION: "~> 0.22"
       BRANCH_COVERAGE: 'true'
     strategy:
       fail-fast: false
@@ -127,6 +173,9 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bundle — list resolved versions
+        run: bundle list
+
       - name: Test — Features (Ruby)
         run: task test:features:ruby
 
@@ -140,7 +189,6 @@ jobs:
     # stays per-step because the two test steps vary it.
     env:
       RSPEC_VERSION: "~> ${{ matrix.rspec }}.0"
-      SIMPLECOV_VERSION: "~> 0.22"
     strategy:
       fail-fast: false
       matrix:
@@ -163,14 +211,17 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test — Features (Ruby, parallel_tests)
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Features (Ruby, parallel_tests 4.10)
         env:
-          PARALLEL_TESTS_VERSION: "~> 4.7"
+          PARALLEL_TESTS_VERSION: "~> 4.10.0"
         run: task test:features:ruby-parallel
 
-      - name: Test — Features (Ruby, parallel_tests 5.x)
+      - name: Test — Features (Ruby, parallel_tests 5.7)
         env:
-          PARALLEL_TESTS_VERSION: "~> 5.0"
+          PARALLEL_TESTS_VERSION: "~> 5.7.0"
         run: task test:features:ruby-parallel
 
   rails:
@@ -179,7 +230,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      SIMPLECOV_VERSION: "~> 0.22"
       BRANCH_COVERAGE: 'true'
     strategy:
       fail-fast: false
@@ -201,6 +251,9 @@ jobs:
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
 
       - name: Test — Features (Rails)
         env:
@@ -236,10 +289,14 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bundle — list resolved versions
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: bundle list
+
       - name: Test — Features (JRuby)
         env:
           RSPEC_VERSION: "~> 3.13.0"
-          SIMPLECOV_VERSION: "~> 0.22"
         run: task test:features:jruby
 
   benchmark:
@@ -259,7 +316,6 @@ jobs:
     env:
       RAILS_VERSION: "~> 7.1.0"
       RSPEC_RAILS_VERSION: "~> 6.1.0"
-      SIMPLECOV_VERSION: "~> 0.22"
       SQLITE3_VERSION: "~> 1.4"
     steps:
       - name: Checkout
@@ -297,9 +353,8 @@ jobs:
       # The Rails fixture Gemfile branches on RAILS_VERSION /
       # RSPEC_RAILS_VERSION / SQLITE3_VERSION at resolve time, so the
       # cache key must include them to avoid serving a stale set when
-      # the matrix pin moves. SIMPLECOV_VERSION does not change the
-      # resolver path today but is included for parity with the env
-      # the fixture actually sees.
+      # the matrix pin moves. simplecov is hardcoded `~> 0.22` in the
+      # fixture Gemfile so it does not need to enter the cache key.
       - name: Cache rails_app fixture bundle
         uses: actions/cache@v5
         with:
@@ -313,7 +368,6 @@ jobs:
             }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
             }}-${{ env.RAILS_VERSION
             }}-${{ env.RSPEC_RAILS_VERSION
-            }}-${{ env.SIMPLECOV_VERSION
             }}-${{ env.SQLITE3_VERSION }}
           restore-keys: |
             fixture-bundle-rails-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}-
