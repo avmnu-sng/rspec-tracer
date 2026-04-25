@@ -11,8 +11,7 @@ namespace :features do
           SKIP_COVERAGE_VALIDATION="true"
           SIMPLECOV_COMMAND_NAME="features:coverage:simplecov:branch_coverage"
           RSPEC_VERSION="~> 3.13"
-          SIMPLECOV_VERSION="~> 0.22"
-          PARALLEL_TESTS_VERSION="~> 4.7"
+          PARALLEL_TESTS_VERSION="~> 4.10"
           BRANCH_COVERAGE="true"
           bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and @branch-coverage"
         COMMAND
@@ -28,8 +27,7 @@ namespace :features do
           SKIP_COVERAGE_VALIDATION="true"
           SIMPLECOV_COMMAND_NAME="features:coverage:simplecov:line_coverage"
           RSPEC_VERSION="~> 3.13"
-          SIMPLECOV_VERSION="~> 0.22"
-          PARALLEL_TESTS_VERSION="~> 4.7"
+          PARALLEL_TESTS_VERSION="~> 4.10"
           BRANCH_COVERAGE="false"
           bundle exec cucumber --retry 3 --no-strict-flaky --tags "@ruby-app and @simplecov and not @branch-coverage"
         COMMAND

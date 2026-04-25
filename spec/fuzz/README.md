@@ -6,8 +6,8 @@ The goal is **graceful degradation**: every input, no matter how broken,
 ends in either a clean load or a recorded and-then-logged failure —
 never in tearing down the host test suite.
 
-Fuzz runs are **not per-PR**: smoke is a local sanity check; the full
-10k run is scheduled nightly in CI.
+Smoke is a local sanity check; the full 10k run executes on every PR
+and every push to `main` via the `lint-and-specs` workflow.
 
 ## Running
 

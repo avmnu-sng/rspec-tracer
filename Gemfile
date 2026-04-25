@@ -5,65 +5,68 @@ source 'https://rubygems.org'
 group :development do
   gem 'aruba', '~> 2.2'
   gem 'cucumber', '~> 9.2'
-  # parallel 2.0+ requires Ruby >= 3.3; pin for Ruby 3.1/3.2 compatibility
-  gem 'parallel', '~> 1.26'
-  gem 'parallel_tests', '~> 4.7'
   gem 'pry', '~> 0.14'
   gem 'rake', '~> 13.2'
   gem 'rantly', '~> 2.0'
-  # redis is a dev dep so we can exercise RedisBackend's real wire path
-  # in the integration spec (spec/integration/remote_cache_spec.rb)
-  # against a localhost Redis service, and so the lazy `require 'redis'`
-  # path in the backend file is exercisable in unit specs. End users
-  # who want RedisBackend add the gem to their OWN Gemfile - we do not
-  # ship it as a runtime dep per USER_FACING_SURFACE.md.
-  gem 'redis', '~> 5.3'
-  # connection_pool is a transitive dep of redis-client. 3.x requires
-  # Ruby >= 3.2, which breaks our Ruby 3.1 + JRuby 9.4 matrix cells
-  # at `bundle install` time. redis-client accepts any connection_pool
-  # version, so pinning 2.x here keeps the whole matrix installable.
-  gem 'connection_pool', '~> 2.5'
-  # rspec is env-overridable so the `ruby-project` and `ruby-parallel`
-  # CI cells can exercise both 3.12 and 3.13 against every Ruby cell
-  # via `RSPEC_VERSION="~> 3.12.0"` / `RSPEC_VERSION="~> 3.13.0"`.
-  gem 'rspec', ENV.fetch('RSPEC_VERSION', '~> 3.13')
   gem 'rubocop', '~> 1.60'
   gem 'rubocop-performance', '~> 1.20'
   gem 'rubocop-rake', '~> 0.6'
   gem 'rubocop-rspec', '~> 3.0'
   gem 'simplecov', '~> 0.22'
-  # msgpack is a dev dep so json_backend_msgpack_spec exercises the real
-  # wire path (encode -> zlib deflate -> disk -> inflate -> decode). End
-  # users who want the :msgpack serializer add `gem 'msgpack'` to their
-  # own Gemfile - we do not ship it as a runtime dep per
-  # USER_FACING_SURFACE.md's optional-dep convention.
-  gem 'msgpack', '~> 1.7'
-  # sqlite3 is a dev dep so spec/storage/sqlite_backend_spec exercises
-  # the real DB write/read path on every MRI matrix cell. Pin per-Ruby:
-  # - 1.x precompiled binaries cap at `< 3.4.dev`, so they cover Ruby
-  #   3.0-3.3. Used for the 3.1 cell.
-  # - 2.x precompiled binaries require `>= 3.2` with no upper bound.
-  #   Used for 3.2+.
-  # There is no single sqlite3 version whose precompiled binaries
-  # span our whole matrix (3.1 - 4.0), hence the Ruby-version
-  # conditional. Safe to do at Gemfile parse time because Gemfile.lock
-  # is NOT committed (each CI cell re-resolves). SqliteBackend only
-  # uses stable sqlite3 API (Database.new / execute / get_first_row /
-  # transaction(:immediate)) that is identical across 1.x and 2.x, so
-  # either pin satisfies the backend's runtime needs.
-  # JRuby uses a different driver entirely; gate at PARSE time (not
-  # install_if) so Bundler does not even try to resolve sqlite3 on
-  # JRuby - install_if only gates install, not resolution.
-  if RUBY_ENGINE == 'ruby'
-    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
-      gem 'sqlite3', '~> 2.0'
-    else
-      gem 'sqlite3', '~> 1.7'
-    end
-  end
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
   gem 'yui-compressor', '~> 0.12'
+
+  # Optional / matrix-driven runtime deps. Each is a `>= floor` so the
+  # default (per-PR / per-main) Bundler resolve picks the latest
+  # installable on the cell's Ruby - matching what an end user gets
+  # with `gem '<name>'` and no further pin in their own Gemfile. The
+  # weekly `combinations` workflow overrides each axis explicitly via
+  # the named ENV var to exercise the full supported cross-product.
+  #
+  # Floors are the lowest currently-maintained major-line of each gem.
+  # See .github/workflows/combinations.yml for the explicit matrix.
+
+  # rspec: 3.12 (LTS-ish) and 3.13 (current). Default resolves to 3.13.
+  gem 'rspec', ENV.fetch('RSPEC_VERSION', '>= 3.12')
+
+  # parallel + parallel_tests: 1.x / 2.x and 4.x / 5.x respectively.
+  # parallel 2.x requires Ruby >= 3.3; on lower Rubies Bundler picks 1.x.
+  gem 'parallel', ENV.fetch('PARALLEL_VERSION', '>= 1.26')
+  gem 'parallel_tests', ENV.fetch('PARALLEL_TESTS_VERSION', '>= 4.10')
+
+  # redis: 4.x (last patched 4.8.1) and 5.x (current 5.4.x). Both lines
+  # install on every Ruby in the matrix. Default resolves to 5.x.
+  gem 'redis', ENV.fetch('REDIS_VERSION', '>= 4.8')
+
+  # connection_pool: 2.x (universal) and 3.x (Ruby >= 3.2 only). On
+  # Ruby 3.1 / JRuby 9.4 Bundler backtracks to 2.x; on 3.2+ it picks 3.x.
+  gem 'connection_pool', ENV.fetch('CONNECTION_POOL_VERSION', '>= 2.5')
+
+  # msgpack: single 1.x major line. -java platform variant exists for
+  # JRuby. Both 1.7.x and 1.8.x install on every Ruby in the matrix.
+  gem 'msgpack', ENV.fetch('MSGPACK_VERSION', '>= 1.7')
+
+  # sqlite3: per-Ruby gate because precompiled-binary ceilings differ
+  # between 1.x and 2.x lines and the source-build path needs a C
+  # compiler. The default branches keep CI-cache hits maximal:
+  #   - Ruby 3.1: only sqlite3 1.x precompiled fits the ceiling.
+  #   - Ruby 3.2 / 3.3: both 1.x and 2.x precompiled work; default 2.x.
+  #   - Ruby 3.4 / 4.0: 1.x precompiled is out of ceiling (`< 3.4.dev`);
+  #     default 2.x. The combinations matrix can still override to
+  #     '~> 1.7' to force a source-build path on those Rubies.
+  # JRuby has no installable sqlite3 (no -java variant); gated at PARSE
+  # time so Bundler does not even attempt to resolve the gem.
+  # SqliteBackend uses only stable sqlite3 API (Database.new / execute
+  # / get_first_row / transaction(:immediate)) identical across 1.x
+  # and 2.x; either pin satisfies the backend's runtime needs.
+  if RUBY_ENGINE == 'ruby'
+    if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2')
+      gem 'sqlite3', ENV.fetch('SQLITE3_VERSION', '>= 2.0')
+    else
+      gem 'sqlite3', ENV.fetch('SQLITE3_VERSION', '~> 1.7')
+    end
+  end
 
   # Mutation testing — MRI >= 3.3 only. mutant 0.16's own README says
   # "3.2+", but its transitive dep `unparser 0.9.0` declares

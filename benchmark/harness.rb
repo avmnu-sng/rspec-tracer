@@ -101,7 +101,6 @@ module BenchmarkHarness
       env: {
         'RAILS_VERSION' => '~> 7.1.0',
         'RSPEC_RAILS_VERSION' => '~> 6.1.0',
-        'SIMPLECOV_VERSION' => '~> 0.22',
         'SQLITE3_VERSION' => '~> 1.4',
         'RSPEC_TRACER' => '1'
       },
