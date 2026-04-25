@@ -23,7 +23,10 @@ group :development do
   # at `bundle install` time. redis-client accepts any connection_pool
   # version, so pinning 2.x here keeps the whole matrix installable.
   gem 'connection_pool', '~> 2.5'
-  gem 'rspec', '~> 3.13'
+  # rspec is env-overridable so the `ruby-project` and `ruby-parallel`
+  # CI cells can exercise both 3.12 and 3.13 against every Ruby cell
+  # via `RSPEC_VERSION="~> 3.12.0"` / `RSPEC_VERSION="~> 3.13.0"`.
+  gem 'rspec', ENV.fetch('RSPEC_VERSION', '~> 3.13')
   gem 'rubocop', '~> 1.60'
   gem 'rubocop-performance', '~> 1.20'
   gem 'rubocop-rake', '~> 0.6'
