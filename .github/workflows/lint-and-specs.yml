@@ -141,7 +141,18 @@ jobs:
   test-mutation-top-level:
     name: test-mutation-top-level
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Bumped 15 -> 30 after PR #122's merge-to-main run cancelled at
+    # 15:02 wall clock (PR #122 itself ran at 14:52, 8s under the cap).
+    # The mutation pass succeeds (Coverage 99.71% >= 85%) but pegs
+    # runtime at ~14:30 because most RSpecTracer.* methods are called
+    # during spec-helper setup; mutations cause the spec process to
+    # hang and get killed via mutant's per-mutation 5s timeout (674
+    # of 707 mutations land as Timeouts). Post-job cache cleanup adds
+    # the last few seconds, and any CI jitter pushes the job over the
+    # 15 min cap. 30 min matches test-mutation-tracker / -rspec and
+    # gives headroom without changing behavior - jobs end when work
+    # ends, the timeout is a hard cap.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
