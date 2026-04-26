@@ -21,7 +21,7 @@ module RSpecTracer
     #
     # Local cache_path layout is UNCHANGED - the archive is pack/unpack
     # boundary for transit only. User-facing filenames in
-    # `USER_FACING_SURFACE.md` §6 stay as documented; external tooling
+    # `USER_FACING_SURFACE.md` section 6 stay as documented; external tooling
     # that walks `rspec_tracer_cache/` sees the same 15-file layout.
     module Archive
       CACHE_FILENAME = 'cache.tar.gz'

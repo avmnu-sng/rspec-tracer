@@ -16,7 +16,7 @@ module RSpecTracer
     # upload (branch_ref + branch_refs update + retention prune) flows.
     #
     # Called from `lib/rspec_tracer/remote_cache/Rakefile` which is
-    # loaded by the user's own Rakefile per USER_FACING_SURFACE.md §5.
+    # loaded by the user's own Rakefile per USER_FACING_SURFACE.md section 5.
     # The user-facing task surface is preserved from 1.x bit-for-bit:
     # same task names, same env vars, same exit behavior.
     #
