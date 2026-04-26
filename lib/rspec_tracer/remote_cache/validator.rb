@@ -35,10 +35,10 @@ module RSpecTracer
       # Read + parse + validate a last_run.json file on disk. Returns
       # true iff the file exists, parses as JSON, has a Hash root, and
       # carries a supported schema_version. Any I/O or parse failure
-      # returns false (graceful degradation).
+      # (missing file -> Errno::ENOENT, unreadable -> Errno::EACCES,
+      # malformed JSON -> JSON::ParserError) is caught by the rescue
+      # below and degraded to false.
       def self.valid_file?(path)
-        return false unless File.file?(path)
-
         valid?(JSON.parse(File.read(path, encoding: 'UTF-8')))
       rescue StandardError
         false
