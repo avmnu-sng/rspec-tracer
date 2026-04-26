@@ -426,13 +426,18 @@ tasks:
         fail=0
         # Carve-out gates are sized for CI-observed coverage with margin
         # (M2 Max local runs sit higher; ubuntu-latest with parallelism
-        # 4 + freshly-resolved gems lands lower). Msgpack + JsonBackend
-        # specifically swing because Msgpack.ensure_available!'s
-        # @msgpack_loaded memoization makes mutations on the
-        # `require 'msgpack'` line observably equivalent once any prior
-        # test has tripped the memo - whichever test runs first
-        # determines which mutations stay alive. Local M2 Max +
-        # ubuntu-latest hit different orderings.
+        # 4 + freshly-resolved gems lands lower). JsonBackend swings
+        # because its describe block exercises private helpers that
+        # mutant credits to the public method. The original Msgpack
+        # 25 pp local-vs-CI swing was driven by ensure_available!'s
+        # @msgpack_loaded ivar memoization (mutations on the `require
+        # 'msgpack'` line were observably equivalent once any prior
+        # test tripped the memo); M8.3-B replaced the ivar with
+        # `defined?(::MessagePack)` so the require line is exercisable
+        # on every call (Ruby's $LOADED_FEATURES makes the require
+        # itself idempotent, so behavior + perf are byte-for-byte
+        # equivalent for production callers). Post-fix gate raised
+        # from 60% to 80% (4.5 pp under local 84.52%).
         run_mutant_gate "Storage::LazySnapshot" \
           "rspec_tracer/storage/lazy_snapshot" \
           "RSpecTracer::Storage::LazySnapshot*" 85 || fail=1
@@ -441,7 +446,7 @@ tasks:
           "RSpecTracer::Storage::Serializer::Json*" 85 || fail=1
         run_mutant_gate "Storage::Serializer::Msgpack" \
           "rspec_tracer/storage/serializer/msgpack" \
-          "RSpecTracer::Storage::Serializer::Msgpack*" 60 || fail=1
+          "RSpecTracer::Storage::Serializer::Msgpack*" 80 || fail=1
         run_mutant_gate "Storage::JsonBackend" \
           "rspec_tracer/storage/json_backend" \
           "RSpecTracer::Storage::JsonBackend*" 75 || fail=1
