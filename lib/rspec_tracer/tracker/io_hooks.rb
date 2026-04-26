@@ -4,6 +4,17 @@ require 'digest'
 require 'set'
 
 require_relative 'input'
+# Sub-module hooks loaded eagerly: $LOADED_FEATURES makes require
+# idempotent so placement doesn't change observable behavior, and
+# Engine always calls IOHooks.install at boot - the previous
+# install-time require_relative deferred a load that always fires
+# anyway, paying the same total cost ~5 ms later at the cost of
+# the standard requires-at-top Ruby convention.
+require_relative 'io_hooks/file'
+require_relative 'io_hooks/io'
+require_relative 'io_hooks/yaml'
+require_relative 'io_hooks/json'
+require_relative 'io_hooks/kernel'
 
 module RSpecTracer
   module Tracker
@@ -57,12 +68,6 @@ module RSpecTracer
           @root_prefix = "#{@root}/"
           @extensions = extensions
           @filter = filter
-
-          require_relative 'io_hooks/file'
-          require_relative 'io_hooks/io'
-          require_relative 'io_hooks/yaml'
-          require_relative 'io_hooks/json'
-          require_relative 'io_hooks/kernel'
 
           ::File.singleton_class.prepend(FileReads)
           ::IO.singleton_class.prepend(IOReads)
