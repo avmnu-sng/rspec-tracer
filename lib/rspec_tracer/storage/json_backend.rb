@@ -353,9 +353,7 @@ module RSpecTracer
       # per-line coverage) only fire on collaborating workers that
       # happened to observe the same input file.
       module Merger
-        module_function
-
-        def call(snapshots, schema_version:)
+        def self.call(snapshots, schema_version:)
           state = empty_state
           snapshots.each { |s| absorb(state, s) }
 
@@ -383,7 +381,7 @@ module RSpecTracer
           )
         end
 
-        def empty_state
+        def self.empty_state
           {
             all_examples: {},
             duplicate_examples: Hash.new { |h, k| h[k] = [] },
@@ -408,7 +406,7 @@ module RSpecTracer
         # branching is inherent to the shape. Decomposing per-field would
         # scatter the merge contract.
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-        def absorb(state, snapshot)
+        def self.absorb(state, snapshot)
           state[:all_examples].merge!(snapshot.all_examples || {}) { |_, v, _| v }
           (snapshot.duplicate_examples || {}).each do |id, entries|
             state[:duplicate_examples][id].concat(entries)
@@ -434,14 +432,14 @@ module RSpecTracer
         # declared `tracks: { env: [A, B] }` on one worker and
         # `tracks: { env: [B, C] }` on another (edge case; parallel_tests
         # workers rarely run the same example) collapses to [A, B, C].
-        def merge_env_dependency!(target, source)
+        def self.merge_env_dependency!(target, source)
           source.each do |id, names|
             existing = target[id] || []
             target[id] = (existing | Array(names)).sort
           end
         end
 
-        def merge_examples_coverage!(target, source)
+        def self.merge_examples_coverage!(target, source)
           source.each do |id, per_file|
             entry = target[id] ||= {}
             per_file.each do |file_path, lines|
@@ -453,7 +451,7 @@ module RSpecTracer
           end
         end
 
-        def reverse_of(dependency)
+        def self.reverse_of(dependency)
           reverse = Hash.new { |h, k| h[k] = Set.new }
           dependency.each do |id, file_names|
             file_names.each { |name| reverse[name] << id }
