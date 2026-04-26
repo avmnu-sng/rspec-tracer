@@ -1,0 +1,52 @@
+---
+name: Setup
+description: >-
+  Install Ruby + Node + Task + out-of-bundle tools (actionlint,
+  shellcheck, yamllint, trivy, bundler-audit) + HTML reporter npm
+  deps. Used by every parallel job in lint-and-specs.yml; underlying
+  caches (setup-ruby bundler-cache, setup-node npm cache, explicit
+  tools cache on Taskfile.yml + .tool-versions) keep per-job warm-up
+  under ~30 s.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '.ruby-version'
+        bundler: '4.0.10'
+        bundler-cache: true
+
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20'
+        cache: npm
+        cache-dependency-path: lib/rspec_tracer/reporters/html/package-lock.json
+
+    - name: Setup Task
+      uses: go-task/setup-task@v2
+      with:
+        version: 3.45.4
+        repo-token: ${{ github.token }}
+
+    - name: Cache out-of-bundle tools
+      uses: actions/cache@v5
+      with:
+        path: |
+          bin
+          .venv
+        key: tools-${{ runner.os }}-${{ hashFiles('Taskfile.yml', '.tool-versions') }}
+
+    - name: Install tools
+      run: task install:tools
+      shell: bash
+
+    - name: Ensure tool paths
+      run: echo "$(pwd)/bin" >> "$GITHUB_PATH"
+      shell: bash
+
+    - name: Install — HTML reporter npm deps
+      run: task reporters:html:install
+      shell: bash
