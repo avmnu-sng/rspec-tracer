@@ -129,8 +129,17 @@ jobs:
       - name: Test — Mutation (smoke)
         run: task test:mutation:smoke
 
-      - name: Test — Mutation (full, whole TimeFormatter module)
-        run: task test:mutation:full
+      - name: Test — Mutation (tracker)
+        run: task test:mutation:tracker
+
+      - name: Test — Mutation (storage)
+        run: task test:mutation:storage
+
+      - name: Test — Mutation (rspec)
+        run: task test:mutation:rspec
+
+      - name: Test — Mutation (top-level)
+        run: task test:mutation:top-level
 
       - name: Test — Edge cases
         run: task test:edge-cases

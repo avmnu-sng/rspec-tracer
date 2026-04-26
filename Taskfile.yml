@@ -329,8 +329,18 @@ tasks:
         # Rails::I18nTracking follows the same rationale.
         exit "$fail"
 
-  test:mutation:full:
-    desc: Mutation full — whole TimeFormatter module (informational, weekly CI only)
+  test:mutation:tracker:
+    desc: >-
+      M8.3-A mutation pass on tracker/ net-new subjects (CoverageAdapter,
+      NewFileDetector, IOHooks). Per-subject gates reflect a maintainer-
+      approved carve-out for structural mutation-tooling ceilings:
+      IOHooks (Module#prepend idempotency + no unprepend API; rspec-mocks
+      spy trips on File<IO inheritance) and NewFileDetector (mutant
+      first-token mapping doesn't credit constructor walker setup to
+      #initialize when tests live under `describe '#new_files'`).
+      The 8 existing tracker subjects (Input, DeclaredGlobs,
+      WholeSuiteInvalidators, DependencyGraph, ExampleRegistry, Filter,
+      LoadedFilesTracker, EnvSnapshot) stay in test:mutation:smoke.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -339,12 +349,200 @@ tasks:
           echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
           exit 0
         fi
-        # Private helpers (format_duration, strip_trailing_zeroes, pluralize)
-        # have no direct tests today; coverage on the whole module is expected
-        # to trail smoke until M8.3. Run anyway, report, don't gate.
-        bundle exec mutant run --use rspec --usage opensource \
-          --include lib --require rspec_tracer/time_formatter \
-          "RSpecTracer::TimeFormatter*" || true
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:tracker [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:tracker [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:tracker [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        run_mutant_gate "Tracker::CoverageAdapter" \
+          "rspec_tracer/tracker/coverage_adapter" \
+          "RSpecTracer::Tracker::CoverageAdapter*" 90 || fail=1
+        run_mutant_gate "Tracker::NewFileDetector" \
+          "rspec_tracer/tracker/new_file_detector" \
+          "RSpecTracer::Tracker::NewFileDetector*" 85 || fail=1
+        run_mutant_gate "Tracker::IOHooks" \
+          "rspec_tracer/tracker/io_hooks" \
+          "RSpecTracer::Tracker::IOHooks*" 80 || fail=1
+        exit "$fail"
+
+  test:mutation:storage:
+    desc: >-
+      M8.3-A mutation pass on storage/ net-new subjects (LazySnapshot,
+      Serializer::Json, Serializer::Msgpack, JsonBackend, SqliteBackend).
+      SqliteBackend carve-out (>= 76%) for prose-label describes that
+      don't map cleanly into mutant's first-token Klass#method scheme.
+      Storage::Schema, Storage::Snapshot, Storage::Backend stay in
+      test:mutation:smoke.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:storage [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:storage [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:storage [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        run_mutant_gate "Storage::LazySnapshot" \
+          "rspec_tracer/storage/lazy_snapshot" \
+          "RSpecTracer::Storage::LazySnapshot*" 85 || fail=1
+        run_mutant_gate "Storage::Serializer::Json" \
+          "rspec_tracer/storage/serializer/json" \
+          "RSpecTracer::Storage::Serializer::Json*" 85 || fail=1
+        run_mutant_gate "Storage::Serializer::Msgpack" \
+          "rspec_tracer/storage/serializer/msgpack" \
+          "RSpecTracer::Storage::Serializer::Msgpack*" 85 || fail=1
+        run_mutant_gate "Storage::JsonBackend" \
+          "rspec_tracer/storage/json_backend" \
+          "RSpecTracer::Storage::JsonBackend*" 85 || fail=1
+        run_mutant_gate "Storage::SqliteBackend" \
+          "rspec_tracer/storage/sqlite_backend" \
+          "RSpecTracer::Storage::SqliteBackend*" 76 || fail=1
+        exit "$fail"
+
+  test:mutation:rspec:
+    desc: >-
+      M8.3-A mutation pass on rspec/ subjects (Installation, ParallelTests,
+      Metadata, RunnerHook, ReporterHook). Installation (>= 73%) and
+      ParallelTests (>= 78%) carve-out for module-helper describe
+      mapping (mutant credits only `.method` describes).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:rspec [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:rspec [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:rspec [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        run_mutant_gate "RSpec::Installation" \
+          "rspec_tracer/rspec/installation" \
+          "RSpecTracer::RSpec::Installation*" 73 || fail=1
+        run_mutant_gate "RSpec::ParallelTests" \
+          "rspec_tracer/rspec/parallel_tests" \
+          "RSpecTracer::RSpec::ParallelTests*" 78 || fail=1
+        run_mutant_gate "RSpec::Metadata" \
+          "rspec_tracer/rspec/metadata" \
+          "RSpecTracer::RSpec::Metadata*" 85 || fail=1
+        run_mutant_gate "RSpec::RunnerHook" \
+          "rspec_tracer/rspec/runner_hook" \
+          "RSpecTracer::RSpec::RunnerHook*" 85 || fail=1
+        run_mutant_gate "RSpec::ReporterHook" \
+          "rspec_tracer/rspec/reporter_hook" \
+          "RSpecTracer::RSpec::ReporterHook*" 85 || fail=1
+        exit "$fail"
+
+  test:mutation:top-level:
+    desc: >-
+      M8.3-A mutation pass on top-level RSpecTracer module's 17 class
+      methods (start / at_exit_behavior / run_finalize incl. M8.2 rescue
+      branch / emit_reporters / setup_coverage / setup_rails / etc).
+      All 17 land at 100% with the existing spec surface.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:top-level [RSpecTracer] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --include lib --require rspec_tracer \
+          "RSpecTracer.start" "RSpecTracer.at_exit_behavior" \
+          "RSpecTracer.run_finalize" "RSpecTracer.emit_reporters" \
+          "RSpecTracer.run_simplecov_exit_task" "RSpecTracer.run_coverage_exit_task" \
+          "RSpecTracer.run_exit_tasks" "RSpecTracer.initial_setup" \
+          "RSpecTracer.setup_coverage" "RSpecTracer.setup_rails" \
+          "RSpecTracer.engine" "RSpecTracer.coverage_reporter" \
+          "RSpecTracer.simplecov?" "RSpecTracer.parallel_tests?" \
+          "RSpecTracer.rails?" "RSpecTracer.build_run_metadata" \
+          "RSpecTracer.run_elapsed_seconds" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [RSpecTracer]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 85) ? 0 : 1 }"; then
+          echo "mutation:top-level [RSpecTracer] PASS (coverage $cov% >= 85%)"
+          exit 0
+        fi
+        echo "mutation:top-level [RSpecTracer] FAIL (coverage $cov% < 85%)"
+        exit 1
+
+  test:mutation:full:
+    desc: >-
+      Full mutation pass — test:mutation:smoke + the M8.3-A per-module
+      subtasks shipping in this milestone (tracker / storage / rspec /
+      top-level). M8.3-B will add :remote-cache, :rails, :reporters.
+      Runs per-PR + per-main via lint-and-specs.yml's Test - Mutation
+      (full) step (M3.8 Part C migration from the deleted nightly.yml).
+    cmds:
+      - task: test:mutation:smoke
+      - task: test:mutation:tracker
+      - task: test:mutation:storage
+      - task: test:mutation:rspec
+      - task: test:mutation:top-level
 
   test:dogfood:
     desc: Dogfood — run rspec-tracer against the benchmark ruby_app fixture, cold + warm
