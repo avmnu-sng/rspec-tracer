@@ -95,6 +95,9 @@ jobs:
       - name: Test — Unit
         run: task test:unit
 
+      - name: Test — Edge cases
+        run: task test:edge-cases
+
   spec-floor:
     # Floor-pin sanity cell: pins every multi-line dep to its currently
     # maintained legacy major (redis 4.8, msgpack 1.7, parallel_tests
@@ -138,6 +141,9 @@ jobs:
 
       - name: Test — Unit
         run: task test:unit
+
+      - name: Test — Edge cases
+        run: task test:edge-cases
 
   ruby-project:
     name: ruby-project (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
@@ -298,6 +304,11 @@ jobs:
         env:
           RSPEC_VERSION: "~> 3.13.0"
         run: task test:features:jruby
+
+      - name: Test — Edge cases (JRuby — concurrent_write + sqlite cases auto-skip)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: task test:edge-cases
 
   benchmark:
     name: benchmark

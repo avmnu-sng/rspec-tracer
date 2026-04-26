@@ -63,11 +63,26 @@ Metrics/ClassLength:
 Metrics/CyclomaticComplexity:
   Max: 10
 
+# Edge-case specs (M8.2) drive the storage layer end-to-end - mktmpdir +
+# save + corruption + load + multiple invariant checks. Same posture the
+# fuzz dir already gets via the RSpec block above.
 Metrics/MethodLength:
   Max: 25
+  Exclude:
+    - "spec/edge_cases/**/*"
 
 Metrics/ModuleLength:
   Max: 300
+
+RSpec/ExampleLength:
+  Exclude:
+    - "spec/edge_cases/**/*"
+    - "spec/support/integration_cleanup_spec.rb"
+
+RSpec/MultipleExpectations:
+  Exclude:
+    - "spec/edge_cases/**/*"
+    - "spec/support/integration_cleanup_spec.rb"
 
 RSpec/SpecFilePathFormat:
   Enabled: false

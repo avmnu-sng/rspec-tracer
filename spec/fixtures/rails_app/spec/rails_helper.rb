@@ -54,7 +54,15 @@ RSpec.configure do |config|
     config.fixture_path = fixtures_path
   end
 
-  config.use_transactional_fixtures = true
+  # Default: transactional fixtures on (matches Rails idiomatic test
+  # setup; covered by `task test:features:rails`). When the M8.2-absorbed
+  # narrow-AR-schema scenario flips RSPEC_TRACER_RAILS_TRANSACTIONAL=false,
+  # each example commits its writes to the test DB and the per-example
+  # schema-subscriber attribution path (Tracker::Notifications) becomes
+  # the only mechanism observing AR schema changes - the canonical
+  # use_transactional_fixtures=false case real users with per-example
+  # transactions off see. Driven by `task test:features:rails:narrow-schema`.
+  config.use_transactional_fixtures = ENV.fetch('RSPEC_TRACER_RAILS_TRANSACTIONAL', 'true') != 'false'
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 
