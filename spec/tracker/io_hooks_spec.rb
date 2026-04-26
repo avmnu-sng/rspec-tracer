@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'json'
 require 'tmpdir'
+require 'yaml'
 require 'rspec_tracer/tracker/io_hooks'
 
 RSpec.describe RSpecTracer::Tracker::IOHooks do
@@ -32,6 +34,83 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
     it 'captures the expanded root' do
       expect(described_class.root).to eq(File.expand_path(root))
     end
+
+    it 'expands a relative root via File.expand_path' do
+      Dir.chdir(tmp_base) do
+        described_class.install(root: 'project')
+
+        expect(described_class.root).to match(%r{\A/.*/project\z})
+      end
+    end
+
+    it 'defaults filter to a lambda that accepts every path' do
+      bucket = {}
+      described_class.with_bucket(bucket) { described_class.record(write_fixture('config/locale.yml')) }
+
+      expect(bucket).not_to be_empty
+    end
+
+    it 'wires @root_prefix so subsequent records produce relative-path identities' do
+      # Verifies `@root_prefix = "#{@root}/"` (not "#{nil}/" or some other
+      # variant) by exercising end-to-end identity construction.
+      bucket = {}
+      described_class.with_bucket(bucket) { described_class.record(write_fixture('config/locale.yml')) }
+
+      expect(bucket).to have_key('data:config/locale.yml')
+    end
+
+    it 'defaults extensions to DEFAULT_EXTENSIONS (covers .haml among others)' do
+      # .haml is in DEFAULT_EXTENSIONS but not a typical user-supplied
+      # filter; if the default ever narrows, this test breaks.
+      bucket = {}
+      described_class.with_bucket(bucket) { described_class.record(write_fixture('view.haml')) }
+
+      expect(bucket).not_to be_empty
+    end
+
+    it 'prepends FileReads onto File.singleton_class' do
+      expect(File.singleton_class.ancestors).to include(described_class::FileReads)
+    end
+
+    it 'prepends IOReads onto IO.singleton_class' do
+      expect(IO.singleton_class.ancestors).to include(described_class::IOReads)
+    end
+
+    it 'prepends YAMLReads onto YAML.singleton_class' do
+      expect(YAML.singleton_class.ancestors).to include(described_class::YAMLReads)
+    end
+
+    it 'prepends JSONReads onto JSON.singleton_class' do
+      expect(JSON.singleton_class.ancestors).to include(described_class::JSONReads)
+    end
+
+    it 'prepends KernelReads onto Kernel.singleton_class' do
+      expect(Kernel.singleton_class.ancestors).to include(described_class::KernelReads)
+    end
+
+    it 'prepends KernelReads onto Kernel itself for implicit-load dispatch' do
+      # Kernel.load via `Kernel.load 'x'` hits the singleton_class chain;
+      # implicit `load 'x'` in a method body dispatches via Object's
+      # ancestor chain through Kernel-as-module. Both must be hooked.
+      expect(Kernel.ancestors).to include(described_class::KernelReads)
+    end
+
+    it 'skips the YAMLReads prepend when ::YAML is not loaded' do
+      described_class.uninstall
+      hide_const('YAML')
+
+      # The require_relative above already loaded YAMLReads in the outer
+      # around hook, so the constant is reachable; the if-defined? guard
+      # in install just decides whether to call .prepend on ::YAML.
+      expect { described_class.install(root: root) }.not_to raise_error
+    end
+
+    it 'skips the JSONReads prepend when ::JSON is not loaded' do
+      described_class.uninstall
+      hide_const('JSON')
+
+      expect { described_class.install(root: root) }.not_to raise_error
+    end
   end
 
   describe '.uninstall' do
@@ -39,6 +118,20 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
       described_class.uninstall
 
       expect(described_class.installed?).to be(false)
+    end
+
+    it 'clears @root so a stale value cannot leak post-uninstall' do
+      described_class.uninstall
+
+      expect(described_class.root).to be_nil
+    end
+
+    it 'reduces record to a no-op (every hook fast-rejects on nil @root_prefix)' do
+      described_class.uninstall
+      bucket = {}
+      described_class.with_bucket(bucket) { described_class.record(write_fixture('post.yml')) }
+
+      expect(bucket).to be_empty
     end
   end
 

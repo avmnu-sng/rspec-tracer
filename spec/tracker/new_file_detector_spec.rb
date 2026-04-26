@@ -24,6 +24,18 @@ RSpec.describe RSpecTracer::Tracker::NewFileDetector do
 
       expect(detector.root).to eq(File.expand_path(root))
     end
+
+    it 'expands a relative root via File.expand_path' do
+      Dir.chdir(tmp_base) do
+        detector = described_class.new(root: 'project')
+
+        # macOS Dir.chdir resolves /var/folders/... -> /private/var/folders/...
+        # via symlink, so equality across both expand_path calls is fragile.
+        # Assert the absolute-path invariant directly so the mutation
+        # `@root = root` (which would leave @root as 'project') registers.
+        expect(detector.root).to match(%r{\A/.*/project\z})
+      end
+    end
   end
 
   describe '#new_files with empty cache' do
