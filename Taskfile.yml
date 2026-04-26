@@ -545,19 +545,105 @@ tasks:
         echo "mutation:top-level [RSpecTracer] FAIL (coverage $cov% < 85%)"
         exit 1
 
+  test:mutation:remote-cache:
+    desc: >-
+      M8.3-B mutation pass on remote_cache/ (8 subjects: Backend,
+      Validator, Archive, GitAncestry, UserTasks, LocalFsBackend,
+      RedisBackend, S3Backend). Per-subject gates carve out the same
+      structural describe-label ceiling as M8.3-A's Storage::SqliteBackend
+      (mutant maps tests via first-token of full_description; private
+      helpers exercised only through public-method describes show as
+      alive). UserTasks / LocalFsBackend / RedisBackend / S3Backend
+      have 4-7x more mutant subjects than public describe blocks
+      (private-helper density), driving the carve-outs. No spec
+      restructuring or mutation-bait additions per the M8.3-A
+      no-anti-pattern-test-org rule.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:remote-cache [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:remote-cache [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:remote-cache [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # Per-subject gates sized at ~3-5 pp under local M2 Max baselines
+        # for CI ubuntu-latest variance (per memory:
+        # feedback_mutant_local_vs_ci_variance, codified from M8.3-A retro).
+        # Re-cut from CI baselines after the first CI run if any subject
+        # drops materially below local (M8.3-A's 154ec27 precedent).
+        run_mutant_gate "RemoteCache::Backend" \
+          "rspec_tracer/remote_cache/backend" \
+          "RSpecTracer::RemoteCache::Backend*" 95 || fail=1
+        run_mutant_gate "RemoteCache::Validator" \
+          "rspec_tracer/remote_cache/validator" \
+          "RSpecTracer::RemoteCache::Validator*" 85 || fail=1
+        run_mutant_gate "RemoteCache::Archive" \
+          "rspec_tracer/remote_cache/archive" \
+          "RSpecTracer::RemoteCache::Archive*" 83 || fail=1
+        run_mutant_gate "RemoteCache::GitAncestry" \
+          "rspec_tracer/remote_cache/git_ancestry" \
+          "RSpecTracer::RemoteCache::GitAncestry*" 90 || fail=1
+        # UserTasks / LocalFsBackend / RedisBackend / S3Backend share
+        # the M8.3-A Storage::SqliteBackend describe-label ceiling
+        # (memory: feedback_mutant_describe_label_ceiling): 4-7x more
+        # mutant subjects than public describe blocks because private
+        # helpers (#build_admin_ancestry, #blank?, #join_key,
+        # #object_key_for, #aws_rm_recursive_silent, #log_debug etc.)
+        # are exercised only through #download / #upload / #prune!
+        # describes. Mutant credits those tests to the public method,
+        # not the private helper, so the helper-internal mutations
+        # show as alive. Restructuring describes for coverage is the
+        # test-organization-for-coverage anti-pattern.
+        run_mutant_gate "RemoteCache::UserTasks" \
+          "rspec_tracer/remote_cache/user_tasks" \
+          "RSpecTracer::RemoteCache::UserTasks*" 73 || fail=1
+        run_mutant_gate "RemoteCache::LocalFsBackend" \
+          "rspec_tracer/remote_cache/local_fs_backend" \
+          "RSpecTracer::RemoteCache::LocalFsBackend*" 73 || fail=1
+        run_mutant_gate "RemoteCache::RedisBackend" \
+          "rspec_tracer/remote_cache/redis_backend" \
+          "RSpecTracer::RemoteCache::RedisBackend*" 72 || fail=1
+        run_mutant_gate "RemoteCache::S3Backend" \
+          "rspec_tracer/remote_cache/s3_backend" \
+          "RSpecTracer::RemoteCache::S3Backend*" 65 || fail=1
+        exit "$fail"
+
   test:mutation:full:
     desc: >-
-      Full mutation pass — test:mutation:smoke + the M8.3-A per-module
-      subtasks shipping in this milestone (tracker / storage / rspec /
-      top-level). M8.3-B will add :remote-cache, :rails, :reporters.
-      Runs per-PR + per-main via lint-and-specs.yml's Test - Mutation
-      (full) step (M3.8 Part C migration from the deleted nightly.yml).
+      Full mutation pass - test:mutation:smoke + the M8.3-A per-module
+      subtasks (tracker / storage / rspec / top-level) + the M8.3-B
+      :remote-cache subtask. M8.3-C will add :rails, :reporters. Runs
+      per-PR + per-main via lint-and-specs.yml's parallel mutation jobs
+      (M3.8 Part C migration from the deleted nightly.yml).
     cmds:
       - task: test:mutation:smoke
       - task: test:mutation:tracker
       - task: test:mutation:storage
       - task: test:mutation:rspec
       - task: test:mutation:top-level
+      - task: test:mutation:remote-cache
 
   test:dogfood:
     desc: Dogfood — run rspec-tracer against the benchmark ruby_app fixture, cold + warm
