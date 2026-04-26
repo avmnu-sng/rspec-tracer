@@ -178,6 +178,19 @@ module RSpecTracer
 
       RSpecTracer.logger.debug "RSpec tracer persisted cache (took #{elapsed})"
       snapshot
+    rescue StandardError => e
+      # Graceful-degradation contract per docs/revamp/ARCHITECTURE.md
+      # §Cache corruption recovery: never propagate storage errors
+      # into the user's test suite. Read-only cache_path, disk-full
+      # mid-write, permission flips between runs - log and skip
+      # report emission. The caller (run_exit_tasks) checks for nil
+      # before calling emit_reporters; coverage / parallel_tests
+      # finalize paths run independently downstream.
+      RSpecTracer.logger.warn(
+        "rspec-tracer: cache persistence failed (#{e.class}: #{e.message}); " \
+        'skipping report generation. Verify cache_path is writable.'
+      )
+      nil
     end
 
     # M6.1. Fire the configured reporters against the persisted

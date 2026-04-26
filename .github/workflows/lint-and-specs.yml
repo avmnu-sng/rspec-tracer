@@ -132,7 +132,10 @@ jobs:
       - name: Test — Mutation (full, whole TimeFormatter module)
         run: task test:mutation:full
 
-      - name: Test — Fuzz (full, 10000 iterations)
+      - name: Test — Edge cases
+        run: task test:edge-cases
+
+      - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
         run: task test:fuzz:full
 
       - name: Test — Dogfood

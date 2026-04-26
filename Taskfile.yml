@@ -208,14 +208,34 @@ tasks:
       - bundle exec rspec spec/properties
 
   test:fuzz:smoke:
-    desc: Fuzz smoke — 100 random-byte iterations against the v2 JSON backend loader
+    desc: >-
+      Fuzz smoke — 100 iterations against each of the 3 fuzz harnesses
+      (json_backend, multi-backend cache_loader, coverage_adapter).
     cmds:
       - ITERATIONS=100 bundle exec ruby spec/fuzz/json_backend_fuzz.rb
+      - ITERATIONS=100 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
+      - ITERATIONS=100 bundle exec ruby spec/fuzz/coverage_adapter_fuzz.rb
 
   test:fuzz:full:
-    desc: Fuzz full — 10000 iterations (weekly CI only)
+    desc: >-
+      Fuzz full — 10000 iterations against each of the 3 fuzz harnesses
+      (json_backend, multi-backend cache_loader spread across :json /
+      :msgpack / sqlite, coverage_adapter pathological shapes). Runs
+      per-PR + per-main via `lint-and-specs.yml`'s `Test - Fuzz (full)`
+      step (M3.8 Part C migration from the deleted nightly.yml).
     cmds:
       - ITERATIONS=10000 bundle exec ruby spec/fuzz/json_backend_fuzz.rb
+      - ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
+      - ITERATIONS=10000 bundle exec ruby spec/fuzz/coverage_adapter_fuzz.rb
+
+  test:edge-cases:
+    desc: >-
+      M8.2 edge case suite — adversarial filesystem + cache + concurrency
+      tests under spec/edge_cases/. Excluded from the default rspec sweep
+      via .rspec --exclude-pattern (memory: feedback_rspec_exclude_pattern_positional).
+      Runs per-PR via lint-and-specs.yml's `Test - Edge cases` step.
+    cmds:
+      - bundle exec rspec --no-color spec/edge_cases
 
   test:mutation:smoke:
     desc: >-

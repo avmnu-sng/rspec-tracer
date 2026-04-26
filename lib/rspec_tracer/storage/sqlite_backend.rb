@@ -50,6 +50,32 @@ module RSpecTracer
       JOURNAL_MODE_SQL = 'PRAGMA journal_mode = MEMORY'
       SYNCHRONOUS_SQL = 'PRAGMA synchronous = NORMAL'
 
+      # Two concurrent save_graph calls (parallel_tests workers, fork-
+      # based test harnesses) both reach `BEGIN IMMEDIATE` and contend
+      # on SQLite's RESERVED write lock. Without busy_timeout, the
+      # losing writer raises SQLite3::BusyException immediately. 5000
+      # ms gives ~5x margin over a worst-case 1 s save on large caches
+      # (cache_load benchmark p50 ~0.6 s at 500 examples), preserving
+      # the storage layer's "concurrent writers serialize cleanly"
+      # contract verified in spec/edge_cases/concurrent_write_spec.rb
+      # (M8.2).
+      BUSY_TIMEOUT_MS = 5_000
+
+      # SQLite's on-disk file format starts with the literal bytes
+      # `SQLite format 3\000` (16 bytes). A file under db_path whose
+      # leading bytes differ is not a valid database - corrupted bytes,
+      # zero-length file, or a foreign file collision. Per the
+      # architecture's graceful-degradation rule (load_graph never
+      # raises; finalize writes a fresh cache), save_graph self-heals
+      # by deleting the corrupt file before opening, so the subsequent
+      # Database.new + ensure_schema! sequence writes a fresh db.
+      # Without this, configure_connection's PRAGMA raises
+      # SQLite3::NotADatabaseException and the user is stuck unless
+      # they manually rm the cache. M8.2's cache_loader_fuzz harness
+      # surfaced this gap.
+      SQLITE_MAGIC_BYTES = "SQLite format 3\x00".b.freeze
+      private_constant :SQLITE_MAGIC_BYTES
+
       STATUS_FIELDS = {
         interrupted_examples: 'interrupted',
         flaky_examples: 'flaky',
@@ -211,6 +237,7 @@ module RSpecTracer
 
       def with_write_connection
         FileUtils.mkdir_p(@cache_path)
+        reset_corrupt_db_file!
         db = ::SQLite3::Database.new(db_path)
         configure_connection(db)
         ensure_schema!(db)
@@ -219,9 +246,23 @@ module RSpecTracer
         db&.close
       end
 
+      # Probe db_path's leading bytes against SQLite's magic header.
+      # Random bytes / zero-length / foreign collision -> delete so
+      # save_graph can write fresh. Cheap (one 16-byte read); avoids
+      # the SQLite3::NotADatabaseException path on configure_connection.
+      def reset_corrupt_db_file!
+        return unless File.file?(db_path)
+        return if File.size(db_path) >= SQLITE_MAGIC_BYTES.bytesize &&
+          File.binread(db_path, SQLITE_MAGIC_BYTES.bytesize) == SQLITE_MAGIC_BYTES
+
+        info("sqlite: cache file at #{db_path} is not a valid SQLite database; resetting for cold-cache rewrite")
+        File.delete(db_path)
+      end
+
       def configure_connection(db)
         db.execute(JOURNAL_MODE_SQL)
         db.execute(SYNCHRONOUS_SQL)
+        db.busy_timeout = BUSY_TIMEOUT_MS
       end
 
       def meta_table_exists?(db)

@@ -11,28 +11,32 @@ and every push to `main` via the `lint-and-specs` workflow.
 
 ## Running
 
-    ITERATIONS=100   bundle exec ruby spec/fuzz/json_backend_fuzz.rb   # smoke
-    ITERATIONS=10000 bundle exec ruby spec/fuzz/json_backend_fuzz.rb   # full
-    task test:fuzz:smoke        # wrapper (100 iter)
-    task test:fuzz:full         # wrapper (10000 iter)
+    ITERATIONS=100   bundle exec ruby spec/fuzz/<harness>.rb   # smoke
+    ITERATIONS=10000 bundle exec ruby spec/fuzz/<harness>.rb   # full
+    task test:fuzz:smoke        # wrapper — 100 iter against all 3 harnesses
+    task test:fuzz:full         # wrapper — 10000 iter against all 3 harnesses
 
 ## Reproducibility
 
 Every run prints the PRNG seed. To replay:
 
-    SEED=<n> ITERATIONS=<n> bundle exec ruby spec/fuzz/json_backend_fuzz.rb
+    SEED=<n> ITERATIONS=<n> bundle exec ruby spec/fuzz/<harness>.rb
 
 ## Current harnesses
 
-| File                     | Target                                                              |
-|--------------------------|---------------------------------------------------------------------|
-| `json_backend_fuzz.rb`   | `RSpecTracer::Storage::JsonBackend#load_graph` on arbitrary bytes   |
+| File                       | Target                                                                                                  |
+|----------------------------|---------------------------------------------------------------------------------------------------------|
+| `json_backend_fuzz.rb`     | `RSpecTracer::Storage::JsonBackend#load_graph` (`:json` serializer) on arbitrary bytes.                 |
+| `cache_loader_fuzz.rb`     | All 3 backends — `JsonBackend :json` + `JsonBackend :msgpack` (zlib + MessagePack pipeline) + `SqliteBackend` (sqlite3 C bindings). Iterations split evenly per backend. |
+| `coverage_adapter_fuzz.rb` | `Tracker::CoverageAdapter#compute_diff` against pathological coverage maps — mixed nil / huge counts / negative ints / Hash vs Array shapes / mode flips. |
 
-Today the harness only fires truly-random bytes, so the outcome
-distribution is dominated by parser-level failures that the backend
-rescues into nil. Broader coverage (valid-UTF-8 garbage,
-valid-JSON/wrong-shape, structural corruption of deeper cache files)
-is deliberately deferred to a later dedicated fuzz milestone.
+`json_backend_fuzz.rb` stays focused on the `:json` decode path; it is
+the historical harness from M2.5 and runs with the highest iteration
+budget per backend. `cache_loader_fuzz.rb` extends fuzz coverage to
+the post-M3.8 backend surface (msgpack + sqlite). `coverage_adapter_fuzz.rb`
+broadens beyond storage into the tracker hot path - exercises
+`compute_diff`'s nil-tolerant + length-divergent branches that load_graph
+fuzz cannot reach.
 
 ## Writing a new harness
 
