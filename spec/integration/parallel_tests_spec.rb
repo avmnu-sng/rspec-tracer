@@ -57,12 +57,12 @@ module ParallelTestsSpecHelpers
   end
 
   def load_last_run
-    JSON.parse(File.read(File.join(CACHE_ROOT, 'last_run.json')))
+    JSON.parse(File.read(File.join(CACHE_ROOT, 'last_run.json'), encoding: 'UTF-8'))
   end
 
   def load_top_cache_file(name)
     run_id = load_last_run.fetch('run_id')
-    JSON.parse(File.read(File.join(CACHE_ROOT, run_id, name)))
+    JSON.parse(File.read(File.join(CACHE_ROOT, run_id, name), encoding: 'UTF-8'))
   end
 end
 

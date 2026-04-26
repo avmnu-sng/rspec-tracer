@@ -37,12 +37,12 @@ RSpec.describe 'ruby_app v2 engine integration' do
   end
 
   def load_last_run_manifest
-    JSON.parse(File.read(File.join(cache_dir, 'last_run.json')))
+    JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))
   end
 
   def load_cache_file(name)
     run_id = load_last_run_manifest.fetch('run_id')
-    JSON.parse(File.read(File.join(cache_dir, run_id, name)))
+    JSON.parse(File.read(File.join(cache_dir, run_id, name), encoding: 'UTF-8'))
   end
 
   def ensure_bundle_installed!
@@ -106,15 +106,15 @@ RSpec.describe 'ruby_app v2 engine integration' do
 
     it 'embeds the payload run_id matching report.json' do
       run_rspec
-      report_json_run_id = JSON.parse(File.read(File.join(report_dir, 'report.json')))['run_id']
-      html = File.read(File.join(report_dir, 'index.html'))
+      report_json_run_id = JSON.parse(File.read(File.join(report_dir, 'report.json'), encoding: 'UTF-8'))['run_id']
+      html = File.read(File.join(report_dir, 'index.html'), encoding: 'UTF-8')
 
       expect(html).to include(%("run_id":"#{report_json_run_id}"))
     end
 
     it 'renders server-side fallback tables so JavaScript-disabled readers see data' do
       run_rspec
-      html = File.read(File.join(report_dir, 'index.html'))
+      html = File.read(File.join(report_dir, 'index.html'), encoding: 'UTF-8')
 
       expect(html).to include('id="fallback-all-examples"')
       expect(html).not_to include('<!-- RSPEC_TRACER_FALLBACK -->')

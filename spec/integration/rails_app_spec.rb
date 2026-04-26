@@ -69,8 +69,8 @@ module RailsAppSpecHelpers
   end
 
   def load_cache_file(name)
-    manifest = JSON.parse(File.read(File.join(CACHE_DIR, 'last_run.json')))
-    JSON.parse(File.read(File.join(CACHE_DIR, manifest.fetch('run_id'), name)))
+    manifest = JSON.parse(File.read(File.join(CACHE_DIR, 'last_run.json'), encoding: 'UTF-8'))
+    JSON.parse(File.read(File.join(CACHE_DIR, manifest.fetch('run_id'), name), encoding: 'UTF-8'))
   end
 end
 

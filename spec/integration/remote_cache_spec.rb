@@ -97,7 +97,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
     it 'preserves last_run.json and the run directory contents' do
       backend = build_backend(branch: 'main', default_branch: 'main')
       write_local_cache(run_id: 'run-main')
-      original_content = File.read(File.join(@cache_path, 'run-main', 'all_examples.json'))
+      original_content = File.read(File.join(@cache_path, 'run-main', 'all_examples.json'), encoding: 'UTF-8')
 
       backend.upload('main-sha-1')
 
@@ -106,7 +106,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
       result = backend.download('main-sha-1')
 
       expect(result).to be(true)
-      expect(File.read(File.join(@cache_path, 'run-main', 'all_examples.json'))).to eq(original_content)
+      expect(File.read(File.join(@cache_path, 'run-main', 'all_examples.json'), encoding: 'UTF-8')).to eq(original_content)
       manifest = JSON.parse(File.read(File.join(@cache_path, 'last_run.json')))
       expect(manifest['schema_version']).to eq(current_schema)
     end
