@@ -260,9 +260,16 @@ module RSpecTracer
       end
 
       def configure_connection(db)
+        # Set busy_timeout FIRST. journal_mode = MEMORY itself requires
+        # the file's write lock to switch modes; if another connection is
+        # mid-transaction (BEGIN IMMEDIATE held), the PRAGMA contends on
+        # that lock and raises SQLite3::BusyException unless busy_timeout
+        # has been configured. M8.2's CI run on Ruby 3.3 caught this: the
+        # losing concurrent writer never reached its BEGIN IMMEDIATE
+        # because configure_connection's PRAGMA failed first.
+        db.busy_timeout = BUSY_TIMEOUT_MS
         db.execute(JOURNAL_MODE_SQL)
         db.execute(SYNCHRONOUS_SQL)
-        db.busy_timeout = BUSY_TIMEOUT_MS
       end
 
       def meta_table_exists?(db)
