@@ -42,11 +42,11 @@ require_relative 'rspec_tracer/version'
 # Top-level entry point. Drives the M5.1 lifecycle:
 #
 #   RSpecTracer.start
-#     → RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
-#     → setup_coverage                (::Coverage.start unless SimpleCov owns it)
-#     → setup_rails                   (detect ::Rails::VERSION)
-#     → Engine.new.setup              (observers + cache load + filter decisions)
-#     → coverage_reporter             (coverage.json emission)
+#     -> RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
+#     -> setup_coverage                (::Coverage.start unless SimpleCov owns it)
+#     -> setup_rails                   (detect ::Rails::VERSION)
+#     -> Engine.new.setup              (observers + cache load + filter decisions)
+#     -> coverage_reporter             (coverage.json emission)
 #
 #   at_exit_behavior (installed via `at_exit` elsewhere in the boot
 #   flow) runs the finalize stack: Engine#finalize writes the 13-file
@@ -180,7 +180,7 @@ module RSpecTracer
       snapshot
     rescue StandardError => e
       # Graceful-degradation contract per docs/revamp/ARCHITECTURE.md
-      # §Cache corruption recovery: never propagate storage errors
+      # section Cache corruption recovery: never propagate storage errors
       # into the user's test suite. Read-only cache_path, disk-full
       # mid-write, permission flips between runs - log and skip
       # report emission. The caller (run_exit_tasks) checks for nil

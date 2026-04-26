@@ -351,7 +351,7 @@ module RSpecTracer
       count * units[match[2].downcase]
     end
 
-    # Deprecated in 2.0. Kept per USER_FACING_SURFACE.md §3 "deprecated
+    # Deprecated in 2.0. Kept per USER_FACING_SURFACE.md section 3 "deprecated
     # options keep working with one-time warnings." Migration target:
     # `remote_cache_uri` (for the URI form) or
     # `remote_cache_backend :s3, bucket:, prefix:` (for structured form).

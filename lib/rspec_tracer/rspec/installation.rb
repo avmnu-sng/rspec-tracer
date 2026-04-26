@@ -26,8 +26,6 @@ module RSpecTracer
     # Idempotence: `Module#prepend` is a no-op when the module is already
     # in the ancestors chain. Double-calling install! is safe.
     module Installation
-      module_function
-
       # `install!` is named for its side effect (prepend the hooks), not
       # as a predicate - rubocop's Naming/PredicateMethod defaults to
       # flagging anything that doesn't return a boolean, but the trailing
@@ -39,7 +37,7 @@ module RSpecTracer
       # time (RSpec::Core::Time vanishes while the outer suite is still
       # finalizing).
       # rubocop:disable Naming/PredicateMethod
-      def install!(runner_class: ::RSpec::Core::Runner, reporter_class: ::RSpec::Core::Reporter)
+      def self.install!(runner_class: ::RSpec::Core::Runner, reporter_class: ::RSpec::Core::Reporter)
         warn_if_coverage_already_accumulated
 
         prepend_hook(runner_class, RSpecTracer::RSpec::RunnerHook)
@@ -49,7 +47,7 @@ module RSpecTracer
       end
       # rubocop:enable Naming/PredicateMethod
 
-      def prepend_hook(target_class, hook_module)
+      def self.prepend_hook(target_class, hook_module)
         return if target_class.ancestors.include?(hook_module)
 
         target_class.prepend(hook_module)
@@ -66,7 +64,7 @@ module RSpecTracer
       # Conservative by design: skip the warning when SimpleCov is
       # running (SimpleCov-first is the documented load order), and
       # when Coverage hasn't started (defended-library edge case).
-      def warn_if_coverage_already_accumulated
+      def self.warn_if_coverage_already_accumulated
         return unless defined?(::Coverage)
         return unless ::Coverage.respond_to?(:running?) && ::Coverage.running?
         return if defined?(::SimpleCov) && ::SimpleCov.running
@@ -84,7 +82,7 @@ module RSpecTracer
         nil
       end
 
-      def _count_accumulated_files
+      def self._count_accumulated_files
         ::Coverage.peek_result.count do |_, cov|
           lines = cov.is_a?(::Hash) ? cov[:lines] : cov
           lines.is_a?(::Array) && lines.any? { |strength| strength.is_a?(::Integer) && strength.positive? }

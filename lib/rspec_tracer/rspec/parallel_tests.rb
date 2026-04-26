@@ -29,9 +29,7 @@ module RSpecTracer
     module ParallelTests
       LOCK_ENCODING = 'UTF-8'
 
-      module_function
-
-      def active?
+      def self.active?
         return false if ::ENV.fetch('TEST_ENV_NUMBER', nil).nil?
         return false if ::ENV.fetch('PARALLEL_TEST_GROUPS', nil).nil?
 
@@ -42,21 +40,21 @@ module RSpecTracer
       # for the first worker under parallel_tests; otherwise '2', '3',
       # etc. When the gem is not running under parallel_tests, the
       # single process is its own narrator.
-      def narrator?
+      def self.narrator?
         return true unless active?
 
         value = ::ENV.fetch('TEST_ENV_NUMBER', '').to_s
         value.empty? || value == '1'
       end
 
-      def verbose?
+      def self.verbose?
         ::ENV.fetch('RSPEC_TRACER_VERBOSE', nil) == 'true'
       end
 
       # True iff this worker should emit rollup log lines. Per-example
       # RSpec output (dots, failures, durations) is unaffected - that's
       # RSpec's own Reporter, not this module.
-      def log_rollups?
+      def self.log_rollups?
         verbose? || narrator?
       end
 
@@ -64,7 +62,7 @@ module RSpecTracer
       # Writes this worker's TEST_ENV_NUMBER into the shared lock file
       # under an exclusive lock so the max-seen value ends up correct
       # regardless of worker boot order.
-      def setup!
+      def self.setup!
         return false unless active?
 
         require 'parallel_tests' unless defined?(::ParallelTests)
@@ -81,7 +79,7 @@ module RSpecTracer
       # (via the legacy CoverageMerger - coverage.json isn't part of
       # the storage backend's snapshot shape), and the per-worker dir
       # purge.
-      def finalize!
+      def self.finalize!
         return false unless active?
         return false unless last_process?
 
@@ -99,7 +97,7 @@ module RSpecTracer
         false
       end
 
-      def track_test_env_number!
+      def self.track_test_env_number!
         ::File.open(RSpecTracer.lock_file, ::File::RDWR | ::File::CREAT, 0o644) do |f|
           f.flock(::File::LOCK_EX)
 
@@ -114,7 +112,7 @@ module RSpecTracer
 
       # Elects the worker that performs the per-run merge. Delegates to
       # `::ParallelTests.first_process?`, which returns true iff
-      # `TEST_ENV_NUMBER.to_i <= 1` — i.e. for exactly one worker
+      # `TEST_ENV_NUMBER.to_i <= 1` -- i.e. for exactly one worker
       # (TEST_ENV_NUMBER == '' or '1'), regardless of how many workers
       # were actually spawned vs. how many CPUs the runner reports.
       #
@@ -126,13 +124,13 @@ module RSpecTracer
       #      worker 1 could finish its examples before worker 2 even
       #      loaded spec_helper, observe itself as the max, and enter
       #      `wait_for_other_processes_to_finish` concurrently with
-      #      worker 2's own self-election — both workers spun on each
+      #      worker 2's own self-election -- both workers spun on each
       #      other's pid.
       #
       #   2. `::ParallelTests.last_process?` compares TEST_ENV_NUMBER
       #      against PARALLEL_TEST_GROUPS. parallel_rspec's CLI sets
       #      PARALLEL_TEST_GROUPS to the CPU-based *intended* process
-      #      count, NOT the actual worker count — so when fewer specs
+      #      count, NOT the actual worker count -- so when fewer specs
       #      than CPUs are present, no TEST_ENV_NUMBER ever matches
       #      PARALLEL_TEST_GROUPS and the merge is silently skipped.
       #
@@ -141,22 +139,22 @@ module RSpecTracer
       # one worker regardless of CPU count. The elected worker still
       # calls `wait_for_other_processes_to_finish` before merging, so
       # peer caches are guaranteed on disk by merge time.
-      def last_process?
+      def self.last_process?
         return false unless active?
         return false unless defined?(::ParallelTests)
 
         ::ParallelTests.first_process?
       end
 
-      def remove_lock_file!
+      def self.remove_lock_file!
         ::FileUtils.rm_f(RSpecTracer.lock_file)
       end
 
-      def worker_group_count
+      def self.worker_group_count
         ::ENV.fetch('PARALLEL_TEST_GROUPS', '0').to_i
       end
 
-      def peer_paths_for(base_dir)
+      def self.peer_paths_for(base_dir)
         (1..worker_group_count).filter_map do |n|
           path = ::File.join(base_dir, "parallel_tests_#{n}")
           path if ::File.directory?(path)
@@ -170,7 +168,7 @@ module RSpecTracer
       # untouched. The JSON merge path stays authoritative for the
       # default `:json` backend which is what parallel_tests fixtures
       # exercise in CI.
-      def merge_snapshot!
+      def self.merge_snapshot!
         return unless RSpecTracer.storage_backend == :json
 
         base_dir = ::File.dirname(RSpecTracer.cache_path)
@@ -195,7 +193,7 @@ module RSpecTracer
       end
 
       # Merge per-worker coverage.json files into a top-level coverage.json.
-      def merge_coverage!
+      def self.merge_coverage!
         base_dir = ::File.dirname(RSpecTracer.coverage_path)
         peer_paths = peer_paths_for(base_dir)
         return if peer_paths.empty?
@@ -215,7 +213,7 @@ module RSpecTracer
         RSpecTracer.logger.debug("RSpec tracer merged parallel tests coverage (took #{elapsed})") if log_rollups?
       end
 
-      def purge_worker_dirs!
+      def self.purge_worker_dirs!
         [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
           base_dir = ::File.dirname(path)
           (1..worker_group_count).each do |n|

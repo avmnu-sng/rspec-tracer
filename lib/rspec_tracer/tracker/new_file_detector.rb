@@ -30,20 +30,26 @@ module RSpecTracer
 
       attr_reader :root
 
+      # Input contract: declared_globs and default_globs are Arrays of
+      # String glob patterns. Configuration#declared_globs already
+      # normalizes user input (flatten / compact / to_s / uniq / freeze),
+      # and DeclaredGlobs#initialize re-applies the same coercion
+      # downstream (`Array(globs).flatten.compact.map(&:to_s).uniq.freeze`),
+      # so this constructor stays narrow on purpose - any defensive
+      # coercion here would be triple-applied dead code.
       def initialize(root:, declared_globs: [], default_globs: DEFAULT_GLOBS)
         @root = File.expand_path(root)
-        merged = Array(declared_globs).flatten.compact.map(&:to_s) +
-          Array(default_globs).flatten.compact.map(&:to_s)
-        @walker = DeclaredGlobs.new(root: @root, globs: merged.uniq)
+        @walker = DeclaredGlobs.new(root: @root, globs: declared_globs + default_globs)
       end
 
       # Set<Input> for every on-disk match not present in the supplied
       # known_paths Set. Called once per suite boot; the walker's
       # underlying digest work is memoized on the DeclaredGlobs
       # instance so repeated calls within a single suite don't re-hash.
+      # Engine#compute_change_set passes a Set directly; Set#include?
+      # is O(1) so no upstream `to_set` is needed.
       def new_files(known_paths:)
-        known = known_paths.to_set
-        @walker.walk.reject { |input| known.include?(input.path) }.to_set
+        @walker.walk.reject { |input| known_paths.include?(input.path) }.to_set
       end
     end
   end

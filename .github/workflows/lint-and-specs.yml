@@ -8,15 +8,152 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-specs:
-    name: lint-and-specs
+  lint:
+    name: lint
     runs-on: ubuntu-latest
-    # 45 min headroom: the previous 20 min budget was tight before
-    # `Test - Mutation (full)` and `Test - Fuzz (full)` moved here from
-    # the (now-deleted) nightly workflow. Combined wall clock with the
-    # full mutation pass on TimeFormatter + 10k-iter property fuzz is
-    # typically ~30 min.
-    timeout-minutes: 45
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Lint — Ruby
+        run: task lint:ruby
+      - name: Lint — Actions
+        run: task lint:actions
+      - name: Lint — YAML
+        run: task lint:yaml
+      - name: Lint — Node (HTML reporter frontend)
+        run: task lint:node
+      - name: Check — Bundle
+        run: task check:bundle
+      - name: Check — HTML reporter dist drift
+        run: task reporters:html:check
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Security — bundle-audit
+        run: task security:bundle-audit
+      - name: Security — npm audit (HTML reporter)
+        run: npm audit --audit-level=high
+        working-directory: lib/rspec_tracer/reporters/html
+      - name: Security — trivy
+        run: task security:trivy
+
+  test-unit:
+    name: test-unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Unit
+        run: task test:unit
+      - name: Test — Property
+        run: task test:property
+      - name: Test — Dogfood
+        run: task test:dogfood
+
+  test-edge-cases:
+    name: test-edge-cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Edge cases
+        run: task test:edge-cases
+
+  test-fuzz:
+    name: test-fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
+        run: task test:fuzz:full
+
+  test-mutation-smoke:
+    name: test-mutation-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (smoke)
+        run: task test:mutation:smoke
+
+  test-mutation-tracker:
+    name: test-mutation-tracker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (tracker)
+        run: task test:mutation:tracker
+
+  test-mutation-storage:
+    name: test-mutation-storage
+    # SqliteBackend mutation pass dominates wall clock; ~30 min on M2
+    # Max, 1.4-1.6x slower on ubuntu-latest. 60 min headroom keeps
+    # this job from timing out under GHA scheduling jitter.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage)
+        run: task test:mutation:storage
+
+  test-mutation-rspec:
+    name: test-mutation-rspec
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (rspec)
+        run: task test:mutation:rspec
+
+  test-mutation-top-level:
+    name: test-mutation-top-level
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (top-level)
+        run: task test:mutation:top-level
+
+  test-integration-remote:
+    name: test-integration-remote
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       # LocalStack provides a real S3 API surface for the M7.1 remote-cache
@@ -53,112 +190,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '.ruby-version'
-          bundler: '4.0.10'
-          bundler-cache: true
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: lib/rspec_tracer/reporters/html/package-lock.json
-
-      - name: Setup Task
-        uses: go-task/setup-task@v2
-        with:
-          version: 3.45.4
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache out-of-bundle tools
-        uses: actions/cache@v5
-        with:
-          path: |
-            bin
-            .venv
-          key: tools-${{ runner.os }}-${{ hashFiles('Taskfile.yml', '.tool-versions') }}
-
-      - name: Install tools
-        run: task install:tools
-
-      - name: Ensure tool paths
-        run: |
-          echo "$(pwd)/bin" >> "$GITHUB_PATH"
-
-      - name: Install — HTML reporter npm deps
-        run: task reporters:html:install
-
-      - name: Lint — Ruby
-        run: task lint:ruby
-
-      - name: Lint — Actions
-        run: task lint:actions
-
-      - name: Lint — YAML
-        run: task lint:yaml
-
-      - name: Lint — Node (HTML reporter frontend)
-        run: task lint:node
-
-      - name: Check — Bundle
-        run: task check:bundle
-
-      - name: Check — HTML reporter dist drift
-        run: task reporters:html:check
-
-      - name: Security — bundle-audit
-        run: task security:bundle-audit
-
-      - name: Security — npm audit (HTML reporter)
-        run: npm audit --audit-level=high
-        working-directory: lib/rspec_tracer/reporters/html
-
-      - name: Security — trivy
-        run: task security:trivy
-
-      - name: Test — Unit
-        run: task test:unit
-
-      - name: Test — Property
-        run: task test:property
-
-      - name: Test — Mutation (smoke)
-        run: task test:mutation:smoke
-
-      - name: Test — Mutation (full, whole TimeFormatter module)
-        run: task test:mutation:full
-
-      - name: Test — Edge cases
-        run: task test:edge-cases
-
-      - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
-        run: task test:fuzz:full
-
-      - name: Test — Dogfood
-        run: task test:dogfood
-
+      - name: Setup
+        uses: ./.github/actions/setup
       - name: Install — awslocal (LocalStack CLI wrapper)
         run: pip install --user awscli-local
-
       - name: Install — redis-cli (for health probe + local smoke)
         run: sudo apt-get install -y --no-install-recommends redis-tools
-
       - name: Wait — LocalStack ready + smoke probe
         run: task ci:localstack:ready
-
       - name: Test — Integration (remote cache + LocalStack)
         run: task test:integration:remote-cache
-
       - name: Wait — Redis ready + smoke probe
         env:
           REDIS_URL: redis://localhost:6379/15
         run: task ci:redis:ready
-
       - name: Test — Integration (remote cache + Redis)
         env:
           REDIS_URL: redis://localhost:6379/15
         run: task test:integration:remote-cache:redis
+
+  # Consolidator: the single required-status-check that branch
+  # protection can gate on. Succeeds iff every parallel job above
+  # succeeded; if any fails or is cancelled, GitHub blocks this
+  # job from running and the overall workflow status is failure.
+  # The original sequential `lint-and-specs / lint-and-specs` job
+  # name retired in favor of `lint-and-specs / lint-and-specs` here.
+  lint-and-specs:
+    name: lint-and-specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - lint
+      - security
+      - test-unit
+      - test-edge-cases
+      - test-fuzz
+      - test-mutation-smoke
+      - test-mutation-tracker
+      - test-mutation-storage
+      - test-mutation-rspec
+      - test-mutation-top-level
+      - test-integration-remote
+    steps:
+      - name: Consolidate
+        run: |
+          echo "All parallel lint-and-specs jobs passed."
