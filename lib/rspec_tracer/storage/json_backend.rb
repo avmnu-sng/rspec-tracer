@@ -49,7 +49,7 @@ module RSpecTracer
     class JsonBackend
       # On-disk filenames under the default `:json` serializer. This
       # is the user-facing surface documented in
-      # USER_FACING_SURFACE.md §6 - external tooling that walks
+      # USER_FACING_SURFACE.md section 6 - external tooling that walks
       # `rspec_tracer_cache/` relies on exactly these names.
       # The `:msgpack` serializer substitutes `.msgpack.gz` for the
       # `.json` suffix (one file per field on disk); the file stems
@@ -327,7 +327,7 @@ module RSpecTracer
       # (missing files yield nil, malformed JSON logs + returns nil)
       # flows through the same path as a normal load.
       #
-      # No peers / every peer nil → no-op returns nil. Partial peers
+      # No peers / every peer nil -> no-op returns nil. Partial peers
       # merge what's available; graceful degradation is the entire
       # point of running this at at_exit time.
       #
@@ -595,7 +595,7 @@ module RSpecTracer
 
       # last_run.json is always plain JSON regardless of serializer -
       # it is the human-debuggable + CI-script-compatible pointer that
-      # USER_FACING_SURFACE.md §6 locks. Helper stays narrow so the
+      # USER_FACING_SURFACE.md section 6 locks. Helper stays narrow so the
       # serializer dispatch can not accidentally reach it.
       def read_json(path)
         contents = File.read(path, encoding: ENCODING)
