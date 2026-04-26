@@ -391,6 +391,21 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/rails_app_spec.rb
 
+  test:features:rails:narrow-schema:
+    desc: >-
+      M8.2-B narrow-AR-schema integration test. Drives the rails fixture
+      with use_transactional_fixtures = false
+      (RSPEC_TRACER_RAILS_TRANSACTIONAL=false) and asserts the per-example
+      schema-subscriber attribution path
+      (lib/rspec_tracer/rails/notifications.rb #record_ar_schema) only
+      attributes db/schema.rb to the AR-touching example - so a schema
+      mutation re-runs only that example, not the entire suite.
+      DatabaseCleaner :truncation in the fixture rails_helper handles the
+      per-example commit cleanup automatically when the env toggle is on.
+      Excluded from the default rspec sweep (subprocess + Rails fixture).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
+
   test:integration:per-example-dsl:
     desc: >-
       M5.2 per-example tracks DSL integration test. Drives the Rails fixture

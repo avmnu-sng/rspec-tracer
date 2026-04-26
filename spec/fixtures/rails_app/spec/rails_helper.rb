@@ -55,7 +55,7 @@ RSpec.configure do |config|
   end
 
   # Default: transactional fixtures on (matches Rails idiomatic test
-  # setup; covered by `task test:features:rails`). When the M8.2-absorbed
+  # setup; covered by `task test:features:rails`). When the M8.2-B
   # narrow-AR-schema scenario flips RSPEC_TRACER_RAILS_TRANSACTIONAL=false,
   # each example commits its writes to the test DB and the per-example
   # schema-subscriber attribution path (Tracker::Notifications) becomes

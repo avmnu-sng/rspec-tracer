@@ -3,7 +3,8 @@
 source 'https://rubygems.org'
 
 parallel_tests_version = ENV.fetch('PARALLEL_TESTS_VERSION', '~> 4.7')
+rspec_version = ENV.fetch('RSPEC_VERSION', '~> 3.13')
 
 gem 'parallel_tests', parallel_tests_version
-gem 'rspec', '~> 3.13'
+gem 'rspec', rspec_version
 gem 'rspec-tracer', path: '../../..', require: false
