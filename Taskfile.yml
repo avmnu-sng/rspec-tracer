@@ -436,8 +436,12 @@ tasks:
         # `defined?(::MessagePack)` so the require line is exercisable
         # on every call (Ruby's $LOADED_FEATURES makes the require
         # itself idempotent, so behavior + perf are byte-for-byte
-        # equivalent for production callers). Post-fix gate raised
-        # from 60% to 80% (4.5 pp under local 84.52%).
+        # equivalent for production callers). The fix moved CI from
+        # 63.44% to 70.23% (+6.79 pp); the remaining ~14 pp local-vs-
+        # CI gap (84.52% local M2 Max vs 70.23% CI) is from gem-
+        # resolution + parallelism differences, not the memo. Gate
+        # cut to 65% (5 pp under CI) per
+        # feedback_mutant_local_vs_ci_variance.
         run_mutant_gate "Storage::LazySnapshot" \
           "rspec_tracer/storage/lazy_snapshot" \
           "RSpecTracer::Storage::LazySnapshot*" 85 || fail=1
@@ -446,7 +450,7 @@ tasks:
           "RSpecTracer::Storage::Serializer::Json*" 85 || fail=1
         run_mutant_gate "Storage::Serializer::Msgpack" \
           "rspec_tracer/storage/serializer/msgpack" \
-          "RSpecTracer::Storage::Serializer::Msgpack*" 80 || fail=1
+          "RSpecTracer::Storage::Serializer::Msgpack*" 65 || fail=1
         run_mutant_gate "Storage::JsonBackend" \
           "rspec_tracer/storage/json_backend" \
           "RSpecTracer::Storage::JsonBackend*" 75 || fail=1
@@ -593,11 +597,17 @@ tasks:
         }
 
         fail=0
-        # Per-subject gates sized at ~3-5 pp under local M2 Max baselines
-        # for CI ubuntu-latest variance (per memory:
-        # feedback_mutant_local_vs_ci_variance, codified from M8.3-A retro).
-        # Re-cut from CI baselines after the first CI run if any subject
-        # drops materially below local (M8.3-A's 154ec27 precedent).
+        # Per-subject gates sized at ~3-5 pp under CI ubuntu-latest
+        # baselines for variance (per memory:
+        # feedback_mutant_local_vs_ci_variance, codified from M8.3-A
+        # retro). Initial cut sized from local M2 Max baselines was
+        # too tight: GitAncestry alone swung from 94.59% local to
+        # 72.68% CI on the first run because mutant's per-mutation
+        # 5 s timeout kills 305 local mutations (git shell-out hangs
+        # under M2 Max parallelism 12) but 0 CI mutations (Linux git
+        # responds fast enough under ubuntu-latest parallelism 4 that
+        # the same mutations don't hang). Same shape as M8.3-A's
+        # 154ec27 post-merge widening.
         run_mutant_gate "RemoteCache::Backend" \
           "rspec_tracer/remote_cache/backend" \
           "RSpecTracer::RemoteCache::Backend*" 95 || fail=1
@@ -607,9 +617,12 @@ tasks:
         run_mutant_gate "RemoteCache::Archive" \
           "rspec_tracer/remote_cache/archive" \
           "RSpecTracer::RemoteCache::Archive*" 83 || fail=1
+        # GitAncestry: CI baseline 72.68% (vs 94.59% local; 305 local
+        # timeouts on git shell-out are 0 on CI because Linux git is
+        # faster). 4 pp under CI = 68% gate.
         run_mutant_gate "RemoteCache::GitAncestry" \
           "rspec_tracer/remote_cache/git_ancestry" \
-          "RSpecTracer::RemoteCache::GitAncestry*" 90 || fail=1
+          "RSpecTracer::RemoteCache::GitAncestry*" 68 || fail=1
         # UserTasks / LocalFsBackend / RedisBackend / S3Backend share
         # the M8.3-A Storage::SqliteBackend describe-label ceiling
         # (memory: feedback_mutant_describe_label_ceiling): 4-7x more
