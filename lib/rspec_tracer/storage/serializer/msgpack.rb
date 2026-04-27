@@ -45,8 +45,15 @@ module RSpecTracer
         # Probe used by JsonBackend#initialize to decide whether to
         # fall back to the Json serializer at construct time. True
         # iff `require 'msgpack'` succeeds; false when the gem is
-        # missing. Memoized via the @msgpack_loaded ivar so repeated
-        # calls in the same process do not re-enter the require.
+        # missing. Idempotent without an explicit memo because Ruby's
+        # `require` short-circuits via `$LOADED_FEATURES` on repeat
+        # calls and `defined?(::MessagePack)` cheaply detects the
+        # post-load constant. The previous @msgpack_loaded ivar memo
+        # was load-bearing for mutation observability: once any prior
+        # test tripped the memo, mutations on the require line were
+        # observably equivalent (M8.3-A retro: ~25 pp local-vs-CI
+        # variance on this subject; memory:
+        # feedback_mutant_local_vs_ci_variance).
         def self.available?
           ensure_available!
           true
@@ -58,10 +65,9 @@ module RSpecTracer
           private
 
           def ensure_available!
-            return if defined?(@msgpack_loaded) && @msgpack_loaded
+            return if defined?(::MessagePack)
 
             require 'msgpack'
-            @msgpack_loaded = true
           rescue ::LoadError
             raise MsgpackGemNotInstalled,
                   "msgpack gem is not installed; add `gem 'msgpack'` to your Gemfile " \

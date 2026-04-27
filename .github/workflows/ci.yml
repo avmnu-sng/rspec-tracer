@@ -8,8 +8,15 @@ on:
   workflow_dispatch:
 
 concurrency:
+  # Group per PR (cancel superseded force-pushes / amends) but per ref
+  # for everything else (main pushes, tags, manual dispatch). Setting
+  # cancel-in-progress only when the trigger is a pull_request keeps
+  # main / merge runs running to completion - we want every commit on
+  # main fully validated, never cancelled because a later commit
+  # arrived. PRs still cancel their predecessors so iteration stays
+  # fast.
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
