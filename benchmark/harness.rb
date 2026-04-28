@@ -42,6 +42,27 @@ module BenchmarkHarness
 
   STATUS_ICONS = { ok: '✓', warn: '⚠', fail: '✗' }.freeze
 
+  # Per-interpreter ratchet multipliers. The committed ratchet.json is a
+  # canonical MRI baseline (Apple M2 Max + Ruby 3.3.10). Non-MRI
+  # interpreters run materially slower on these scenarios primarily
+  # because each iteration spawns a fresh subprocess: JRuby pays full
+  # JVM boot per-iter (~2.5s on its own, dominating cold_ruby's wall
+  # clock); TruffleRuby pays Graal compile-time on the same cold path.
+  # Multipliers below are calibrated to empirical reality on the
+  # canonical M2 Max hardware - JRuby cold_ruby clocks ~2.81s vs MRI's
+  # 0.29s (~9.7x raw), so 10.0 leaves margin for GHA ubuntu-latest's
+  # additional ~1.4-1.6x scheduling jitter. TruffleRuby is best-effort
+  # + continue-on-error in CI; 5.0 is a conservative starting point
+  # pending first-cell empirical data.
+  # Default 1.0x for any interpreter not listed (e.g. ruby head).
+  # Non-MRI cells use task benchmark:smoke:no-enforce so threshold
+  # miscalibration never blocks CI; the displayed ratio is informational.
+  INTERPRETER_RATCHET_MULTIPLIERS = {
+    'ruby' => 1.0,
+    'jruby' => 10.0,
+    'truffleruby' => 5.0
+  }.freeze
+
   # Scenarios. Each is a Hash with:
   #   cwd:         working dir for the subprocess
   #   cmd:         Array passed to Open3.capture2e
@@ -257,13 +278,33 @@ module BenchmarkHarness
   end
   # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
+  def interpreter_multiplier
+    INTERPRETER_RATCHET_MULTIPLIERS.fetch(RUBY_ENGINE, 1.0)
+  end
+
+  # True iff the current interpreter has an explicit non-canonical
+  # multiplier configured (i.e. not the default 1.0 for MRI / unlisted
+  # engines). Avoids `multiplier == 1.0` float-equality comparison
+  # (Lint/FloatComparison) - we test membership + RUBY_ENGINE identity
+  # instead, which is exact.
+  def interpreter_scaling?
+    RUBY_ENGINE != 'ruby' && INTERPRETER_RATCHET_MULTIPLIERS.key?(RUBY_ENGINE)
+  end
+
   def compare_to_ratchet(results, ratchet)
+    multiplier = interpreter_multiplier
     statuses = {}
     results.each do |result|
       name = result['scenario']
-      threshold = ratchet.dig('scenarios', name, 'p50')
-      next statuses[name] = :no_baseline unless threshold
+      base = ratchet.dig('scenarios', name, 'p50')
+      next statuses[name] = :no_baseline unless base
 
+      # Effective threshold is the canonical MRI ratchet scaled by the
+      # current interpreter's multiplier. On MRI multiplier=1.0 so the
+      # behavior is byte-identical to the pre-M8.1-A code; on JRuby /
+      # TruffleRuby the threshold is scaled up to absorb interpreter
+      # overhead without requiring per-interpreter ratchet entries.
+      threshold = base * multiplier
       ratio = result['p50'] / threshold
       statuses[name] =
         if ratio > REGRESSION_FAIL_RATIO then { status: :fail, ratio: ratio, threshold: threshold }
@@ -275,7 +316,12 @@ module BenchmarkHarness
   end
 
   def print_summary(results, statuses)
-    warn "\n== Summary"
+    if interpreter_scaling?
+      warn format("\n== Summary (RUBY_ENGINE=%<engine>s, ratchet x%<m>.2f)",
+                  engine: RUBY_ENGINE, m: interpreter_multiplier)
+    else
+      warn "\n== Summary"
+    end
     results.each do |result|
       name = result['scenario']
       status = statuses[name]
@@ -328,10 +374,18 @@ module BenchmarkHarness
   def write_markdown_summary(path, results, statuses, ratchet)
     env = environment
     rows = results.map { |r| summary_row(r, statuses[r['scenario']]) }
+    multiplier_note = if interpreter_scaling?
+                        format(
+                          ' Ratchet thresholds scaled x%<m>.2f for `RUBY_ENGINE=%<engine>s`.',
+                          m: interpreter_multiplier, engine: RUBY_ENGINE
+                        )
+                      else
+                        ''
+                      end
     body = [
       '## Benchmark results',
       '',
-      "Run on Ruby `#{env['ruby']}` / `#{env['cpu']}` / #{env['cores']} cores / `#{env['os']}`.",
+      "Run on Ruby `#{env['ruby']}` / `#{env['cpu']}` / #{env['cores']} cores / `#{env['os']}`.#{multiplier_note}",
       '',
       '| Scenario | P50 (s) | P95 (s) | Ratchet P50 | vs Ratchet |',
       '|---|---|---|---|---|',

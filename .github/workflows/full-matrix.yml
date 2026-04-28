@@ -21,6 +21,7 @@ jobs:
       rspecs: ${{ steps.cfg.outputs.rspecs }}
       rails_cells: ${{ steps.cfg.outputs.rails_cells }}
       jruby: ${{ steps.cfg.outputs.jruby }}
+      truffleruby: ${{ steps.cfg.outputs.truffleruby }}
     steps:
       - name: Emit matrix config
         id: cfg
@@ -58,6 +59,11 @@ jobs:
             echo 'rubies=["3.1","3.2","3.3","3.4","4.0"]'
             echo 'rspecs=["3.12","3.13"]'
             echo 'jruby=jruby-9.4'
+            # TruffleRuby pinned to a concrete patch (latest 24.x stable
+            # at time of cell wiring, 2026-04-28). Best-effort cell is
+            # continue-on-error so it never blocks merges; pinning still
+            # matters for reproducible signal across runs.
+            echo 'truffleruby=truffleruby-24.2.2'
             echo "rails_cells=${rails_cells}"
           } >> "$GITHUB_OUTPUT"
 
@@ -316,6 +322,74 @@ jobs:
         env:
           RSPEC_VERSION: "~> 3.13.0"
         run: task test:edge-cases
+
+      # Exercises the per-interpreter benchmark ratchet mechanically.
+      # benchmark/harness.rb scales the canonical MRI ratchet by the
+      # JRuby multiplier (10.0x — calibrated to empirical M2 Max
+      # measurements where JVM boot per-iter dominates wall clock).
+      # --no-enforce keeps first-run miscalibration non-blocking;
+      # tighten to enforce-mode after a few CI runs settle the variance.
+      - name: Test — Benchmark smoke (JRuby — informational; ratchet x10.0)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: task benchmark:smoke:no-enforce
+
+  truffleruby:
+    # TruffleRuby 24.x best-effort cell. continue-on-error keeps failures
+    # non-blocking — TruffleRuby gem-resolution + native ext support has
+    # been historically uneven, so this stays signal-only. Per-PR cadence
+    # keeps signal fresh; runs the same ruby_app + dogfood fixture set
+    # as the JRuby cell minus JRUBY_OPTS. Edge cases auto-skip via the
+    # existing RUBY_ENGINE == 'ruby' guards on the SQLite + fork specs:
+    # TruffleRuby has RUBY_ENGINE == 'truffleruby', so the same skip
+    # paths fire as on JRuby.
+    name: truffleruby
+    needs: matrix-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ needs.matrix-config.outputs.truffleruby }}
+          # TruffleRuby 24.2.2 emulates Ruby 3.3.5; bundler 4.0.10
+          # (the >= 3.2 Ruby cells' default) is supported.
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: bundle list
+
+      - name: Test — Features (TruffleRuby)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: task test:features:truffleruby
+
+      - name: Test — Edge cases (TruffleRuby — concurrent_write + sqlite cases auto-skip)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: task test:edge-cases
+
+      # Same purpose as the JRuby benchmark step above; TruffleRuby's
+      # multiplier is 5.0x (conservative starting point; refine after
+      # first cell empirical data). Job-level continue-on-error +
+      # task-level --no-enforce make any benchmark failure doubly safe.
+      - name: Test — Benchmark smoke (TruffleRuby — informational; ratchet x5.0)
+        env:
+          RSPEC_VERSION: "~> 3.13.0"
+        run: task benchmark:smoke:no-enforce
 
   benchmark:
     name: benchmark

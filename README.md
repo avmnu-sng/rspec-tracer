@@ -89,13 +89,37 @@ of your choice.
 
 ### Working with JRuby
 
-It is recommend to use **JRuby 9.2.10.0+**. Also, configure it with **`JRUBY_OPTS="--debug -X+O"`**
-or have the `.jrubyrc` file:
+Use **JRuby 9.4.x** (the 2.0 supported floor; CI-gated against
+`jruby-9.4` which resolves to the latest 9.4.x patch). Configure it
+with **`JRUBY_OPTS="--debug -X+O"`** or have the `.jrubyrc` file:
 
 ```ruby
 debug.fullTrace=true
 objectspace.enabled=true
 ```
+
+A few things to note when running rspec-tracer on JRuby:
+
+- The `:sqlite` storage backend is unavailable (the `sqlite3` gem
+  targets MRI's C API and has no `-java` platform variant).
+  `Storage::SqliteBackend` raises `SqliteBackendError` on JRuby; the
+  engine warns once and falls back to the default `:json` backend.
+- Edge cases relying on `Process.fork` (concurrent SQLite writers,
+  fork-based cleanup) auto-skip on JRuby — the JSON backend's flock-
+  serialized writes are exercised on the default code path and don't
+  need fork-level concurrency tests.
+- Per-iter benchmark wall clock is materially higher on JRuby because
+  every test subprocess pays full JVM boot. This is JVM cost, not
+  rspec-tracer overhead.
+
+### Working with TruffleRuby
+
+TruffleRuby 24.x is **best-effort** (CI cell runs as
+`continue-on-error`, so failures surface but don't block releases).
+The same caveats as JRuby apply: `:sqlite` backend unavailable,
+fork-based edge cases skip. The Rails integration is not yet validated
+on TruffleRuby; if you run rspec-tracer with Rails on TruffleRuby and
+hit issues, please open an issue on GitHub.
 
 ### Working with Parallel Tests
 
