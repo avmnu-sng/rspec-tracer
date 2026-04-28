@@ -994,6 +994,39 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
 
+  test:features:rails:jruby:
+    desc: >-
+      M8.1-B Rails integration test on JRuby 9.4. Same shape as
+      test:features:rails (drives the rails_app fixture via subprocess),
+      with JRUBY_OPTS for the v2 engine's observer install. The fixture
+      Gemfile branches on RUBY_ENGINE (activerecord-jdbcsqlite3-adapter
+      replaces the sqlite3 gem on JRuby); database.yml's adapter: sqlite3
+      string resolves to the JDBC chain transparently.
+      RAILS_VERSION + RSPEC_RAILS_VERSION default to the Rails 7.1 line
+      (the only JRuby x Rails CI cell) since the JDBC adapter pin
+      (~> 71.0) version-tracks that Rails major; CI overrides via the
+      step env block.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        bundle exec rspec --no-color spec/integration/rails_app_spec.rb
+
+  test:features:rails:narrow-schema:jruby:
+    desc: >-
+      M8.1-B narrow-AR-schema integration test on JRuby 9.4. Same shape
+      as test:features:rails:narrow-schema; JRUBY_OPTS + the same Rails
+      7.1 default pair as test:features:rails:jruby.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
+
   test:integration:per-example-dsl:
     desc: >-
       M5.2 per-example tracks DSL integration test. Drives the Rails fixture
@@ -1143,9 +1176,10 @@ tasks:
 
   benchmark:bundle:rails:
     desc: >-
-      bundle install for the rails_app fixture (Rails + sqlite3; MRI-only).
-      Skipped on JRuby/TruffleRuby benchmark cells until JDBC adapter
-      support is wired in a follow-up.
+      bundle install for the rails_app fixture. Fixture Gemfile branches
+      on RUBY_ENGINE (sqlite3 on MRI; activerecord-jdbcsqlite3-adapter on
+      JRuby/TruffleRuby), but the canonical benchmark cell pins MRI
+      .ruby-version for cross-run comparability so this only runs there.
     cmds:
       - cd spec/fixtures/rails_app && bundle install
 
@@ -1156,9 +1190,11 @@ tasks:
   benchmark:smoke:
     # Smoke uses cold_ruby + warm_noop only — both run in the ruby_app
     # fixture. Narrowing the dep to bundle:ruby (vs bundle) lets non-MRI
-    # cells run smoke without bundling the rails_app fixture (whose
-    # sqlite3 gem can't install on JRuby — gated by RUBY_ENGINE in the
-    # outer Gemfile but the fixture's own Gemfile has no such gate).
+    # cells run smoke without bundling the rails_app fixture. The
+    # fixture Gemfile DOES support JRuby/TruffleRuby (M8.1-B JDBC adapter
+    # branch), but the smoke step would pay Maven download + JDBC native
+    # ext build cost on first run — keeping smoke ruby_app-only on
+    # non-MRI cells preserves the ~3s budget.
     desc: Smoke benchmark (~3s — cold_ruby + warm_noop)
     deps: [benchmark:bundle:ruby]
     cmds:

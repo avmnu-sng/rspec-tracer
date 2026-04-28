@@ -69,6 +69,10 @@ module NarrowArSchemaSpecHelpers
       Dir.chdir(FIXTURE_ROOT) do
         gemfile_env = { 'BUNDLE_GEMFILE' => File.join(FIXTURE_ROOT, 'Gemfile') }
         unless system(gemfile_env, 'bundle', 'check', out: File::NULL, err: File::NULL)
+          # Same cross-interpreter resilience path as
+          # rails_app_spec.rb's helper — wipe the platform-mismatched
+          # gitignored lockfile so Bundler resolves fresh.
+          FileUtils.rm_f(File.join(FIXTURE_ROOT, 'Gemfile.lock'))
           system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
         end
 
