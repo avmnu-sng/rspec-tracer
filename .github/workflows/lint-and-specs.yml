@@ -179,6 +179,41 @@ jobs:
       - name: Test — Mutation (remote-cache)
         run: task test:mutation:remote-cache
 
+  test-mutation-rails:
+    name: test-mutation-rails
+    # Mutation pass on lib/rspec_tracer/rails/ (3 net-new subjects:
+    # Notifications, I18nTracking, Railtie; Preset already in smoke).
+    # Smaller surface than storage / remote-cache; 30 min cap matches
+    # tracker / rspec / top-level. Carve-outs documented inline in the
+    # Taskfile gate for combined-describe + Module#prepend ceilings.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (rails)
+        run: task test:mutation:rails
+
+  test-mutation-reporters:
+    name: test-mutation-reporters
+    # Mutation pass on lib/rspec_tracer/reporters/ (6 subjects: Base,
+    # JsonReporter, TerminalReporter, HtmlReporter, PayloadBuilder,
+    # Registry). HtmlReporter at 218 LOC + PayloadBuilder at 203 LOC
+    # carry the bulk; 60 min headroom matches storage / remote-cache
+    # bottlenecks. Carve-outs sized for prose-form integration describe
+    # ceilings - see Taskfile inline rationale.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (reporters)
+        run: task test:mutation:reporters
+
   test-integration-remote:
     name: test-integration-remote
     runs-on: ubuntu-latest
@@ -260,6 +295,8 @@ jobs:
       - test-mutation-rspec
       - test-mutation-top-level
       - test-mutation-remote-cache
+      - test-mutation-rails
+      - test-mutation-reporters
       - test-integration-remote
     steps:
       - name: Consolidate
