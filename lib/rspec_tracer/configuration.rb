@@ -50,7 +50,15 @@ module RSpecTracer
     }.freeze
 
     def configure(&)
-      configurers = caller_locations(1, 2).map(&:path)
+      # Scan the full caller chain (not just the immediate two frames):
+      # MRI / JRuby place the load_*_config.rb loader at depth 2, but
+      # TruffleRuby's `load` interposes an extra runtime frame, pushing
+      # the loader past the 2-frame window and tripping the InvalidUsage
+      # raise. Path-suffix match against the well-known loader filenames
+      # keeps the gate safe regardless of stack depth - user code would
+      # have to copy one of those filenames verbatim into a path it
+      # `load`s to get a false positive, which we treat as wilful.
+      configurers = caller_locations(1).map(&:path)
       invalid = configurers.none? do |configurer|
         ALLOWED_CONFIGURER.any? do |allowed_configurer|
           configurer.end_with?(allowed_configurer)

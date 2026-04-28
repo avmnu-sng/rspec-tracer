@@ -1125,19 +1125,59 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
 
+  test:features:truffleruby:
+    desc: >-
+      ruby_app integration test on TruffleRuby 24.x. Best-effort
+      platform; CI cell is continue-on-error. Same fixture set as
+      test:features:jruby; no JRUBY_OPTS (JRuby-specific tracing flags
+      that TruffleRuby ignores anyway, omitted to avoid implying support).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
+
   # ── Benchmarks ─────────────────────────────────────────
 
-  benchmark:bundle:
-    desc: bundle install for both benchmark fixtures (prerequisite for harness)
+  benchmark:bundle:ruby:
+    desc: bundle install for the ruby_app benchmark fixture
     cmds:
       - cd benchmark/fixtures/ruby_app && bundle install
+
+  benchmark:bundle:rails:
+    desc: >-
+      bundle install for the rails_app fixture (Rails + sqlite3; MRI-only).
+      Skipped on JRuby/TruffleRuby benchmark cells until JDBC adapter
+      support is wired in a follow-up.
+    cmds:
       - cd spec/fixtures/rails_app && bundle install
 
+  benchmark:bundle:
+    desc: bundle install for both benchmark fixtures (prerequisite for harness:full)
+    deps: [benchmark:bundle:ruby, benchmark:bundle:rails]
+
   benchmark:smoke:
+    # Smoke uses cold_ruby + warm_noop only — both run in the ruby_app
+    # fixture. Narrowing the dep to bundle:ruby (vs bundle) lets non-MRI
+    # cells run smoke without bundling the rails_app fixture (whose
+    # sqlite3 gem can't install on JRuby — gated by RUBY_ENGINE in the
+    # outer Gemfile but the fixture's own Gemfile has no such gate).
     desc: Smoke benchmark (~3s — cold_ruby + warm_noop)
-    deps: [benchmark:bundle]
+    deps: [benchmark:bundle:ruby]
     cmds:
       - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json
+
+  benchmark:smoke:no-enforce:
+    # Informational benchmark for non-MRI cells. The per-interpreter
+    # multiplier in benchmark/harness.rb scales the canonical MRI ratchet
+    # by RUBY_ENGINE (10.0x for JRuby; 5.0x for TruffleRuby), but
+    # --no-enforce keeps the task non-gating so first-run multiplier
+    # miscalibration doesn't block merges. Mirrors the existing
+    # --no-enforce pattern on the canonical CI benchmark job (committed
+    # ratchet was M2 Max hardware; GHA ubuntu-latest is 1.4-1.6x slower;
+    # multiplier on top of that requires further calibration on first
+    # JRuby/TruffleRuby cell run).
+    desc: Smoke benchmark in informational mode (no enforcement; non-MRI cells)
+    deps: [benchmark:bundle:ruby]
+    cmds:
+      - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json --no-enforce
 
   benchmark:full:
     desc: Full benchmark suite — all 4 scenarios + ratchet comparison
