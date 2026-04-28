@@ -111,6 +111,16 @@ A few things to note when running rspec-tracer on JRuby:
 - Per-iter benchmark wall clock is materially higher on JRuby because
   every test subprocess pays full JVM boot. This is JVM cost, not
   rspec-tracer overhead.
+- Rails on JRuby uses the JDBC adapter chain. Add
+  `gem "activerecord-jdbcsqlite3-adapter", "~> 71.0", platforms: :jruby`
+  (or the matching major for your Rails line: 70.x / 71.x / 72.x track
+  Rails 7.0 / 7.1 / 7.2 respectively) to your project's `Gemfile` for
+  SQLite under JRuby. The `adapter: sqlite3` string in your
+  `config/database.yml` resolves to the JDBC chain transparently — no
+  per-environment override needed. Other databases use the
+  matching `activerecord-jdbc<driver>-adapter` gem (postgres / mysql /
+  etc.). The CI cell pinned in this repo is `jruby-9.4 × Rails 7.1 ×
+  rspec-rails 6.1`.
 
 ### Working with TruffleRuby
 

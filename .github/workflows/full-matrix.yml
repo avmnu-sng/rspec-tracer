@@ -51,7 +51,8 @@ jobs:
             {"ruby":"3.4","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
             {"ruby":"4.0","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
             {"ruby":"4.0","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"4.0","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"}
+            {"ruby":"4.0","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc"}
           ]
           JSON
           )
@@ -254,11 +255,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # JRuby 9.4 cell: install build-essential for any native ext compile
+      # under JRuby's gem graph (matches the standalone `jruby:` job).
+      # MRI cells skip this — ubuntu-latest already ships build-essential.
+      - name: Install build tools for JRuby native extensions
+        if: matrix.ruby == 'jruby-9.4'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler: ${{ matrix.ruby == '3.1' && '2.6.9' || '4.0.10' }}
+          # JRuby 9.4 emulates Ruby 3.1; pin Bundler 2.6.9 (last 2.x line
+          # supporting Ruby 3.1) on both 3.1 and JRuby cells. Everything
+          # else uses Bundler 4.x.
+          bundler: ${{ (matrix.ruby == '3.1' || matrix.ruby == 'jruby-9.4') && '2.6.9' || '4.0.10' }}
           bundler-cache: true
 
       - name: Setup Task
@@ -270,19 +281,42 @@ jobs:
       - name: Bundle — list resolved versions
         run: bundle list
 
-      - name: Test — Features (Rails)
+      - name: Test — Features (Rails, MRI)
+        if: matrix.ruby != 'jruby-9.4'
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}.0"
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
           SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
         run: task test:features:rails
 
-      - name: Test — Features (Rails, narrow AR schema)
+      - name: Test — Features (Rails, MRI, narrow AR schema)
+        if: matrix.ruby != 'jruby-9.4'
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}.0"
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
           SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
         run: task test:features:rails:narrow-schema
+
+      # JRuby cell: fixture Gemfile branches on RUBY_ENGINE and pulls in
+      # activerecord-jdbcsqlite3-adapter ~> 71.0 (Rails 7.1 line). The
+      # JDBC chain registers itself as the "sqlite3" adapter so
+      # config/database.yml needs no JRuby-specific tweak. SQLITE3_VERSION
+      # is unused on the JRuby branch but passed for symmetry with MRI.
+      - name: Test — Features (Rails, JRuby)
+        if: matrix.ruby == 'jruby-9.4'
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
+          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
+        run: task test:features:rails:jruby
+
+      - name: Test — Features (Rails, JRuby, narrow AR schema)
+        if: matrix.ruby == 'jruby-9.4'
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
+          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
+        run: task test:features:rails:narrow-schema:jruby
 
   jruby:
     name: jruby

@@ -55,6 +55,14 @@ module RailsAppSpecHelpers
       Dir.chdir(FIXTURE_ROOT) do
         gemfile_env = { 'BUNDLE_GEMFILE' => File.join(FIXTURE_ROOT, 'Gemfile') }
         unless system(gemfile_env, 'bundle', 'check', out: File::NULL, err: File::NULL)
+          # Cross-interpreter invocations (MRI <-> JRuby on the same
+          # gitignored fixture lockfile) leave a platform-mismatched
+          # lock that `bundle install` can't always reconcile in one
+          # pass when the Rails-line default shifts in the same step.
+          # Wipe the lock so Bundler resolves fresh against the current
+          # interpreter. Same-interpreter repeats keep `bundle check`
+          # green, so this rm only fires on the exception path.
+          FileUtils.rm_f(File.join(FIXTURE_ROOT, 'Gemfile.lock'))
           system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
         end
 
