@@ -21,19 +21,27 @@ end
 # (inside sqlite3_adapter.rb), not in its gemspec, so bundler can resolve
 # to 2.x and then gem activation blows up. Rails 8.0 needs sqlite3 >= 2.1.
 # Pick the right major via env var from the workflow.
-gem "sqlite3", ENV.fetch("SQLITE3_VERSION", "~> 1.4"), platforms: :ruby
-
-# JRuby has no -java sqlite3 variant; the JDBC adapter chain
-# (activerecord-jdbcsqlite3-adapter -> activerecord-jdbc-adapter ->
-# jdbc-sqlite3) is the supported path. The adapter gem version-tracks
-# Rails majors (70.x = Rails 7.0, 71.x = Rails 7.1, 72.x = Rails 7.2);
-# pinned to 71.0 since the JRuby x Rails CI cell pins Rails 7.1. Bump
-# in lock-step when the JRuby x Rails cell coverage widens. The
-# platforms: :jruby kwarg keeps Bundler from trying to resolve the gem
-# for native MRI platforms in cross-interpreter lockfiles, so the
-# fixture lockfile remains usable across MRI <-> JRuby switches without
-# manual cleanup.
-gem "activerecord-jdbcsqlite3-adapter", "~> 71.0", platforms: :jruby
+#
+# Branch on RUBY_ENGINE rather than `platforms:` kwarg so the
+# version-requirement string passes through ENV.fetch only on the
+# branch that actually installs the gem - the CI workflow passes
+# SQLITE3_VERSION="~> jdbc" (sentinel from the JRuby x Rails matrix
+# tuple) which is illformed as a Gem::Requirement and would crash the
+# Gemfile load on JRuby if `gem "sqlite3", ..., platforms: :ruby` was
+# parsed unconditionally. Cross-interpreter local invocations recover
+# via the integration spec helpers' `rm Gemfile.lock` on bundle check
+# failure (rails_app_spec.rb / narrow_ar_schema_spec.rb).
+if RUBY_ENGINE == "ruby"
+  gem "sqlite3", ENV.fetch("SQLITE3_VERSION", "~> 1.4")
+else
+  # JRuby has no -java sqlite3 variant; the JDBC adapter chain
+  # (activerecord-jdbcsqlite3-adapter -> activerecord-jdbc-adapter ->
+  # jdbc-sqlite3) is the supported path. The adapter gem version-tracks
+  # Rails majors (70.x = Rails 7.0, 71.x = Rails 7.1, 72.x = Rails 7.2);
+  # pinned to 71.0 since the JRuby x Rails CI cell pins Rails 7.1. Bump
+  # in lock-step when the JRuby x Rails cell coverage widens.
+  gem "activerecord-jdbcsqlite3-adapter", "~> 71.0"
+end
 
 gem "puma", "~> 6.0"
 gem "sprockets-rails"
