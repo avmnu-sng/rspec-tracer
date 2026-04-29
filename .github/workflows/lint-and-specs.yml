@@ -119,6 +119,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (smoke)
+        timeout-minutes: 4
         run: task test:mutation:smoke
 
   test-mutation-tracker:
@@ -132,6 +133,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (tracker)
+        timeout-minutes: 4
         run: task test:mutation:tracker
 
   # M8.6 — storage mutation split into 4 parallel jobs (rebalanced
@@ -162,6 +164,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage misc)
+        timeout-minutes: 4
         run: task test:mutation:storage:misc
 
   test-mutation-storage-json-backend-shard-1:
@@ -183,6 +186,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-1)
+        timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-1
 
   test-mutation-storage-json-backend-shard-2:
@@ -199,17 +203,19 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-2)
+        timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-2
 
   test-mutation-storage-json-backend-shard-3:
     name: test-mutation-storage-json-backend-shard-3
     if: ${{ inputs.mut_storage }}
-    # JsonBackend alphabetical last third (22 subjects: prune_run_dirs!
-    # through Merger.reverse_of — the write-heavy methods + Merger
-    # nested class's 6 class methods). The 2-way split landed this
-    # group at 7:32 M2 Max because save_graph / transactional_save /
-    # write_*_atomic are file-I/O dense; 3-way split rebalances.
-    # Default `--mutation-timeout 5` + `--jobs 8`.
+    # JsonBackend heavy-write core (7 subjects): save_graph,
+    # transactional_save, write_json_atomic, write_last_run_atomic,
+    # write_payload_atomic, write_run_field, write_run_files. The
+    # file-I/O-dense atomic-write helpers concentrated together.
+    # Original alphabetical-shard-3 (22 subjects mixing this with
+    # reads + Merger) hit 6:52 M2 Max / ~10 min CI; 5-way split
+    # isolates the heavy writes here so the 4-min cap can be enforced.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -218,7 +224,43 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-3)
+        timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-3
+
+  test-mutation-storage-json-backend-shard-4:
+    name: test-mutation-storage-json-backend-shard-4
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend reads + serializers + prune (7 subjects):
+    # prune_run_dirs!, read_json, read_last_run_manifest, read_run_file,
+    # serialize_dependency, serialize_id_set, total_cache_size_bytes.
+    # Mixed I/O density — read paths plus pure-functional serializers.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-4)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-4
+
+  test-mutation-storage-json-backend-shard-5:
+    name: test-mutation-storage-json-backend-shard-5
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend light + Merger (8 subjects): warn_oversized_cache_total,
+    # warn_oversized_run_files, plus Merger nested class's 6 class
+    # methods. Pure-functional, lightest wall clock of the 5 shards.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-5)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-5
 
   test-mutation-storage-sqlite-read:
     name: test-mutation-storage-sqlite-read
@@ -236,6 +278,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage SqliteBackend read-side)
+        timeout-minutes: 4
         run: task test:mutation:storage:sqlite-read
 
   test-mutation-storage-sqlite-write:
@@ -257,6 +300,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage SqliteBackend write+util)
+        timeout-minutes: 4
         run: task test:mutation:storage:sqlite-write
 
   test-mutation-rspec:
@@ -270,31 +314,41 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (rspec)
+        timeout-minutes: 4
         run: task test:mutation:rspec
 
-  test-mutation-top-level:
-    name: test-mutation-top-level
+  test-mutation-top-level-a:
+    name: test-mutation-top-level-a
     if: ${{ inputs.mut_top_level }}
+    # M8.6: top-level split into 2 alphabetical halves to enforce the
+    # 4-min per-shard cap. Whole-module run was 14:59 CI at default 5s
+    # timeout + jobs=4 because ~95% of mutations are spec_helper boot
+    # hangs that always burn the full 5s timeout. Halving the matcher
+    # set + jobs=8 gets each shard under 4 min.
     runs-on: ubuntu-latest
-    # Bumped 15 -> 30 after PR #122's merge-to-main run cancelled at
-    # 15:02 wall clock (PR #122 itself ran at 14:52, 8s under the cap).
-    # The mutation pass succeeds (Coverage 99.71% >= 85%) but pegs
-    # runtime at ~14:30 because most RSpecTracer.* methods are called
-    # during spec-helper setup; mutations cause the spec process to
-    # hang and get killed via mutant's per-mutation 5s timeout (674
-    # of 707 mutations land as Timeouts). Post-job cache cleanup adds
-    # the last few seconds, and any CI jitter pushes the job over the
-    # 15 min cap. 30 min matches test-mutation-tracker / -rspec and
-    # gives headroom without changing behavior - jobs end when work
-    # ends, the timeout is a hard cap.
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (top-level)
-        run: task test:mutation:top-level
+      - name: Test — Mutation (top-level shard-a)
+        timeout-minutes: 4
+        run: task test:mutation:top-level-a
+
+  test-mutation-top-level-b:
+    name: test-mutation-top-level-b
+    if: ${{ inputs.mut_top_level }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (top-level shard-b)
+        timeout-minutes: 4
+        run: task test:mutation:top-level-b
 
   test-integration-remote:
     name: test-integration-remote
@@ -382,10 +436,13 @@ jobs:
       - test-mutation-storage-json-backend-shard-1
       - test-mutation-storage-json-backend-shard-2
       - test-mutation-storage-json-backend-shard-3
+      - test-mutation-storage-json-backend-shard-4
+      - test-mutation-storage-json-backend-shard-5
       - test-mutation-storage-sqlite-read
       - test-mutation-storage-sqlite-write
       - test-mutation-rspec
-      - test-mutation-top-level
+      - test-mutation-top-level-a
+      - test-mutation-top-level-b
       - test-integration-remote
     steps:
       - name: Consolidate
