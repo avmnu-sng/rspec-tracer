@@ -114,10 +114,17 @@ module RSpecTracer
 
         engine.merge_skipped_coverage(skipped_ids).each do |file_path, line_map|
           existing = coverage[file_path]
+          # `Coverage.peek_result` returns frozen line-count arrays on
+          # Ruby 3.2+. Mutating those raises `FrozenError`. dup-on-write
+          # so we own a mutable copy before the merge loop, but only on
+          # the first hit per file_path (subsequent hits write into our
+          # already-mutable copy).
           if existing.nil?
-            stub = line_stub(file_path)
-            coverage[file_path] = stub
-            existing = stub
+            existing = line_stub(file_path)
+            coverage[file_path] = existing
+          elsif existing.frozen?
+            existing = existing.dup
+            coverage[file_path] = existing
           end
           line_map.each do |line_number, strength|
             idx = line_number.to_i
