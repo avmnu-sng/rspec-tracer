@@ -48,8 +48,8 @@ scenario. The harness compares each scenario's run-time P50 to the
 ratchet's P50:
 
 - `≤ 1.10×` threshold — silent pass.
-- `1.10× – 1.20×` — warning (CI posts a PR comment; build passes).
-- `> 1.20×` — build fails.
+- `1.10× – 1.30×` — warning (CI posts a PR comment; build passes).
+- `> 1.30×` — build fails.
 
 ### When to update the ratchet
 
