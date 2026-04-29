@@ -50,6 +50,44 @@ ratchet's P50:
 - `≤ 1.10×` threshold — silent pass.
 - `1.10× – 1.30×` — warning (CI posts a PR comment; build passes).
 - `> 1.30×` — build fails.
+- **`INFO` (informational, not gated)** — scenarios listed in
+  `INFORMATIONAL_SCENARIOS` (currently: `parallel_tests_2_workers`)
+  print their ratio for trend-watching but never fail the build.
+  See "Informational scenarios" below for why.
+
+### Informational scenarios
+
+Some scenarios have inherent wall-clock variance that exceeds the
+gate threshold by structural property — they exercise code shapes
+where CI-environment factors dominate timing. These scenarios are
+reported (timing emitted to stderr + summary markdown) but their
+ratio never contributes to the exit code.
+
+The canonical case is `parallel_tests_2_workers`. Its baseline
+itself records `p50=0.866 / p95=1.868` — `p95/p50 = 2.16×` within
+its own 10-iter sample. Any threshold below 2.16× will fail on
+noise alone. Two structural causes compound:
+
+1. **Process contention**: `parallel_rspec` spawns driver + 2 workers
+   = 3 Ruby processes on GHA's 2-vCPU runners. Worst-case wall ≈
+   `max(worker_wall) + merge`, and per-worker wall is ~2× of dedicated
+   on contended CPU.
+2. **Worker-startup variance amplified by max-of-N**: each worker
+   independently boots Ruby + Bundler + the gem set. The driver
+   waits for the slowest. Per-worker startup variance amplifies
+   into total wall.
+
+A real regression-detection signal for these scenarios would be a
+behavior assertion (cache-merge correctness, no worker crash)
+rather than a wall-clock comparison. Wall-clock stays as
+informational summary output for trend-watching across runs.
+
+**For gem users**: if you adopt similar wall-clock gates against
+your own benchmark of rspec-tracer + parallel_tests, expect
+2-3× run-to-run variance on shared CI runners. That's not a
+regression — it's an inherent property of `N workers on M vCPUs`
+where `N > M` plus shared-runner co-tenancy. Use a wider tolerance
+(or no wall-clock gate) for parallel-worker scenarios.
 
 ### When to update the ratchet
 
