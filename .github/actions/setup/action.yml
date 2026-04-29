@@ -37,7 +37,19 @@ runs:
         path: |
           bin
           .venv
+        # Primary key: exact match on Taskfile.yml + .tool-versions hash.
+        # Restore-keys: any prior `tools-${runner.os}-` cache entry. M8.6
+        # retro — Taskfile.yml hash changes on every session that edits
+        # tasks, busting the cache and forcing fresh tool downloads (one
+        # of which is the trivy install that hit a 35s GitHub-Releases
+        # CDN flake on PR #129's first run). With restore-keys, a
+        # busted-primary-key run still gets binaries from the most
+        # recent cache; install:tools' version-aware status: guards
+        # (added in M8.6) verify each binary's --version against the
+        # pinned vars and re-install only what's actually stale.
         key: tools-${{ runner.os }}-${{ hashFiles('Taskfile.yml', '.tool-versions') }}
+        restore-keys: |
+          tools-${{ runner.os }}-
 
     - name: Install tools
       run: task install:tools
