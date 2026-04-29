@@ -555,8 +555,8 @@ tasks:
 
   test:mutation:storage:json-backend:
     desc: >-
-      M8.6 storage aggregate — Storage::JsonBackend split into 8
-      sibling shards (`json-backend-shard-{1..8}`) that run as
+      M8.6 storage aggregate — Storage::JsonBackend split into 9
+      sibling shards (`json-backend-shard-{1..9}`) that run as
       separate parallel CI jobs. JsonBackend has 50 mutant subjects
       (43 instance methods + FieldReader nested class + Merger nested
       class with 6 class methods). 5-way split chosen because the
@@ -582,6 +582,7 @@ tasks:
       - task: test:mutation:storage:json-backend-shard-6
       - task: test:mutation:storage:json-backend-shard-7
       - task: test:mutation:storage:json-backend-shard-8
+      - task: test:mutation:storage:json-backend-shard-9
 
   test:mutation:storage:json-backend-shard-1:
     desc: >-
@@ -836,11 +837,11 @@ tasks:
 
   test:mutation:storage:json-backend-shard-8:
     desc: >-
-      M8.6 JsonBackend shard 8 of 8 — Merger.absorb + Merger.call
-      (2 subjects). Split out from shard-5 to fit the 4-min cap;
-      these are the heaviest Merger methods (entry-point + nested-
-      hash absorb logic) and were the dominant cost in the
-      4-subject shard-5 (4:46 CI).
+      M8.6 JsonBackend shard 8 of 9 — Merger.absorb (1 subject).
+      Originally a 2-subject shard with Merger.call; split into 1+1
+      because the 2-subject shard hit 4:36 CI (over the 4-min cap).
+      Merger.absorb does the actual hash absorption — many mutations
+      walk the nested-hash structure and take time to kill.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -853,8 +854,7 @@ tasks:
         out=$(bundle exec mutant run --use rspec --usage opensource \
           --jobs 8 \
           --include lib --require rspec_tracer/storage/json_backend \
-          "RSpecTracer::Storage::JsonBackend::Merger.absorb" \
-          "RSpecTracer::Storage::JsonBackend::Merger.call" 2>&1 || true)
+          "RSpecTracer::Storage::JsonBackend::Merger.absorb" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
         if [ -z "$cov" ]; then
@@ -866,6 +866,38 @@ tasks:
           exit 0
         fi
         echo "mutation:storage [Storage::JsonBackend shard-8] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-9:
+    desc: >-
+      M8.6 JsonBackend shard 9 of 9 — Merger.call (1 subject).
+      Split out from shard-8; Merger.call is the entry point that
+      orchestrates the merge across multiple peer caches and is the
+      densest single subject in JsonBackend.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend::Merger.call" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-9]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-9] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-9] FAIL (coverage $cov% < 75%)"
         exit 1
 
   test:mutation:storage:json-backend-shard-6:

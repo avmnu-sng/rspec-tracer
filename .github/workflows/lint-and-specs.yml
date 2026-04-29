@@ -283,9 +283,10 @@ jobs:
   test-mutation-storage-json-backend-shard-8:
     name: test-mutation-storage-json-backend-shard-8
     if: ${{ inputs.mut_storage }}
-    # Merger.absorb + Merger.call (2 subjects). Heaviest Merger
-    # methods (entry-point + nested-hash absorb logic); split out
-    # from shard-5 to fit the 4-min cap.
+    # Merger.absorb alone (1 subject). Originally Merger.absorb +
+    # Merger.call as a 2-subject shard at 4:36 CI; split into 1+1
+    # to fit the 4-min cap. These two methods carry the heaviest
+    # nested-hash mutation density in JsonBackend.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -296,6 +297,23 @@ jobs:
       - name: Test — Mutation (storage JsonBackend shard-8)
         timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-8
+
+  test-mutation-storage-json-backend-shard-9:
+    name: test-mutation-storage-json-backend-shard-9
+    if: ${{ inputs.mut_storage }}
+    # Merger.call alone (1 subject). Split out from shard-8;
+    # Merger.call is the entry-point orchestrator and the densest
+    # single subject in the JsonBackend mutation surface.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-9)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-9
 
   test-mutation-storage-json-backend-shard-6:
     name: test-mutation-storage-json-backend-shard-6
@@ -515,6 +533,7 @@ jobs:
       - test-mutation-storage-json-backend-shard-6
       - test-mutation-storage-json-backend-shard-7
       - test-mutation-storage-json-backend-shard-8
+      - test-mutation-storage-json-backend-shard-9
       - test-mutation-storage-sqlite-read
       - test-mutation-storage-sqlite-write
       - test-mutation-rspec
