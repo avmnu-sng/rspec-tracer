@@ -28,6 +28,10 @@ jobs:
     timeout-minutes: 2
     outputs:
       tier: ${{ steps.detect.outputs.tier }}
+      mut_tracker: ${{ steps.detect.outputs.mut_tracker }}
+      mut_storage: ${{ steps.detect.outputs.mut_storage }}
+      mut_rspec: ${{ steps.detect.outputs.mut_rspec }}
+      mut_top_level: ${{ steps.detect.outputs.mut_top_level }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,6 +45,22 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          # Per-subject mutation flags (M8.6). When a PR's diff doesn't
+          # touch a subject's lib/+spec/ surface, that subject's
+          # mutation gate is skipped on the per-PR run — same coverage
+          # signal still runs at merge-to-main (full-matrix path) and
+          # weekly. The flags are bash booleans converted to 'true' /
+          # 'false' strings at output time so lint-and-specs.yml's
+          # workflow_call inputs can consume them as YAML booleans.
+          # Cross-cutting safety net (rolled in below): touching
+          # Gemfile / Gemfile.lock / .ruby-version / Taskfile.yml /
+          # lib/rspec_tracer.rb / .github/workflows/* OR the
+          # gemspec OR multiple subjects flips ALL subject flags
+          # to true so a refactor that ripples across subjects can't
+          # silently miss any one of them.
+          MUT_TRACKER=0; MUT_STORAGE=0; MUT_RSPEC=0; MUT_TOP_LEVEL=0
+          MUT_FORCE_ALL=0
+
           if [ "$EVENT" = "pull_request" ]; then
             FILES=$(git diff --name-only "$BASE_SHA".."$HEAD_SHA")
           else
@@ -49,13 +69,27 @@ jobs:
           fi
 
           if [ "$EVENT" != "pull_request" ]; then
-            echo "tier=build" >> "$GITHUB_OUTPUT"
-            echo "Non-PR event ($EVENT): tier=build (full matrix)"
+            {
+              echo "tier=build"
+              echo "mut_tracker=true"
+              echo "mut_storage=true"
+              echo "mut_rspec=true"
+              echo "mut_top_level=true"
+            } >> "$GITHUB_OUTPUT"
+            echo "Non-PR event ($EVENT): tier=build (full matrix); all mutation subjects enabled"
             exit 0
           fi
 
           if [ -z "$FILES" ]; then
-            echo "tier=skip" >> "$GITHUB_OUTPUT"
+            # tier=skip skips lint-and-specs entirely — flag values
+            # don't matter, but we emit 'false' for diagnostic clarity.
+            {
+              echo "tier=skip"
+              echo "mut_tracker=false"
+              echo "mut_storage=false"
+              echo "mut_rspec=false"
+              echo "mut_top_level=false"
+            } >> "$GITHUB_OUTPUT"
             echo "No changed files: tier=skip"
             exit 0
           fi
@@ -64,6 +98,36 @@ jobs:
 
           while IFS= read -r f; do
             [ -z "$f" ] && continue
+
+            # Per-subject mutation flags from lib/+spec/ paths.
+            # `lib/rspec_tracer.rb` (the top-level file) flips
+            # mut_top_level AND triggers FORCE_ALL since it's the
+            # entry-point that other subjects consume.
+            case "$f" in
+              lib/rspec_tracer/tracker/*|spec/tracker/*)
+                MUT_TRACKER=1
+                ;;
+              lib/rspec_tracer/storage/*|spec/storage/*)
+                MUT_STORAGE=1
+                ;;
+              lib/rspec_tracer/rspec/*|spec/rspec/*)
+                MUT_RSPEC=1
+                ;;
+              lib/rspec_tracer/configuration.rb|lib/rspec_tracer/version.rb|lib/rspec_tracer/errors.rb|lib/rspec_tracer/time_formatter.rb|spec/top_level/*|spec/configuration_spec.rb|spec/rspec_tracer_spec.rb)
+                MUT_TOP_LEVEL=1
+                ;;
+            esac
+
+            # Cross-cutting safety net: any of the following forces
+            # ALL subject flags to true. These are files whose change
+            # could ripple across multiple subjects without showing
+            # up in any subject's lib/+spec/ surface directly.
+            case "$f" in
+              Gemfile|Gemfile.lock|.ruby-version|.tool-versions|Taskfile.yml|*.gemspec|lib/rspec_tracer.rb|.github/workflows/*|.github/actions/*)
+                MUT_FORCE_ALL=1
+                ;;
+            esac
+
             case "$f" in
               *.md|LICENSE|.gitignore|CODEOWNERS|readme_files/*|.github/FUNDING.yml|.github/ISSUE_TEMPLATE/*)
                 # skip-tier files — don't upgrade TIER
@@ -93,8 +157,33 @@ jobs:
             esac
           done <<< "$FILES"
 
-          echo "tier=${TIER}" >> "$GITHUB_OUTPUT"
+          # Multi-subject diff is also a cross-cutting signal — if a
+          # PR touches 2+ subjects' lib/+spec/ surfaces we run all 4
+          # (refactors often miss a subject otherwise).
+          touched=$((MUT_TRACKER + MUT_STORAGE + MUT_RSPEC + MUT_TOP_LEVEL))
+          if [ "$touched" -ge 2 ]; then
+            MUT_FORCE_ALL=1
+          fi
+
+          if [ "$MUT_FORCE_ALL" = "1" ]; then
+            MUT_TRACKER=1; MUT_STORAGE=1; MUT_RSPEC=1; MUT_TOP_LEVEL=1
+          fi
+
+          to_bool() { [ "$1" = "1" ] && echo "true" || echo "false"; }
+          MT=$(to_bool "$MUT_TRACKER")
+          MS=$(to_bool "$MUT_STORAGE")
+          MR=$(to_bool "$MUT_RSPEC")
+          MTL=$(to_bool "$MUT_TOP_LEVEL")
+
+          {
+            echo "tier=${TIER}"
+            echo "mut_tracker=${MT}"
+            echo "mut_storage=${MS}"
+            echo "mut_rspec=${MR}"
+            echo "mut_top_level=${MTL}"
+          } >> "$GITHUB_OUTPUT"
           echo "Detected tier: ${TIER}"
+          echo "Mutation subjects: tracker=${MT} storage=${MS} rspec=${MR} top_level=${MTL} (force_all=${MUT_FORCE_ALL})"
           echo "Changed files:"
           echo "$FILES"
 
@@ -103,6 +192,11 @@ jobs:
     needs: tier
     if: ${{ needs.tier.outputs.tier != 'skip' }}
     uses: ./.github/workflows/lint-and-specs.yml
+    with:
+      mut_tracker: ${{ needs.tier.outputs.mut_tracker == 'true' }}
+      mut_storage: ${{ needs.tier.outputs.mut_storage == 'true' }}
+      mut_rspec: ${{ needs.tier.outputs.mut_rspec == 'true' }}
+      mut_top_level: ${{ needs.tier.outputs.mut_top_level == 'true' }}
     secrets: inherit
 
   full-matrix:

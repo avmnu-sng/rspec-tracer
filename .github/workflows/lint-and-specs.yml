@@ -2,7 +2,29 @@
 name: lint-and-specs
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      # Per-subject mutation gating (M8.6). Caller (ci.yml) computes
+      # these from the PR diff; defaults true so non-PR / fallback
+      # callers run every gate. Cross-cutting safety net (Gemfile /
+      # .ruby-version / Taskfile.yml / lib/rspec_tracer.rb / multi-
+      # subject diff) is enforced on the caller side.
+      mut_tracker:
+        type: boolean
+        required: false
+        default: true
+      mut_storage:
+        type: boolean
+        required: false
+        default: true
+      mut_rspec:
+        type: boolean
+        required: false
+        default: true
+      mut_top_level:
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -101,6 +123,7 @@ jobs:
 
   test-mutation-tracker:
     name: test-mutation-tracker
+    if: ${{ inputs.mut_tracker }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -111,23 +134,87 @@ jobs:
       - name: Test — Mutation (tracker)
         run: task test:mutation:tracker
 
-  test-mutation-storage:
-    name: test-mutation-storage
-    # SqliteBackend mutation pass dominates wall clock; ~30 min on M2
-    # Max, 1.4-1.6x slower on ubuntu-latest. 60 min headroom keeps
-    # this job from timing out under GHA scheduling jitter.
+  # M8.6 — storage mutation split into 4 shards: 1 non-sqlite + 3
+  # SqliteBackend method-prefix shards. Each shard runs as its own
+  # parallel job so per-PR storage wall clock drops from ~45 min
+  # single-job to ~15 min sharded. All gated by inputs.mut_storage
+  # (PR-diff path-gating; safety net on caller side). The aggregate
+  # `task test:mutation:storage` Taskfile entry preserves the local
+  # single-command surface by sequencing all 4 shards.
+
+  test-mutation-storage-non-sqlite:
+    name: test-mutation-storage-non-sqlite
+    if: ${{ inputs.mut_storage }}
+    # 4 small subjects (LazySnapshot, Serializer::Json,
+    # Serializer::Msgpack, JsonBackend). Local M2 Max wall clock
+    # ~12 min (JsonBackend dominates with 2792 mutations); CI
+    # ubuntu-latest 1.4-1.6x slower per
+    # feedback_mutant_local_vs_ci_variance — projected ~18-20 min.
+    # 25 min cap gives headroom for GHA scheduling jitter.
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage)
-        run: task test:mutation:storage
+      - name: Test — Mutation (storage non-sqlite)
+        run: task test:mutation:storage:non-sqlite
+
+  test-mutation-storage-sqlite-shard-1:
+    name: test-mutation-storage-sqlite-shard-1
+    if: ${{ inputs.mut_storage }}
+    # SqliteBackend read-side: load_graph, last_run_id, read_field,
+    # read_*, dispatch_read*. ~13 of ~43 SqliteBackend mutant subjects.
+    # 30 min cap (1/3 of the original 60 min single-job cap, with
+    # headroom for shard imbalance + GHA jitter).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage SqliteBackend shard-1)
+        run: task test:mutation:storage:sqlite-shard-1
+
+  test-mutation-storage-sqlite-shard-2:
+    name: test-mutation-storage-sqlite-shard-2
+    if: ${{ inputs.mut_storage }}
+    # SqliteBackend write-side: save_graph, transactional_save, clear!,
+    # write_*, insert_*, iterate_line_entries. ~16 of ~43 SqliteBackend
+    # mutant subjects.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage SqliteBackend shard-2)
+        run: task test:mutation:storage:sqlite-shard-2
+
+  test-mutation-storage-sqlite-shard-3:
+    name: test-mutation-storage-sqlite-shard-3
+    if: ${{ inputs.mut_storage }}
+    # SqliteBackend connection / schema / utility: initialize, with_*,
+    # db_path, load_sqlite_driver!, configure_connection,
+    # reset_corrupt_db_file!, meta_table_exists?, ensure_schema!,
+    # empty_default_for, decode_hash_with_sym_keys, fetch_hash, info,
+    # warn, debug. ~14 of ~43 SqliteBackend mutant subjects.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage SqliteBackend shard-3)
+        run: task test:mutation:storage:sqlite-shard-3
 
   test-mutation-rspec:
     name: test-mutation-rspec
+    if: ${{ inputs.mut_rspec }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -140,6 +227,7 @@ jobs:
 
   test-mutation-top-level:
     name: test-mutation-top-level
+    if: ${{ inputs.mut_top_level }}
     runs-on: ubuntu-latest
     # Bumped 15 -> 30 after PR #122's merge-to-main run cancelled at
     # 15:02 wall clock (PR #122 itself ran at 14:52, 8s under the cap).
@@ -222,12 +310,17 @@ jobs:
 
   # Consolidator: the single required-status-check that branch
   # protection can gate on. Succeeds iff every parallel job above
-  # succeeded; if any fails or is cancelled, GitHub blocks this
-  # job from running and the overall workflow status is failure.
-  # The original sequential `lint-and-specs / lint-and-specs` job
-  # name retired in favor of `lint-and-specs / lint-and-specs` here.
+  # succeeded OR was skipped via M8.6 path-gating; fails if any
+  # was 'failure' or 'cancelled'.
+  #
+  # `if: !cancelled()` ensures this job runs even when one or more
+  # mutation subject gates were skipped (GHA's default `success()`
+  # would mark this job skipped too, breaking branch protection).
+  # The bash inspects each needs.<job>.result via toJSON and rejects
+  # only true failures; success + skipped both pass.
   lint-and-specs:
     name: lint-and-specs
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs:
@@ -238,11 +331,25 @@ jobs:
       - test-fuzz
       - test-mutation-smoke
       - test-mutation-tracker
-      - test-mutation-storage
+      - test-mutation-storage-non-sqlite
+      - test-mutation-storage-sqlite-shard-1
+      - test-mutation-storage-sqlite-shard-2
+      - test-mutation-storage-sqlite-shard-3
       - test-mutation-rspec
       - test-mutation-top-level
       - test-integration-remote
     steps:
       - name: Consolidate
+        env:
+          NEEDS_RESULTS: ${{ toJSON(needs) }}
         run: |
-          echo "All parallel lint-and-specs jobs passed."
+          echo "$NEEDS_RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          # Accept success (job ran and passed) or skipped (M8.6
+          # path-gate skipped this subject's mutation pass on this
+          # PR). Reject failure or cancelled.
+          if echo "$NEEDS_RESULTS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null; then
+            echo "All parallel lint-and-specs jobs succeeded or were intentionally skipped."
+            exit 0
+          fi
+          echo "::error::At least one parallel lint-and-specs job failed or was cancelled."
+          exit 1
