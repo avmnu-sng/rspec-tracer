@@ -1,10 +1,17 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Builds the identity-hash payload (`:example_id`-keyed Hash) that
+  # RSpec::RunnerHook attaches to every example pre-run.
+  #
+  # All methods declared `def self.x` + `private_class_method` for
+  # the private helpers per feedback_mutation_friendly_modules:
+  # mutant maps tests to the singleton form. Public API
+  # (`Example.from`) is the only call site `runner_hook.rb` + the
+  # runner-hook spec drive; the three private helpers stay reachable
+  # only from `from` itself.
   module Example
-    module_function
-
-    def from(example)
+    def self.from(example)
       data = {
         example_group: example.example_group.name,
         description: example.description,
@@ -16,7 +23,7 @@ module RSpecTracer
       data.merge(example_id: Digest::MD5.hexdigest(data.to_json))
     end
 
-    def example_location(example)
+    def self.example_location(example)
       metadata = example.metadata
 
       location = {
@@ -34,7 +41,7 @@ module RSpecTracer
       location.merge(example_rerun_location(example.example_group.parent_groups))
     end
 
-    def example_rerun_location(example_groups)
+    def self.example_rerun_location(example_groups)
       example_groups.each do |example_group|
         metadata = example_group.metadata
 
@@ -47,7 +54,7 @@ module RSpecTracer
       end
     end
 
-    def location_file_name(rspec_file_name)
+    def self.location_file_name(rspec_file_name)
       file_path = RSpecTracer::SourceFile.file_path(rspec_file_name)
 
       RSpecTracer::SourceFile.file_name(file_path)
