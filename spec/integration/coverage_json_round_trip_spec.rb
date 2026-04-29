@@ -32,10 +32,19 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
   before do
     FixtureBundleHelper.clear_tracer_state
     Bundler.with_unbundled_env do
+      # CI is unset so Rails uses lazy-load in the fixture's test env
+      # (config/environments/test.rb gates eager_load on ENV['CI']).
+      # Eager-load runs during Rails boot - BEFORE rspec-tracer's
+      # Coverage.start - so files loaded eagerly miss coverage and the
+      # subprocess's coverage.json shrinks to whatever loads after
+      # Coverage.start. The golden was captured in lazy-load mode (no
+      # CI env); pin lazy-load here so byte-equivalence holds across
+      # CI runners and local dev regardless of the outer ENV.
       env = {
         'RSPEC_TRACER' => '1',
         'RSPEC_TRACER_FIXTURE_NO_SIMPLECOV' => '1',
-        'BUNDLE_FROZEN' => '1'
+        'BUNDLE_FROZEN' => '1',
+        'CI' => ''
       }
       @rspec_out, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color',
                                            chdir: FixtureBundleHelper::FIXTURE_ROOT)
