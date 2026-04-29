@@ -5,62 +5,67 @@
     "os": "darwin24",
     "cpu": "Apple M2 Max",
     "cores": 12,
-    "recorded_at": "2026-04-26T13:37:06Z"
+    "recorded_at": "2026-04-29T17:14:09Z"
   },
   "scenarios": {
     "cold_ruby": {
-      "p50": 0.2886,
-      "p95": 0.3225,
+      "p50": 0.2863,
+      "p95": 0.3289,
       "iterations": 10
     },
     "warm_noop": {
-      "p50": 0.2662,
-      "p95": 0.3089,
-      "iterations": 10
-    },
-    "warm_env_mismatch": {
-      "p50": 0.2648,
+      "p50": 0.2747,
       "p95": 0.2795,
       "iterations": 10
     },
+    "warm_env_mismatch": {
+      "p50": 0.2726,
+      "p95": 0.3023,
+      "iterations": 10
+    },
     "parallel_tests_2_workers": {
-      "p50": 1.5403,
-      "p95": 1.5628,
+      "p50": 1.5432,
+      "p95": 1.5855,
       "iterations": 10
     },
     "cold_rails": {
-      "p50": 2.9666,
-      "p95": 3.7172,
+      "p50": 2.2971,
+      "p95": 2.9279,
+      "iterations": 10
+    },
+    "cold_rails_v2": {
+      "p50": 5.4442,
+      "p95": 5.6022,
       "iterations": 10
     },
     "coverage_adapter": {
-      "p50": 2.5007,
-      "p95": 2.5182,
+      "p50": 2.4965,
+      "p95": 2.6068,
       "iterations": 10
     },
     "cache_load": {
-      "p50": 0.4801,
-      "p95": 0.4865,
+      "p50": 0.4835,
+      "p95": 0.4904,
       "iterations": 10
     },
     "cache_load_msgpack": {
-      "p50": 0.5054,
-      "p95": 0.5215,
+      "p50": 0.5095,
+      "p95": 0.5171,
       "iterations": 10
     },
     "cache_load_sqlite": {
-      "p50": 0.6404,
-      "p95": 0.6487,
+      "p50": 0.6515,
+      "p95": 0.6783,
       "iterations": 10
     },
     "file_read_hook": {
-      "p50": 7.2234,
-      "p95": 7.4909,
+      "p50": 7.5114,
+      "p95": 7.9133,
       "iterations": 10
     },
     "loaded_files_tracker": {
-      "p50": 1.8322,
-      "p95": 1.8834,
+      "p50": 1.884,
+      "p95": 2.014,
       "iterations": 10
     }
   }

@@ -116,9 +116,33 @@ module BenchmarkHarness
       smoke: false
     },
     'cold_rails' => {
-      desc: 'Cold start: Rails fixture, empty cache',
+      desc: 'Cold start: Rails fixture, empty cache (narrow scope: spec/models only)',
       cwd: RAILS_FIXTURE,
       cmd: %w[bundle exec rspec --no-color spec/models],
+      env: {
+        'RAILS_VERSION' => '~> 7.1.0',
+        'RSPEC_RAILS_VERSION' => '~> 6.1.0',
+        'SQLITE3_VERSION' => '~> 1.4',
+        'RSPEC_TRACER' => '1'
+      },
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
+      setup: lambda do |cwd|
+        system('bundle', 'exec', 'rails', 'db:test:prepare',
+               chdir: cwd, out: File::NULL, err: File::NULL)
+      end,
+      smoke: false
+    },
+    'cold_rails_v2' => {
+      # Broader Rails fixture cold-start (full spec/ tree). Eager-loads
+      # ~300+ initializer files through the coverage stack; pre-M8.0
+      # this exercised both the legacy CoverageReporter peek+diff per
+      # example AND the Engine peek+diff. Post-retirement only Engine
+      # peeks. The wall-clock delta on this scenario is the largest
+      # single signal for M8.0's perf payoff. M4.3 handoff target was
+      # `<= 1.5x` of stock-rspec; M8.4 owns closing the residual gap.
+      desc: 'Cold start: Rails fixture, full spec/ tree (broader than cold_rails)',
+      cwd: RAILS_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color],
       env: {
         'RAILS_VERSION' => '~> 7.1.0',
         'RSPEC_RAILS_VERSION' => '~> 6.1.0',
