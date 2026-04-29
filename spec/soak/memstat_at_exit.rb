@@ -19,7 +19,7 @@ require 'json'
 require 'objspace'
 
 at_exit do
-  dir = ENV['SOAK_MEMSTAT_DIR']
+  dir = ENV.fetch('SOAK_MEMSTAT_DIR', nil)
   next if dir.nil? || dir.empty?
 
   begin
@@ -30,13 +30,17 @@ at_exit do
       'gc_stat' => GC.stat,
       'count_objects' => ObjectSpace.count_objects,
       'total_memsize' => ObjectSpace.memsize_of_all,
-      'argv0' => $PROGRAM_NAME,
+      'argv0' => $PROGRAM_NAME
     }
 
     target = File.join(dir, "memstat-#{Process.pid}.json")
     File.write(target, JSON.pretty_generate(snapshot))
   rescue StandardError => e
     err_target = File.join(dir, "memstat-#{Process.pid}.error")
-    File.write(err_target, "#{e.class}: #{e.message}") rescue nil
+    begin
+      File.write(err_target, "#{e.class}: #{e.message}")
+    rescue StandardError
+      nil
+    end
   end
 end

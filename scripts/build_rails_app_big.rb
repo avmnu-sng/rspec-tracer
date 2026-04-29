@@ -146,9 +146,9 @@ class FixtureCloner
   # factories, fixtures) - those stay singular at spec/ root.
   def enumerate_cloneable_specs(spec_root)
     Dir.glob(spec_root.join('**/*.rb'))
-       .map { |f| Pathname(f).relative_path_from(spec_root).to_s }
-       .reject { |rel| shared_spec_infrastructure?(rel) }
-       .sort
+      .map { |f| Pathname(f).relative_path_from(spec_root).to_s }
+      .reject { |rel| shared_spec_infrastructure?(rel) }
+      .sort
   end
 
   def shared_spec_infrastructure?(rel)
@@ -186,8 +186,7 @@ class FixtureCloner
   def summarize
     spec_count = Dir.glob(DEST.join('spec/**/*_spec.rb')).count
     total_count = Dir.glob(DEST.join('**/*'), File::FNM_DOTMATCH)
-                     .reject { |f| File.directory?(f) }
-                     .count
+      .count { |f| !File.directory?(f) }
     puts "Generated #{DEST}"
     puts "  - #{spec_count} *_spec.rb files (4x duplication of #{spec_count / 4} source specs)"
     puts "  - #{total_count} total files"

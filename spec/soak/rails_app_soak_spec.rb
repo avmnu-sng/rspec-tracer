@@ -47,6 +47,12 @@ ITERATIONS = Integer(ENV.fetch('SOAK_ITERATIONS', '100'))
 WARMUP_ITERS = Integer(ENV.fetch('SOAK_WARMUP_ITERS', '5'))
 MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.05'))
 
+# Soak orchestration: subprocess-per-iter pattern needs before(:all)
+# bundle/db setup + a single multi-statement example. The integration-
+# style cops below are tuned for unit specs (small examples, single
+# expectation) and don't apply to a 100-iter cross-process soak.
+# rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
+# rubocop:disable RSpec/NoExpectationExample
 RSpec.describe 'rails_app_big soak' do
   before(:all) do
     raise "fixture missing: #{FIXTURE_ROOT}" unless FIXTURE_ROOT.directory?
@@ -87,6 +93,8 @@ RSpec.describe 'rails_app_big soak' do
 
     enforce_memory_bound(memstats)
   end
+  # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
+  # rubocop:enable RSpec/NoExpectationExample
 
   # -- helpers ---------------------------------------------------
 
@@ -137,19 +145,23 @@ RSpec.describe 'rails_app_big soak' do
     File.open(target, 'a') { |f| f.write(suffix) }
   end
 
+  # 9-kind case statement is the canonical lookup; cyclomatic
+  # complexity is a feature here (each branch is a deliberate
+  # mutation surface), not a refactor opportunity.
+  # rubocop:disable Metrics/CyclomaticComplexity
   def mutation_candidates(kind)
     case kind
     when :model
       Dir.glob(FIXTURE_ROOT.join('app/models/*.rb'))
-         .reject { |f| File.basename(f) == 'application_record.rb' }
+        .reject { |f| File.basename(f) == 'application_record.rb' }
     when :view
       Dir.glob(FIXTURE_ROOT.join('app/views/**/*.{erb,slim,jbuilder}'))
     when :controller
       Dir.glob(FIXTURE_ROOT.join('app/controllers/*_controller.rb'))
-         .reject { |f| File.basename(f) == 'application_controller.rb' }
+        .reject { |f| File.basename(f) == 'application_controller.rb' }
     when :helper
       Dir.glob(FIXTURE_ROOT.join('app/helpers/*_helper.rb'))
-         .reject { |f| File.basename(f) == 'application_helper.rb' }
+        .reject { |f| File.basename(f) == 'application_helper.rb' }
     when :factory
       Dir.glob(FIXTURE_ROOT.join('spec/factories/*.rb'))
     when :fixture
@@ -164,6 +176,7 @@ RSpec.describe 'rails_app_big soak' do
       []
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   # Comment syntax per file extension. Append-style mutations are
   # idempotent across iters: each iter adds ONE comment line; the
@@ -171,14 +184,12 @@ RSpec.describe 'rails_app_big soak' do
   # FactoryBot / YAML all tolerate trailing comments). The tracker
   # observes the change via mtime / size / digest invalidation -
   # which is what the soak is testing.
-  def mutation_suffix(path, iter, kind)
-    label = "soak iter #{iter} (#{kind})"
+  def mutation_suffix(path, iter, _kind)
+    label = "soak iter #{iter}"
     case File.extname(path)
-    when '.erb'      then "\n<%# #{label} %>\n"
-    when '.slim'     then "\n/ #{label}\n"
-    when '.jbuilder' then "\n# #{label}\n"
-    when '.yml'      then "\n# #{label}\n"
-    else                  "\n# #{label}\n"
+    when '.erb'  then "\n<%# #{label} %>\n"
+    when '.slim' then "\n/ #{label}\n"
+    else              "\n# #{label}\n"
     end
   end
 
@@ -244,15 +255,19 @@ RSpec.describe 'rails_app_big soak' do
     end
 
     summary = growths.map { |iter, _, ratio| "iter #{iter}: #{format('%.4f', ratio)}x" }
-                     .join("\n  ")
-    puts "Memory growth (baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}"
+      .join("\n  ")
+    # The growth-ratio summary is a CI / nightly-cron diagnostic;
+    # post-merge dashboards plot it as the soak SLI signal. RSpec/Output
+    # disabled deliberately - this puts is the spec's primary
+    # observability artifact.
+    puts "Memory growth (baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}" # rubocop:disable RSpec/Output
 
     violations = growths.select { |_, memsize, _| memsize > bound }
     return if violations.empty?
 
     raise "memory bound exceeded (baseline #{baseline}, bound #{bound}):\n" +
-          violations.map { |iter, memsize, ratio|
-            "  iter #{iter}: #{memsize} bytes (#{format('%.4f', ratio)}x)"
-          }.join("\n")
+      violations.map { |iter, memsize, ratio|
+        "  iter #{iter}: #{memsize} bytes (#{format('%.4f', ratio)}x)"
+      }.join("\n")
   end
 end
