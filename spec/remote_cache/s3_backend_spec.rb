@@ -615,6 +615,224 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
     end
   end
 
+  describe 'tree-SHA secondary index' do
+    let(:backend) { new_backend(branch: 'main', default_branch: 'main') }
+    let(:pr_backend) { new_backend(branch: 'feat', default_branch: 'main') }
+
+    before do
+      write_valid_last_run(File.join(@cache_path, 'last_run.json'))
+      FileUtils.mkdir_p(File.join(@cache_path, 'abc123'))
+    end
+
+    describe '#upload(ref, tree_sha:)' do
+      it 'writes the cache archive AND a tree pointer when tree_sha is given' do
+        uploads = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          uploads << [args[0..1], args[2], args[3]]
+          ['', '', status_ok]
+        end
+
+        backend.upload('commit-A', tree_sha: 'tree-T')
+
+        archive_uploads = uploads.select { |_op, _src, dst| dst.end_with?('cache.tar.gz') }
+        pointer_uploads = uploads.select { |_op, _src, dst| dst.include?('/by_tree/') }
+
+        expect(archive_uploads.size).to eq(1)
+        expect(archive_uploads.first[2]).to eq('s3://my-bucket/rspec-tracer/main/commit-A/cache.tar.gz')
+
+        expect(pointer_uploads.size).to eq(1)
+        expect(pointer_uploads.first[2]).to eq('s3://my-bucket/rspec-tracer/main/by_tree/tree-T')
+      end
+
+      it 'pointer file content is the commit-SHA (plain text)' do
+        captured_pointer_src = nil
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          captured_pointer_src = args[2] if args[3]&.include?('/by_tree/')
+          ['', '', status_ok]
+        end
+
+        backend.upload('commit-A', tree_sha: 'tree-T')
+
+        expect(captured_pointer_src).not_to be_nil
+        # The pointer file is cleaned up after upload, but during the
+        # captured shell-out it exists with the commit-SHA as content.
+      end
+
+      it 'omits the tree pointer when tree_sha is nil (default)' do
+        uploads = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          uploads << args[3]
+          ['', '', status_ok]
+        end
+
+        backend.upload('commit-A')
+
+        expect(uploads).not_to include(a_string_matching(%r{/by_tree/}))
+      end
+
+      it 'omits the tree pointer when tree_sha is the empty string' do
+        uploads = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          uploads << args[3]
+          ['', '', status_ok]
+        end
+
+        backend.upload('commit-A', tree_sha: '')
+
+        expect(uploads).not_to include(a_string_matching(%r{/by_tree/}))
+      end
+    end
+
+    describe '#download(ref, tree_sha:)' do
+      it 'resolves the tree pointer to a commit-SHA and downloads from that ref' do
+        attempted_keys = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          if args[0..1] == %w[s3 cp]
+            src = args[2]
+            attempted_keys << src
+            if src.end_with?('/by_tree/tree-T')
+              File.write(args[3], 'commit-A')
+              ['', '', status_ok]
+            elsif src.include?('/main/commit-A/cache.tar.gz')
+              build_valid_archive(args[3])
+              ['', '', status_ok]
+            else
+              ['', 'miss', status_fail]
+            end
+          else
+            ['', "unmatched: #{args.inspect}", status_fail]
+          end
+        end
+
+        # Caller passes the CURRENT commit (commit-B from a rebase) +
+        # tree_sha; pointer resolves to commit-A which has the cache.
+        result = backend.download('commit-B', tree_sha: 'tree-T')
+
+        expect(result).to be(true)
+        # First attempt is the tree pointer; second is the resolved ref.
+        expect(attempted_keys.first).to end_with('/by_tree/tree-T')
+        expect(attempted_keys[1]).to include('/main/commit-A/cache.tar.gz')
+      end
+
+      it 'falls back to the direct ref when the tree pointer is absent' do
+        attempted_keys = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          if args[0..1] == %w[s3 cp]
+            src = args[2]
+            attempted_keys << src
+            if src.include?('/by_tree/')
+              ['', 'pointer miss', status_fail]
+            elsif src.include?('/main/commit-X/cache.tar.gz')
+              build_valid_archive(args[3])
+              ['', '', status_ok]
+            else
+              ['', 'miss', status_fail]
+            end
+          else
+            ['', "unmatched: #{args.inspect}", status_fail]
+          end
+        end
+
+        result = backend.download('commit-X', tree_sha: 'tree-missing')
+
+        expect(result).to be(true)
+        expect(attempted_keys).to include(a_string_ending_with('/by_tree/tree-missing'))
+        expect(attempted_keys.last).to include('/main/commit-X/cache.tar.gz')
+      end
+
+      it 'returns false when both tree pointer and direct ref miss' do
+        allow(Open3).to receive(:capture3).and_return(['', 'miss', status_fail])
+
+        expect(backend.download('nonexistent', tree_sha: 'nonexistent')).to be(false)
+      end
+
+      it 'treats blank tree_sha as nil (no pointer attempt)' do
+        attempted_keys = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          attempted_keys << args[2] if args[0..1] == %w[s3 cp]
+          ['', 'miss', status_fail]
+        end
+
+        backend.download('commit-X', tree_sha: '')
+
+        expect(attempted_keys).not_to include(a_string_matching(%r{/by_tree/}))
+      end
+
+      it 'returns nil from resolve_tree_pointer when pointer is empty / whitespace' do
+        attempted_keys = []
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          if args[0..1] == %w[s3 cp]
+            src = args[2]
+            attempted_keys << src
+            if src.include?('/by_tree/')
+              File.write(args[3], "   \n") # whitespace-only pointer content
+              ['', '', status_ok]
+            else
+              ['', 'miss', status_fail]
+            end
+          else
+            ['', '', status_fail]
+          end
+        end
+
+        # Empty pointer means resolve returns nil; should fall back to
+        # direct commit-X lookup (which also misses, returning false).
+        expect(backend.download('commit-X', tree_sha: 'tree-T')).to be(false)
+        # Pointer was tried first, then direct ref.
+        expect(attempted_keys.first).to end_with('/by_tree/tree-T')
+        expect(attempted_keys.last).to include('/main/commit-X/cache.tar.gz')
+      end
+
+      it 'gracefully handles unreadable pointer file (StandardError swallowed)' do
+        allow(Open3).to receive(:capture3) do |_cli, *args|
+          if args[0..1] == %w[s3 cp] && args[2].include?('/by_tree/')
+            # Simulate aws_cp_silent succeeding but File.read raising.
+            File.write(args[3], 'commit-A')
+            allow(File).to receive(:read).and_call_original
+            allow(File).to receive(:read).with(args[3], encoding: 'UTF-8').and_raise(Errno::EACCES)
+            ['', '', status_ok]
+          else
+            ['', 'miss', status_fail]
+          end
+        end
+
+        # The rescue StandardError in resolve_tree_pointer swallows
+        # the EACCES; download falls through to the direct ref miss.
+        expect(backend.download('commit-X', tree_sha: 'tree-T')).to be(false)
+      end
+
+      context 'on a PR backend with main-tier fallback' do
+        it 'tries tree-pointer-resolved ref on own tier, then on main tier' do
+          attempted_keys = []
+          allow(Open3).to receive(:capture3) do |_cli, *args|
+            if args[0..1] == %w[s3 cp]
+              src = args[2]
+              attempted_keys << src
+              if src.end_with?('/pr/feat/by_tree/tree-T')
+                File.write(args[3], 'commit-A')
+                ['', '', status_ok]
+              elsif src.include?('/main/commit-A/cache.tar.gz')
+                build_valid_archive(args[3])
+                ['', '', status_ok]
+              else
+                ['', 'miss', status_fail]
+              end
+            else
+              ['', '', status_fail]
+            end
+          end
+
+          # Pointer hits on PR tier, resolved ref hits on main tier
+          # (the upload was on main; PR rebase reads through to main).
+          expect(pr_backend.download('commit-B', tree_sha: 'tree-T')).to be(true)
+          # Order: PR pointer, PR resolved, main resolved (hit), ...
+          expect(attempted_keys[0]).to end_with('/pr/feat/by_tree/tree-T')
+          expect(attempted_keys).to include(a_string_matching(%r{/main/commit-A/cache\.tar\.gz}))
+        end
+      end
+    end
+  end
+
   describe '#unbounded_warning' do
     it 'returns nil when ref count is at or below the threshold' do
       backend = new_backend
