@@ -1,3 +1,3 @@
 --require spec_helper
 --format documentation
---exclude-pattern "spec/fixtures/**/*_spec.rb,spec/integration/rails_app_spec.rb,spec/integration/narrow_ar_schema_spec.rb,spec/integration/parallel_tests_spec.rb,spec/integration/per_example_dsl_spec.rb,spec/integration/remote_cache_spec.rb,spec/integration/remote_cache_redis_spec.rb,spec/integration/coverage_json_round_trip_spec.rb,spec/edge_cases/**/*_spec.rb"
+--exclude-pattern "spec/fixtures/**/*_spec.rb,spec/integration/rails_app_spec.rb,spec/integration/narrow_ar_schema_spec.rb,spec/integration/parallel_tests_spec.rb,spec/integration/per_example_dsl_spec.rb,spec/integration/remote_cache_spec.rb,spec/integration/remote_cache_redis_spec.rb,spec/integration/coverage_json_round_trip_spec.rb,spec/edge_cases/**/*_spec.rb,spec/soak/**/*_spec.rb"

@@ -80,6 +80,9 @@ includes:
   gem:
     taskfile: ./taskfiles/gem.yml
     flatten: true
+  soak:
+    taskfile: ./taskfiles/soak.yml
+    flatten: true
 
 tasks:
   default:
