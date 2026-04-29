@@ -35,24 +35,39 @@ jobs:
         # Re-add 8.0 cells when M4.3 wires the new fixture
         # (spec/fixtures/rails_app, 8.0-capable) into the CI test target.
         run: |
+          # M8.6-B Lever 5: the JRuby x Rails 7.1 cell fans out across 7
+          # shards (6 rails_app-N-M shards covering 2 scenarios each from
+          # rails_app_spec.rb's 12 scenarios + 1 narrow-schema shard for
+          # narrow_ar_schema_spec.rb's 2 scenarios). MRI rows carry
+          # `shard: ""` so the workflow step's `if: matrix.shard == ''`
+          # gates them onto the unsharded MRI test tasks. Cache keys
+          # (`m2-...-jruby-...` and `fixture-bundle-rails-app-...-jruby-...`)
+          # are shared across all 7 JRuby shards; first to finish saves,
+          # subsequent runs restore.
           rails_cells=$(cat <<'JSON' | tr -d '\n'
           [
-            {"ruby":"3.1","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.1","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.1","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
-            {"ruby":"3.2","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.2","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.2","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
-            {"ruby":"3.3","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.3","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.3","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
-            {"ruby":"3.4","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"3.4","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
-            {"ruby":"4.0","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"4.0","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4"},
-            {"ruby":"4.0","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4"},
-            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc"}
+            {"ruby":"3.1","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.1","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.1","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.2","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.2","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.2","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.3","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.3","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.3","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.4","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"3.4","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"4.0","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"4.0","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
+            {"ruby":"4.0","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-1-2"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-3-4"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-5-6"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-7-8"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-9-10"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-11-12"},
+            {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"narrow-schema"}
           ]
           JSON
           )
@@ -241,7 +256,7 @@ jobs:
         run: task test:features:ruby-parallel
 
   rails:
-    name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
+    name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }}${{ matrix.shard != '' && format(', {0}', matrix.shard) || '' }})
     needs: matrix-config
     runs-on: ubuntu-latest
     # M8.6-B PR #130 calibration:
@@ -368,16 +383,24 @@ jobs:
       # JDBC chain registers itself as the "sqlite3" adapter so
       # config/database.yml needs no JRuby-specific tweak. SQLITE3_VERSION
       # is unused on the JRuby branch but passed for symmetry with MRI.
-      - name: Test — Features (Rails, JRuby)
-        if: matrix.ruby == 'jruby-9.4'
+      #
+      # M8.6-B Lever 5: the cell is fanned across 7 shards via
+      # matrix.shard (rails_app-N-M for the 12 rails_app_spec.rb
+      # scenarios in pairs of 2, plus narrow-schema for
+      # narrow_ar_schema_spec.rb). Each shard runs ~5-7 min on warm
+      # cache, parallelized; cell wall clock = max(shard) instead of
+      # sum-of-12 ~30 min serial.
+      - name: Test — Features (Rails, JRuby — rails_app shard)
+        if: matrix.ruby == 'jruby-9.4' && startsWith(matrix.shard, 'rails_app-')
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}.0"
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
           SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
-        run: task test:features:rails:jruby
+          SHARD: ${{ matrix.shard }}
+        run: task test:features:rails:jruby:shard
 
       - name: Test — Features (Rails, JRuby, narrow AR schema)
-        if: matrix.ruby == 'jruby-9.4'
+        if: matrix.ruby == 'jruby-9.4' && matrix.shard == 'narrow-schema'
         env:
           RAILS_VERSION: "~> ${{ matrix.rails }}.0"
           RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"

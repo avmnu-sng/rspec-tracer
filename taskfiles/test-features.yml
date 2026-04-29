@@ -60,6 +60,10 @@ tasks:
       (the only JRuby x Rails CI cell) since the JDBC adapter pin
       (~> 71.0) version-tracks that Rails major; CI overrides via the
       step env block.
+      Local-dev convenience task: runs all 12 scenarios in one rspec
+      process. CI uses the sharded variant `test:features:rails:jruby:shard`
+      (M8.6-B Lever 5) to fan the 12 scenarios across 6 parallel matrix
+      jobs.
     env:
       JRUBY_OPTS: "--debug -X+O"
     cmds:
@@ -67,6 +71,41 @@ tasks:
         export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
         export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
         bundle exec rspec --no-color spec/integration/rails_app_spec.rb
+
+  test:features:rails:jruby:shard:
+    desc: >-
+      M8.6-B Lever 5 JRuby x Rails sharded variant. Reads SHARD env
+      (e.g. SHARD=rails_app-1-2) and runs only the specified 2 scenarios
+      from rails_app_spec.rb via rspec --example filtering. Six shards
+      (rails_app-1-2, rails_app-3-4, rails_app-5-6, rails_app-7-8,
+      rails_app-9-10, rails_app-11-12) cover all 12 scenarios in
+      rails_app_spec.rb; the narrow-schema spec is dispatched via the
+      separate `test:features:rails:narrow-schema:jruby` task in its
+      own seventh shard. Same JRUBY_OPTS + RAILS_VERSION + JDBC adapter
+      resolution as `test:features:rails:jruby`.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        : "${SHARD:?SHARD env required (e.g. rails_app-1-2)}"
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        range="${SHARD#rails_app-}"
+        start="${range%-*}"
+        end="${range#*-}"
+        # Build positional args (POSIX sh, dash-compatible). Each
+        # `--example "scenario N:"` adds a substring filter; rspec
+        # ORs multiple --example flags. The trailing colon
+        # disambiguates "scenario 1" from "scenario 10/11/12". Using
+        # `set --` (not eval) preserves the embedded space in
+        # "scenario N:" as a single argument when forwarded via "$@".
+        set --
+        n="$start"
+        while [ "$n" -le "$end" ]; do
+          set -- "$@" --example "scenario $n:"
+          n=$((n+1))
+        done
+        bundle exec rspec --no-color spec/integration/rails_app_spec.rb "$@"
 
   test:features:rails:narrow-schema:jruby:
     desc: >-
