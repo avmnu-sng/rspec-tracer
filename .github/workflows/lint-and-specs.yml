@@ -192,9 +192,9 @@ jobs:
   test-mutation-storage-json-backend-shard-2:
     name: test-mutation-storage-json-backend-shard-2
     if: ${{ inputs.mut_storage }}
-    # JsonBackend alphabetical middle third (18 subjects: format_mib
-    # through resolve_serializer + FieldReader nested class). Default
-    # `--mutation-timeout 5` + `--jobs 8`.
+    # JsonBackend middle-section first half (9 subjects). Originally
+    # 18 subjects at 3:52 CI — split for jitter headroom under the
+    # 4-min cap. The other 9 land in shard-7.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -205,6 +205,23 @@ jobs:
       - name: Test — Mutation (storage JsonBackend shard-2)
         timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-2
+
+  test-mutation-storage-json-backend-shard-7:
+    name: test-mutation-storage-json-backend-shard-7
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend middle-section second half (9 subjects:
+    # merge_from_peers through resolve_serializer + FieldReader).
+    # Split out from shard-2 for cap headroom.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-7)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-7
 
   test-mutation-storage-json-backend-shard-3:
     name: test-mutation-storage-json-backend-shard-3
@@ -248,11 +265,10 @@ jobs:
   test-mutation-storage-json-backend-shard-5:
     name: test-mutation-storage-json-backend-shard-5
     if: ${{ inputs.mut_storage }}
-    # JsonBackend warn + Merger first half (4 subjects):
-    # warn_oversized_cache_total, warn_oversized_run_files,
-    # Merger.absorb, Merger.call. Original 8-subject shard hit
-    # 4:35 CI; Merger's hash-merge mutations are heavier than
-    # expected, requiring the further split.
+    # JsonBackend warn helpers (2 subjects): warn_oversized_cache_total,
+    # warn_oversized_run_files. Originally 4-subject shard at 4:46 CI
+    # (over the 4-min cap); split into 5 + 8 isolating Merger.absorb/call
+    # (which have denser hash-walk mutations) into shard-8.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -263,6 +279,23 @@ jobs:
       - name: Test — Mutation (storage JsonBackend shard-5)
         timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-5
+
+  test-mutation-storage-json-backend-shard-8:
+    name: test-mutation-storage-json-backend-shard-8
+    if: ${{ inputs.mut_storage }}
+    # Merger.absorb + Merger.call (2 subjects). Heaviest Merger
+    # methods (entry-point + nested-hash absorb logic); split out
+    # from shard-5 to fit the 4-min cap.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-8)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-8
 
   test-mutation-storage-json-backend-shard-6:
     name: test-mutation-storage-json-backend-shard-6
@@ -480,6 +513,8 @@ jobs:
       - test-mutation-storage-json-backend-shard-4
       - test-mutation-storage-json-backend-shard-5
       - test-mutation-storage-json-backend-shard-6
+      - test-mutation-storage-json-backend-shard-7
+      - test-mutation-storage-json-backend-shard-8
       - test-mutation-storage-sqlite-read
       - test-mutation-storage-sqlite-write
       - test-mutation-rspec
