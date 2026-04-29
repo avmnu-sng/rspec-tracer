@@ -248,9 +248,11 @@ jobs:
   test-mutation-storage-json-backend-shard-5:
     name: test-mutation-storage-json-backend-shard-5
     if: ${{ inputs.mut_storage }}
-    # JsonBackend light + Merger (8 subjects): warn_oversized_cache_total,
-    # warn_oversized_run_files, plus Merger nested class's 6 class
-    # methods. Pure-functional, lightest wall clock of the 5 shards.
+    # JsonBackend warn + Merger first half (4 subjects):
+    # warn_oversized_cache_total, warn_oversized_run_files,
+    # Merger.absorb, Merger.call. Original 8-subject shard hit
+    # 4:35 CI; Merger's hash-merge mutations are heavier than
+    # expected, requiring the further split.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -261,6 +263,23 @@ jobs:
       - name: Test — Mutation (storage JsonBackend shard-5)
         timeout-minutes: 4
         run: task test:mutation:storage:json-backend-shard-5
+
+  test-mutation-storage-json-backend-shard-6:
+    name: test-mutation-storage-json-backend-shard-6
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend Merger second half (4 subjects): Merger.empty_state,
+    # Merger.merge_env_dependency!, Merger.merge_examples_coverage!,
+    # Merger.reverse_of. Split out from shard-5 to fit 4-min cap.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-6)
+        timeout-minutes: 4
+        run: task test:mutation:storage:json-backend-shard-6
 
   test-mutation-storage-sqlite-read:
     name: test-mutation-storage-sqlite-read
@@ -339,6 +358,11 @@ jobs:
   test-mutation-top-level-b:
     name: test-mutation-top-level-b
     if: ${{ inputs.mut_top_level }}
+    # Originally 9 methods (alphabetical second half); split into -b/-c
+    # because the 9-method shard hit 4:43 CI — every setup-path method
+    # (start, setup_coverage, run_*) hangs spec_helper boot at the full
+    # 5s timeout per mutation, packing more timeouts than -a's
+    # predicates/accessors. -b now holds the 5 exit/finalize methods.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -349,6 +373,23 @@ jobs:
       - name: Test — Mutation (top-level shard-b)
         timeout-minutes: 4
         run: task test:mutation:top-level-b
+
+  test-mutation-top-level-c:
+    name: test-mutation-top-level-c
+    if: ${{ inputs.mut_top_level }}
+    # 4 setup/start methods (setup_coverage, setup_rails, simplecov?,
+    # start) split out from -b. Concentrates the heaviest spec_helper-
+    # boot-hang triggers in their own shard.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (top-level shard-c)
+        timeout-minutes: 4
+        run: task test:mutation:top-level-c
 
   test-integration-remote:
     name: test-integration-remote
@@ -438,11 +479,13 @@ jobs:
       - test-mutation-storage-json-backend-shard-3
       - test-mutation-storage-json-backend-shard-4
       - test-mutation-storage-json-backend-shard-5
+      - test-mutation-storage-json-backend-shard-6
       - test-mutation-storage-sqlite-read
       - test-mutation-storage-sqlite-write
       - test-mutation-rspec
       - test-mutation-top-level-a
       - test-mutation-top-level-b
+      - test-mutation-top-level-c
       - test-integration-remote
     steps:
       - name: Consolidate

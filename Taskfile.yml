@@ -516,8 +516,8 @@ tasks:
 
   test:mutation:storage:json-backend:
     desc: >-
-      M8.6 storage aggregate — Storage::JsonBackend split into 5
-      sibling shards (`json-backend-shard-{1..5}`) that run as
+      M8.6 storage aggregate — Storage::JsonBackend split into 6
+      sibling shards (`json-backend-shard-{1..6}`) that run as
       separate parallel CI jobs. JsonBackend has 50 mutant subjects
       (43 instance methods + FieldReader nested class + Merger nested
       class with 6 class methods). 5-way split chosen because the
@@ -540,6 +540,7 @@ tasks:
       - task: test:mutation:storage:json-backend-shard-3
       - task: test:mutation:storage:json-backend-shard-4
       - task: test:mutation:storage:json-backend-shard-5
+      - task: test:mutation:storage:json-backend-shard-6
 
   test:mutation:storage:json-backend-shard-1:
     desc: >-
@@ -726,11 +727,12 @@ tasks:
 
   test:mutation:storage:json-backend-shard-5:
     desc: >-
-      M8.6 JsonBackend shard 5 of 5 — light + Merger (8 subjects):
-      warn_oversized_cache_total, warn_oversized_run_files, plus
-      the Merger nested class's 6 class methods (absorb, call,
-      empty_state, merge_env_dependency!, merge_examples_coverage!,
-      reverse_of). Pure-functional, light wall clock.
+      M8.6 JsonBackend shard 5 of 6 — warn helpers + Merger first half
+      (4 subjects): warn_oversized_cache_total, warn_oversized_run_files,
+      Merger.absorb, Merger.call. Originally an 8-subject shard with
+      all warn + Merger.* — split because the 8-subject shard hit
+      4:35 CI (over the 4-min cap; Merger's hash-merge mutations have
+      heavier per-mutation kill time than expected).
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -746,11 +748,7 @@ tasks:
           "RSpecTracer::Storage::JsonBackend#warn_oversized_cache_total" \
           "RSpecTracer::Storage::JsonBackend#warn_oversized_run_files" \
           "RSpecTracer::Storage::JsonBackend::Merger.absorb" \
-          "RSpecTracer::Storage::JsonBackend::Merger.call" \
-          "RSpecTracer::Storage::JsonBackend::Merger.empty_state" \
-          "RSpecTracer::Storage::JsonBackend::Merger.merge_env_dependency!" \
-          "RSpecTracer::Storage::JsonBackend::Merger.merge_examples_coverage!" \
-          "RSpecTracer::Storage::JsonBackend::Merger.reverse_of" 2>&1 || true)
+          "RSpecTracer::Storage::JsonBackend::Merger.call" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
         if [ -z "$cov" ]; then
@@ -762,6 +760,41 @@ tasks:
           exit 0
         fi
         echo "mutation:storage [Storage::JsonBackend shard-5] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-6:
+    desc: >-
+      M8.6 JsonBackend shard 6 of 6 — Merger second half (4 subjects):
+      Merger.empty_state, Merger.merge_env_dependency!,
+      Merger.merge_examples_coverage!, Merger.reverse_of. Split out
+      from shard-5 to enforce the 4-min cap.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend::Merger.empty_state" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_env_dependency!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_examples_coverage!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.reverse_of" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-6]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-6] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-6] FAIL (coverage $cov% < 75%)"
         exit 1
 
   test:mutation:storage:sqlite-read:
@@ -960,14 +993,16 @@ tasks:
   test:mutation:top-level:
     desc: >-
       M8.3-A mutation pass on top-level RSpecTracer module's 17 class
-      methods. M8.6 split into 2 alphabetical halves to enforce the
-      4-min per-shard hard cap. Earlier whole-module run came in at
-      14:59 CI (default 5s timeout, jobs=4) which exceeded the cap.
-      Aggregator runs both shards locally for the single-command
-      surface.
+      methods. M8.6 split into 3 shards to enforce the 4-min per-shard
+      hard cap (initial 2-way split had top-level-b at 4:43 CI because
+      its setup-path methods like `start` / `setup_coverage` /
+      `run_finalize` all hang spec_helper boot, packing more 5s
+      timeouts than top-level-a's predicates/accessors). 3-way split
+      isolates the boot-hang-dense subjects.
     cmds:
       - task: test:mutation:top-level-a
       - task: test:mutation:top-level-b
+      - task: test:mutation:top-level-c
 
   test:mutation:top-level-a:
     desc: >-
@@ -1013,11 +1048,13 @@ tasks:
 
   test:mutation:top-level-b:
     desc: >-
-      M8.6 top-level shard B — alphabetical second half (9 methods):
+      M8.6 top-level shard B — exit/finalize methods (5 methods):
       run_coverage_exit_task, run_elapsed_seconds, run_exit_tasks,
-      run_finalize, run_simplecov_exit_task, setup_coverage,
-      setup_rails, simplecov?, start. Default `--mutation-timeout 5`
-      with `--jobs 8`. Same wall-clock target as shard-a (~3-4 min CI).
+      run_finalize, run_simplecov_exit_task. Originally 9 methods
+      (paired with -c which has setup/start) — split because the
+      9-method shard hit 4:43 CI (over the 4-min cap) since every
+      setup-path method's mutations cause spec_helper boot hangs at
+      the full 5s timeout each.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -1035,11 +1072,7 @@ tasks:
           "RSpecTracer.run_elapsed_seconds" \
           "RSpecTracer.run_exit_tasks" \
           "RSpecTracer.run_finalize" \
-          "RSpecTracer.run_simplecov_exit_task" \
-          "RSpecTracer.setup_coverage" \
-          "RSpecTracer.setup_rails" \
-          "RSpecTracer.simplecov?" \
-          "RSpecTracer.start" 2>&1 || true)
+          "RSpecTracer.run_simplecov_exit_task" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
         if [ -z "$cov" ]; then
@@ -1051,6 +1084,41 @@ tasks:
           exit 0
         fi
         echo "mutation:top-level [RSpecTracer shard-b] FAIL (coverage $cov% < 80%)"
+        exit 1
+
+  test:mutation:top-level-c:
+    desc: >-
+      M8.6 top-level shard C — setup/start methods (4 methods):
+      setup_coverage, setup_rails, simplecov?, start. Split out from
+      top-level-b after the 9-method shard hit the 4-min cap on CI.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:top-level [RSpecTracer shard-c] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer \
+          "RSpecTracer.setup_coverage" \
+          "RSpecTracer.setup_rails" \
+          "RSpecTracer.simplecov?" \
+          "RSpecTracer.start" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [RSpecTracer shard-c]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 80) ? 0 : 1 }"; then
+          echo "mutation:top-level [RSpecTracer shard-c] PASS (coverage $cov% >= 80%)"
+          exit 0
+        fi
+        echo "mutation:top-level [RSpecTracer shard-c] FAIL (coverage $cov% < 80%)"
         exit 1
 
   test:mutation:remote-cache:
