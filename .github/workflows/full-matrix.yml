@@ -244,13 +244,18 @@ jobs:
     name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
     needs: matrix-config
     runs-on: ubuntu-latest
-    # M8.6-B: dropped from 30 to 20. JRuby x Rails cell historically ran
-    # 17-20 min and was the matrix's long pole; the same job's Maven +
-    # vendor/bundle caching below targets a warm-cache wall clock in the
-    # 12-15 min range, so 20 min is the experimental ceiling. MRI cells
-    # finish in ~5-10 min and are unaffected. Bump back if first runs
-    # under cold cache prove tight.
-    timeout-minutes: 20
+    # First M8.6-B push experimented with a 20-min ceiling here, but
+    # the cold-cache run on PR #130 was cancelled at 20:30 elapsed
+    # (scenario 7 of 12 had just finished; cache post-hook didn't run,
+    # so neither the new ~/.m2 nor fixture vendor/bundle cache saved).
+    # Per-scenario JRuby+Rails subprocess cold boot averages ~2:30 on
+    # ubuntu-latest, so 12 scenarios alone need ~30 min — Maven +
+    # vendor/bundle caching saves ~3 min on warm runs but doesn't move
+    # the wall clock under 20. Reverted to 30 to let cold runs finish
+    # cleanly. Brief's <12 min target turned out unreachable under
+    # M5.1's cold-subprocess isolation contract with the current
+    # scenario count; documented as a finding, not a deferral.
+    timeout-minutes: 30
     env:
       BRANCH_COVERAGE: 'true'
     strategy:
