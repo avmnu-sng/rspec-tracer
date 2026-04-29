@@ -1,0 +1,67 @@
+version: '3'
+
+# Benchmark tasks: bundle (fixture installs), smoke (~3s smoke run),
+# full (4-scenario harness), ratchet:update (regenerate ratchet.json).
+# Internal deps: smoke depends on bundle:ruby; full depends on bundle.
+# Cross-file dep-free.
+
+tasks:
+  benchmark:bundle:ruby:
+    desc: bundle install for the ruby_app benchmark fixture
+    cmds:
+      - cd benchmark/fixtures/ruby_app && bundle install
+
+  benchmark:bundle:rails:
+    desc: >-
+      bundle install for the rails_app fixture. Fixture Gemfile branches
+      on RUBY_ENGINE (sqlite3 on MRI; activerecord-jdbcsqlite3-adapter on
+      JRuby/TruffleRuby), but the canonical benchmark cell pins MRI
+      .ruby-version for cross-run comparability so this only runs there.
+    cmds:
+      - cd spec/fixtures/rails_app && bundle install
+
+  benchmark:bundle:
+    desc: bundle install for both benchmark fixtures (prerequisite for harness:full)
+    deps: [benchmark:bundle:ruby, benchmark:bundle:rails]
+
+  benchmark:smoke:
+    # Smoke uses cold_ruby + warm_noop only — both run in the ruby_app
+    # fixture. Narrowing the dep to bundle:ruby (vs bundle) lets non-MRI
+    # cells run smoke without bundling the rails_app fixture. The
+    # fixture Gemfile DOES support JRuby/TruffleRuby (M8.1-B JDBC adapter
+    # branch), but the smoke step would pay Maven download + JDBC native
+    # ext build cost on first run — keeping smoke ruby_app-only on
+    # non-MRI cells preserves the ~3s budget.
+    desc: Smoke benchmark (~3s — cold_ruby + warm_noop)
+    deps: [benchmark:bundle:ruby]
+    cmds:
+      - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json
+
+  benchmark:smoke:no-enforce:
+    # Informational benchmark for non-MRI cells. The per-interpreter
+    # multiplier in benchmark/harness.rb scales the canonical MRI ratchet
+    # by RUBY_ENGINE (10.0x for JRuby; 5.0x for TruffleRuby), but
+    # --no-enforce keeps the task non-gating so first-run multiplier
+    # miscalibration doesn't block merges. Mirrors the existing
+    # --no-enforce pattern on the canonical CI benchmark job (committed
+    # ratchet was M2 Max hardware; GHA ubuntu-latest is 1.4-1.6x slower;
+    # multiplier on top of that requires further calibration on first
+    # JRuby/TruffleRuby cell run).
+    desc: Smoke benchmark in informational mode (no enforcement; non-MRI cells)
+    deps: [benchmark:bundle:ruby]
+    cmds:
+      - ruby benchmark/harness.rb --smoke --ratchet benchmark/ratchet.json --no-enforce
+
+  benchmark:full:
+    desc: Full benchmark suite — all 4 scenarios + ratchet comparison
+    deps: [benchmark:bundle]
+    cmds:
+      - ruby benchmark/harness.rb --full --ratchet benchmark/ratchet.json
+
+  benchmark:ratchet:update:
+    desc: Regenerate benchmark/ratchet.json from a fresh 10-iter run (requires --yes to confirm)
+    deps: [benchmark:bundle]
+    cmds:
+      - ruby benchmark/harness.rb --full --iterations 10 --update-ratchet benchmark/ratchet.json --yes
+
+  # ── Security ───────────────────────────────────────────
