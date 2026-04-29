@@ -200,4 +200,26 @@ RSpec.describe RSpecTracer::Tracker::CoverageAdapter do
       expect(adapter.peek).to eq(inside_root => [1])
     end
   end
+
+  describe '#peek_unfiltered' do
+    let(:inside_root) { write_file('lib/foo.rb', "puts 1\n") }
+    let(:outside_root) { '/elsewhere/lib/foo.rb' }
+
+    it 'filters by root prefix only (skips the user filters list)' do
+      filter = RSpecTracer::Filter.register(%r{/lib/foo\.rb\z})
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => [1], outside_root => [1])
+      adapter = described_class.new(root: root, filters: [filter])
+
+      expect(adapter.peek_unfiltered.keys).to eq([inside_root])
+    end
+
+    it 'normalizes hash-mode entries to line arrays' do
+      allow(Coverage).to receive(:peek_result).and_return(
+        inside_root => { lines: [1, 0], branches: {} }
+      )
+      adapter = described_class.new(root: root, mode: :hash)
+
+      expect(adapter.peek_unfiltered).to eq(inside_root => [1, 0])
+    end
+  end
 end
