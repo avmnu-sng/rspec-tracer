@@ -444,14 +444,19 @@ tasks:
       test:mutation:smoke.
 
       Local single-command surface — runs all storage shards in
-      sequence. M8.6 (refined post first CI) split the storage mutation
-      surface into 4 parallel CI jobs targeting <4 min per-job:
-      misc (3 small subjects), json-backend (timeout-heavy; 1032 of
-      2792 mutations time out — runs with `--mutation-timeout 1
-      --jobs 8`), sqlite-read (read-side SqliteBackend, default
-      timings), sqlite-write (write-side + utility, default timings).
-      Original 3-shard SqliteBackend split was over-sharded (each
-      ~1-2 min CI); collapsed to 2 balanced shards.
+      sequence. M8.6 split the storage mutation surface into 5 parallel
+      CI jobs (refined post-first-CI to balance honest signal with
+      wall-clock budget):
+        - misc: 3 small subjects (LazySnapshot + Serializer::Json/Msgpack)
+        - json-backend-shard-1 / json-backend-shard-2: JsonBackend's
+          50 subjects split alphabetically; default `--mutation-timeout 5`
+          + `--jobs 8`. (An earlier attempt with `--mutation-timeout 1`
+          was reverted because shorter timeout silently shifts mutations
+          whose tests would have passed within 1-5s into the
+          Killed-via-timeout bucket — that's coverage inflation, not
+          honest signal.)
+        - sqlite-read: 15 read-side SqliteBackend subjects.
+        - sqlite-write: 30 write-side + connection/schema/utility subjects.
     cmds:
       - task: test:mutation:storage:misc
       - task: test:mutation:storage:json-backend
@@ -511,16 +516,34 @@ tasks:
 
   test:mutation:storage:json-backend:
     desc: >-
-      M8.6 storage shard — Storage::JsonBackend in isolation. Split
-      out from the original `non-sqlite` aggregate because JsonBackend
-      alone has 2792 mutations (1032 of which timeout under default
-      mutant 5s timeout — file-I/O-heavy paths trigger spec_helper
-      hangs on broken mutations). Runs with `--mutation-timeout 1`
-      and `--jobs 8` to compress the timeout-bound wall clock.
-      Mutant 0.16 counts timeouts as kills for coverage purposes,
-      so the 1s timeout preserves coverage signal while cutting
-      wall clock from ~17 min CI (5s timeout, 4 jobs default) to
-      under 4 min target.
+      M8.6 storage aggregate — Storage::JsonBackend split into 3
+      sibling shards (`json-backend-shard-{1,2,3}`) that run as
+      separate parallel CI jobs. JsonBackend has 50 mutant subjects
+      (43 instance methods + FieldReader nested class + Merger nested
+      class with 6 class methods). 3-way split chosen because the
+      write-heavy subjects (`save_graph`, `transactional_save`,
+      `prune_run_dirs!`, `write_*_atomic`) drive disproportionate wall
+      clock — a 2-way alphabetical split landed shard-2 at 7:32 M2 Max
+      vs shard-1 at 2:37 due to write/I-O concentration. 3 shards
+      balance wall clock to ~3-5 min CI per shard while preserving
+      signal end-to-end.
+
+      Earlier attempt with `--mutation-timeout 1` was reverted because
+      shorter timeout silently shifts undetected mutations (test would
+      have passed within 1-5s) into the Killed-via-timeout bucket —
+      that's coverage inflation, not honest signal. Sharding (same
+      total mutation surface, run in parallel) is the honest answer.
+    cmds:
+      - task: test:mutation:storage:json-backend-shard-1
+      - task: test:mutation:storage:json-backend-shard-2
+      - task: test:mutation:storage:json-backend-shard-3
+
+  test:mutation:storage:json-backend-shard-1:
+    desc: >-
+      M8.6 JsonBackend shard 1 of 3 — alphabetical first third: clear!
+      through field_filename (10 subjects: reads, deserializers,
+      formatters). Lighter-weight read/parse helpers; default
+      `--mutation-timeout 5` with `--jobs 8`.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -531,20 +554,132 @@ tasks:
         fi
 
         out=$(bundle exec mutant run --use rspec --usage opensource \
-          --mutation-timeout 1 --jobs 8 \
+          --jobs 8 \
           --include lib --require rspec_tracer/storage/json_backend \
-          "RSpecTracer::Storage::JsonBackend*" 2>&1 || true)
+          "RSpecTracer::Storage::JsonBackend#clear!" \
+          "RSpecTracer::Storage::JsonBackend#collect_run_dirs" \
+          "RSpecTracer::Storage::JsonBackend#decode_field" \
+          "RSpecTracer::Storage::JsonBackend#deep_intern" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_dependency" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_dupe_examples" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_id_set" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_plain_hash" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_symbolized" \
+          "RSpecTracer::Storage::JsonBackend#field_filename" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
         if [ -z "$cov" ]; then
-          echo "ERROR [Storage::JsonBackend]: could not parse mutant coverage"
+          echo "ERROR [Storage::JsonBackend shard-1]: could not parse mutant coverage"
           exit 1
         fi
         if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
-          echo "mutation:storage [Storage::JsonBackend] PASS (coverage $cov% >= 75%)"
+          echo "mutation:storage [Storage::JsonBackend shard-1] PASS (coverage $cov% >= 75%)"
           exit 0
         fi
-        echo "mutation:storage [Storage::JsonBackend] FAIL (coverage $cov% < 75%)"
+        echo "mutation:storage [Storage::JsonBackend shard-1] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-2:
+    desc: >-
+      M8.6 JsonBackend shard 2 of 3 — alphabetical middle third:
+      format_mib through resolve_serializer (18 subjects: lifecycle
+      helpers + read-side + nested FieldReader class). Default
+      `--mutation-timeout 5` with `--jobs 8`.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#format_mib" \
+          "RSpecTracer::Storage::JsonBackend#info" \
+          "RSpecTracer::Storage::JsonBackend#initialize" \
+          "RSpecTracer::Storage::JsonBackend#last_run_id" \
+          "RSpecTracer::Storage::JsonBackend#last_run_path" \
+          "RSpecTracer::Storage::JsonBackend#load_graph" \
+          "RSpecTracer::Storage::JsonBackend#lock_path" \
+          "RSpecTracer::Storage::JsonBackend#maybe_prune_after_save" \
+          "RSpecTracer::Storage::JsonBackend#maybe_warn_size_budget" \
+          "RSpecTracer::Storage::JsonBackend#merge_from_peers" \
+          "RSpecTracer::Storage::JsonBackend#msgpack_unavailable_fallback" \
+          "RSpecTracer::Storage::JsonBackend#partition_dirs_to_prune" \
+          "RSpecTracer::Storage::JsonBackend#per_file_glob" \
+          "RSpecTracer::Storage::JsonBackend#positive_threshold?" \
+          "RSpecTracer::Storage::JsonBackend#read_field" \
+          "RSpecTracer::Storage::JsonBackend#resolve_serializer" \
+          "RSpecTracer::Storage::JsonBackend::FieldReader#initialize" \
+          "RSpecTracer::Storage::JsonBackend::FieldReader#read" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-2]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-2] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-2] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-3:
+    desc: >-
+      M8.6 JsonBackend shard 3 of 3 — alphabetical last third:
+      prune_run_dirs! through Merger.reverse_of (22 subjects: the
+      write-heavy methods, serializers, threshold/warn helpers, plus
+      the Merger nested class's 6 class methods). Default
+      `--mutation-timeout 5` with `--jobs 8`.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#prune_run_dirs!" \
+          "RSpecTracer::Storage::JsonBackend#read_json" \
+          "RSpecTracer::Storage::JsonBackend#read_last_run_manifest" \
+          "RSpecTracer::Storage::JsonBackend#read_run_file" \
+          "RSpecTracer::Storage::JsonBackend#save_graph" \
+          "RSpecTracer::Storage::JsonBackend#serialize_dependency" \
+          "RSpecTracer::Storage::JsonBackend#serialize_id_set" \
+          "RSpecTracer::Storage::JsonBackend#total_cache_size_bytes" \
+          "RSpecTracer::Storage::JsonBackend#transactional_save" \
+          "RSpecTracer::Storage::JsonBackend#warn_oversized_cache_total" \
+          "RSpecTracer::Storage::JsonBackend#warn_oversized_run_files" \
+          "RSpecTracer::Storage::JsonBackend#write_json_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_last_run_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_payload_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_run_field" \
+          "RSpecTracer::Storage::JsonBackend#write_run_files" \
+          "RSpecTracer::Storage::JsonBackend::Merger.absorb" \
+          "RSpecTracer::Storage::JsonBackend::Merger.call" \
+          "RSpecTracer::Storage::JsonBackend::Merger.empty_state" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_env_dependency!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_examples_coverage!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.reverse_of" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-3]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-3] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-3] FAIL (coverage $cov% < 75%)"
         exit 1
 
   test:mutation:storage:sqlite-read:
@@ -758,15 +893,19 @@ tasks:
       genuine coverage regression on subjects mutant could otherwise
       cleanly reach.
 
-      M8.6: runs with `--mutation-timeout 1 --jobs 8`. 95% of mutations
-      land as Timeouts (spec_helper boot hang on broken mutation). At
-      default `5s timeout × 4 jobs`, wall clock = 707 × 5 / 4 = ~15 min.
-      With `1s × 8`, wall clock drops to 707 × 1 / 8 = ~1.5 min.
-      Mutant 0.16 counts timeouts as kills for coverage purposes — the
-      shorter timeout doesn't change the kill/alive classification, only
-      how fast each mutation's verdict is reached. Jobs=8 oversubscribes
-      the 2-vCPU GHA runner but is safe for timeout-bound work (workers
-      mostly idle waiting for child-process timeouts to fire).
+      M8.6: runs with default `--mutation-timeout 5` (mutant default).
+      Earlier rebalance attempt with `--mutation-timeout 1` was reverted
+      because timeout reduction silently shifts mutations whose tests
+      would have legitimately passed (Alive) within 1-5s into the
+      Killed-via-timeout bucket — inflating coverage % by classifying
+      undetected mutations as detected. For top-level the inflation is
+      near-zero (M8.3-A retro: ~95% of mutations are spec_helper
+      boot hangs that never complete regardless of timeout) but the
+      principle holds: don't trade signal for wall clock. Keeping
+      `--jobs 8` because mutant parallelism on timeout-bound work
+      doesn't shift classification — only how many timeouts run
+      concurrently. Wall clock projects to 707 × 5 / 8 = ~7-8 min CI;
+      the 30-min job cap absorbs that.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -778,7 +917,7 @@ tasks:
 
         echo "=== mutation:top-level [RSpecTracer] ==="
         out=$(bundle exec mutant run --use rspec --usage opensource \
-          --mutation-timeout 1 --jobs 8 \
+          --jobs 8 \
           --include lib --require rspec_tracer \
           "RSpecTracer.start" "RSpecTracer.at_exit_behavior" \
           "RSpecTracer.run_finalize" "RSpecTracer.emit_reporters" \

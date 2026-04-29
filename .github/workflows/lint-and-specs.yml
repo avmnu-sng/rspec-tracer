@@ -164,16 +164,17 @@ jobs:
       - name: Test — Mutation (storage misc)
         run: task test:mutation:storage:misc
 
-  test-mutation-storage-json-backend:
-    name: test-mutation-storage-json-backend
+  test-mutation-storage-json-backend-shard-1:
+    name: test-mutation-storage-json-backend-shard-1
     if: ${{ inputs.mut_storage }}
-    # Storage::JsonBackend in isolation. 2792 mutations; 1032 timeouts
-    # at default 5s timeout drove the original non-sqlite job to
-    # ~17 min CI. With `--mutation-timeout 1 --jobs 8` (set in the
-    # Taskfile entry), wall clock projects to ~3 min CI. Mutant 0.16
-    # counts timeouts as kills for coverage purposes, so the shorter
-    # timeout doesn't change kill/alive classification — only how
-    # fast each verdict is reached.
+    # JsonBackend alphabetical first third (10 subjects: clear! through
+    # field_filename — light read/parse helpers). Default
+    # `--mutation-timeout 5` + `--jobs 8`. Earlier `--mutation-timeout 1`
+    # attempt was reverted because shorter timeout silently shifts
+    # mutations whose tests would have passed within 1-5s into the
+    # Killed-via-timeout bucket — coverage inflation, not honest signal.
+    # The honest answer is sharding (same total mutation surface, run
+    # in parallel) — preserves signal AND cuts wall clock.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -181,8 +182,43 @@ jobs:
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage JsonBackend)
-        run: task test:mutation:storage:json-backend
+      - name: Test — Mutation (storage JsonBackend shard-1)
+        run: task test:mutation:storage:json-backend-shard-1
+
+  test-mutation-storage-json-backend-shard-2:
+    name: test-mutation-storage-json-backend-shard-2
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend alphabetical middle third (18 subjects: format_mib
+    # through resolve_serializer + FieldReader nested class). Default
+    # `--mutation-timeout 5` + `--jobs 8`.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-2)
+        run: task test:mutation:storage:json-backend-shard-2
+
+  test-mutation-storage-json-backend-shard-3:
+    name: test-mutation-storage-json-backend-shard-3
+    if: ${{ inputs.mut_storage }}
+    # JsonBackend alphabetical last third (22 subjects: prune_run_dirs!
+    # through Merger.reverse_of — the write-heavy methods + Merger
+    # nested class's 6 class methods). The 2-way split landed this
+    # group at 7:32 M2 Max because save_graph / transactional_save /
+    # write_*_atomic are file-I/O dense; 3-way split rebalances.
+    # Default `--mutation-timeout 5` + `--jobs 8`.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Mutation (storage JsonBackend shard-3)
+        run: task test:mutation:storage:json-backend-shard-3
 
   test-mutation-storage-sqlite-read:
     name: test-mutation-storage-sqlite-read
@@ -343,7 +379,9 @@ jobs:
       - test-mutation-smoke
       - test-mutation-tracker
       - test-mutation-storage-misc
-      - test-mutation-storage-json-backend
+      - test-mutation-storage-json-backend-shard-1
+      - test-mutation-storage-json-backend-shard-2
+      - test-mutation-storage-json-backend-shard-3
       - test-mutation-storage-sqlite-read
       - test-mutation-storage-sqlite-write
       - test-mutation-rspec
