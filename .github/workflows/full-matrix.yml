@@ -244,7 +244,13 @@ jobs:
     name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
     needs: matrix-config
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # M8.6-B: dropped from 30 to 20. JRuby x Rails cell historically ran
+    # 17-20 min and was the matrix's long pole; the same job's Maven +
+    # vendor/bundle caching below targets a warm-cache wall clock in the
+    # 12-15 min range, so 20 min is the experimental ceiling. MRI cells
+    # finish in ~5-10 min and are unaffected. Bump back if first runs
+    # under cold cache prove tight.
+    timeout-minutes: 20
     env:
       BRANCH_COVERAGE: 'true'
     strategy:
@@ -277,6 +283,50 @@ jobs:
         with:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # M8.6-B Lever 1a: cache the JRuby Maven plugin tree. The fixture
+      # Gemfile pulls activerecord-jdbcsqlite3-adapter on JRuby, which
+      # downloads ~25 Maven JARs (jdbc-sqlite3 + Maven plugins) on first
+      # install. The download is ~30-60s per cold-cache run and is
+      # invisible to setup-ruby's bundler-cache (that cache keys on the
+      # parent Gemfile.lock and tracks gem fetches, not Maven artifacts).
+      # Caching ~/.m2 keyed on the fixture Gemfile lets warm-cache runs
+      # skip the Maven fetch entirely.
+      - name: Cache ~/.m2 (JRuby Maven plugins for activerecord-jdbcsqlite3-adapter)
+        if: matrix.ruby == 'jruby-9.4'
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2
+          key: m2-${{ runner.os }}-jruby-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}
+          restore-keys: |
+            m2-${{ runner.os }}-jruby-
+
+      # M8.6-B Lever 1b: cache the fixture's vendor/bundle so warm-cache
+      # runs reuse the gem set across PRs. Same pattern as the
+      # `benchmark:` job's fixture-bundle cache (full-matrix.yml's
+      # `Cache rails_app fixture bundle` step). Key includes matrix.ruby
+      # implicitly via the `-jruby-` literal segment so we never restore
+      # an MRI-resolved cache onto the JRuby cell. Gemfile.lock isn't in
+      # the key because it's gitignored and regenerated per interpreter;
+      # bundler regenerates it cheaply when the cached gems are present.
+      - name: Cache rails_app fixture bundle (JRuby gem set)
+        if: matrix.ruby == 'jruby-9.4'
+        uses: actions/cache@v5
+        with:
+          path: spec/fixtures/rails_app/vendor/bundle
+          key: fixture-bundle-rails-app-${{ runner.os }}-jruby-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}
+          restore-keys: |
+            fixture-bundle-rails-app-${{ runner.os }}-jruby-
+
+      # Point the fixture's Bundler at vendor/bundle so the cache step
+      # above actually catches the install output. `bundle config set
+      # --local` writes the gitignored fixture-scoped .bundle/config and
+      # leaves the parent project's bundler context untouched. Mirrors
+      # the benchmark cell's `Point fixture bundler at vendor/bundle`
+      # step.
+      - name: Point fixture bundler at vendor/bundle (JRuby cell)
+        if: matrix.ruby == 'jruby-9.4'
+        run: cd spec/fixtures/rails_app && bundle config set --local path vendor/bundle
 
       - name: Bundle — list resolved versions
         run: bundle list
