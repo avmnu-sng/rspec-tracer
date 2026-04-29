@@ -2,6 +2,7 @@
 
 require 'digest'
 
+require_relative 'file_digest'
 require_relative '../version'
 
 module RSpecTracer
@@ -68,14 +69,11 @@ module RSpecTracer
 
       private
 
-      # Digest::SHA256.file raises SystemCallError for missing / non-file
-      # paths; the rescue normalizes the outcome so the existence check
-      # is implicit. Mirrors CoverageAdapter#file_digest's rescue-only
-      # shape.
+      # SystemCallError on missing / non-file paths is treated as
+      # "not present" via the central FileDigest cache, which returns
+      # nil. Mirrors every other tracker's digest path.
       def file_digest(path)
-        Digest::SHA256.file(path).hexdigest
-      rescue SystemCallError
-        nil
+        FileDigest.compute(path)
       end
 
       def gem_identity_digest

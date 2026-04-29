@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'digest'
 require 'set'
 
+require_relative 'file_digest'
 require_relative 'input'
 
 module RSpecTracer
@@ -82,9 +82,7 @@ module RSpecTracer
       end
 
       def file_digest(path)
-        Digest::SHA256.file(path).hexdigest
-      rescue SystemCallError
-        nil
+        FileDigest.compute(path)
       end
     end
   end

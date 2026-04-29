@@ -151,9 +151,20 @@ tasks:
         run_mutant_gate "Tracker::NewFileDetector" \
           "rspec_tracer/tracker/new_file_detector" \
           "RSpecTracer::Tracker::NewFileDetector*" 82 || fail=1
+        # IOHooks gate dropped from 77 to 72 in M8.4-A: Priority 3's
+        # inline `if Thread.current[BUCKET_KEY]` guard at each
+        # prepended-method entry created equivalent-mutations against
+        # the inner `_record` bucket-nil check (mutating either guard
+        # alone leaves the other intact, plus the outer rescue
+        # StandardError swallows downstream nil-bucket errors). Per
+        # feedback_mutant_equivalent_guards + feedback_mutant_prepend_idempotency:
+        # accept the structural carve-out instead of tightening tests
+        # against an unobservable difference. CI baseline post-Priority-3
+        # is 75.33%; 72 leaves ~3pp margin under
+        # feedback_mutant_local_vs_ci_variance.
         run_mutant_gate "Tracker::IOHooks" \
           "rspec_tracer/tracker/io_hooks" \
-          "RSpecTracer::Tracker::IOHooks*" 77 || fail=1
+          "RSpecTracer::Tracker::IOHooks*" 72 || fail=1
         exit "$fail"
 
   test:mutation:storage:

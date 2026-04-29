@@ -1,0 +1,53 @@
+version: '3'
+
+# Hot-path profile tasks. Each `profile:<scenario>` wraps the matching
+# benchmark/scenarios/<scenario>.rb script in StackProf.run via
+# benchmark/profile.rb and writes:
+#
+#   tmp/profile/<scenario>.dump   raw stackprof dump
+#   tmp/profile/<scenario>.txt    top-25 text summary
+#   tmp/profile/<scenario>.json   speedscope-loadable flamegraph JSON
+#
+# tmp/ is gitignored; profile output is a local-only reference. The
+# PR commit message + docs/revamp/PERFORMANCE_NOTES.md (M8.4-B)
+# paste relevant excerpts.
+#
+# stackprof is MRI-only (gated in the outer Gemfile via
+# `if RUBY_ENGINE == 'ruby'`). Tasks here will fail-fast on JRuby /
+# TruffleRuby with a LoadError on `require 'stackprof'`; that's the
+# documented limitation.
+
+tasks:
+  profile:io_hooks:
+    desc: Profile Tracker::IOHooks#record fast-reject + record paths
+    cmds:
+      - ruby benchmark/profile.rb io_hooks
+
+  profile:coverage_adapter:
+    desc: Profile Tracker::CoverageAdapter#compute_diff over 100 files
+    cmds:
+      - ruby benchmark/profile.rb coverage_adapter
+
+  profile:loaded_files:
+    desc: Profile Tracker::LoadedFilesTracker#stop_example (steady + growing)
+    cmds:
+      - ruby benchmark/profile.rb loaded_files
+
+  profile:cache_load:
+    desc: Profile Storage::JsonBackend#load_graph over a 500-example cache
+    cmds:
+      - ruby benchmark/profile.rb cache_load
+
+  profile:engine:
+    desc: Profile Engine per-example hot loop (example_started + example_finished)
+    cmds:
+      - ruby benchmark/profile.rb engine
+
+  profile:all:
+    desc: Run every profile:* task in sequence (writes to tmp/profile/)
+    cmds:
+      - task: profile:io_hooks
+      - task: profile:coverage_adapter
+      - task: profile:loaded_files
+      - task: profile:cache_load
+      - task: profile:engine

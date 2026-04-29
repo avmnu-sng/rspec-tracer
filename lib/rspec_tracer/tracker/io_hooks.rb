@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'digest'
 require 'set'
 
+require_relative 'file_digest'
 require_relative 'input'
 # Sub-module hooks loaded eagerly: $LOADED_FEATURES makes require
 # idempotent so placement doesn't change observable behavior, and
@@ -158,7 +158,7 @@ module RSpecTracer
         # The early-return ladder looks complex to RuboCop's metric
         # but is actually the simplest shape for a hot path: each
         # guard rejects in ~1-2 machine ops.
-        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
         def _record(path, kind)
           return if @root_prefix.nil?
 
@@ -176,17 +176,19 @@ module RSpecTracer
 
           Thread.current[REENTRY_KEY] = true
           begin
-            digest = Digest::SHA256.file(path_str).hexdigest
-            bucket[identity] = Input.for_file(
-              path: path_str, kind: kind, digest: digest, root: @root
-            )
+            digest = FileDigest.compute(path_str)
+            if digest
+              bucket[identity] = Input.for_file(
+                path: path_str, kind: kind, digest: digest, root: @root
+              )
+            end
           ensure
             Thread.current[REENTRY_KEY] = false
           end
         rescue StandardError
           nil
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
       end
     end
   end

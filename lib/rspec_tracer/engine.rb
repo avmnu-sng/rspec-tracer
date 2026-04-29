@@ -10,6 +10,7 @@ require_relative 'tracker/declared_globs'
 require_relative 'tracker/dependency_graph'
 require_relative 'tracker/env_snapshot'
 require_relative 'tracker/example_registry'
+require_relative 'tracker/file_digest'
 require_relative 'tracker/filter'
 require_relative 'tracker/input'
 require_relative 'tracker/io_hooks'
@@ -625,12 +626,7 @@ module RSpecTracer
     end
 
     def current_file_digest(file_name)
-      path = absolute_path(file_name)
-      return nil unless File.file?(path)
-
-      Digest::SHA256.file(path).hexdigest
-    rescue SystemCallError
-      nil
+      RSpecTracer::Tracker::FileDigest.compute(absolute_path(file_name))
     end
 
     def record_coverage_delta(example_id, before, after)
@@ -805,9 +801,7 @@ module RSpecTracer
     end
 
     def tracks_file_digest(path)
-      Digest::SHA256.file(path).hexdigest
-    rescue SystemCallError
-      nil
+      RSpecTracer::Tracker::FileDigest.compute(path)
     end
 
     # Materialize the per-example tracks-file Input set. Returns an

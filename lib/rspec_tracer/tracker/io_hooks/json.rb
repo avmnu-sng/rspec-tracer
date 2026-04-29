@@ -8,7 +8,7 @@ module RSpecTracer
       # string and is not hooked here.
       module JSONReads
         def load_file(path, ...)
-          IOHooks.record(path)
+          IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
       end
