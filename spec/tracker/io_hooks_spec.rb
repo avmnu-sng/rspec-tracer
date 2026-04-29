@@ -299,6 +299,21 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
       end
     end
 
+    context 'when Input.for_file raises (downstream defensive rescue)' do
+      let(:bucket) { {} }
+      let(:path) { write_fixture('downstream.yml') }
+
+      before do
+        allow(RSpecTracer::Tracker::Input).to receive(:for_file).and_raise(StandardError, 'boom')
+      end
+
+      it 'swallows the StandardError raised by the downstream Input builder' do
+        expect do
+          described_class.with_bucket(bucket) { described_class.record(path) }
+        end.not_to raise_error
+      end
+    end
+
     it 'accepts a Pathname-like to_s-able argument' do
       path = write_fixture('pathname.yml')
       bucket = {}

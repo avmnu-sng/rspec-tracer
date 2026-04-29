@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require 'digest'
-
+require_relative '../tracker/file_digest'
 require_relative '../tracker/input'
 
 module RSpecTracer
@@ -126,7 +125,9 @@ module RSpecTracer
           identity = "template:#{path_str[@root_prefix.length..]}"
           return nil if bucket.key?(identity)
 
-          digest = Digest::SHA256.file(path_str).hexdigest
+          digest = Tracker::FileDigest.compute(path_str)
+          return nil if digest.nil?
+
           bucket[identity] = Tracker::Input.for_file(
             path: path_str, kind: :template, digest: digest, root: @root
           )
@@ -211,7 +212,9 @@ module RSpecTracer
           return nil unless abs.start_with?(@root_prefix)
           return nil unless File.file?(abs)
 
-          digest = Digest::SHA256.file(abs).hexdigest
+          digest = Tracker::FileDigest.compute(abs)
+          return nil if digest.nil?
+
           Tracker::Input.for_file(
             path: abs, kind: :notification, digest: digest, root: @root
           )

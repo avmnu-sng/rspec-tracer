@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'digest'
 require 'set'
 
+require_relative 'file_digest'
 require_relative 'input'
 # Sub-module hooks loaded eagerly: $LOADED_FEATURES makes require
 # idempotent so placement doesn't change observable behavior, and
@@ -176,10 +176,10 @@ module RSpecTracer
 
           Thread.current[REENTRY_KEY] = true
           begin
-            digest = Digest::SHA256.file(path_str).hexdigest
+            digest = FileDigest.compute(path_str)
             bucket[identity] = Input.for_file(
               path: path_str, kind: kind, digest: digest, root: @root
-            )
+            ) if digest
           ensure
             Thread.current[REENTRY_KEY] = false
           end
