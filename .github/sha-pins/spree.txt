@@ -1,0 +1,3 @@
+sha=7a72a2d9defcae98272ae7a703cb9fef3b36737f
+tag=v5.4.2
+license_sha256=01cd1df0e8d9d6625be98e261ca9c9a5f9c7d4585d9f8d33f4992a492f604ee5

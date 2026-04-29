@@ -1,48 +1,215 @@
+---
 version: '3'
 
-# Soak test tasks. Drives spec/soak/rails_app_soak_spec.rb against the
-# 4x-clone fixture spec/fixtures/rails_app_big/ (built by
-# scripts/build_rails_app_big.rb; 1208 examples). The soak iterates
-# 100 subprocess runs of `bundle exec rspec`, deterministic-seeded
-# random file mutation per iter (9-kind rotation), asserts
-# memstat[N] <= memstat[5] * 1.05 for N >= 6.
+# Soak test tasks. Drive spec/soak/realworld_soak_spec.rb against
+# pinned-SHA real-world Rails+RSpec projects (Solidus / Refinery /
+# Spree) cloned into tmp/soak-fixtures/<project>/. The soak iterates
+# subprocess runs of `bundle exec rspec`, deterministic-seeded random
+# file mutation per iter (9-kind rotation), asserts memstat[N] <=
+# memstat[5] * 1.05 for N >= 6.
 #
-# soak:smoke is the pre-PR parity proxy (10 iters, ~5 min). soak:full
-# is the nightly-cron driver (100 iters, ~3-4 h on GHA). Cron lives
-# at .github/workflows/soak.yml.
+# Pin files at .github/sha-pins/<project>.txt drive the pinned commit
+# SHA + tag + license SHA-256. Bumps are review-gated: the
+# soak-bump.yml weekly cron reports drift; humans open bump PRs
+# manually.
+#
+# Local workflow:
+#   task soak:fixture:<project>  # one-time clone + bundle + db prep
+#   task soak:smoke:<project>    # 10 iters - pre-PR parity proxy
+#   task soak:full:<project>     # full per-project iter count
+#
+# CI uses actions/checkout@v6 to clone the external project, then
+# `task soak:setup:<project>` for post-checkout bundle + db prep,
+# then `task soak:full:<project>` for the run.
+#
+# soak:fixture:all regenerates all 3 fixtures locally (sequential)
+# for full pre-PR parity.
 #
 # MRI-only per feedback_jruby_ci_subprocess_floor: JRuby x Rails
-# 100-iter would compound to ~250 min wall clock per cell, untenable.
+# multi-iter cells would compound past the 4 h cap.
+
+vars:
+  RSPEC_TRACER_ROOT:
+    sh: pwd
 
 tasks:
-  soak:fixture:
+  soak:fixture:all:
     desc: >-
-      Regenerate the rails_app_big fixture from rails_app via
-      scripts/build_rails_app_big.rb. Idempotent (wipes
-      spec/fixtures/rails_app_big/ first). Run after changing the
-      source rails_app fixture.
+      Regenerate all 3 soak fixtures (solidus + refinery + spree).
+      Idempotent. Use before a full pre-PR parity run.
     cmds:
-      - ruby scripts/build_rails_app_big.rb
+      - task: soak:fixture:solidus
+      - task: soak:fixture:refinery
+      - task: soak:fixture:spree
 
-  soak:smoke:
+  # -- Solidus ---------------------------------------------------
+
+  soak:fixture:solidus:
     desc: >-
-      Soak smoke - 10 iter run for pre-PR parity (~5 min). Same spec
-      contract as soak:full; just fewer iterations so the warm-up
-      baseline + memory-bound assertion are exercised end-to-end
-      without the 3-4 h wall clock. Note - mutations accumulate
-      across iters in spec/fixtures/rails_app_big/ source files;
-      run `task soak:fixture` afterwards to regenerate the fixture
-      from a clean rails_app/ source.
+      Clone Solidus at the pinned SHA + bundle + db prep. Idempotent
+      (skips git clone if directory exists; bundle check before
+      install).
+    cmds:
+      - task: soak:_clone:solidus
+      - task: soak:setup:solidus
+
+  soak:_clone:solidus:
+    internal: true
+    cmds:
+      - cmd: |
+          mkdir -p tmp/soak-fixtures
+          if [ ! -d tmp/soak-fixtures/solidus/.git ]; then
+            sha=$(awk -F= '$1 == "sha" { print $2 }' .github/sha-pins/solidus.txt)
+            git clone https://github.com/solidusio/solidus.git tmp/soak-fixtures/solidus
+            git -C tmp/soak-fixtures/solidus checkout "$sha"
+          fi
+
+  soak:setup:solidus:
+    desc: >-
+      Inject rspec-tracer into Solidus Gemfile + bundle install.
+      Used both locally (after soak:_clone:solidus) and from the CI
+      workflow (after actions/checkout@v6 of the external repo).
+    cmds:
+      - cmd: |
+          cd tmp/soak-fixtures/solidus
+          if ! grep -q "rspec-tracer" Gemfile; then
+            printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
+          fi
+          bundle config set --local path vendor/bundle
+          DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
+
+  soak:smoke:solidus:
+    desc: >-
+      10-iter Solidus soak (~10-15 min) for pre-PR parity. Auto-preps
+      the fixture if missing. Mutations accumulate in
+      tmp/soak-fixtures/solidus/ - rerun `task soak:fixture:solidus`
+      after wiping the dir to reset.
+    deps: [soak:fixture:solidus]
     env:
+      SOAK_PROJECT: solidus
       SOAK_ITERATIONS: '10'
     cmds:
-      - bundle exec rspec --no-color spec/soak/rails_app_soak_spec.rb
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
 
-  soak:full:
+  soak:full:solidus:
     desc: >-
-      Soak full - 100 iter run for the nightly cron (~3-4 h). Drives
-      the full memstat-vs-baseline gate.
+      50-iter Solidus soak (~1.5-2 h) - cron driver. Drives the full
+      memstat-vs-baseline gate.
     env:
-      SOAK_ITERATIONS: '100'
+      SOAK_PROJECT: solidus
     cmds:
-      - bundle exec rspec --no-color spec/soak/rails_app_soak_spec.rb
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
+
+  # -- Refinery --------------------------------------------------
+
+  soak:fixture:refinery:
+    desc: >-
+      Clone Refinery at the pinned SHA + bundle + dummy_app gen.
+      Idempotent.
+    cmds:
+      - task: soak:_clone:refinery
+      - task: soak:setup:refinery
+
+  soak:_clone:refinery:
+    internal: true
+    cmds:
+      - cmd: |
+          mkdir -p tmp/soak-fixtures
+          if [ ! -d tmp/soak-fixtures/refinery/.git ]; then
+            sha=$(awk -F= '$1 == "sha" { print $2 }' .github/sha-pins/refinery.txt)
+            git clone https://github.com/refinery/refinerycms.git tmp/soak-fixtures/refinery
+            git -C tmp/soak-fixtures/refinery checkout "$sha"
+          fi
+
+  soak:setup:refinery:
+    desc: >-
+      Inject rspec-tracer into Refinery Gemfile + bundle install +
+      generate the testing dummy_app via the refinery:testing
+      Rake task. Used both locally and from CI.
+    cmds:
+      - cmd: |
+          cd tmp/soak-fixtures/refinery
+          if ! grep -q "rspec-tracer" Gemfile; then
+            printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
+          fi
+          bundle config set --local path vendor/bundle
+          bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; bundle install --jobs 4; }
+          if [ ! -d core/spec/dummy ] && [ ! -d spec/dummy ]; then
+            bundle exec rake refinery:testing:dummy_app
+          fi
+
+  soak:smoke:refinery:
+    desc: >-
+      10-iter Refinery soak (~3-5 min) for pre-PR parity. Refinery
+      is the smallest realworld target so smoke is fast.
+    deps: [soak:fixture:refinery]
+    env:
+      SOAK_PROJECT: refinery
+      SOAK_ITERATIONS: '10'
+    cmds:
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
+
+  soak:full:refinery:
+    desc: >-
+      100-iter Refinery soak (~30-60 min) - cron driver. Higher iter
+      count than Solidus/Spree because per-iter wall is shorter.
+    env:
+      SOAK_PROJECT: refinery
+    cmds:
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
+
+  # -- Spree -----------------------------------------------------
+
+  soak:fixture:spree:
+    desc: >-
+      Clone Spree at the pinned SHA + bundle + test_app gen.
+      Idempotent.
+    cmds:
+      - task: soak:_clone:spree
+      - task: soak:setup:spree
+
+  soak:_clone:spree:
+    internal: true
+    cmds:
+      - cmd: |
+          mkdir -p tmp/soak-fixtures
+          if [ ! -d tmp/soak-fixtures/spree/.git ]; then
+            sha=$(awk -F= '$1 == "sha" { print $2 }' .github/sha-pins/spree.txt)
+            git clone https://github.com/spree/spree.git tmp/soak-fixtures/spree
+            git -C tmp/soak-fixtures/spree checkout "$sha"
+          fi
+
+  soak:setup:spree:
+    desc: >-
+      Inject rspec-tracer into Spree Gemfile + bundle install +
+      generate the test_app via the test_app Rake task. Used both
+      locally and from CI.
+    cmds:
+      - cmd: |
+          cd tmp/soak-fixtures/spree
+          if ! grep -q "rspec-tracer" Gemfile; then
+            printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
+          fi
+          bundle config set --local path vendor/bundle
+          DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
+          if [ ! -d spec/dummy ] && [ ! -d core/spec/dummy ]; then
+            DB=sqlite bundle exec rake test_app
+          fi
+
+  soak:smoke:spree:
+    desc: >-
+      10-iter Spree soak (~10-15 min) for pre-PR parity.
+    deps: [soak:fixture:spree]
+    env:
+      SOAK_PROJECT: spree
+      SOAK_ITERATIONS: '10'
+    cmds:
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
+
+  soak:full:spree:
+    desc: >-
+      50-iter Spree soak (~1.5-2 h) - cron driver.
+    env:
+      SOAK_PROJECT: spree
+    cmds:
+      - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb

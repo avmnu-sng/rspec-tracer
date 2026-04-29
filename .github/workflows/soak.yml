@@ -1,25 +1,27 @@
 ---
 name: soak
 
-# Nightly 100-iter soak against spec/fixtures/rails_app_big/ (4x clone
-# of rails_app, 1208 examples). Subprocess per iter, deterministic-
-# seeded random file mutation rotation through 9 kinds, asserts
-# memstat[N].total_memsize <= memstat[5].total_memsize * 1.05 for
-# N >= 6.
+# Nightly soak across 3 pinned-SHA real-world Rails+RSpec projects:
+# Solidus / Refinery / Spree. Each cell runs in parallel under
+# fail-fast: false so one project's failure doesn't cancel the
+# others. Per-cell timeout-minutes: 240 (4 h cap = 50% margin
+# under GHA's 6 h hard limit so the cache post-hook fires reliably
+# even on cold-cache first run, per
+# feedback_actions_cache_post_hook_timeout).
 #
 # 03:00 UTC schedule keeps the run off-peak relative to per-PR CI
 # wall clock + leaves the morning slot open for failure triage.
-# Manual workflow_dispatch supports ad-hoc smoke runs from the
-# Actions UI.
+# The companion soak-bump.yml cron (Mondays 04:00 UTC) reports pin
+# drift but never auto-bumps; humans review the report and open
+# bump PRs by hand.
 #
-# timeout-minutes: 240 - 4 h cap = 50% margin under GHA's 6 h hard
-# limit so the cache post-hook fires reliably even on cold-cache
-# first run (per feedback_actions_cache_post_hook_timeout). Cron
-# jobs that hit the 6 h limit get cancelled mid-step; the post-hook
-# then skips and the cache silently fails to save.
+# Pin files live at .github/sha-pins/<project>.txt holding three
+# fields (sha=, tag=, license_sha256=). The "Read pin" step parses
+# the sha into the matrix cell's checkout ref + cache key. License
+# stability is checked by soak-bump.yml, not here.
 #
 # MRI-only per feedback_jruby_ci_subprocess_floor: JRuby x Rails
-# 100-iter would compound to ~250 min wall clock per cell, untenable
+# 50-100 iter cells would compound to multiple hours each, untenable
 # in nightly cadence.
 
 on:
@@ -28,32 +30,45 @@ on:
   workflow_dispatch:
     inputs:
       iterations:
-        description: Iteration count override (default 100)
+        description: Iter count override (default per-project; 50/100/50)
         required: false
-        default: '100'
+        default: ''
 
 permissions:
   contents: read
 
-concurrency:
-  # One soak run at a time; later schedule firings cancel older
-  # in-progress runs (rare with the nightly cadence + 4 h budget,
-  # but a manual dispatch during a stuck run can wedge otherwise).
-  group: soak
-  cancel-in-progress: true
-
 jobs:
   soak:
-    name: soak
+    name: soak (${{ matrix.project }})
     runs-on: ubuntu-latest
     timeout-minutes: 240
+    strategy:
+      # Independent per-project cells - one project's failure must
+      # not cancel the others, otherwise the AC ("All 3 soak cells
+      # complete one cron run with no crash") is unverifiable on a
+      # bad night.
+      fail-fast: false
+      matrix:
+        include:
+          - project: solidus
+            repo: solidusio/solidus
+          - project: refinery
+            repo: refinery/refinerycms
+          - project: spree
+            repo: spree/spree
+    concurrency:
+      # Per-project group so a workflow_dispatch rerun of one project
+      # doesn't cancel the others mid-run. cancel-in-progress because
+      # a manual dispatch during a stuck run should preempt the stuck
+      # one (rare with 4 h cap + nightly cadence).
+      group: soak-${{ matrix.project }}
+      cancel-in-progress: true
     env:
-      RAILS_VERSION: "~> 7.1.0"
-      RSPEC_RAILS_VERSION: "~> 6.1.0"
-      SQLITE3_VERSION: "~> 1.4"
-      SOAK_ITERATIONS: ${{ inputs.iterations || '100' }}
+      SOAK_PROJECT: ${{ matrix.project }}
+      SOAK_FIXTURE_ROOT: ${{ github.workspace }}/tmp/soak-fixtures/${{ matrix.project }}
+      SOAK_ITERATIONS: ${{ inputs.iterations }}
     steps:
-      - name: Checkout
+      - name: Checkout rspec-tracer
         uses: actions/checkout@v6
 
       - name: Setup Ruby
@@ -69,56 +84,54 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Cache the fixture's vendor/bundle so cold runs only pay once
-      # for the Rails + rspec-rails + factory_bot_rails + sqlite3
-      # gem set. Same key shape as full-matrix.yml's benchmark cell so
-      # the soak can warm-share cache entries with that cell. The
-      # source rails_app fixture and rails_app_big share the same
-      # Gemfile (build_rails_app_big.rb copies it verbatim), so a
-      # rails_app cache entry restores cleanly into rails_app_big.
-      - name: Cache rails_app_big fixture bundle
+      - name: Read pin
+        id: pin
+        run: |
+          pin_file=".github/sha-pins/${{ matrix.project }}.txt"
+          sha=$(awk -F= '$1 == "sha" { print $2 }' "$pin_file")
+          tag=$(awk -F= '$1 == "tag" { print $2 }' "$pin_file")
+          if [ -z "$sha" ] || [ -z "$tag" ]; then
+            echo "ERROR: pin file $pin_file missing sha or tag" >&2
+            exit 1
+          fi
+          {
+            echo "sha=$sha"
+            echo "tag=$tag"
+          } >> "$GITHUB_OUTPUT"
+          echo "Pin: ${{ matrix.project }} @ $tag ($sha)"
+
+      - name: Checkout ${{ matrix.project }} fixture
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ steps.pin.outputs.sha }}
+          path: tmp/soak-fixtures/${{ matrix.project }}
+
+      - name: Cache ${{ matrix.project }} fixture bundle
         uses: actions/cache@v5
         with:
-          path: spec/fixtures/rails_app_big/vendor/bundle
+          # Cache busts on pin SHA bump so a major version's gem set
+          # doesn't contaminate the next major's resolve. Cross-project
+          # keys can't collide because the project name is in the prefix.
+          path: tmp/soak-fixtures/${{ matrix.project }}/vendor/bundle
           key: >-
-            fixture-bundle-rails-app-big-${{ runner.os
+            soak-${{ matrix.project }}-${{ runner.os
             }}-${{ hashFiles('.ruby-version')
-            }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
-            }}-${{ env.RAILS_VERSION
-            }}-${{ env.RSPEC_RAILS_VERSION
-            }}-${{ env.SQLITE3_VERSION }}
+            }}-${{ steps.pin.outputs.sha }}
           restore-keys: |
-            fixture-bundle-rails-app-big-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}-
-            fixture-bundle-rails-app-big-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+            soak-${{ matrix.project }}-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
 
-      - name: Build rails_app_big fixture
-        run: ruby scripts/build_rails_app_big.rb
+      - name: Setup ${{ matrix.project }} fixture (inject + bundle + db prep)
+        run: task soak:setup:${{ matrix.project }}
 
-      - name: Point fixture bundler at vendor/bundle
-        run: |
-          (cd spec/fixtures/rails_app_big && bundle config set --local path vendor/bundle)
+      - name: Run soak (${{ matrix.project }})
+        run: task soak:full:${{ matrix.project }}
 
-      - name: Install fixture bundle
-        run: |
-          cd spec/fixtures/rails_app_big
-          bundle install --jobs 4
-
-      - name: Prepare Rails fixture database
-        run: bundle exec rails db:test:prepare
-        working-directory: spec/fixtures/rails_app_big
-
-      - name: Run soak (${{ env.SOAK_ITERATIONS }} iterations)
-        run: task soak:full
-
-      # Always upload soak memstats - they're the diagnostic artifact
-      # if the bound is violated AND useful as the SLI signal even on
-      # passing runs (post-merge dashboard could plot growth ratio
-      # over time).
-      - name: Upload soak memstats
+      - name: Upload memstats
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: soak-memstats-${{ github.run_id }}
+          name: soak-memstats-${{ matrix.project }}-${{ github.run_id }}
           path: tmp/soak/
           if-no-files-found: warn
           retention-days: 14

@@ -1,0 +1,311 @@
+# frozen_string_literal: true
+
+require 'bundler'
+require 'fileutils'
+require 'json'
+require 'open3'
+require 'pathname'
+
+# Soak test against pinned-SHA real-world Rails+RSpec projects:
+# Solidus / Refinery / Spree. Each project's pin lives at
+# .github/sha-pins/<project>.txt (sha + tag + license_sha256);
+# the workflow / `task soak:fixture:<project>` clones at the pinned
+# SHA, injects rspec-tracer into the project's Gemfile, bundles,
+# and db-prepares. This spec consumes the prepped fixture: subprocess
+# per iter, deterministic-seeded random file mutation rotation
+# through 9 kinds, asserts memstat[N] <= memstat[5] * 1.05 for
+# N >= 6.
+#
+# Driven by env:
+#   SOAK_PROJECT       - solidus | refinery | spree (REQUIRED)
+#   SOAK_FIXTURE_ROOT  - cloned project path
+#                        (default: tmp/soak-fixtures/<project>)
+#   SOAK_ITERATIONS    - iter count override
+#                        (default: solidus=50, refinery=100, spree=50)
+#   SOAK_WARMUP_ITERS  - warm-up baseline iter (default: 5)
+#   SOAK_MEMORY_BOUND  - growth bound vs warm-up (default: 1.05)
+#
+# Run via:
+#   task soak:fixture:<project>  # one-time clone + bundle + db prep
+#   task soak:smoke:<project>    # 10 iters - pre-PR parity proxy
+#   task soak:full:<project>     # full per-project iter count - cron
+#
+# Excluded from the default rspec sweep via .rspec --exclude-pattern.
+#
+# Iteration mechanism: subprocess per iter via Open3.capture2e (M5.1
+# cold-subprocess test-isolation contract preserved per
+# feedback_jruby_ci_subprocess_floor); NO fork() in the spec - if
+# ever introduced, the child must Process.exit!(0) per
+# feedback_simplecov_fork_poisoning. Open3 is wrapped in
+# Bundler.with_unbundled_env per
+# feedback_bundler_unbundled_env_for_fixture_subprocess - the outer
+# `bundle exec rspec` leaks RUBYOPT=-rbundler/setup + BUNDLE_GEMFILE
+# etc. into the child; with_unbundled_env clears those so the child
+# resolves against the fixture's Gemfile cleanly.
+#
+# Cache state assertions only; no coverage.json byte-equivalence
+# (M8.0 domain - would require CI= empty pinning per
+# feedback_rails_eager_load_coverage_timing). Cleanup-guard hygiene
+# via spec/support/integration_cleanup.rb (M8.2).
+
+REPO_ROOT = Pathname(__dir__).parent.parent.expand_path
+SOAK_TMP = REPO_ROOT.join('tmp/soak')
+MEMSTAT_AT_EXIT = REPO_ROOT.join('spec/soak/memstat_at_exit.rb')
+SOAK_START = REPO_ROOT.join('spec/soak/soak_start.rb')
+
+require REPO_ROOT.join('spec/support/integration_cleanup').to_s
+
+# 9 mutation kinds rotated deterministically across iters. Same
+# enum across projects so iter-N's mutation kind is project-agnostic
+# (only the candidate file set differs).
+MUTATION_KINDS = %i[model view controller helper factory fixture migration locale gemfile].freeze
+
+# Per-project glob patterns relative to FIXTURE_ROOT. Solidus / Spree
+# are engine-namespaced (5 / 4 engines under top-level engine dirs);
+# Refinery is core / pages / images / resources. Empty glob expansions
+# are skipped per-iter (logged) rather than crashing - some projects
+# don't have e.g. spec/fixtures/*.yml or every pattern.
+MUTATION_TARGETS = {
+  solidus: {
+    model: ['{api,backend,core,frontend,sample}/app/models/spree/**/*.rb'],
+    view: ['{api,backend,core,frontend,sample}/app/views/**/*.{erb,slim,haml}'],
+    controller: ['{api,backend,core,frontend,sample}/app/controllers/**/*_controller.rb'],
+    helper: ['{api,backend,core,frontend,sample}/app/helpers/**/*_helper.rb'],
+    factory: ['{api,backend,core,frontend,sample}/lib/**/factories/**/*.rb'],
+    fixture: ['{api,backend,core,frontend,sample}/spec/fixtures/**/*.yml'],
+    migration: ['{api,backend,core,frontend,sample}/db/migrate/*.rb'],
+    locale: ['{api,backend,core,frontend,sample}/config/locales/*.yml'],
+    gemfile: ['Gemfile']
+  },
+  refinery: {
+    model: ['{core,pages,images,resources}/app/models/refinery/**/*.rb'],
+    view: ['{core,pages,images,resources}/app/views/refinery/**/*.{erb,slim,haml}'],
+    controller: ['{core,pages,images,resources}/app/controllers/refinery/**/*_controller.rb'],
+    helper: ['{core,pages,images,resources}/app/helpers/refinery/**/*_helper.rb'],
+    factory: ['{core,pages,images,resources}/spec/factories/**/*.rb'],
+    fixture: ['{core,pages,images,resources}/spec/fixtures/**/*.yml'],
+    migration: ['{core,pages,images,resources}/db/migrate/*.rb'],
+    locale: ['{core,pages,images,resources}/config/locales/*.yml'],
+    gemfile: ['Gemfile']
+  },
+  spree: {
+    model: ['{api,core,storefront,legacy_promotions}/app/models/spree/**/*.rb'],
+    view: ['{api,core,storefront,legacy_promotions}/app/views/**/*.{erb,slim,haml}'],
+    controller: ['{api,core,storefront,legacy_promotions}/app/controllers/**/*_controller.rb'],
+    helper: ['{api,core,storefront,legacy_promotions}/app/helpers/**/*_helper.rb'],
+    factory: ['{api,core,storefront,legacy_promotions}/lib/**/factories/**/*.rb'],
+    fixture: ['{api,core,storefront,legacy_promotions}/spec/fixtures/**/*.yml'],
+    migration: ['{api,core,storefront,legacy_promotions}/db/migrate/*.rb'],
+    locale: ['{api,core,storefront,legacy_promotions}/config/locales/*.yml'],
+    gemfile: ['Gemfile']
+  }
+}.freeze
+
+# Per-project default iter counts. Refinery is small (~70 specs)
+# so 100 iters fits within the 4 h cron cap; Solidus / Spree are
+# 10x bigger (~700 specs) so 50 iters keep the cell under cap with
+# headroom for cold first-cache run.
+DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 50 }.freeze
+
+PROJECT = ENV.fetch('SOAK_PROJECT') { raise 'SOAK_PROJECT env var required (one of: solidus, refinery, spree)' }.to_sym
+unless MUTATION_TARGETS.key?(PROJECT)
+  raise "unknown SOAK_PROJECT: #{PROJECT.inspect} (expected one of: #{MUTATION_TARGETS.keys.join(', ')})"
+end
+
+FIXTURE_ROOT = Pathname(
+  ENV.fetch('SOAK_FIXTURE_ROOT') { REPO_ROOT.join('tmp/soak-fixtures', PROJECT.to_s).to_s }
+).expand_path
+ITERATIONS = Integer(ENV.fetch('SOAK_ITERATIONS') { DEFAULT_ITERATIONS.fetch(PROJECT).to_s })
+WARMUP_ITERS = Integer(ENV.fetch('SOAK_WARMUP_ITERS', '5'))
+MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.05'))
+
+# Soak orchestration: subprocess-per-iter pattern needs before(:all)
+# fixture-existence sanity + a single multi-statement example. The
+# integration-style cops below are tuned for unit specs (small
+# examples, single expectation) and don't apply to a multi-iter
+# cross-process soak.
+# rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
+# rubocop:disable RSpec/NoExpectationExample
+RSpec.describe "realworld soak (#{PROJECT})" do
+  before(:all) do
+    raise "fixture missing: #{FIXTURE_ROOT}\n\nRun `task soak:fixture:#{PROJECT}` first." \
+      unless FIXTURE_ROOT.directory?
+    raise "fixture Gemfile missing: #{FIXTURE_ROOT.join('Gemfile')}" \
+      unless FIXTURE_ROOT.join('Gemfile').file?
+    raise "memstat helper missing: #{MEMSTAT_AT_EXIT}" unless MEMSTAT_AT_EXIT.file?
+    raise "soak_start helper missing: #{SOAK_START}" unless SOAK_START.file?
+
+    IntegrationCleanup.scrub_default!(FIXTURE_ROOT)
+    FileUtils.rm_rf(SOAK_TMP)
+    FileUtils.mkdir_p(SOAK_TMP)
+  end
+
+  after(:all) do
+    IntegrationCleanup.scrub_default!(FIXTURE_ROOT)
+  end
+
+  it "completes #{ITERATIONS} iterations against #{PROJECT} with no memory leak or crash" do
+    skip_if_jruby
+
+    memstats = []
+
+    ITERATIONS.times do |i|
+      iter = i + 1
+      mutate_for_iter(iter)
+      memstat, output, success = run_soak_subprocess(iter)
+
+      unless success
+        tail = output[-2_000..] || output
+        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{tail}"
+      end
+
+      raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
+
+      memstats << memstat
+      verify_cache_state(iter)
+    end
+
+    enforce_memory_bound(memstats)
+  end
+  # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
+  # rubocop:enable RSpec/NoExpectationExample
+
+  # -- helpers ---------------------------------------------------
+
+  def skip_if_jruby
+    skip 'soak runs MRI-only (JRuby x Rails subprocess floor too high)' if RUBY_ENGINE != 'ruby'
+  end
+
+  def mutate_for_iter(iter)
+    rng = Random.new(iter)
+    kind = MUTATION_KINDS[(iter - 1) % MUTATION_KINDS.size]
+    candidates = mutation_candidates(kind)
+    if candidates.empty?
+      # Some projects don't have every mutation kind populated (e.g.
+      # Refinery has no spec/fixtures/*.yml files). Skip the iter's
+      # mutation rather than crashing - the iter still runs and
+      # exercises the tracker via the prior mutations' accumulated
+      # invalidation surface.
+      puts "iter #{iter} (#{PROJECT}): no mutation candidates for kind #{kind.inspect} - skipping mutation" # rubocop:disable RSpec/Output
+      return
+    end
+
+    target = candidates[rng.rand(candidates.size)]
+    suffix = mutation_suffix(target, iter, kind)
+    File.open(target, 'a') { |f| f.write(suffix) }
+  end
+
+  def mutation_candidates(kind)
+    patterns = MUTATION_TARGETS.fetch(PROJECT).fetch(kind, [])
+    patterns
+      .flat_map { |p| Dir.glob(FIXTURE_ROOT.join(p).to_s) }
+      .reject { |f| ignore_path?(f) }
+      .uniq
+  end
+
+  # Skip baseline files we don't want to mutate - boilerplate
+  # ApplicationRecord / ApplicationController etc. that every spec
+  # depends on. Mutating them rebuilds the entire suite cache, which
+  # is a valid stress but skews the per-iter signal toward
+  # whole-suite-invalidator rebuilds. Gemfile is the dedicated
+  # whole-suite-invalidator kind; baseline Ruby files are noise.
+  def ignore_path?(path)
+    base = File.basename(path)
+    %w[application_record.rb application_controller.rb application_helper.rb
+       application_mailer.rb application_job.rb].include?(base)
+  end
+
+  # Comment syntax per file extension. Append-style mutations are
+  # idempotent across iters: each iter adds ONE comment line; the
+  # file remains semantically equivalent (Rails / RSpec / Bundler /
+  # FactoryBot / YAML all tolerate trailing comments). The tracker
+  # observes the change via mtime / size / digest invalidation -
+  # which is what the soak is testing.
+  def mutation_suffix(path, iter, _kind)
+    label = "soak iter #{iter} (#{PROJECT})"
+    case File.extname(path)
+    when '.erb'  then "\n<%# #{label} %>\n"
+    when '.slim' then "\n/ #{label}\n"
+    when '.haml' then "\n-# #{label}\n"
+    else              "\n# #{label}\n"
+    end
+  end
+
+  def run_soak_subprocess(iter)
+    iter_dir = SOAK_TMP.join("iter-#{iter}")
+    FileUtils.mkdir_p(iter_dir)
+
+    env = {
+      'BUNDLE_GEMFILE' => FIXTURE_ROOT.join('Gemfile').to_s,
+      'RUBYOPT' => "-r#{SOAK_START} -r#{MEMSTAT_AT_EXIT}",
+      'SOAK_MEMSTAT_DIR' => iter_dir.to_s,
+      'RSPEC_TRACER' => '1',
+      # Don't poison the tracker with the outer rspec's CI flag - the
+      # rails_helper.rb's eager_load reads ENV['CI'] and shifts the
+      # Coverage timing per feedback_rails_eager_load_coverage_timing.
+      'CI' => '',
+      'RAILS_ENV' => 'test'
+    }
+
+    Bundler.with_unbundled_env do
+      output, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec',
+                                       '--no-color', '--format', 'progress',
+                                       chdir: FIXTURE_ROOT.to_s)
+      [collect_memstat(iter_dir), output, status.success?]
+    end
+  end
+
+  def collect_memstat(iter_dir)
+    files = Dir.glob(iter_dir.join('memstat-*.json').to_s)
+    return nil if files.empty?
+
+    snapshots = files.filter_map do |f|
+      JSON.parse(File.read(f))
+    rescue StandardError
+      nil
+    end
+    snapshots.max_by { |s| s.fetch('total_memsize', 0) }
+  end
+
+  def verify_cache_state(iter)
+    cache_dir = FIXTURE_ROOT.join('rspec_tracer_cache')
+    raise "iter #{iter} (#{PROJECT}): rspec_tracer_cache/ missing" unless cache_dir.directory?
+
+    last_run = cache_dir.join('last_run.json')
+    raise "iter #{iter} (#{PROJECT}): last_run.json missing" unless last_run.file?
+
+    manifest = JSON.parse(last_run.read)
+    raise "iter #{iter} (#{PROJECT}): run_id missing" if manifest['run_id'].to_s.empty?
+  end
+
+  def enforce_memory_bound(memstats)
+    raise 'no memstats captured' if memstats.length < WARMUP_ITERS
+
+    baseline = memstats[WARMUP_ITERS - 1].fetch('total_memsize')
+    bound = baseline * MEMORY_BOUND
+
+    growths = []
+    memstats.drop(WARMUP_ITERS).each_with_index do |stat, idx|
+      iter = WARMUP_ITERS + idx + 1
+      memsize = stat.fetch('total_memsize')
+      ratio = memsize.to_f / baseline
+      growths << [iter, memsize, ratio]
+    end
+
+    summary = growths.map { |iter, _, ratio| "iter #{iter}: #{format('%.4f', ratio)}x" }
+      .join("\n  ")
+    # The growth-ratio summary is a CI / nightly-cron diagnostic;
+    # post-merge dashboards plot it as the soak SLI signal. RSpec/Output
+    # disabled deliberately - this puts is the spec's primary
+    # observability artifact.
+    puts "Memory growth (#{PROJECT} baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}" # rubocop:disable RSpec/Output
+
+    violations = growths.select { |_, memsize, _| memsize > bound }
+    return if violations.empty?
+
+    raise "memory bound exceeded for #{PROJECT} (baseline #{baseline}, bound #{bound}):\n" +
+      violations.map { |iter, memsize, ratio|
+        "  iter #{iter}: #{memsize} bytes (#{format('%.4f', ratio)}x)"
+      }.join("\n")
+  end
+end

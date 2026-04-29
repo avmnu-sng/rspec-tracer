@@ -1,0 +1,53 @@
+---
+name: soak-bump
+
+# Weekly soak-pin status check. Reports drift in
+# .github/sha-pins/<project>.txt against each project's latest
+# release/tag + LICENSE content; never auto-bumps. Humans review
+# the weekly report and open bump PRs by hand per the
+# review-gated-bump policy.
+#
+# Mondays 04:00 UTC (1 h after the nightly soak's 03:00 UTC run,
+# off-peak relative to per-PR CI). workflow_dispatch enables ad-hoc
+# checks from the Actions UI between scheduled runs.
+#
+# Permissions: contents: read only. No PR creation, no issue
+# creation, no auto-merge. The report goes to $GITHUB_STEP_SUMMARY
+# (rendered on the workflow run page) and stdout (logged).
+#
+# Per feedback_workflow_dispatch_default_branch_registration: this
+# workflow's first scheduled firing won't happen until the file
+# lands on main. Manual workflow_dispatch via `gh workflow run
+# soak-bump.yml --ref main` works post-merge.
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Soak pin drift report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # gh CLI reads GH_TOKEN for auth; GITHUB_TOKEN's read scope is
+      # sufficient for the public-repo /releases / /tags / /contents
+      # endpoints this script hits.
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          # Stdlib-only script - no bundler needed.
+          bundler-cache: false
+
+      - name: Run soak pin drift check
+        run: ruby scripts/check_soak_pins.rb
