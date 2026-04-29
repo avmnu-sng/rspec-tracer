@@ -248,8 +248,9 @@ tasks:
       clock — earlier 3-way alphabetical split landed shard-3 at
       6:52 M2 Max (~10 min CI) vs shard-1/2 at 1-3 min. The original
       shard-3 has been further split into 3 sub-shards (now shard-3 /
-      shard-4 / shard-5) by I/O density to enforce the 4-minute hard
-      cap (step-level `timeout-minutes: 4` on each mutation shard).
+      shard-4 / shard-5) by I/O density to enforce the per-shard
+      step cap (currently 5-minute via `timeout-minutes: 5` after
+      M8.6-B's headroom bump from 4-minute).
 
       Earlier attempt with `--mutation-timeout 1` was reverted because
       shorter timeout silently shifts undetected mutations (test would
@@ -399,7 +400,8 @@ tasks:
       write_run_files. The file-I/O-dense atomic-write helpers that
       drove the original alphabetical-shard-3 to 6:52 M2 Max are
       isolated here; further sharding may be needed if this shard
-      itself drifts past the 4-min cap.
+      itself drifts past the per-shard step cap (5-min after
+      M8.6-B's bump).
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -595,7 +597,8 @@ tasks:
       M8.6 JsonBackend shard 6 of 6 — Merger second half (4 subjects):
       Merger.empty_state, Merger.merge_env_dependency!,
       Merger.merge_examples_coverage!, Merger.reverse_of. Split out
-      from shard-5 to enforce the 4-min cap.
+      from shard-5 to enforce the per-shard step cap (4-min when
+      decided, 5-min after M8.6-B's bump).
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
