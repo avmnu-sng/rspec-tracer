@@ -83,10 +83,15 @@ tasks:
       - |
         # actionlint: release naming uses amd64/arm64. `uname -m` on Linux
         # returns x86_64; on Apple Silicon returns arm64. Map both.
-        # curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused
-        # cushions against the transient GitHub-release CDN 5xx / connect-
-        # reset failures observed on M8.3-A (PR #122) and M8.3-B (PR #124)
-        # first CI runs - same shape applied to every download below.
+        #
+        # Two-layer retry: inner curl `--retry 5` (covers ~10s of 5xx
+        # blips) + outer 3-attempt loop with 5s/10s/20s exponential
+        # backoff (covers ~35s of CDN unavailability). M8.3-A (PR #122)
+        # / M8.3-B (PR #124) / M8.6 v5 (PR #129) all hit GitHub-Releases
+        # 5xx flakes during cold-cache install:tools. Same outer-loop
+        # shape was already on trivy install before M8.6 v3 bypassed
+        # install.sh; M8.6 v5 retro promoted the pattern to actionlint
+        # + shellcheck after a 6-consecutive-502 burst broke shellcheck.
         mkdir -p bin
         OS=$(uname -s | tr '[:upper:]' '[:lower:]')
         case "$(uname -m)" in
@@ -94,12 +99,24 @@ tasks:
           x86_64|amd64)  ARCH=amd64 ;;
           *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
         esac
-        set -o pipefail
-        curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
-          -sSfL "https://github.com/rhysd/actionlint/releases/download/v{{.ACTIONLINT_VERSION}}/actionlint_{{.ACTIONLINT_VERSION}}_${OS}_${ARCH}.tar.gz" \
-          | tar xz -C bin actionlint
+        for attempt in 1 2 3; do
+          set -o pipefail
+          if curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
+              -sSfL "https://github.com/rhysd/actionlint/releases/download/v{{.ACTIONLINT_VERSION}}/actionlint_{{.ACTIONLINT_VERSION}}_${OS}_${ARCH}.tar.gz" \
+              | tar xz -C bin actionlint; then
+            break
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            echo "ERROR: actionlint install failed after 3 attempts" >&2
+            exit 1
+          fi
+          sleep_seconds=$((attempt * 5))
+          echo "actionlint install attempt $attempt failed; retrying in ${sleep_seconds}s..." >&2
+          sleep "$sleep_seconds"
+        done
       - |
         # shellcheck: release naming uses x86_64/aarch64 (not amd64/arm64).
+        # Same two-layer retry as actionlint above.
         mkdir -p bin
         VERSION={{.SHELLCHECK_VERSION}}
         OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -108,10 +125,21 @@ tasks:
           x86_64|amd64)  ARCH=x86_64 ;;
           *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
         esac
-        set -o pipefail
-        curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
-          -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
-          | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"
+        for attempt in 1 2 3; do
+          set -o pipefail
+          if curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
+              -sSfL "https://github.com/koalaman/shellcheck/releases/download/${VERSION}/shellcheck-${VERSION}.${OS}.${ARCH}.tar.xz" \
+              | tar xJ --strip-components=1 -C bin "shellcheck-${VERSION}/shellcheck"; then
+            break
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            echo "ERROR: shellcheck install failed after 3 attempts" >&2
+            exit 1
+          fi
+          sleep_seconds=$((attempt * 5))
+          echo "shellcheck install attempt $attempt failed; retrying in ${sleep_seconds}s..." >&2
+          sleep "$sleep_seconds"
+        done
       - |
         # yamllint: user-scoped venv under .venv/yamllint. Works identically
         # on local dev and GHA runners (pipx on GHA is pre-configured for
@@ -130,11 +158,11 @@ tasks:
         # our outer retry can't see, so the loop just hits the same
         # GitHub-Releases CDN flake repeatedly. Direct curl with the
         # standard `--retry 5 --retry-all-errors --retry-connrefused`
-        # gives us the same retry semantics as actionlint/shellcheck,
-        # and `set -o pipefail` ensures tar's exit propagates if the
-        # download stream is truncated. Trivy release naming:
-        # trivy_<NUMBER>_<OS>-<ARCH>.tar.gz where NUMBER strips the
-        # leading 'v' and ARCH uses 64bit/ARM64 (not x86_64/aarch64).
+        # gives us the same retry semantics as actionlint/shellcheck.
+        # Same two-layer retry (inner curl --retry 5 + outer 3-attempt
+        # loop) as actionlint/shellcheck since M8.6 v6. Trivy release
+        # naming: trivy_<NUMBER>_<OS>-<ARCH>.tar.gz where NUMBER strips
+        # the leading 'v' and ARCH uses 64bit/ARM64 (not x86_64/aarch64).
         mkdir -p bin
         VERSION={{.TRIVY_VERSION}}
         VERSION_NUMBER="${VERSION#v}"
@@ -148,10 +176,21 @@ tasks:
           x86_64|amd64)  ARCH=64bit ;;
           *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
         esac
-        set -o pipefail
-        curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
-          -sSfL "https://github.com/aquasecurity/trivy/releases/download/${VERSION}/trivy_${VERSION_NUMBER}_${OS}-${ARCH}.tar.gz" \
-          | tar xz -C bin trivy
+        for attempt in 1 2 3; do
+          set -o pipefail
+          if curl --retry 5 --retry-delay 2 --retry-all-errors --retry-connrefused \
+              -sSfL "https://github.com/aquasecurity/trivy/releases/download/${VERSION}/trivy_${VERSION_NUMBER}_${OS}-${ARCH}.tar.gz" \
+              | tar xz -C bin trivy; then
+            break
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            echo "ERROR: trivy install failed after 3 attempts" >&2
+            exit 1
+          fi
+          sleep_seconds=$((attempt * 5))
+          echo "trivy install attempt $attempt failed; retrying in ${sleep_seconds}s..." >&2
+          sleep "$sleep_seconds"
+        done
       - gem install bundler-audit --version {{.BUNDLER_AUDIT_VERSION}} --no-doc
 
   # ── Lint ───────────────────────────────────────────────
