@@ -2,7 +2,18 @@
 name: full-matrix
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      mode:
+        description: >-
+          'build' (default) runs the full matrix; 'rails-only' runs
+          only the rails fixture cell + matrix-config dep, skipping
+          spec/spec-floor/ruby-project/ruby-parallel/jruby/
+          truffleruby/benchmark. Set by ci.yml when tier=test AND a
+          rails-fixture-related path is in the diff (multi-tier
+          granularity refinement, M8.4-B).
+        type: string
+        default: build
 
 permissions:
   contents: read
@@ -89,6 +100,7 @@ jobs:
   spec:
     name: spec (ruby-${{ matrix.ruby }})
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -134,6 +146,7 @@ jobs:
     # cross-product.
     name: spec-floor (ruby-3.1, redis-4.8, rspec-3.12, msgpack-1.7, parallel_tests-4.10)
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -173,6 +186,7 @@ jobs:
   ruby-project:
     name: ruby-project (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # Job-level env so `bundle install` (in setup-ruby) sees
@@ -213,6 +227,7 @@ jobs:
   ruby-parallel:
     name: ruby-parallel (ruby-${{ matrix.ruby }}, rspec-${{ matrix.rspec }})
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # Job-level env so RSPEC_VERSION reaches setup-ruby's bundle install
@@ -410,6 +425,7 @@ jobs:
   jruby:
     name: jruby
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -471,6 +487,7 @@ jobs:
     # paths fire as on JRuby.
     name: truffleruby
     needs: matrix-config
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
@@ -519,6 +536,7 @@ jobs:
 
   benchmark:
     name: benchmark
+    if: inputs.mode == 'build'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Canonical benchmark cell: fix every ENV-driven fixture version at

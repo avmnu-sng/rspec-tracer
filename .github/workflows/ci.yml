@@ -32,6 +32,7 @@ jobs:
       mut_storage: ${{ steps.detect.outputs.mut_storage }}
       mut_rspec: ${{ steps.detect.outputs.mut_rspec }}
       mut_top_level: ${{ steps.detect.outputs.mut_top_level }}
+      run_rails: ${{ steps.detect.outputs.run_rails }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -60,6 +61,13 @@ jobs:
           # silently miss any one of them.
           MUT_TRACKER=0; MUT_STORAGE=0; MUT_RSPEC=0; MUT_TOP_LEVEL=0
           MUT_FORCE_ALL=0
+          # M8.4-B multi-tier granularity: gate the rails fixture cell
+          # (the `rails:` job in full-matrix.yml) on tier=test as well
+          # as tier=build, so spec-only PRs that touch the rails
+          # fixture paths still run the full Rails matrix. Without
+          # this, a spec/fixtures/rails_app edit in a docs-only PR
+          # would skip full-matrix entirely.
+          RUN_RAILS=0
 
           if [ "$EVENT" = "pull_request" ]; then
             FILES=$(git diff --name-only "$BASE_SHA".."$HEAD_SHA")
@@ -75,6 +83,7 @@ jobs:
               echo "mut_storage=true"
               echo "mut_rspec=true"
               echo "mut_top_level=true"
+              echo "run_rails=false"
             } >> "$GITHUB_OUTPUT"
             echo "Non-PR event ($EVENT): tier=build (full matrix); all mutation subjects enabled"
             exit 0
@@ -89,6 +98,7 @@ jobs:
               echo "mut_storage=false"
               echo "mut_rspec=false"
               echo "mut_top_level=false"
+              echo "run_rails=false"
             } >> "$GITHUB_OUTPUT"
             echo "No changed files: tier=skip"
             exit 0
@@ -125,6 +135,21 @@ jobs:
             case "$f" in
               Gemfile|Gemfile.lock|.ruby-version|.tool-versions|Taskfile.yml|*.gemspec|lib/rspec_tracer.rb|.github/workflows/*|.github/actions/*)
                 MUT_FORCE_ALL=1
+                ;;
+            esac
+
+            # M8.4-B run_rails: rails fixture cell is the
+            # `rails:` job in full-matrix.yml driving
+            # spec/integration/rails_app_spec.rb +
+            # narrow_ar_schema_spec.rb against
+            # spec/fixtures/rails_app. A diff touching any of these
+            # paths warrants a full-matrix rails run even on a
+            # tier=test PR (spec-only / docs-only) - otherwise a
+            # fixture edit silently skips the only signal that
+            # exercises it across the matrix.
+            case "$f" in
+              spec/fixtures/rails_app/*|spec/fixtures/rails_app_big/*|spec/integration/rails_app_spec.rb|spec/integration/narrow_ar_schema_spec.rb|spec/support/fixture_bundle_helper.rb|scripts/build_rails_app_big.rb)
+                RUN_RAILS=1
                 ;;
             esac
 
@@ -174,6 +199,7 @@ jobs:
           MS=$(to_bool "$MUT_STORAGE")
           MR=$(to_bool "$MUT_RSPEC")
           MTL=$(to_bool "$MUT_TOP_LEVEL")
+          RR=$(to_bool "$RUN_RAILS")
 
           {
             echo "tier=${TIER}"
@@ -181,9 +207,11 @@ jobs:
             echo "mut_storage=${MS}"
             echo "mut_rspec=${MR}"
             echo "mut_top_level=${MTL}"
+            echo "run_rails=${RR}"
           } >> "$GITHUB_OUTPUT"
           echo "Detected tier: ${TIER}"
           echo "Mutation subjects: tracker=${MT} storage=${MS} rspec=${MR} top_level=${MTL} (force_all=${MUT_FORCE_ALL})"
+          echo "Run rails fixture cell: ${RR}"
           echo "Changed files:"
           echo "$FILES"
 
@@ -202,8 +230,14 @@ jobs:
   full-matrix:
     name: full-matrix
     needs: [tier, lint-and-specs]
-    if: ${{ needs.tier.outputs.tier == 'build' }}
+    # tier=build runs the full matrix; tier=test + run_rails=true
+    # runs full-matrix in 'rails-only' mode (just the rails fixture
+    # cell + matrix-config dep). The mode input gates non-rails jobs
+    # inside full-matrix.yml.
+    if: ${{ needs.tier.outputs.tier == 'build' || needs.tier.outputs.run_rails == 'true' }}
     uses: ./.github/workflows/full-matrix.yml
+    with:
+      mode: ${{ needs.tier.outputs.tier == 'build' && 'build' || 'rails-only' }}
     secrets: inherit
 
   benchmark-comment:
