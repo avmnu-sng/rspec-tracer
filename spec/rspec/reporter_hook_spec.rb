@@ -21,7 +21,6 @@ RSpec.describe RSpecTracer::RSpec::ReporterHook do
 
   let(:reporter)          { reporter_class.new }
   let(:engine)            { spy('Engine') }
-  let(:coverage_reporter) { spy('CoverageReporter') }
   let(:execution_result)  { double('ExecutionResult') }
   let(:example) do
     double('Example',
@@ -30,14 +29,13 @@ RSpec.describe RSpecTracer::RSpec::ReporterHook do
   end
 
   before do
-    allow(RSpecTracer).to receive_messages(engine: engine, coverage_reporter: coverage_reporter)
+    allow(RSpecTracer).to receive(:engine).and_return(engine)
   end
 
   describe '#example_started' do
-    it 'peeks coverage + opens the engine bucket, then calls super' do
+    it 'opens the engine bucket, then calls super' do
       reporter.example_started(example)
 
-      expect(coverage_reporter).to have_received(:record_coverage)
       expect(engine).to have_received(:example_started)
       expect(reporter.super_calls).to eq([[:example_started, example]])
     end
@@ -47,17 +45,16 @@ RSpec.describe RSpecTracer::RSpec::ReporterHook do
 
       reporter.example_started(example)
 
-      expect(coverage_reporter).not_to have_received(:record_coverage)
+      expect(engine).not_to have_received(:example_started)
       expect(reporter.super_calls).to eq([[:example_started, example]])
     end
   end
 
   describe '#example_finished' do
-    it 'closes the engine bucket + records the coverage diff, then calls super' do
+    it 'closes the engine bucket, then calls super' do
       reporter.example_finished(example)
 
       expect(engine).to have_received(:example_finished).with('ex1')
-      expect(coverage_reporter).to have_received(:compute_diff).with('ex1')
       expect(reporter.super_calls).to eq([[:example_finished, example]])
     end
 
@@ -67,7 +64,6 @@ RSpec.describe RSpecTracer::RSpec::ReporterHook do
       reporter.example_finished(ignored_example)
 
       expect(engine).not_to have_received(:example_finished)
-      expect(coverage_reporter).not_to have_received(:compute_diff)
       expect(reporter.super_calls).to eq([[:example_finished, ignored_example]])
     end
 

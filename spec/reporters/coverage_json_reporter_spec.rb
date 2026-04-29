@@ -65,10 +65,41 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
 
   after { FileUtils.remove_entry(tmp) if File.directory?(tmp) }
 
-  it_behaves_like 'a Reporters::Base'
+  # Skip the `a Reporters::Base` shared contract: that contract expects
+  # no_op? = true on empty snapshots, but coverage.json must emit
+  # unconditionally to match 1.x behavior (legacy CoverageReporter
+  # writes coverage.json with stub-only entries when no examples ran).
+  describe 'input envelope' do
+    it 'accepts (snapshot:, report_dir:, run_metadata:, logger:)' do
+      expect do
+        described_class.new(
+          snapshot: snapshot, report_dir: report_dir, run_metadata: {}, logger: nil
+        )
+      end.not_to raise_error
+    end
+
+    it 'accepts extra **opts without raising' do
+      expect do
+        described_class.new(
+          snapshot: snapshot, report_dir: report_dir, run_metadata: {}, logger: nil, custom: true
+        )
+      end.not_to raise_error
+    end
+  end
+
+  describe '#no_op?' do
+    it 'is always false (coverage.json must emit even on empty snapshots)' do
+      reporter = described_class.new(
+        snapshot: empty_snapshot, report_dir: report_dir, run_metadata: {}, logger: nil
+      )
+
+      expect(reporter.no_op?).to be(false)
+    end
+  end
 
   describe '#generate' do
-    it 'returns nil and writes nothing when the snapshot is empty (no_op)' do
+    it 'returns nil and skips emission when RSpecTracer.engine is nil' do
+      allow(RSpecTracer).to receive(:engine).and_return(nil)
       reporter = described_class.new(
         snapshot: empty_snapshot, report_dir: report_dir, run_metadata: {}, logger: nil
       )

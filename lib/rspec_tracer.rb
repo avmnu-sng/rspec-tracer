@@ -10,9 +10,6 @@ require 'json'
 require 'pathname'
 require 'set'
 
-require_relative 'rspec_tracer/coverage_merger'
-require_relative 'rspec_tracer/coverage_reporter'
-require_relative 'rspec_tracer/coverage_writer'
 require_relative 'rspec_tracer/defaults'
 require_relative 'rspec_tracer/engine'
 require_relative 'rspec_tracer/example'
@@ -22,6 +19,7 @@ require_relative 'rspec_tracer/example'
 # it at configure time (M6.1).
 require_relative 'rspec_tracer/reporters/base'
 require_relative 'rspec_tracer/reporters/payload_builder'
+require_relative 'rspec_tracer/reporters/coverage_json_reporter'
 require_relative 'rspec_tracer/reporters/json_reporter'
 require_relative 'rspec_tracer/reporters/terminal_reporter'
 require_relative 'rspec_tracer/reporters/html_reporter'
@@ -34,7 +32,6 @@ require_relative 'rspec_tracer/load_config'
 # zero load cost for aws/git subshell code.
 require_relative 'rspec_tracer/rspec/installation'
 require_relative 'rspec_tracer/rspec/parallel_tests'
-require_relative 'rspec_tracer/ruby_coverage'
 require_relative 'rspec_tracer/source_file'
 require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
@@ -46,13 +43,13 @@ require_relative 'rspec_tracer/version'
 #     -> setup_coverage                (::Coverage.start unless SimpleCov owns it)
 #     -> setup_rails                   (detect ::Rails::VERSION)
 #     -> Engine.new.setup              (observers + cache load + filter decisions)
-#     -> coverage_reporter             (coverage.json emission)
 #
 #   at_exit_behavior (installed via `at_exit` elsewhere in the boot
 #   flow) runs the finalize stack: Engine#finalize writes the 13-file
-#   snapshot via Storage::JsonBackend, coverage_reporter writes
-#   coverage.json, ParallelTests#finalize! merges per-worker caches
-#   on the last worker.
+#   snapshot via Storage::JsonBackend, Reporters::CoverageJsonReporter
+#   writes coverage.json (single owner, replacing the 1.x
+#   CoverageReporter + CoverageWriter pair retired in M8.0),
+#   ParallelTests#finalize! merges per-worker caches on the last worker.
 module RSpecTracer
   class << self
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
@@ -92,10 +89,6 @@ module RSpecTracer
       @engine if defined?(@engine)
     end
 
-    def coverage_reporter
-      @coverage_reporter if defined?(@coverage_reporter)
-    end
-
     def simplecov?
       defined?(@simplecov) && @simplecov == true
     end
@@ -123,7 +116,6 @@ module RSpecTracer
 
       @engine = RSpecTracer::Engine.new(configuration: RSpecTracer)
       @engine.setup
-      @coverage_reporter = RSpecTracer::CoverageReporter.new
     end
 
     def setup_coverage
@@ -153,24 +145,21 @@ module RSpecTracer
         emit_reporters(snapshot) if snapshot
       end
 
-      simplecov? ? run_simplecov_exit_task : run_coverage_exit_task
+      emit_coverage_json
 
       RSpecTracer::RSpec::ParallelTests.finalize! if parallel_tests?
     end
 
-    # Engine-owned finalize path. Engine writes the 15-file JSON cache
-    # via Storage::JsonBackend; CoverageReporter still owns the
-    # coverage.json surface (M3.6 Decision 2 - reporter rework lives in
-    # Phase 6). The two paths share per-example coverage deltas via
-    # `merge_skipped_coverage`: skipped examples' prior-run coverage
-    # rolls forward into coverage.json so missed_coverage semantics
-    # match 1.x.
+    # Engine-owned finalize path. Writes the 15-file JSON cache via
+    # Storage::JsonBackend. Per-example coverage deltas live on the
+    # Engine; M8.0 retired the CoverageReporter mid-flow piece (the
+    # legacy `coverage_reporter.generate_final_examples_coverage +
+    # merge_coverage(engine.merge_skipped_coverage(...))` is now folded
+    # into Reporters::CoverageJsonReporter#generate, which fires from
+    # `emit_coverage_json` after this method returns).
     def run_finalize
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-      coverage_reporter.generate_final_examples_coverage
-      skipped_ids = engine.registry.ids_with_status(:skipped)
-      coverage_reporter.merge_coverage(engine.merge_skipped_coverage(skipped_ids))
       snapshot = engine.finalize
 
       ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -230,30 +219,26 @@ module RSpecTracer
       (::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @run_monotonic_start).round(4)
     end
 
-    def run_simplecov_exit_task
-      coverage_clazz = ::Coverage.singleton_class
-      clazz = RSpecTracer::RubyCoverage
-      coverage_clazz.prepend(clazz) unless coverage_clazz.ancestors.include?(clazz)
+    # M8.0: dedicated coverage.json firing path, parallel to the
+    # report-reporters Registry pipeline. Fires unconditionally - even
+    # when no examples ran (matches 1.x where coverage.json gets
+    # written with whatever boot-time peek_result returned + filter +
+    # stub). The emitter handles SimpleCov interop internally
+    # (installs `::Coverage.singleton_class.prepend` shim instead of
+    # writing coverage.json when SimpleCov is loaded).
+    def emit_coverage_json
+      return unless engine
 
-      RSpecTracer.logger.debug 'SimpleCov will now generate coverage report (<3 RSpec tracer)'
-
-      coverage_reporter.record_coverage if RSpecTracer.no_examples
-    end
-
-    def run_coverage_exit_task
-      starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      coverage_reporter.record_coverage if RSpecTracer.no_examples
-      coverage_reporter.generate_final_coverage
-
-      file_name = File.join(RSpecTracer.coverage_path, 'coverage.json')
-      coverage_writer = RSpecTracer::CoverageWriter.new(file_name, coverage_reporter)
-
-      coverage_writer.write_report
-
-      ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-      coverage_writer.print_stats(ending - starting)
+      RSpecTracer::Reporters::CoverageJsonReporter.new(
+        snapshot: nil,
+        report_dir: RSpecTracer.report_path,
+        run_metadata: build_run_metadata,
+        logger: RSpecTracer.logger
+      ).generate
+    rescue StandardError => e
+      RSpecTracer.logger.warn(
+        "rspec-tracer: coverage.json emit failed (#{e.class}: #{e.message})"
+      )
     end
   end
 end

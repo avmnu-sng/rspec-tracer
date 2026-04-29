@@ -76,9 +76,9 @@ module RSpecTracer
       # Called from at_exit after the per-worker snapshot has been
       # persisted. No-op unless this worker is the designated last
       # process. Orchestrates the snapshot merge, the coverage merge
-      # (via the legacy CoverageMerger - coverage.json isn't part of
-      # the storage backend's snapshot shape), and the per-worker dir
-      # purge.
+      # (Reporters::CoverageJsonReporter.merge_parallel - coverage.json
+      # isn't part of the storage backend's snapshot shape), and the
+      # per-worker dir purge.
       def self.finalize!
         return false unless active?
         return false unless last_process?
@@ -193,6 +193,8 @@ module RSpecTracer
       end
 
       # Merge per-worker coverage.json files into a top-level coverage.json.
+      # M8.0 routes through Reporters::CoverageJsonReporter.merge_parallel
+      # (replaces the legacy CoverageMerger + CoverageWriter pair).
       def self.merge_coverage!
         base_dir = ::File.dirname(RSpecTracer.coverage_path)
         peer_paths = peer_paths_for(base_dir)
@@ -200,12 +202,11 @@ module RSpecTracer
 
         starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        merger = RSpecTracer::CoverageMerger.new
-        merger.merge(peer_paths)
-
-        file_name = ::File.join(base_dir, 'coverage.json')
-        coverage_writer = RSpecTracer::CoverageWriter.new(file_name, merger)
-        coverage_writer.write_report
+        RSpecTracer::Reporters::CoverageJsonReporter.merge_parallel(
+          peer_paths: peer_paths,
+          output_path: ::File.join(base_dir, 'coverage.json'),
+          logger: RSpecTracer.logger
+        )
 
         ending = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         elapsed = RSpecTracer::TimeFormatter.format_time(ending - starting)

@@ -145,19 +145,9 @@ RSpec.describe 'Read-only filesystem — graceful degradation' do
 
     it 'returns nil + logs when engine.finalize raises Errno::EACCES (read-only fs simulation)' do
       fake_engine = instance_double(RSpecTracer::Engine)
-      fake_registry = instance_double(RSpecTracer::Tracker::ExampleRegistry)
-      fake_coverage_reporter = instance_double(RSpecTracer::CoverageReporter)
       fake_logger = instance_double(Logger)
 
-      allow(RSpecTracer).to receive_messages(
-        engine: fake_engine,
-        coverage_reporter: fake_coverage_reporter,
-        logger: fake_logger
-      )
-      allow(fake_registry).to receive(:ids_with_status).and_return([])
-      allow(fake_engine).to receive_messages(registry: fake_registry, merge_skipped_coverage: {})
-      allow(fake_coverage_reporter).to receive(:generate_final_examples_coverage)
-      allow(fake_coverage_reporter).to receive(:merge_coverage)
+      allow(RSpecTracer).to receive_messages(engine: fake_engine, logger: fake_logger)
       allow(fake_engine).to receive(:finalize).and_raise(Errno::EACCES, 'permission denied')
       allow(fake_logger).to receive(:warn)
       allow(fake_logger).to receive(:debug)
@@ -172,19 +162,9 @@ RSpec.describe 'Read-only filesystem — graceful degradation' do
       skip 'sqlite3 gem not installable on this Ruby' unless READONLY_FS_SQLITE_AVAILABLE
 
       fake_engine = instance_double(RSpecTracer::Engine)
-      fake_registry = instance_double(RSpecTracer::Tracker::ExampleRegistry)
-      fake_coverage_reporter = instance_double(RSpecTracer::CoverageReporter)
       fake_logger = instance_double(Logger)
 
-      allow(RSpecTracer).to receive_messages(
-        engine: fake_engine,
-        coverage_reporter: fake_coverage_reporter,
-        logger: fake_logger
-      )
-      allow(fake_registry).to receive(:ids_with_status).and_return([])
-      allow(fake_engine).to receive_messages(registry: fake_registry, merge_skipped_coverage: {})
-      allow(fake_coverage_reporter).to receive(:generate_final_examples_coverage)
-      allow(fake_coverage_reporter).to receive(:merge_coverage)
+      allow(RSpecTracer).to receive_messages(engine: fake_engine, logger: fake_logger)
       allow(fake_engine).to receive(:finalize).and_raise(SQLite3::Exception, 'database is locked')
       allow(fake_logger).to receive(:warn)
       allow(fake_logger).to receive(:debug)

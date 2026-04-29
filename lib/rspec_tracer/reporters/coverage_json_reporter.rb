@@ -44,13 +44,22 @@ module RSpecTracer
       FILENAME = 'coverage.json'
 
       def generate
-        return nil if no_op?
+        return nil unless RSpecTracer.engine
         return install_simplecov_interop if RSpecTracer.simplecov?
 
         coverage = build_coverage
         write_coverage_json(coverage)
         log_stats(coverage)
         target_path
+      end
+
+      # Coverage emission fires unconditionally - even when no examples
+      # ran, 1.x writes coverage.json with whatever boot-time peek_result
+      # returned (plus filter + stub). Override Base#no_op? so the
+      # parent's "snapshot has zero examples" early-return doesn't gate
+      # this emitter.
+      def no_op?
+        false
       end
 
       # Class-level rollup for parallel_tests. Unions per-line
@@ -188,8 +197,19 @@ module RSpecTracer
         RSpecTracer.engine
       end
 
+      # SimpleCov-branch coverage payload skips coverage_filters +
+      # line_stub. 1.x parity: when SimpleCov is loaded, the legacy
+      # CoverageReporter.coverage exposed via the RubyCoverage shim
+      # is the raw peek + skipped-merge accumulator, NOT the
+      # generate_final_coverage post-filter view (the legacy
+      # `simplecov? ? run_simplecov_exit_task : run_coverage_exit_task`
+      # branch only ran generate_final_coverage on the non-SimpleCov
+      # side). Preserving this shape keeps SimpleCov's at_exit
+      # result-merge seeing whatever it was tracking minus rspec-
+      # tracer's narrow filters.
       def install_simplecov_interop
-        coverage = build_coverage
+        coverage = engine.coverage_adapter.peek_unfiltered
+        accumulate_skipped(coverage)
         SimpleCovInterop.install(coverage)
         nil
       end
