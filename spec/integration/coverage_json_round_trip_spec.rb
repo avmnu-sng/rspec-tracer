@@ -20,6 +20,7 @@ require 'open3'
 require_relative '../support/fixture_bundle_helper'
 
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/MultipleExpectations, RSpec/ExampleLength
+# rubocop:disable RSpec/InstanceVariable
 RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
   let(:golden_path) { File.join(FixtureBundleHelper::FIXTURE_ROOT, 'coverage_json.golden') }
   let(:coverage_json_path) { File.join(FixtureBundleHelper::COVERAGE_DIR, 'coverage.json') }
@@ -81,3 +82,4 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
   end
 end
 # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/MultipleExpectations, RSpec/ExampleLength
+# rubocop:enable RSpec/InstanceVariable
