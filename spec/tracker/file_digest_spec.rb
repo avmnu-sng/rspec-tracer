@@ -19,20 +19,32 @@ RSpec.describe RSpecTracer::Tracker::FileDigest do
       expect(digest).to eq(Digest::SHA256.hexdigest("puts :one\n"))
     end
 
-    it 'reuses the cached digest on a second call when stat is unchanged' do
-      first = described_class.compute(path)
-      allow(Digest::SHA256).to receive(:file).and_call_original
-      second = described_class.compute(path)
-      expect(second).to eq(first)
-      expect(Digest::SHA256).not_to have_received(:file)
+    context 'when the second call sees unchanged stat' do
+      it 'returns the same digest' do
+        first = described_class.compute(path)
+        expect(described_class.compute(path)).to eq(first)
+      end
+
+      it 'does not re-invoke Digest::SHA256.file' do
+        described_class.compute(path)
+        allow(Digest::SHA256).to receive(:file).and_call_original
+        described_class.compute(path)
+        expect(Digest::SHA256).not_to have_received(:file)
+      end
     end
 
-    it 'recomputes the digest when the file content + size change' do
-      first = described_class.compute(path)
-      File.write(path, "puts :two_longer_content\n")
-      second = described_class.compute(path)
-      expect(second).not_to eq(first)
-      expect(second).to eq(Digest::SHA256.hexdigest("puts :two_longer_content\n"))
+    context 'when the file content + size change between calls' do
+      it 'returns a different digest' do
+        first = described_class.compute(path)
+        File.write(path, "puts :two_longer_content\n")
+        expect(described_class.compute(path)).not_to eq(first)
+      end
+
+      it 'returns the digest of the new content' do
+        described_class.compute(path)
+        File.write(path, "puts :two_longer_content\n")
+        expect(described_class.compute(path)).to eq(Digest::SHA256.hexdigest("puts :two_longer_content\n"))
+      end
     end
 
     it 'returns nil when the file is missing (Errno::ENOENT)' do

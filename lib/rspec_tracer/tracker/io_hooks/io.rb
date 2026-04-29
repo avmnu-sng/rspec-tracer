@@ -9,7 +9,7 @@ module RSpecTracer
       # code paths and third-party libraries that reach through IO.
       module IOReads
         def read(path, ...)
-          IOHooks.record(path)
+          IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
       end

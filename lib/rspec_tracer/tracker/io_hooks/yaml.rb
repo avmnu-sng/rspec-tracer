@@ -9,17 +9,17 @@ module RSpecTracer
       # .rspec-tracer filters target.
       module YAMLReads
         def load_file(path, ...)
-          IOHooks.record(path)
+          IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
 
         def safe_load_file(path, ...)
-          IOHooks.record(path)
+          IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
 
         def unsafe_load_file(path, ...)
-          IOHooks.record(path)
+          IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
       end

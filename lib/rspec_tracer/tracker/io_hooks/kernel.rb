@@ -11,7 +11,7 @@ module RSpecTracer
       # instrumentation; M3.5's registry dedupes the overlap.
       module KernelReads
         def load(path, ...)
-          IOHooks.record_ruby_load(path)
+          IOHooks.record_ruby_load(path) if Thread.current[BUCKET_KEY]
           super
         end
       end
