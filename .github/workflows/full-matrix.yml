@@ -607,14 +607,15 @@ jobs:
         run: bundle exec rails db:test:prepare
         working-directory: spec/fixtures/rails_app
 
-      - name: Benchmark — full (no enforcement; CI baseline not yet committed)
-        # Ratchet file was generated on Apple M2 Max; GHA ubuntu-latest
-        # (2-core VMs) runs 3-5× slower, so enforcement would always
-        # fail. See benchmark/README.md for the CI-baseline followup.
+      - name: Benchmark — full (per-PR enforcement against GHA baseline)
+        # Ratchet file is captured on GHA ubuntu-latest via the
+        # regen-ratchet.yml workflow_dispatch (see that workflow's
+        # header for the regen procedure). Per-PR runs are now
+        # gating: a regression past the harness's fail-ratio fails
+        # the matrix.
         run: |
           ruby benchmark/harness.rb --full \
             --ratchet benchmark/ratchet.json \
-            --no-enforce \
             --summary-md benchmark/ci-summary.md
 
       - name: Upload benchmark summary artifact

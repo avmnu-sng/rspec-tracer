@@ -1,71 +1,71 @@
 {
   "environment": {
     "ruby": "3.3.10",
-    "ruby_platform": "arm64-darwin24",
-    "os": "darwin24",
-    "cpu": "Apple M2 Max",
-    "cores": 12,
-    "recorded_at": "2026-04-29T19:30:11Z"
+    "ruby_platform": "x86_64-linux",
+    "os": "linux",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "cores": 4,
+    "recorded_at": "2026-04-29T20:33:02Z"
   },
   "scenarios": {
     "cold_ruby": {
-      "p50": 0.2805,
-      "p95": 0.3078,
+      "p50": 0.4033,
+      "p95": 0.4366,
       "iterations": 10
     },
     "warm_noop": {
-      "p50": 0.2903,
-      "p95": 0.3218,
+      "p50": 0.3346,
+      "p95": 0.3753,
       "iterations": 10
     },
     "warm_env_mismatch": {
-      "p50": 0.272,
-      "p95": 0.2835,
+      "p50": 0.3318,
+      "p95": 0.4807,
       "iterations": 10
     },
     "parallel_tests_2_workers": {
-      "p50": 1.0912,
-      "p95": 1.6056,
+      "p50": 0.8665,
+      "p95": 1.8682,
       "iterations": 10
     },
     "cold_rails": {
-      "p50": 2.143,
-      "p95": 2.9146,
+      "p50": 7.0289,
+      "p95": 7.3304,
       "iterations": 10
     },
     "cold_rails_v2": {
-      "p50": 4.7772,
-      "p95": 5.0665,
+      "p50": 16.4719,
+      "p95": 17.2098,
       "iterations": 10
     },
     "coverage_adapter": {
-      "p50": 0.7972,
-      "p95": 0.8292,
+      "p50": 0.9474,
+      "p95": 0.9886,
       "iterations": 10
     },
     "cache_load": {
-      "p50": 0.4552,
-      "p95": 0.4672,
+      "p50": 0.6352,
+      "p95": 0.6557,
       "iterations": 10
     },
     "cache_load_msgpack": {
-      "p50": 0.4756,
-      "p95": 0.4917,
+      "p50": 0.6623,
+      "p95": 0.6794,
       "iterations": 10
     },
     "cache_load_sqlite": {
-      "p50": 0.5962,
-      "p95": 0.6291,
+      "p50": 1.1576,
+      "p95": 1.808,
       "iterations": 10
     },
     "file_read_hook": {
-      "p50": 7.2929,
-      "p95": 7.9457,
+      "p50": 3.9904,
+      "p95": 4.0616,
       "iterations": 10
     },
     "loaded_files_tracker": {
-      "p50": 1.2002,
-      "p95": 1.3427,
+      "p50": 1.1102,
+      "p95": 1.1553,
       "iterations": 10
     }
   }
