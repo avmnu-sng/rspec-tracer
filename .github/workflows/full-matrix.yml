@@ -244,18 +244,29 @@ jobs:
     name: rails (ruby-${{ matrix.ruby }}, rails-${{ matrix.rails }})
     needs: matrix-config
     runs-on: ubuntu-latest
-    # First M8.6-B push experimented with a 20-min ceiling here, but
-    # the cold-cache run on PR #130 was cancelled at 20:30 elapsed
-    # (scenario 7 of 12 had just finished; cache post-hook didn't run,
-    # so neither the new ~/.m2 nor fixture vendor/bundle cache saved).
-    # Per-scenario JRuby+Rails subprocess cold boot averages ~2:30 on
-    # ubuntu-latest, so 12 scenarios alone need ~30 min — Maven +
-    # vendor/bundle caching saves ~3 min on warm runs but doesn't move
-    # the wall clock under 20. Reverted to 30 to let cold runs finish
-    # cleanly. Brief's <12 min target turned out unreachable under
-    # M5.1's cold-subprocess isolation contract with the current
-    # scenario count; documented as a finding, not a deferral.
-    timeout-minutes: 30
+    # M8.6-B PR #130 calibration:
+    #
+    #   - v1 push tried 20-min ceiling: cancelled at 20:30 (scenario
+    #     7 of 12 finished). Cache post-hook didn't run; nothing
+    #     saved.
+    #   - v2 push reverted to 30-min: cancelled at 31:38 (scenario
+    #     12 of 12 was 2:18 in). Still no cache save.
+    #
+    # Per-scenario JRuby+Rails subprocess cold boot averages ~2:30
+    # on ubuntu-latest under load. The full rspec block (12
+    # scenarios * ~2:30 = ~30 min) plus the separate narrow-schema
+    # step (~5-6 min for 2 scenarios) puts the cold-cache cell at
+    # ~38-40 min. Brief's 17-20 min baseline was either a different
+    # runner pool or pre-merge measurement; today's reality is
+    # ~2x that. Bumping to 45 lets the cold run actually complete
+    # and save the new ~/.m2 + fixture vendor/bundle caches; warm
+    # reruns then save ~3 min via the cached Maven + gem set.
+    #
+    # The remaining wall-clock cut needs a different lever: shard
+    # the 12 scenarios across N parallel matrix jobs (M8.6-C). With
+    # this timeout the cell is mergeable; M8.6-C delivers the <12
+    # min target.
+    timeout-minutes: 45
     env:
       BRANCH_COVERAGE: 'true'
     strategy:
