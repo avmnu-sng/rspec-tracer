@@ -90,6 +90,14 @@ group :development do
   # Bundler would still refuse to resolve the dep graph when the lock
   # is not committed.
   gem 'mutant-rspec', '~> 0.16' if RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3')
+
+  # Hot-path profiling — MRI only (stackprof relies on rb_postponed_job_*
+  # APIs that JRuby + TruffleRuby don't implement). Used by `task
+  # profile:*` to identify allocation / wall-clock hot spots in the
+  # tracker pipeline. Microbenchmark scenarios under benchmark/scenarios/
+  # are wrapped via benchmark/profile.rb's StackProf.run driver; the
+  # gem is only required there, never by lib/ code.
+  gem 'stackprof', '~> 0.2' if RUBY_ENGINE == 'ruby'
 end
 
 gemspec
