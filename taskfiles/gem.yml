@@ -1,0 +1,28 @@
+version: '3'
+
+# Gem release tasks: build (gem build + verify), install:local (build +
+# gem install for manual smoke testing), push (gem push to RubyGems).
+# build depends on reporters:html:build (gem ships HTML reporter dist),
+# resolved via flatten: true at root include time.
+
+tasks:
+  gem:build:
+    desc: Build the gem locally
+    deps: [reporters:html:build]
+    cmds:
+      - mkdir -p pkg
+      - gem build rspec-tracer.gemspec -o pkg/rspec-tracer-{{.VERSION}}.gem
+
+  gem:install:local:
+    desc: Build + install locally for manual smoke testing
+    cmds:
+      - task: gem:build
+      - gem install pkg/rspec-tracer-{{.VERSION}}.gem --local --no-doc
+
+  gem:push:
+    desc: Push the built gem to RubyGems
+    preconditions:
+      - sh: test -n "${RUBYGEMS_API_KEY:-}"
+        msg: "RUBYGEMS_API_KEY must be set"
+    cmds:
+      - gem push pkg/rspec-tracer-{{.VERSION}}.gem

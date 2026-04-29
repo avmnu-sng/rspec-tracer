@@ -1,0 +1,142 @@
+version: '3'
+
+# Test::Features tasks: cucumber-style fixture-driving integration
+# tests against ruby_app + rails_app fixtures. Per-interpreter
+# variants: ruby (MRI) / ruby-parallel (parallel_tests) / rails
+# (MRI Rails) / rails:narrow-schema / rails:jruby /
+# rails:narrow-schema:jruby / jruby (non-Rails) / truffleruby.
+# Cross-file dep-free.
+
+tasks:
+  test:features:ruby:
+    desc: >-
+      M5.1 ruby_app integration test (swapped from cucumber; the legacy
+      cucumber scenarios asserted on 1.x cache layout - 10 files, spec_helper
+      in all_files - that v2 no longer produces). Same M4.3 c2 precedent as
+      test:features:rails.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
+
+  test:features:ruby-parallel:
+    desc: >-
+      M5.1 parallel_tests integration test (swapped from cucumber; the legacy
+      cucumber scenarios asserted on 1.x cache layout that v2 no longer writes).
+    cmds:
+      - task: test:integration:parallel
+
+  test:features:rails:
+    desc: >-
+      M4.3 Rails integration test against the reference Rails app. Excluded
+      from the default rspec sweep (via .rspec --exclude-pattern) because a
+      full cycle is 12 scenarios x cold+warm subprocess runs, ~2-3 minutes.
+      The CI `rails` job invokes this per Rails matrix cell.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/rails_app_spec.rb
+
+  test:features:rails:narrow-schema:
+    desc: >-
+      M8.2-B narrow-AR-schema integration test. Drives the rails fixture
+      with use_transactional_fixtures = false
+      (RSPEC_TRACER_RAILS_TRANSACTIONAL=false) and asserts the per-example
+      schema-subscriber attribution path
+      (lib/rspec_tracer/rails/notifications.rb #record_ar_schema) only
+      attributes db/schema.rb to the AR-touching example - so a schema
+      mutation re-runs only that example, not the entire suite.
+      DatabaseCleaner :truncation in the fixture rails_helper handles the
+      per-example commit cleanup automatically when the env toggle is on.
+      Excluded from the default rspec sweep (subprocess + Rails fixture).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
+
+  test:features:rails:jruby:
+    desc: >-
+      M8.1-B Rails integration test on JRuby 9.4. Same shape as
+      test:features:rails (drives the rails_app fixture via subprocess),
+      with JRUBY_OPTS for the v2 engine's observer install. The fixture
+      Gemfile branches on RUBY_ENGINE (activerecord-jdbcsqlite3-adapter
+      replaces the sqlite3 gem on JRuby); database.yml's adapter: sqlite3
+      string resolves to the JDBC chain transparently.
+      RAILS_VERSION + RSPEC_RAILS_VERSION default to the Rails 7.1 line
+      (the only JRuby x Rails CI cell) since the JDBC adapter pin
+      (~> 71.0) version-tracks that Rails major; CI overrides via the
+      step env block.
+      Local-dev convenience task: runs all 12 scenarios in one rspec
+      process. CI uses the sharded variant `test:features:rails:jruby:shard`
+      (M8.6-B Lever 5) to fan the 12 scenarios across 6 parallel matrix
+      jobs.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        bundle exec rspec --no-color spec/integration/rails_app_spec.rb
+
+  test:features:rails:jruby:shard:
+    desc: >-
+      M8.6-B Lever 5 JRuby x Rails sharded variant. Reads SHARD env
+      (e.g. SHARD=rails_app-1-2) and runs only the specified 2 scenarios
+      from rails_app_spec.rb via rspec --example filtering. Six shards
+      (rails_app-1-2, rails_app-3-4, rails_app-5-6, rails_app-7-8,
+      rails_app-9-10, rails_app-11-12) cover all 12 scenarios in
+      rails_app_spec.rb; the narrow-schema spec is dispatched via the
+      separate `test:features:rails:narrow-schema:jruby` task in its
+      own seventh shard. Same JRUBY_OPTS + RAILS_VERSION + JDBC adapter
+      resolution as `test:features:rails:jruby`.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        : "${SHARD:?SHARD env required (e.g. rails_app-1-2)}"
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        range="${SHARD#rails_app-}"
+        start="${range%-*}"
+        end="${range#*-}"
+        # Build positional args (POSIX sh, dash-compatible). Each
+        # `--example "scenario N:"` adds a substring filter; rspec
+        # ORs multiple --example flags. The trailing colon
+        # disambiguates "scenario 1" from "scenario 10/11/12". Using
+        # `set --` (not eval) preserves the embedded space in
+        # "scenario N:" as a single argument when forwarded via "$@".
+        set --
+        n="$start"
+        while [ "$n" -le "$end" ]; do
+          set -- "$@" --example "scenario $n:"
+          n=$((n+1))
+        done
+        bundle exec rspec --no-color spec/integration/rails_app_spec.rb "$@"
+
+  test:features:rails:narrow-schema:jruby:
+    desc: >-
+      M8.1-B narrow-AR-schema integration test on JRuby 9.4. Same shape
+      as test:features:rails:narrow-schema; JRUBY_OPTS + the same Rails
+      7.1 default pair as test:features:rails:jruby.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - |
+        export RAILS_VERSION="${RAILS_VERSION:-~> 7.1.0}"
+        export RSPEC_RAILS_VERSION="${RSPEC_RAILS_VERSION:-~> 6.1.0}"
+        bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
+
+  test:features:jruby:
+    desc: >-
+      M5.1 ruby_app integration test on JRuby (swapped from cucumber for the
+      same reason as test:features:ruby). JRUBY_OPTS keeps the debug + object-
+      space flags required for the v2 engine's observer install on JRuby 9.4.
+    env:
+      JRUBY_OPTS: "--debug -X+O"
+    cmds:
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
+
+  test:features:truffleruby:
+    desc: >-
+      ruby_app integration test on TruffleRuby 24.x. Best-effort
+      platform; CI cell is continue-on-error. Same fixture set as
+      test:features:jruby; no JRUBY_OPTS (JRuby-specific tracing flags
+      that TruffleRuby ignores anyway, omitted to avoid implying support).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
+
+  # ── Benchmarks ─────────────────────────────────────────

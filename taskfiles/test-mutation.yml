@@ -1,0 +1,1293 @@
+version: '3'
+
+# Test::Mutation tasks: per-subject mutation gates + per-shard splits.
+# Owns the M8.3 family + M8.6-A 18-shard layout for the per-PR
+# lint-and-specs.yml mutation surface. Cross-file dep-free; the
+# inline rationale comments reference 'M8.6-A' (work-as-shipped
+# label) and post-M8.6-B '5-min cap' value (Lever 4).
+
+tasks:
+  test:mutation:smoke:
+    desc: >-
+      Mutation smoke — 13 subjects (TimeFormatter.format_time, Tracker::Input,
+      Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators, Storage::Schema,
+      Storage::Snapshot, Storage::Backend, Tracker::DependencyGraph,
+      Tracker::ExampleRegistry, Tracker::Filter, Tracker::LoadedFilesTracker,
+      Rails::Preset, Tracker::EnvSnapshot) must each hit >= 90% (< 2 min budget)
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      # mutant requires MRI >= 3.2; skip quietly on Ruby 3.1 / JRuby / any env
+      # where the Gemfile's install_if guard kept the gem out.
+      #
+      # Two independent subjects, parsed separately. mutant exits non-zero
+      # whenever any mutation survives; we care about the coverage percentage
+      # per subject and fail the task if either is below the 90% gate.
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_subject() {
+          local label="$1" require_path="$2" matcher="$3"
+          echo "=== mutation:smoke [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= 90) ? 0 : 1 }"; then
+            echo "mutation:smoke [$label] PASS (coverage $cov% >= 90%)"
+            return 0
+          fi
+          echo "mutation:smoke [$label] FAIL (coverage $cov% < 90%)"
+          return 1
+        }
+
+        fail=0
+        run_mutant_subject "TimeFormatter.format_time" \
+          "rspec_tracer/time_formatter" \
+          "RSpecTracer::TimeFormatter.format_time" || fail=1
+        run_mutant_subject "Tracker::Input" \
+          "rspec_tracer/tracker/input" \
+          "RSpecTracer::Tracker::Input*" || fail=1
+        run_mutant_subject "Tracker::DeclaredGlobs" \
+          "rspec_tracer/tracker/declared_globs" \
+          "RSpecTracer::Tracker::DeclaredGlobs*" || fail=1
+        run_mutant_subject "Tracker::WholeSuiteInvalidators" \
+          "rspec_tracer/tracker/whole_suite_invalidators" \
+          "RSpecTracer::Tracker::WholeSuiteInvalidators*" || fail=1
+        run_mutant_subject "Storage::Schema" \
+          "rspec_tracer/storage/schema" \
+          "RSpecTracer::Storage::Schema*" || fail=1
+        run_mutant_subject "Storage::Snapshot" \
+          "rspec_tracer/storage/snapshot" \
+          "RSpecTracer::Storage::Snapshot*" || fail=1
+        run_mutant_subject "Storage::Backend" \
+          "rspec_tracer/storage/backend" \
+          "RSpecTracer::Storage::Backend*" || fail=1
+        run_mutant_subject "Tracker::DependencyGraph" \
+          "rspec_tracer/tracker/dependency_graph" \
+          "RSpecTracer::Tracker::DependencyGraph*" || fail=1
+        run_mutant_subject "Tracker::ExampleRegistry" \
+          "rspec_tracer/tracker/example_registry" \
+          "RSpecTracer::Tracker::ExampleRegistry*" || fail=1
+        run_mutant_subject "Tracker::Filter" \
+          "rspec_tracer/tracker/filter" \
+          "RSpecTracer::Tracker::Filter*" || fail=1
+        run_mutant_subject "Tracker::LoadedFilesTracker" \
+          "rspec_tracer/tracker/loaded_files_tracker" \
+          "RSpecTracer::Tracker::LoadedFilesTracker*" || fail=1
+        run_mutant_subject "Rails::Preset" \
+          "rspec_tracer/rails/preset" \
+          "RSpecTracer::Rails::Preset*" || fail=1
+        run_mutant_subject "Tracker::EnvSnapshot" \
+          "rspec_tracer/tracker/env_snapshot" \
+          "RSpecTracer::Tracker::EnvSnapshot*" || fail=1
+        # Rails::Notifications deferred to M8.3 - the subscribe-side
+        # surface (ActiveSupport::Notifications stubs + thread-local
+        # bucket lifecycle) yields a large population of alive
+        # mutations that are either equivalents or subscribe-call
+        # shape. Baseline is 78.77% (594/754 kills); narrowing to
+        # pure-logic methods (record_template / record_ar_schema /
+        # build_schema_inputs) is an M8.3 task, not M4.2 scope.
+        # Rails::I18nTracking follows the same rationale.
+        exit "$fail"
+
+  test:mutation:tracker:
+    desc: >-
+      M8.3-A mutation pass on tracker/ net-new subjects (CoverageAdapter,
+      NewFileDetector, IOHooks). Per-subject gates reflect a maintainer-
+      approved carve-out for structural mutation-tooling ceilings:
+      IOHooks (Module#prepend idempotency + no unprepend API; rspec-mocks
+      spy trips on File<IO inheritance) and NewFileDetector (mutant
+      first-token mapping doesn't credit constructor walker setup to
+      #initialize when tests live under `describe '#new_files'`).
+      The 8 existing tracker subjects (Input, DeclaredGlobs,
+      WholeSuiteInvalidators, DependencyGraph, ExampleRegistry, Filter,
+      LoadedFilesTracker, EnvSnapshot) stay in test:mutation:smoke.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:tracker [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:tracker [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:tracker [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # CI ubuntu-latest margins: gate values sit ~3 pp under
+        # the M2 Max local baseline so test-order / gem-resolution
+        # variance between environments does not flip a passing
+        # subject red.
+        run_mutant_gate "Tracker::CoverageAdapter" \
+          "rspec_tracer/tracker/coverage_adapter" \
+          "RSpecTracer::Tracker::CoverageAdapter*" 87 || fail=1
+        run_mutant_gate "Tracker::NewFileDetector" \
+          "rspec_tracer/tracker/new_file_detector" \
+          "RSpecTracer::Tracker::NewFileDetector*" 82 || fail=1
+        run_mutant_gate "Tracker::IOHooks" \
+          "rspec_tracer/tracker/io_hooks" \
+          "RSpecTracer::Tracker::IOHooks*" 77 || fail=1
+        exit "$fail"
+
+  test:mutation:storage:
+    desc: >-
+      M8.3-A mutation pass on storage/ net-new subjects (LazySnapshot,
+      Serializer::Json, Serializer::Msgpack, JsonBackend, SqliteBackend).
+      SqliteBackend carve-out (>= 73%) for prose-label describes that
+      don't map cleanly into mutant's first-token Klass#method scheme.
+      Storage::Schema, Storage::Snapshot, Storage::Backend stay in
+      test:mutation:smoke.
+
+      Local single-command surface — runs all storage shards in
+      sequence. M8.6 split the storage mutation surface into 5 parallel
+      CI jobs (refined post-first-CI to balance honest signal with
+      wall-clock budget):
+        - misc: 3 small subjects (LazySnapshot + Serializer::Json/Msgpack)
+        - json-backend-shard-1 / json-backend-shard-2: JsonBackend's
+          50 subjects split alphabetically; default `--mutation-timeout 5`
+          + `--jobs 8`. (An earlier attempt with `--mutation-timeout 1`
+          was reverted because shorter timeout silently shifts mutations
+          whose tests would have passed within 1-5s into the
+          Killed-via-timeout bucket — that's coverage inflation, not
+          honest signal.)
+        - sqlite-read: 15 read-side SqliteBackend subjects.
+        - sqlite-write: 30 write-side + connection/schema/utility subjects.
+    cmds:
+      - task: test:mutation:storage:misc
+      - task: test:mutation:storage:json-backend
+      - task: test:mutation:storage:sqlite-read
+      - task: test:mutation:storage:sqlite-write
+
+  test:mutation:storage:misc:
+    desc: >-
+      M8.6 storage shard — small non-JsonBackend / non-SqliteBackend
+      subjects (LazySnapshot, Serializer::Json, Serializer::Msgpack).
+      Combined CI wall clock under 2 min. Same gates as the M8.3-A
+      Taskfile entry.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" gate="$3"
+          shift 3
+          echo "=== mutation:storage [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$@" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:storage [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:storage [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # Gates preserved verbatim from the M8.3-A storage Taskfile
+        # entry. Msgpack carve-out rationale documented in the M8.3-A
+        # retro + feedback_mutant_local_vs_ci_variance.
+        run_mutant_gate "Storage::LazySnapshot" \
+          "rspec_tracer/storage/lazy_snapshot" 85 \
+          "RSpecTracer::Storage::LazySnapshot*" || fail=1
+        run_mutant_gate "Storage::Serializer::Json" \
+          "rspec_tracer/storage/serializer/json" 85 \
+          "RSpecTracer::Storage::Serializer::Json*" || fail=1
+        run_mutant_gate "Storage::Serializer::Msgpack" \
+          "rspec_tracer/storage/serializer/msgpack" 65 \
+          "RSpecTracer::Storage::Serializer::Msgpack*" || fail=1
+        exit "$fail"
+
+  test:mutation:storage:json-backend:
+    desc: >-
+      M8.6 storage aggregate — Storage::JsonBackend split into 9
+      sibling shards (`json-backend-shard-{1..9}`) that run as
+      separate parallel CI jobs. JsonBackend has 50 mutant subjects
+      (43 instance methods + FieldReader nested class + Merger nested
+      class with 6 class methods). 5-way split chosen because the
+      write-heavy subjects (`save_graph`, `transactional_save`,
+      `prune_run_dirs!`, `write_*_atomic`) drive disproportionate wall
+      clock — earlier 3-way alphabetical split landed shard-3 at
+      6:52 M2 Max (~10 min CI) vs shard-1/2 at 1-3 min. The original
+      shard-3 has been further split into 3 sub-shards (now shard-3 /
+      shard-4 / shard-5) by I/O density to enforce the per-shard
+      step cap (currently 5-minute via `timeout-minutes: 5` after
+      M8.6-B's headroom bump from 4-minute).
+
+      Earlier attempt with `--mutation-timeout 1` was reverted because
+      shorter timeout silently shifts undetected mutations (test would
+      have passed within 1-5s) into the Killed-via-timeout bucket —
+      that's coverage inflation, not honest signal. Sharding (same
+      total mutation surface, run in parallel) is the honest answer.
+    cmds:
+      - task: test:mutation:storage:json-backend-shard-1
+      - task: test:mutation:storage:json-backend-shard-2
+      - task: test:mutation:storage:json-backend-shard-3
+      - task: test:mutation:storage:json-backend-shard-4
+      - task: test:mutation:storage:json-backend-shard-5
+      - task: test:mutation:storage:json-backend-shard-6
+      - task: test:mutation:storage:json-backend-shard-7
+      - task: test:mutation:storage:json-backend-shard-8
+      - task: test:mutation:storage:json-backend-shard-9
+
+  test:mutation:storage:json-backend-shard-1:
+    desc: >-
+      M8.6 JsonBackend shard 1 of 3 — alphabetical first third: clear!
+      through field_filename (10 subjects: reads, deserializers,
+      formatters). Lighter-weight read/parse helpers; default
+      `--mutation-timeout 5` with `--jobs 8`.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#clear!" \
+          "RSpecTracer::Storage::JsonBackend#collect_run_dirs" \
+          "RSpecTracer::Storage::JsonBackend#decode_field" \
+          "RSpecTracer::Storage::JsonBackend#deep_intern" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_dependency" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_dupe_examples" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_id_set" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_plain_hash" \
+          "RSpecTracer::Storage::JsonBackend#deserialize_symbolized" \
+          "RSpecTracer::Storage::JsonBackend#field_filename" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-1]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-1] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-1] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-2:
+    desc: >-
+      M8.6 JsonBackend shard 2 of 8 — middle-section first half
+      (9 subjects): format_mib, info, initialize, last_run_id,
+      last_run_path, load_graph, lock_path, maybe_prune_after_save,
+      maybe_warn_size_budget. Originally an 18-subject shard at
+      3:52 CI (only 8s margin under 4-min cap); split into 2 + 7
+      for jitter headroom.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#format_mib" \
+          "RSpecTracer::Storage::JsonBackend#info" \
+          "RSpecTracer::Storage::JsonBackend#initialize" \
+          "RSpecTracer::Storage::JsonBackend#last_run_id" \
+          "RSpecTracer::Storage::JsonBackend#last_run_path" \
+          "RSpecTracer::Storage::JsonBackend#load_graph" \
+          "RSpecTracer::Storage::JsonBackend#lock_path" \
+          "RSpecTracer::Storage::JsonBackend#maybe_prune_after_save" \
+          "RSpecTracer::Storage::JsonBackend#maybe_warn_size_budget" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-2]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-2] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-2] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-7:
+    desc: >-
+      M8.6 JsonBackend shard 7 of 8 — middle-section second half
+      (9 subjects): merge_from_peers, msgpack_unavailable_fallback,
+      partition_dirs_to_prune, per_file_glob, positive_threshold?,
+      read_field, resolve_serializer + FieldReader nested class
+      (initialize, read). Split out from shard-2 for cap headroom.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#merge_from_peers" \
+          "RSpecTracer::Storage::JsonBackend#msgpack_unavailable_fallback" \
+          "RSpecTracer::Storage::JsonBackend#partition_dirs_to_prune" \
+          "RSpecTracer::Storage::JsonBackend#per_file_glob" \
+          "RSpecTracer::Storage::JsonBackend#positive_threshold?" \
+          "RSpecTracer::Storage::JsonBackend#read_field" \
+          "RSpecTracer::Storage::JsonBackend#resolve_serializer" \
+          "RSpecTracer::Storage::JsonBackend::FieldReader#initialize" \
+          "RSpecTracer::Storage::JsonBackend::FieldReader#read" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-7]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-7] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-7] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-3:
+    desc: >-
+      M8.6 JsonBackend shard 3 of 5 — heavy write core (7 subjects):
+      save_graph, transactional_save, write_json_atomic,
+      write_last_run_atomic, write_payload_atomic, write_run_field,
+      write_run_files. The file-I/O-dense atomic-write helpers that
+      drove the original alphabetical-shard-3 to 6:52 M2 Max are
+      isolated here; further sharding may be needed if this shard
+      itself drifts past the per-shard step cap (5-min after
+      M8.6-B's bump).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#save_graph" \
+          "RSpecTracer::Storage::JsonBackend#transactional_save" \
+          "RSpecTracer::Storage::JsonBackend#write_json_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_last_run_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_payload_atomic" \
+          "RSpecTracer::Storage::JsonBackend#write_run_field" \
+          "RSpecTracer::Storage::JsonBackend#write_run_files" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-3]: could not parse mutant coverage"
+          exit 1
+        fi
+        # Shard-3 gate: 68% (vs whole-JsonBackend 75%). This shard
+        # concentrates the heavy file-I/O atomic-write subjects which
+        # carry more structural-ceiling mutations (transactional write
+        # paths exercised end-to-end through public describes that
+        # mutant credits to the public method, not the helper). Local
+        # M2 Max baseline 73.69%; 5pp margin under per
+        # feedback_mutant_local_vs_ci_variance.
+        if awk "BEGIN { exit ($cov >= 68) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-3] PASS (coverage $cov% >= 68%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-3] FAIL (coverage $cov% < 68%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-4:
+    desc: >-
+      M8.6 JsonBackend shard 4 of 5 — reads + serializers + prune
+      (7 subjects): prune_run_dirs!, read_json, read_last_run_manifest,
+      read_run_file, serialize_dependency, serialize_id_set,
+      total_cache_size_bytes. Mixed I/O density.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#prune_run_dirs!" \
+          "RSpecTracer::Storage::JsonBackend#read_json" \
+          "RSpecTracer::Storage::JsonBackend#read_last_run_manifest" \
+          "RSpecTracer::Storage::JsonBackend#read_run_file" \
+          "RSpecTracer::Storage::JsonBackend#serialize_dependency" \
+          "RSpecTracer::Storage::JsonBackend#serialize_id_set" \
+          "RSpecTracer::Storage::JsonBackend#total_cache_size_bytes" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-4]: could not parse mutant coverage"
+          exit 1
+        fi
+        # Shard-4 gate: 68% (vs whole-JsonBackend 75%). Mixed reads +
+        # prune helpers also concentrate structural-ceiling subjects
+        # (private read-side helpers exercised through public describes
+        # that mutant credits to the public method). Local M2 Max
+        # baseline 71.93%; ~4pp margin under per
+        # feedback_mutant_local_vs_ci_variance. Same calibration
+        # rationale as shard-3.
+        if awk "BEGIN { exit ($cov >= 68) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-4] PASS (coverage $cov% >= 68%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-4] FAIL (coverage $cov% < 68%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-5:
+    desc: >-
+      M8.6 JsonBackend shard 5 of 8 — warn helpers (2 subjects):
+      warn_oversized_cache_total, warn_oversized_run_files.
+      Originally a 4-subject shard at 4:46 CI (over the 4-min cap);
+      split into 5 + 8 isolating Merger.absorb/call (which have
+      denser hash-walk mutations) into shard-8.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend#warn_oversized_cache_total" \
+          "RSpecTracer::Storage::JsonBackend#warn_oversized_run_files" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-5]: could not parse mutant coverage"
+          exit 1
+        fi
+        # Shard-5 gate: 70% (vs whole-JsonBackend 75%). The 2 warn_*
+        # methods are file-stat helpers exercised through public
+        # describes (`#save_graph` / `maybe_warn_size_budget`) that
+        # mutant credits to the public method per
+        # feedback_mutant_describe_label_ceiling. CI baseline 74.28%
+        # (105 mutations); 4pp margin per
+        # feedback_mutant_local_vs_ci_variance.
+        if awk "BEGIN { exit ($cov >= 70) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-5] PASS (coverage $cov% >= 70%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-5] FAIL (coverage $cov% < 70%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-8:
+    desc: >-
+      M8.6 JsonBackend shard 8 of 9 — Merger.absorb (1 subject).
+      Originally a 2-subject shard with Merger.call; split into 1+1
+      because the 2-subject shard hit 4:36 CI (over the 4-min cap).
+      Merger.absorb does the actual hash absorption — many mutations
+      walk the nested-hash structure and take time to kill.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend::Merger.absorb" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-8]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-8] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-8] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-9:
+    desc: >-
+      M8.6 JsonBackend shard 9 of 9 — Merger.call (1 subject).
+      Split out from shard-8; Merger.call is the entry point that
+      orchestrates the merge across multiple peer caches and is the
+      densest single subject in JsonBackend.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend::Merger.call" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-9]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-9] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-9] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:json-backend-shard-6:
+    desc: >-
+      M8.6 JsonBackend shard 6 of 6 — Merger second half (4 subjects):
+      Merger.empty_state, Merger.merge_env_dependency!,
+      Merger.merge_examples_coverage!, Merger.reverse_of. Split out
+      from shard-5 to enforce the per-shard step cap (4-min when
+      decided, 5-min after M8.6-B's bump).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/storage/json_backend \
+          "RSpecTracer::Storage::JsonBackend::Merger.empty_state" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_env_dependency!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_examples_coverage!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.reverse_of" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::JsonBackend shard-6]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 75) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::JsonBackend shard-6] PASS (coverage $cov% >= 75%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::JsonBackend shard-6] FAIL (coverage $cov% < 75%)"
+        exit 1
+
+  test:mutation:storage:sqlite-read:
+    desc: >-
+      M8.6 SqliteBackend shard — read-side (15 subjects): last_run_id,
+      load_graph, read_field, read_all_examples, read_all_files,
+      read_dependency, read_digest_map, read_duplicate_examples,
+      read_env_dependency, read_examples_coverage, read_id_set,
+      read_reverse_dependency, dispatch_read, dispatch_read_grouped,
+      plus SqliteFieldReader#read. Mutant 0.16 doesn't support glob
+      within method names (only at the namespace boundary), so the
+      matcher list enumerates each subject explicitly. SqliteBackend
+      has near-zero timeouts in mutation runs (mostly cleanly killed
+      mutations against the unit specs), so default `--mutation-
+      timeout 5s` stays. CI wall clock target ~3 min per shard.
+      Original M8.6 split into 3 shards was over-sharded post-first-CI
+      (each ~1-2 min); collapsed to 2 balanced shards (read / write+util).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --include lib --require "rspec_tracer/storage/sqlite_backend" \
+          "RSpecTracer::Storage::SqliteBackend#last_run_id" \
+          "RSpecTracer::Storage::SqliteBackend#load_graph" \
+          "RSpecTracer::Storage::SqliteBackend#read_field" \
+          "RSpecTracer::Storage::SqliteBackend#read_all_examples" \
+          "RSpecTracer::Storage::SqliteBackend#read_all_files" \
+          "RSpecTracer::Storage::SqliteBackend#read_dependency" \
+          "RSpecTracer::Storage::SqliteBackend#read_digest_map" \
+          "RSpecTracer::Storage::SqliteBackend#read_duplicate_examples" \
+          "RSpecTracer::Storage::SqliteBackend#read_env_dependency" \
+          "RSpecTracer::Storage::SqliteBackend#read_examples_coverage" \
+          "RSpecTracer::Storage::SqliteBackend#read_id_set" \
+          "RSpecTracer::Storage::SqliteBackend#read_reverse_dependency" \
+          "RSpecTracer::Storage::SqliteBackend#dispatch_read" \
+          "RSpecTracer::Storage::SqliteBackend#dispatch_read_grouped" \
+          "RSpecTracer::Storage::SqliteBackend::SqliteFieldReader#read" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::SqliteBackend shard-1]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 73) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::SqliteBackend read] PASS (coverage $cov% >= 73%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::SqliteBackend read] FAIL (coverage $cov% < 73%)"
+        exit 1
+
+  test:mutation:storage:sqlite-write:
+    desc: >-
+      M8.6 SqliteBackend shard — write-side + connection / schema /
+      utility (30 subjects). Combines the original shards 2 + 3 since
+      first CI showed the 3-shard split was over-sharded
+      (each 1-2 min). Includes:
+      write-side: save_graph, transactional_save, clear!,
+      write_all_tables, write_example_rows, write_graph_rows,
+      write_grouped_rows, insert_all_files, insert_dependency,
+      insert_digest_map, insert_duplicate_examples,
+      insert_env_dependency, insert_examples, insert_examples_coverage,
+      insert_id_set, iterate_line_entries (16 subjects); plus
+      connection/schema/utility: initialize, with_connection,
+      with_write_connection, db_path, load_sqlite_driver!,
+      configure_connection, reset_corrupt_db_file!,
+      meta_table_exists?, ensure_schema!, empty_default_for,
+      decode_hash_with_sym_keys, fetch_hash, info, plus
+      SqliteFieldReader#initialize (14 subjects).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --include lib --require "rspec_tracer/storage/sqlite_backend" \
+          "RSpecTracer::Storage::SqliteBackend#save_graph" \
+          "RSpecTracer::Storage::SqliteBackend#transactional_save" \
+          "RSpecTracer::Storage::SqliteBackend#clear!" \
+          "RSpecTracer::Storage::SqliteBackend#write_all_tables" \
+          "RSpecTracer::Storage::SqliteBackend#write_example_rows" \
+          "RSpecTracer::Storage::SqliteBackend#write_graph_rows" \
+          "RSpecTracer::Storage::SqliteBackend#write_grouped_rows" \
+          "RSpecTracer::Storage::SqliteBackend#insert_all_files" \
+          "RSpecTracer::Storage::SqliteBackend#insert_dependency" \
+          "RSpecTracer::Storage::SqliteBackend#insert_digest_map" \
+          "RSpecTracer::Storage::SqliteBackend#insert_duplicate_examples" \
+          "RSpecTracer::Storage::SqliteBackend#insert_env_dependency" \
+          "RSpecTracer::Storage::SqliteBackend#insert_examples" \
+          "RSpecTracer::Storage::SqliteBackend#insert_examples_coverage" \
+          "RSpecTracer::Storage::SqliteBackend#insert_id_set" \
+          "RSpecTracer::Storage::SqliteBackend#iterate_line_entries" \
+          "RSpecTracer::Storage::SqliteBackend#initialize" \
+          "RSpecTracer::Storage::SqliteBackend#with_connection" \
+          "RSpecTracer::Storage::SqliteBackend#with_write_connection" \
+          "RSpecTracer::Storage::SqliteBackend#db_path" \
+          "RSpecTracer::Storage::SqliteBackend#load_sqlite_driver!" \
+          "RSpecTracer::Storage::SqliteBackend#configure_connection" \
+          "RSpecTracer::Storage::SqliteBackend#reset_corrupt_db_file!" \
+          "RSpecTracer::Storage::SqliteBackend#meta_table_exists?" \
+          "RSpecTracer::Storage::SqliteBackend#ensure_schema!" \
+          "RSpecTracer::Storage::SqliteBackend#empty_default_for" \
+          "RSpecTracer::Storage::SqliteBackend#decode_hash_with_sym_keys" \
+          "RSpecTracer::Storage::SqliteBackend#fetch_hash" \
+          "RSpecTracer::Storage::SqliteBackend#info" \
+          "RSpecTracer::Storage::SqliteBackend::SqliteFieldReader#initialize" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [Storage::SqliteBackend write+util]: could not parse mutant coverage"
+          exit 1
+        fi
+        # Gate is 65% (vs read-side 73%) because this shard
+        # concentrates the structural-ceiling subjects:
+        # `#initialize` (exercised through sibling-method describes
+        # per feedback_mutant_describe_label_ceiling — same pattern
+        # as M8.3-A's Tracker::NewFileDetector#initialize) plus the
+        # private connection / schema / utility helpers (exercised
+        # via public describes that mutant credits to the public
+        # method, not the helper). The original 3-shard split's
+        # shard-3 (init/util alone) gated at 60% with a 64.01% local
+        # baseline; combining it with the cleanly-killed write-side
+        # subjects lifts the average somewhat, so a 65% gate
+        # provides headroom while still catching real regressions.
+        if awk "BEGIN { exit ($cov >= 65) ? 0 : 1 }"; then
+          echo "mutation:storage [Storage::SqliteBackend write+util] PASS (coverage $cov% >= 65%)"
+          exit 0
+        fi
+        echo "mutation:storage [Storage::SqliteBackend write+util] FAIL (coverage $cov% < 65%)"
+        exit 1
+
+  test:mutation:rspec:
+    desc: >-
+      M8.3-A mutation pass on rspec/ subjects (Installation, ParallelTests,
+      Metadata, RunnerHook, ReporterHook). Installation (>= 73%) and
+      ParallelTests (>= 78%) carve-out for module-helper describe
+      mapping (mutant credits only `.method` describes).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:rspec [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:rspec [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:rspec [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # CI margin (~3 pp under local baseline; same rationale as
+        # mutation:tracker / mutation:storage above).
+        run_mutant_gate "RSpec::Installation" \
+          "rspec_tracer/rspec/installation" \
+          "RSpecTracer::RSpec::Installation*" 70 || fail=1
+        run_mutant_gate "RSpec::ParallelTests" \
+          "rspec_tracer/rspec/parallel_tests" \
+          "RSpecTracer::RSpec::ParallelTests*" 75 || fail=1
+        run_mutant_gate "RSpec::Metadata" \
+          "rspec_tracer/rspec/metadata" \
+          "RSpecTracer::RSpec::Metadata*" 85 || fail=1
+        run_mutant_gate "RSpec::RunnerHook" \
+          "rspec_tracer/rspec/runner_hook" \
+          "RSpecTracer::RSpec::RunnerHook*" 85 || fail=1
+        run_mutant_gate "RSpec::ReporterHook" \
+          "rspec_tracer/rspec/reporter_hook" \
+          "RSpecTracer::RSpec::ReporterHook*" 85 || fail=1
+        exit "$fail"
+
+  test:mutation:top-level:
+    desc: >-
+      M8.3-A mutation pass on top-level RSpecTracer module's 17 class
+      methods. M8.6 split into 3 shards to enforce the 4-min per-shard
+      hard cap (initial 2-way split had top-level-b at 4:43 CI because
+      its setup-path methods like `start` / `setup_coverage` /
+      `run_finalize` all hang spec_helper boot, packing more 5s
+      timeouts than top-level-a's predicates/accessors). 3-way split
+      isolates the boot-hang-dense subjects.
+    cmds:
+      - task: test:mutation:top-level-a
+      - task: test:mutation:top-level-b
+      - task: test:mutation:top-level-c
+
+  test:mutation:top-level-a:
+    desc: >-
+      M8.6 top-level shard A — alphabetical first half (8 methods):
+      at_exit_behavior, build_run_metadata, coverage_reporter,
+      emit_reporters, engine, initial_setup, parallel_tests?, rails?.
+      Default `--mutation-timeout 5` with `--jobs 8`. Wall clock
+      projects to ~3-4 min CI (half the 7-8 min projection of the
+      whole-module run).
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:top-level [RSpecTracer shard-a] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer \
+          "RSpecTracer.at_exit_behavior" \
+          "RSpecTracer.build_run_metadata" \
+          "RSpecTracer.coverage_reporter" \
+          "RSpecTracer.emit_reporters" \
+          "RSpecTracer.engine" \
+          "RSpecTracer.initial_setup" \
+          "RSpecTracer.parallel_tests?" \
+          "RSpecTracer.rails?" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [RSpecTracer shard-a]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 80) ? 0 : 1 }"; then
+          echo "mutation:top-level [RSpecTracer shard-a] PASS (coverage $cov% >= 80%)"
+          exit 0
+        fi
+        echo "mutation:top-level [RSpecTracer shard-a] FAIL (coverage $cov% < 80%)"
+        exit 1
+
+  test:mutation:top-level-b:
+    desc: >-
+      M8.6 top-level shard B — exit/finalize methods (5 methods):
+      run_coverage_exit_task, run_elapsed_seconds, run_exit_tasks,
+      run_finalize, run_simplecov_exit_task. Originally 9 methods
+      (paired with -c which has setup/start) — split because the
+      9-method shard hit 4:43 CI (over the 4-min cap) since every
+      setup-path method's mutations cause spec_helper boot hangs at
+      the full 5s timeout each.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:top-level [RSpecTracer shard-b] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer \
+          "RSpecTracer.run_coverage_exit_task" \
+          "RSpecTracer.run_elapsed_seconds" \
+          "RSpecTracer.run_exit_tasks" \
+          "RSpecTracer.run_finalize" \
+          "RSpecTracer.run_simplecov_exit_task" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [RSpecTracer shard-b]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 80) ? 0 : 1 }"; then
+          echo "mutation:top-level [RSpecTracer shard-b] PASS (coverage $cov% >= 80%)"
+          exit 0
+        fi
+        echo "mutation:top-level [RSpecTracer shard-b] FAIL (coverage $cov% < 80%)"
+        exit 1
+
+  test:mutation:top-level-c:
+    desc: >-
+      M8.6 top-level shard C — setup/start methods (4 methods):
+      setup_coverage, setup_rails, simplecov?, start. Split out from
+      top-level-b after the 9-method shard hit the 4-min cap on CI.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:top-level [RSpecTracer shard-c] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer \
+          "RSpecTracer.setup_coverage" \
+          "RSpecTracer.setup_rails" \
+          "RSpecTracer.simplecov?" \
+          "RSpecTracer.start" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [RSpecTracer shard-c]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 80) ? 0 : 1 }"; then
+          echo "mutation:top-level [RSpecTracer shard-c] PASS (coverage $cov% >= 80%)"
+          exit 0
+        fi
+        echo "mutation:top-level [RSpecTracer shard-c] FAIL (coverage $cov% < 80%)"
+        exit 1
+
+  test:mutation:remote-cache:
+    desc: >-
+      M8.3-B mutation pass on remote_cache/ (8 subjects: Backend,
+      Validator, Archive, GitAncestry, UserTasks, LocalFsBackend,
+      RedisBackend, S3Backend). Per-subject gates carve out the same
+      structural describe-label ceiling as M8.3-A's Storage::SqliteBackend
+      (mutant maps tests via first-token of full_description; private
+      helpers exercised only through public-method describes show as
+      alive). UserTasks / LocalFsBackend / RedisBackend / S3Backend
+      have 4-7x more mutant subjects than public describe blocks
+      (private-helper density), driving the carve-outs. No spec
+      restructuring or mutation-bait additions per the M8.3-A
+      no-anti-pattern-test-org rule.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:remote-cache [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:remote-cache [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:remote-cache [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # Per-subject gates sized at ~3-5 pp under CI ubuntu-latest
+        # baselines for variance (per memory:
+        # feedback_mutant_local_vs_ci_variance, codified from M8.3-A
+        # retro). Initial cut sized from local M2 Max baselines was
+        # too tight: GitAncestry alone swung from 94.59% local to
+        # 72.68% CI on the first run because mutant's per-mutation
+        # 5 s timeout kills 305 local mutations (git shell-out hangs
+        # under M2 Max parallelism 12) but 0 CI mutations (Linux git
+        # responds fast enough under ubuntu-latest parallelism 4 that
+        # the same mutations don't hang). Same shape as M8.3-A's
+        # 154ec27 post-merge widening.
+        run_mutant_gate "RemoteCache::Backend" \
+          "rspec_tracer/remote_cache/backend" \
+          "RSpecTracer::RemoteCache::Backend*" 95 || fail=1
+        run_mutant_gate "RemoteCache::Validator" \
+          "rspec_tracer/remote_cache/validator" \
+          "RSpecTracer::RemoteCache::Validator*" 85 || fail=1
+        run_mutant_gate "RemoteCache::Archive" \
+          "rspec_tracer/remote_cache/archive" \
+          "RSpecTracer::RemoteCache::Archive*" 83 || fail=1
+        # GitAncestry: CI baseline 72.68% (vs 94.59% local; 305 local
+        # timeouts on git shell-out are 0 on CI because Linux git is
+        # faster). 4 pp under CI = 68% gate.
+        run_mutant_gate "RemoteCache::GitAncestry" \
+          "rspec_tracer/remote_cache/git_ancestry" \
+          "RSpecTracer::RemoteCache::GitAncestry*" 68 || fail=1
+        # UserTasks / LocalFsBackend / RedisBackend / S3Backend share
+        # the M8.3-A Storage::SqliteBackend describe-label ceiling
+        # (memory: feedback_mutant_describe_label_ceiling): 4-7x more
+        # mutant subjects than public describe blocks because private
+        # helpers (#build_admin_ancestry, #blank?, #join_key,
+        # #object_key_for, #aws_rm_recursive_silent, #log_debug etc.)
+        # are exercised only through #download / #upload / #prune!
+        # describes. Mutant credits those tests to the public method,
+        # not the private helper, so the helper-internal mutations
+        # show as alive. Restructuring describes for coverage is the
+        # test-organization-for-coverage anti-pattern.
+        run_mutant_gate "RemoteCache::UserTasks" \
+          "rspec_tracer/remote_cache/user_tasks" \
+          "RSpecTracer::RemoteCache::UserTasks*" 73 || fail=1
+        run_mutant_gate "RemoteCache::LocalFsBackend" \
+          "rspec_tracer/remote_cache/local_fs_backend" \
+          "RSpecTracer::RemoteCache::LocalFsBackend*" 73 || fail=1
+        run_mutant_gate "RemoteCache::RedisBackend" \
+          "rspec_tracer/remote_cache/redis_backend" \
+          "RSpecTracer::RemoteCache::RedisBackend*" 72 || fail=1
+        run_mutant_gate "RemoteCache::S3Backend" \
+          "rspec_tracer/remote_cache/s3_backend" \
+          "RSpecTracer::RemoteCache::S3Backend*" 65 || fail=1
+        exit "$fail"
+
+  test:mutation:rails:
+    desc: >-
+      M8.3-C mutation pass on rails/ net-new subjects (Notifications,
+      I18nTracking, Railtie). Best-effort >= 70% per the canonical M8.3
+      brief. Per-subject gates carve out (a) the combined-describe
+      ceiling on `.install / .installed? / .uninstall` (mutant credits
+      only the first-token `.install`; `.installed?` + `.uninstall`
+      mutations stay alive even though functionally tested under the
+      combined describe), (b) the `Module#prepend` idempotency ceiling
+      on I18nTracking::LoadTranslationsHook prepended onto
+      ::I18n::Backend::Base (per feedback_mutant_prepend_idempotency:
+      Ruby has no unprepend API, prepend-line mutations un-killable in
+      shared-process spec suites), and (c) prose-form integration
+      describes (`bucket lifecycle`, `LoadTranslationsHook integration`,
+      `render subscriber integration via fake AS::Notifications`) that
+      don't map to mutant's first-token Klass.method scheme. Rails::Preset
+      stays in test:mutation:smoke at >= 90%.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:rails [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:rails [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:rails [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        # Railtie boots through a small spec/support stub for ::Rails::Railtie
+        # because the dev Gemfile does not include Rails. The class itself
+        # has no defined methods (only an `initializer` block invocation at
+        # class-define time), so mutant finds zero subjects and the run lands
+        # at 100% trivially - still kept in the gate as a boot-path probe.
+        run_mutant_gate_with_includes() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:rails [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --include spec --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:rails [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:rails [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # Per-subject gates sized at ~3-5 pp under M2 Max local baselines
+        # for CI ubuntu-latest variance per memory:
+        # feedback_mutant_local_vs_ci_variance. Re-cut downward in a
+        # follow-up commit if any subject drops materially below local on
+        # the first CI run (M8.3-A 154ec27 + M8.3-B 10c0d67 precedent).
+        #
+        # Notifications local 78.77%: 19 subjects, 48 selected tests; the
+        # combined `.install / .installed? / .uninstall` describe credits
+        # only `.install` per mutant first-token mapping, so `.installed?`
+        # + `.uninstall` + `set_bucket` / `clear_bucket` / `current_bucket`
+        # (under prose `bucket lifecycle`) + 7 private subscribe helpers
+        # (subscribe_render_template / _partial / _collection / _sql_active_record
+        # / render_collection_supported? / build_schema_inputs /
+        # try_build_schema_input / safely_unsubscribe) all see no selected
+        # tests. Honest carve-out, not weak tests; behavior IS exercised
+        # end-to-end via the prose-form integration describes
+        # (`render subscriber integration via fake AS::Notifications` /
+        # `sql.active_record subscriber integration`). Restructuring
+        # describes for coverage rejected per the M8.3-A no-anti-pattern-
+        # test-org rule.
+        run_mutant_gate "Rails::Notifications" \
+          "rspec_tracer/rails/notifications" \
+          "RSpecTracer::Rails::Notifications*" 75 || fail=1
+        # I18nTracking local 67.77%: 7 subjects, 24 selected tests. Same
+        # combined-describe ceiling on `.installed?` + `.uninstall` PLUS the
+        # `LoadTranslationsHook integration` prose describe (no first-token
+        # match for `LoadTranslationsHook#load_translations`) PLUS the
+        # `Module#prepend(::I18n::Backend::Base, LoadTranslationsHook)` line
+        # in `prepend_backend_hook` whose mutations are structurally un-
+        # killable per feedback_mutant_prepend_idempotency. 5 pp margin
+        # rather than 3 pp because the prepend-idempotency ceiling
+        # interacts unpredictably with test ordering on CI. Below the
+        # canonical brief's 70% best-effort target; carve-out documented.
+        run_mutant_gate "Rails::I18nTracking" \
+          "rspec_tracer/rails/i18n_tracking" \
+          "RSpecTracer::Rails::I18nTracking*" 62 || fail=1
+        # Railtie has 0 mutation subjects (the class declaration registers
+        # one initializer block at class-define time but defines no methods
+        # of its own). Mutant returns 100% trivially. Boot helper at
+        # spec/support/rails_railtie_stub.rb stubs ::Rails::Railtie since
+        # the dev Gemfile does not include Rails. Spec restructured to a
+        # top-level string-form `describe 'RSpecTracer::Rails::Railtie'`
+        # so that any future Railtie methods receive credit via mutant
+        # first-token mapping. Gate at 90% to assert the boot path stays
+        # clean as the file evolves.
+        run_mutant_gate_with_includes "Rails::Railtie" \
+          "support/rails_railtie_stub" \
+          "RSpecTracer::Rails::Railtie*" 90 || fail=1
+        exit "$fail"
+
+  test:mutation:reporters:
+    desc: >-
+      M8.3-C mutation pass on reporters/ subjects (Base, JsonReporter,
+      TerminalReporter, HtmlReporter, PayloadBuilder, Registry).
+      Best-effort >= 70% per the canonical M8.3 brief. Reporters specs
+      lean on prose-form describes (`fallback rendering` / `graceful
+      degradation` / `payload embedding` / `envelope` / `summary block` /
+      `all_examples report` / `default resolution` / `BUILT_INS constant`
+      etc.) that don't map to mutant's first-token Klass#method scheme;
+      private projection / formatting / classification helpers exercised
+      via the public `#generate` / `.build` / `.emit_all` describes
+      receive no direct credit per feedback_mutant_describe_label_ceiling.
+      Carve-outs sized accordingly; restructuring describes for coverage
+      rejected per the M8.3-A no-anti-pattern-test-org rule.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        run_mutant_gate() {
+          local label="$1" require_path="$2" matcher="$3" gate="$4"
+          echo "=== mutation:reporters [$label] ==="
+          local out cov
+          out=$(bundle exec mutant run --use rspec --usage opensource \
+            --include lib --require "$require_path" "$matcher" 2>&1 || true)
+          echo "$out"
+          cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+          if [ -z "$cov" ]; then
+            echo "ERROR [$label]: could not parse mutant coverage"
+            return 1
+          fi
+          if awk "BEGIN { exit ($cov >= $gate) ? 0 : 1 }"; then
+            echo "mutation:reporters [$label] PASS (coverage $cov% >= $gate%)"
+            return 0
+          fi
+          echo "mutation:reporters [$label] FAIL (coverage $cov% < $gate%)"
+          return 1
+        }
+
+        fail=0
+        # Per-subject gates sized at ~3 pp under M2 Max local baselines
+        # for CI ubuntu-latest variance per memory:
+        # feedback_mutant_local_vs_ci_variance. Re-cut downward in a
+        # follow-up commit if any subject drops materially below local on
+        # the first CI run (M8.3-A 154ec27 + M8.3-B 10c0d67 precedent).
+        #
+        # Base local 96.82%: 3 subjects, 11 selected; clean `#initialize`
+        # / `#generate` / `#no_op?` describes map perfectly. The 2 alive
+        # mutations are constructor opts-default / nil-coercion equivalents.
+        run_mutant_gate "Reporters::Base" \
+          "rspec_tracer/reporters/base" \
+          "RSpecTracer::Reporters::Base*" 93 || fail=1
+        # JsonReporter local 91.30%: 2 subjects, 17 selected; `#generate`
+        # populated/no-op describes credit the public path; the prose
+        # `SCHEMA_VERSION constant` + `FILENAME constant` describes plus
+        # the private `#build_payload` delegation account for the alive 6.
+        run_mutant_gate "Reporters::JsonReporter" \
+          "rspec_tracer/reporters/json_reporter" \
+          "RSpecTracer::Reporters::JsonReporter*" 88 || fail=1
+        # TerminalReporter local 88.34%: 13 subjects, 34 selected; `#generate`
+        # describes credit the line-emission path. Prose `color policy`,
+        # `cache-percent edge cases`, `output_stream default` ceilings
+        # leave private `header_line` / `tally_line` / `cache_line` /
+        # `report_line` / `header_color` / `run_count` / `duplicate_count`
+        # / `paint` / `use_color?` mutations partially uncovered.
+        run_mutant_gate "Reporters::TerminalReporter" \
+          "rspec_tracer/reporters/terminal_reporter" \
+          "RSpecTracer::Reporters::TerminalReporter*" 85 || fail=1
+        # HtmlReporter local 83.38%: 18 subjects, 39 selected; biggest in
+        # subdir at 218 LOC + 14 private fallback-rendering helpers. The
+        # `payload embedding` / `fallback rendering` / `duration formatting
+        # in fallback` / `graceful degradation` / `dist_dir option` prose
+        # describes leave `escape_payload` / `render_fallback` / `fallback_*
+        # / `cell` / `cell_code` / `format_duration` / `copy_assets`
+        # / `inject` private helpers uncredited under mutant first-token
+        # mapping. Behavior IS exercised end-to-end via `#generate` output
+        # assertions; carve-out per feedback_mutant_describe_label_ceiling.
+        run_mutant_gate "Reporters::HtmlReporter" \
+          "rspec_tracer/reporters/html_reporter" \
+          "RSpecTracer::Reporters::HtmlReporter*" 80 || fail=1
+        # PayloadBuilder local 86.39%: 15 subjects, 61 selected; densest
+        # test surface (every report-shape branch tested). Prose `envelope`
+        # / `summary block` / `all_examples report` / `duplicate_examples
+        # report` / `flaky_examples report` / `examples_dependency report`
+        # / `files_dependency report` / `SCHEMA_VERSION constant` describes
+        # don't map to private projection helpers (`location_for` / `status_for`
+        # / `count_status` / `aggregate_spec_counts` / `normalize_execution_result`
+        # / `stringify_time` / `summary_block` / per-report builders).
+        run_mutant_gate "Reporters::PayloadBuilder" \
+          "rspec_tracer/reporters/payload_builder" \
+          "RSpecTracer::Reporters::PayloadBuilder*" 83 || fail=1
+        # Registry local 89.40%: 9 subjects, 20 selected; `.emit_all` class-
+        # method shortcut maps cleanly. Prose `default resolution` / `empty-
+        # snapshot short-circuit` / `explicit reporter resolution` / `per-
+        # reporter rescue` / `BUILT_INS constant` / `DEFAULTS constant`
+        # describes leave private `resolve_entries` / `resolve_class` /
+        # `emit_one` / `warn_continue` / `logger` / `empty_snapshot?` helpers
+        # uncredited under first-token mapping.
+        run_mutant_gate "Reporters::Registry" \
+          "rspec_tracer/reporters/registry" \
+          "RSpecTracer::Reporters::Registry*" 86 || fail=1
+        exit "$fail"
+
+  test:mutation:full:
+    desc: >-
+      Full mutation pass - test:mutation:smoke + the M8.3-A per-module
+      subtasks (tracker / storage / rspec / top-level) + the M8.3-B
+      :remote-cache subtask + the M8.3-C :rails / :reporters subtasks.
+      Runs per-PR + per-main via lint-and-specs.yml's parallel mutation
+      jobs (M3.8 Part C migration from the deleted nightly.yml).
+    cmds:
+      - task: test:mutation:smoke
+      - task: test:mutation:tracker
+      - task: test:mutation:storage
+      - task: test:mutation:rspec
+      - task: test:mutation:top-level
+      - task: test:mutation:remote-cache
+      - task: test:mutation:rails
+      - task: test:mutation:reporters

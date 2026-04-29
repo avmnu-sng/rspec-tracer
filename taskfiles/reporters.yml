@@ -1,0 +1,36 @@
+version: '3'
+
+# HTML reporter frontend tasks: install (npm install + verification),
+# build (npm run build, dist/ refresh), check (dist drift in CI).
+# Internal deps: build -> install, check -> build.
+# Cross-file dep-free.
+
+tasks:
+  reporters:html:install:
+    desc: Install npm dependencies for the HTML reporter frontend
+    dir: lib/rspec_tracer/reporters/html
+    preconditions:
+      - sh: command -v npm >/dev/null 2>&1
+        msg: "npm not found; install Node.js 20+ (nodejs.org)"
+    status:
+      - test -d node_modules
+    cmds:
+      - npm ci
+
+  reporters:html:build:
+    desc: Rebuild the committed HTML reporter bundle (dist/ is source of truth for the gem)
+    dir: lib/rspec_tracer/reporters/html
+    deps: [reporters:html:install]
+    cmds:
+      - npm run build
+
+  reporters:html:check:
+    desc: >-
+      Drift check for the HTML reporter bundle. Rebuilds dist/ fresh from src/ and
+      fails if `git diff` reports any change - committing a src/ edit without
+      rebuilding fails here rather than at release time.
+    deps: [reporters:html:build]
+    cmds:
+      - git diff --exit-code lib/rspec_tracer/reporters/html/dist
+
+  # ── Gem release ────────────────────────────────────────

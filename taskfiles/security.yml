@@ -1,0 +1,30 @@
+version: '3'
+
+# Security tasks: bundle-audit, licenses, trivy, all (aggregator).
+# Cross-file dep-free.
+
+tasks:
+  security:bundle-audit:
+    desc: CVE scan on Gemfile.lock
+    cmds:
+      - bundle-audit check --update
+
+  security:licenses:
+    desc: License compliance check (optional; install via `gem install license_finder`)
+    preconditions:
+      - sh: command -v license_finder >/dev/null 2>&1
+        msg: "license_finder not installed; run: gem install license_finder --version {{.LICENSE_FINDER_VERSION}}"
+    cmds:
+      - license_finder
+
+  security:trivy:
+    desc: Trivy filesystem scan (secrets + misconfig + vuln)
+    cmds:
+      - bin/trivy fs --config trivy.yaml --skip-version-check .
+
+  security:all:
+    cmds:
+      - task: security:bundle-audit
+      - task: security:trivy
+
+  # ── Fixtures ───────────────────────────────────────────

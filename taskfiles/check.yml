@@ -1,0 +1,27 @@
+version: '3'
+
+# Check tasks: bundle (Gemfile.lock installable), check (10s feedback
+# loop: lint:ruby + test:unit + benchmark:smoke), all (aggregator).
+# The check task depends on tasks from lint.yml + test.yml +
+# benchmark.yml, resolved via flatten: true at root include time.
+
+tasks:
+  check:bundle:
+    desc: Verify Gemfile.lock is installable
+    cmds:
+      - bundle check
+
+  check:all:
+    cmds:
+      - task: check:bundle
+
+  # ── Tests ──────────────────────────────────────────────
+
+  check:
+    desc: 10-second feedback loop — lint + unit tests + smoke benchmark
+    cmds:
+      - task: lint:ruby
+      - task: test:unit
+      - task: benchmark:smoke
+
+  # ── Full CI (local equivalent of CI pipeline) ──────────

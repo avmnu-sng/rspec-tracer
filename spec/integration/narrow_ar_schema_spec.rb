@@ -31,25 +31,24 @@
 # factories) once empirical evidence showed (d-i) was incompatible.
 
 require 'bundler'
-require 'fileutils'
-require 'json'
 require 'open3'
 require 'set'
 
-# Module-scoped constants + helpers (mirrors RailsAppSpecHelpers from
-# M4.3). Keeps `let` out of before(:all) where RSpec disallows
-# memoized accessors.
+require_relative '../support/fixture_bundle_helper'
+
+# Module-scoped per-spec state + the spec-specific subprocess runner.
+# Mirrors rails_app_spec.rb's RailsAppSpecHelpers shape; the
+# fixture-bundle ladder / tracer-state scrub / cache reader live in
+# FixtureBundleHelper.
 module NarrowArSchemaSpecHelpers
-  FIXTURE_ROOT = File.expand_path('../fixtures/rails_app', __dir__)
-  CACHE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_cache')
-  COVERAGE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_coverage')
-  REPORT_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_report')
-  LOCAL_COVERAGE = File.join(FIXTURE_ROOT, 'coverage')
   TRACER_ENV = {
     'RSPEC_TRACER' => '1',
     'RSPEC_TRACER_RAILS_TRANSACTIONAL' => 'false'
   }.freeze
-  SCRUB_DIRS = [CACHE_DIR, COVERAGE_DIR, REPORT_DIR, LOCAL_COVERAGE].freeze
+  # See rails_app_spec.rb's SUBPROCESS_BUNDLE_ENV for rationale —
+  # BUNDLE_FROZEN skips per-`bundle exec` lockfile resolve in the
+  # subprocess. Matches the M8.6-B Lever 2 pattern.
+  SUBPROCESS_BUNDLE_ENV = { 'BUNDLE_FROZEN' => '1' }.freeze
   NARROW_SPEC = 'spec/narrow_schema_spec.rb'
   SCHEMA_FILE_NAME = '/db/schema.rb'
 
@@ -59,36 +58,10 @@ module NarrowArSchemaSpecHelpers
 
   def run_rspec_in_fixture
     Bundler.with_unbundled_env do
-      Open3.capture2e(TRACER_ENV, 'bundle', 'exec', 'rspec', '--no-color', NARROW_SPEC,
-                      chdir: FIXTURE_ROOT)
+      Open3.capture2e(TRACER_ENV.merge(SUBPROCESS_BUNDLE_ENV),
+                      'bundle', 'exec', 'rspec', '--no-color', NARROW_SPEC,
+                      chdir: FixtureBundleHelper::FIXTURE_ROOT)
     end
-  end
-
-  def ensure_bundle_and_db
-    Bundler.with_unbundled_env do
-      Dir.chdir(FIXTURE_ROOT) do
-        gemfile_env = { 'BUNDLE_GEMFILE' => File.join(FIXTURE_ROOT, 'Gemfile') }
-        unless system(gemfile_env, 'bundle', 'check', out: File::NULL, err: File::NULL)
-          # Same cross-interpreter resilience path as
-          # rails_app_spec.rb's helper — wipe the platform-mismatched
-          # gitignored lockfile so Bundler resolves fresh.
-          FileUtils.rm_f(File.join(FIXTURE_ROOT, 'Gemfile.lock'))
-          system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
-        end
-
-        system('bundle', 'exec', 'rails', 'db:test:prepare',
-               out: File::NULL, err: File::NULL) || raise('db:test:prepare failed')
-      end
-    end
-  end
-
-  def clear_tracer_state
-    FileUtils.rm_rf(SCRUB_DIRS)
-  end
-
-  def load_cache_file(name)
-    manifest = JSON.parse(File.read(File.join(CACHE_DIR, 'last_run.json'), encoding: 'UTF-8'))
-    JSON.parse(File.read(File.join(CACHE_DIR, manifest.fetch('run_id'), name), encoding: 'UTF-8'))
   end
 end
 
@@ -97,20 +70,20 @@ RSpec.describe 'narrow AR schema attribution' do
   include NarrowArSchemaSpecHelpers
 
   before(:all) do
-    NarrowArSchemaSpecHelpers.ensure_bundle_and_db
+    FixtureBundleHelper.ensure_bundle_and_db
   end
 
   before do
-    NarrowArSchemaSpecHelpers.clear_tracer_state
+    FixtureBundleHelper.clear_tracer_state
     out, status = NarrowArSchemaSpecHelpers.run_rspec_in_fixture
     raise "cold rspec failed (status=#{status.exitstatus}):\n#{out}" unless status.success?
 
-    @all_examples = NarrowArSchemaSpecHelpers.load_cache_file('all_examples.json')
-    @reverse_dependency = NarrowArSchemaSpecHelpers.load_cache_file('reverse_dependency.json')
+    @all_examples = FixtureBundleHelper.load_cache_file('all_examples.json')
+    @reverse_dependency = FixtureBundleHelper.load_cache_file('reverse_dependency.json')
   end
 
   after(:all) do
-    NarrowArSchemaSpecHelpers.clear_tracer_state
+    FixtureBundleHelper.clear_tracer_state
   end
 
   def example_id_matching(description_substring)
@@ -140,7 +113,7 @@ RSpec.describe 'narrow AR schema attribution' do
     it 're-runs only the AR-touching example' do
       ar_id = example_id_matching('creates a user')
       pure_id = example_id_matching('does not touch AR')
-      schema_path = File.join(NarrowArSchemaSpecHelpers::FIXTURE_ROOT, 'db/schema.rb')
+      schema_path = File.join(FixtureBundleHelper::FIXTURE_ROOT, 'db/schema.rb')
       original = File.binread(schema_path)
       File.open(schema_path, 'ab') { |f| f.write(NarrowArSchemaSpecHelpers::MUTATION_MARKER) }
 
@@ -148,7 +121,7 @@ RSpec.describe 'narrow AR schema attribution' do
         out, status = NarrowArSchemaSpecHelpers.run_rspec_in_fixture
         raise "warm rspec failed (status=#{status.exitstatus}):\n#{out}" unless status.success?
 
-        skipped = NarrowArSchemaSpecHelpers.load_cache_file('skipped_examples.json').to_set
+        skipped = FixtureBundleHelper.load_cache_file('skipped_examples.json').to_set
         expect(skipped).to(include(pure_id),
                            "pure-compute example #{pure_id.inspect} should be skipped on warm; " \
                            "got skipped: #{skipped.to_a.inspect}")

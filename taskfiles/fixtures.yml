@@ -1,0 +1,48 @@
+version: '3'
+
+# Fixtures::Rails tasks: bundle, migrate, seed, rspec, lint against
+# the spec/fixtures/rails_app reference Rails app. Internal dep chain:
+# migrate -> bundle, seed -> migrate, rspec -> bundle, lint -> bundle.
+# Cross-file dep-free.
+
+tasks:
+  fixtures:rails:bundle:
+    desc: bundle install in the reference Rails fixture
+    dir: spec/fixtures/rails_app
+    cmds:
+      - bundle install
+
+  fixtures:rails:migrate:
+    desc: Create + migrate the reference Rails fixture database
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
+      - bundle exec rails db:drop db:create db:migrate RAILS_ENV=development
+
+  fixtures:rails:seed:
+    desc: Seed the reference Rails fixture
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:migrate]
+    cmds:
+      - bundle exec rails db:seed
+
+  fixtures:rails:rspec:
+    desc: Run the reference Rails fixture's RSpec suite
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rails db:test:prepare
+      - bundle exec rspec
+
+  fixtures:rails:lint:
+    desc: Run RuboCop against the reference Rails fixture
+    # --config pins to the fixture's .rubocop.yml. Without it, rubocop's
+    # parent-dir walk picks up the outer project's config (which plugs in
+    # rubocop-rake, not present in the fixture bundle).
+    dir: spec/fixtures/rails_app
+    deps: [fixtures:rails:bundle]
+    cmds:
+      - bundle exec rubocop --config .rubocop.yml --format progress
+
+  # ── Feedback loop ──────────────────────────────────────

@@ -1,0 +1,111 @@
+version: '3'
+
+# CI tasks: full pipeline aggregator + LocalStack/Redis service
+# health probes used by test:integration:remote-cache* tasks.
+# The ci task depends on tasks from many files (lint, security,
+# test, benchmark) — resolved via flatten: true at root include time.
+
+tasks:
+  ci:localstack:ready:
+    desc: >-
+      Wait for LocalStack S3 to be healthy, then run a small smoke probe
+      (mb + cp + head + ls + rm + rb). Runs before test:integration:remote-cache.
+      Skips (exits 0) when `awslocal` or `curl` are absent so local dev
+      without LocalStack does not fail the broader test task graph.
+      LOCALSTACK_ENDPOINT controls the base URL (default http://localhost:4566).
+    vars:
+      ENDPOINT:
+        sh: echo "${LOCALSTACK_ENDPOINT:-http://localhost:4566}"
+    cmds:
+      - |
+        if ! command -v awslocal >/dev/null 2>&1; then
+          echo "skip: awslocal not on PATH (install: pipx install awscli-local)"
+          exit 0
+        fi
+        if ! command -v curl >/dev/null 2>&1; then
+          echo "skip: curl not on PATH"
+          exit 0
+        fi
+
+        # Step 1: poll /_localstack/health for up to 60s.
+        ready=0
+        for i in $(seq 1 60); do
+          body=$(curl -sSf "{{.ENDPOINT}}/_localstack/health" 2>/dev/null || true)
+          if [ -n "$body" ] && printf '%s' "$body" | grep -qE '"s3":[[:space:]]*"(running|available)"'; then
+            echo "localstack s3 ready in ${i}s"
+            ready=1
+            break
+          fi
+          sleep 1
+        done
+        if [ "$ready" -ne 1 ]; then
+          echo "ERROR: localstack s3 did not report ready within 60s" >&2
+          echo "health response: $body" >&2
+          exit 1
+        fi
+
+        # Step 2: smoke-probe the exact operations S3Backend uses.
+        bucket="rspec-tracer-smoke-$$"
+        tmp=$(mktemp)
+        echo "probe" > "$tmp"
+        trap 'rm -f "$tmp"; awslocal s3 rb "s3://${bucket}" --force >/dev/null 2>&1 || true' EXIT
+
+        awslocal s3 mb "s3://${bucket}" >/dev/null
+        awslocal s3 cp "$tmp" "s3://${bucket}/probe.txt" >/dev/null
+        awslocal s3api head-object --bucket "${bucket}" --key probe.txt >/dev/null
+        awslocal s3 ls "s3://${bucket}/" | grep -q probe.txt
+        awslocal s3 rm "s3://${bucket}/probe.txt" >/dev/null
+        awslocal s3 rb "s3://${bucket}" >/dev/null
+        echo "localstack s3 smoke probe OK"
+
+  ci:redis:ready:
+    desc: >-
+      Wait for Redis to be healthy on REDIS_URL (default redis://localhost:6379/15)
+      and run a small smoke probe. Skips (exits 0) when `redis-cli` is absent
+      so local dev without Redis does not fail the broader task graph.
+    vars:
+      URL:
+        sh: echo "${REDIS_URL:-redis://localhost:6379/15}"
+    cmds:
+      - |
+        if ! command -v redis-cli >/dev/null 2>&1; then
+          echo "skip: redis-cli not on PATH (install: brew install redis)"
+          exit 0
+        fi
+
+        # Step 1: poll PING for up to 30s.
+        ready=0
+        for _ in $(seq 1 30); do
+          if redis-cli -u "{{.URL}}" PING 2>/dev/null | grep -q PONG; then
+            echo "redis ready"
+            ready=1
+            break
+          fi
+          sleep 1
+        done
+        if [ "$ready" -ne 1 ]; then
+          echo "ERROR: redis did not respond to PING within 30s at {{.URL}}" >&2
+          exit 1
+        fi
+
+        # Step 2: smoke probe the exact op set RedisBackend uses.
+        bucket="rspec-tracer-smoke-$$"
+        redis-cli -u "{{.URL}}" SET "${bucket}:probe" "probe-value" >/dev/null
+        redis-cli -u "{{.URL}}" GET "${bucket}:probe" | grep -q probe-value
+        redis-cli -u "{{.URL}}" HSET "${bucket}:hash" field value >/dev/null
+        redis-cli -u "{{.URL}}" HGET "${bucket}:hash" field | grep -q value
+        redis-cli -u "{{.URL}}" DEL "${bucket}:probe" "${bucket}:hash" >/dev/null
+        echo "redis smoke probe OK"
+
+  ci:
+    desc: Full CI pipeline locally
+    deps: [ruby:version-check]
+    cmds:
+      - task: lint:all
+      - task: check:all
+      - task: test:all
+      - task: security:all
+      - task: benchmark:full
+      - task: test:integration
+
+  # ── Reporters (HTML frontend) ──────────────────────────

@@ -1,0 +1,60 @@
+version: '3'
+
+# Lint tasks: ruby (rubocop), actions (actionlint), shell (shellcheck),
+# yaml (yamllint --strict), node (HTML reporter eslint), all (aggregator).
+# Cross-file dep-free.
+
+tasks:
+  lint:ruby:
+    desc: Run RuboCop (parallel)
+    cmds:
+      - bundle exec rubocop --parallel --format progress
+
+  lint:actions:
+    desc: Lint GitHub Actions workflows
+    # actionlint shells out to `shellcheck` via Go's exec.LookPath,
+    # which walks $PATH. On machines with goenv on PATH, its
+    # shim directory (~/.goenv/shims/) precedes our bin/ and exposes
+    # a shellcheck shim that errors unless a Go version currently has
+    # shellcheck installed. Pin shellcheck to the project-installed
+    # binary explicitly - any path with a slash bypasses PATH lookup.
+    # Empty -pyflakes disables the Python lint pass we don't install.
+    cmds:
+      - bin/actionlint -shellcheck=./bin/shellcheck -pyflakes=
+
+  lint:shell:
+    desc: Lint shell scripts
+    cmds:
+      - |
+        SCRIPTS=$(find . -name '*.sh' -not -path './.git/*' -not -path './tmp/*' -not -path './coverage/*' -not -path './rspec_tracer_*/*' 2>/dev/null || true)
+        if [ -n "$SCRIPTS" ]; then
+          echo "$SCRIPTS" | xargs bin/shellcheck
+        else
+          echo "No shell scripts to lint."
+        fi
+
+  lint:yaml:
+    desc: Lint YAML files
+    cmds:
+      - bin/yamllint --strict .
+
+  lint:node:
+    desc: Lint + format check the HTML reporter frontend (ESLint + Prettier)
+    dir: lib/rspec_tracer/reporters/html
+    preconditions:
+      - sh: test -d node_modules
+        msg: "node_modules missing; run `task reporters:html:install` first"
+    cmds:
+      - npm run lint
+      - npm run format
+
+  lint:all:
+    desc: Run every linter
+    cmds:
+      - task: lint:ruby
+      - task: lint:actions
+      - task: lint:shell
+      - task: lint:yaml
+      - task: lint:node
+
+  # ── Checks (format / tidy) ─────────────────────────────

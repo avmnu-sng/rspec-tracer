@@ -20,23 +20,24 @@
 # stay actionable.
 
 require 'bundler'
-require 'fileutils'
-require 'json'
 require 'open3'
 require 'set'
 
-# Module-scoped shared state + helpers so rubocop's
-# RSpec/LeakyConstantDeclaration stays quiet (constants live outside
-# the describe block) and so the subprocess runner can be reused
-# across the dozen scenarios without closure capture weirdness.
+require_relative '../support/fixture_bundle_helper'
+
+# Module-scoped per-spec state + the spec-specific subprocess runner
+# (constants live outside the describe block to keep rubocop's
+# RSpec/LeakyConstantDeclaration quiet). The fixture-bundle ladder /
+# tracer-state scrub / cache reader are shared with
+# narrow_ar_schema_spec.rb via FixtureBundleHelper.
 module RailsAppSpecHelpers
-  FIXTURE_ROOT = File.expand_path('../fixtures/rails_app', __dir__)
-  CACHE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_cache')
-  COVERAGE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_coverage')
-  REPORT_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_report')
-  LOCAL_COVERAGE = File.join(FIXTURE_ROOT, 'coverage')
   TRACER_ENV = { 'RSPEC_TRACER' => '1' }.freeze
-  SCRUB_DIRS = [CACHE_DIR, COVERAGE_DIR, REPORT_DIR, LOCAL_COVERAGE].freeze
+  # BUNDLE_FROZEN tells bundler to use the lockfile as-is and skip
+  # the per-`bundle exec` resolve check; saves ~0.5-1s per
+  # subprocess across the 24 cold/warm scenarios. Safe because the
+  # fixture's Gemfile.lock is fully resolved by ensure_bundle_and_db
+  # before any subprocess fires.
+  SUBPROCESS_BUNDLE_ENV = { 'BUNDLE_FROZEN' => '1' }.freeze
 
   MUTATION_MARKER = "\n# rspec-tracer M4.3 behavior-matrix mutation marker\n"
   MUTATION_MARKER_VIEW = "\n<!-- rspec-tracer M4.3 behavior-matrix mutation marker -->\n"
@@ -45,40 +46,10 @@ module RailsAppSpecHelpers
 
   def run_rspec_in_fixture(env = {})
     Bundler.with_unbundled_env do
-      Open3.capture2e(TRACER_ENV.merge(env), 'bundle', 'exec', 'rspec', '--no-color',
-                      chdir: FIXTURE_ROOT)
+      Open3.capture2e(TRACER_ENV.merge(SUBPROCESS_BUNDLE_ENV).merge(env),
+                      'bundle', 'exec', 'rspec', '--no-color',
+                      chdir: FixtureBundleHelper::FIXTURE_ROOT)
     end
-  end
-
-  def ensure_bundle_and_db
-    Bundler.with_unbundled_env do
-      Dir.chdir(FIXTURE_ROOT) do
-        gemfile_env = { 'BUNDLE_GEMFILE' => File.join(FIXTURE_ROOT, 'Gemfile') }
-        unless system(gemfile_env, 'bundle', 'check', out: File::NULL, err: File::NULL)
-          # Cross-interpreter invocations (MRI <-> JRuby on the same
-          # gitignored fixture lockfile) leave a platform-mismatched
-          # lock that `bundle install` can't always reconcile in one
-          # pass when the Rails-line default shifts in the same step.
-          # Wipe the lock so Bundler resolves fresh against the current
-          # interpreter. Same-interpreter repeats keep `bundle check`
-          # green, so this rm only fires on the exception path.
-          FileUtils.rm_f(File.join(FIXTURE_ROOT, 'Gemfile.lock'))
-          system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
-        end
-
-        system('bundle', 'exec', 'rails', 'db:test:prepare',
-               out: File::NULL, err: File::NULL) || raise('db:test:prepare failed')
-      end
-    end
-  end
-
-  def clear_tracer_state
-    FileUtils.rm_rf(SCRUB_DIRS)
-  end
-
-  def load_cache_file(name)
-    manifest = JSON.parse(File.read(File.join(CACHE_DIR, 'last_run.json'), encoding: 'UTF-8'))
-    JSON.parse(File.read(File.join(CACHE_DIR, manifest.fetch('run_id'), name), encoding: 'UTF-8'))
   end
 end
 
@@ -90,22 +61,22 @@ RSpec.describe 'rails_app behavior matrix' do
   include RailsAppSpecHelpers
 
   before(:all) do
-    RailsAppSpecHelpers.ensure_bundle_and_db
+    FixtureBundleHelper.ensure_bundle_and_db
   end
 
   before do
-    RailsAppSpecHelpers.clear_tracer_state
+    FixtureBundleHelper.clear_tracer_state
     out, status = RailsAppSpecHelpers.run_rspec_in_fixture
     raise "cold rspec failed (status=#{status.exitstatus}):\n#{out}" unless status.success?
 
-    @cold_example_ids = RailsAppSpecHelpers.load_cache_file('all_examples.json').keys.to_set
-    reverse_deps = RailsAppSpecHelpers.load_cache_file('reverse_dependency.json')
+    @cold_example_ids = FixtureBundleHelper.load_cache_file('all_examples.json').keys.to_set
+    reverse_deps = FixtureBundleHelper.load_cache_file('reverse_dependency.json')
     @show_erb_renderers = reverse_deps.fetch('/app/views/users/show.html.erb', []).to_set
     raise 'expected show.html.erb to have cold renderers' if @show_erb_renderers.empty?
   end
 
   after(:all) do
-    RailsAppSpecHelpers.clear_tracer_state
+    FixtureBundleHelper.clear_tracer_state
   end
 
   def all_example_ids
@@ -118,13 +89,13 @@ RSpec.describe 'rails_app behavior matrix' do
     out, status = RailsAppSpecHelpers.run_rspec_in_fixture
     raise "warm rspec failed (status=#{status.exitstatus}):\n#{out}" unless status.success? || allow_failures
 
-    skipped = RailsAppSpecHelpers.load_cache_file('skipped_examples.json').to_set
+    skipped = FixtureBundleHelper.load_cache_file('skipped_examples.json').to_set
     re_run = all_example_ids - skipped
     { out: out, status: status, skipped: skipped, re_run: re_run }
   end
 
   def mutate(relative_path, marker: RailsAppSpecHelpers::MUTATION_MARKER)
-    path = File.join(RailsAppSpecHelpers::FIXTURE_ROOT, relative_path)
+    path = File.join(FixtureBundleHelper::FIXTURE_ROOT, relative_path)
     original = File.binread(path)
     File.open(path, 'ab') { |f| f.write(marker) }
     yield
@@ -249,7 +220,7 @@ RSpec.describe 'rails_app behavior matrix' do
 
   describe 'scenario 11: new template added' do
     it 'triggers zero re-runs (:views is not declared; NewFileDetector does not flag the add)' do
-      new_template = File.join(RailsAppSpecHelpers::FIXTURE_ROOT, 'app/views/users/_m43_new.html.erb')
+      new_template = File.join(FixtureBundleHelper::FIXTURE_ROOT, 'app/views/users/_m43_new.html.erb')
       begin
         File.write(new_template, "<span class=\"m43\">M4.3 new template</span>\n")
         result = warm_run
@@ -262,7 +233,7 @@ RSpec.describe 'rails_app behavior matrix' do
 
   describe 'scenario 12: template deleted' do
     it 're-runs only the examples that had rendered the deleted template (expected to fail)' do
-      target = File.join(RailsAppSpecHelpers::FIXTURE_ROOT, 'app/views/users/show.html.erb')
+      target = File.join(FixtureBundleHelper::FIXTURE_ROOT, 'app/views/users/show.html.erb')
       backup = File.binread(target)
       begin
         File.delete(target)
