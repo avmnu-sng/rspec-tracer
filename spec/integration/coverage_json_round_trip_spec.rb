@@ -36,9 +36,9 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
         'RSPEC_TRACER_FIXTURE_NO_SIMPLECOV' => '1',
         'BUNDLE_FROZEN' => '1'
       }
-      out, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color',
-                                    chdir: FixtureBundleHelper::FIXTURE_ROOT)
-      raise "fixture rspec failed (status=#{status.exitstatus}):\n#{out}" unless status.success?
+      @rspec_out, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color',
+                                           chdir: FixtureBundleHelper::FIXTURE_ROOT)
+      raise "fixture rspec failed (status=#{status.exitstatus}):\n#{@rspec_out}" unless status.success?
     end
   end
 
@@ -50,12 +50,26 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
     expect(File).to exist(coverage_json_path)
 
     actual_payload = JSON.parse(File.read(coverage_json_path, encoding: 'UTF-8'))
+    actual_relativized = relativize(actual_payload['RSpecTracer']['coverage'])
+
+    if ENV['RSPEC_TRACER_M8_REGEN_GOLDEN'] == '1'
+      File.write(
+        golden_path,
+        "#{JSON.pretty_generate(RSpecTracer: { coverage: actual_relativized, timestamp: 0 })}\n",
+        encoding: 'UTF-8'
+      )
+      warn "[M8.0 golden capture] wrote #{actual_relativized.size} keys -> #{golden_path}"
+      next
+    end
+
     golden_payload = JSON.parse(File.read(golden_path, encoding: 'UTF-8'))
 
     expect(actual_payload['RSpecTracer']['timestamp']).to be_a(Integer)
-    expect(actual_payload.dig('RSpecTracer', 'coverage')).not_to be_empty
-    expect(relativize(actual_payload['RSpecTracer']['coverage']))
-      .to eq(golden_payload['RSpecTracer']['coverage'])
+    expect(actual_relativized).not_to be_empty
+    if actual_relativized != golden_payload['RSpecTracer']['coverage']
+      warn "[M8.0 round-trip diff debug] inner rspec output:\n#{@rspec_out}"
+    end
+    expect(actual_relativized).to eq(golden_payload['RSpecTracer']['coverage'])
   end
 
   def relativize(coverage_hash)
