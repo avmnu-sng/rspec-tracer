@@ -1,16 +1,30 @@
 ---
 name: combinations
 
-# Exhaustive cross-product of every supported runtime-dep major-line
-# combination on every supported Ruby. Per-PR + per-main runs use
-# Option-A relaxed pins (root Gemfile uses `>= floor` for each
-# multi-line dep, so Bundler resolves latest-of-everything-installable
-# per cell - matching what an end user gets). This workflow flips that:
-# every dep is explicitly pinned per cell so the matrix actually probes
-# every (redis x conn_pool x msgpack x parallel x parallel_tests x
-# rspec x sqlite3) corner the user could land on.
+# Weekly off-PR signal split into two concerns sharing one Sun 02:00 UTC
+# cron:
 #
-# Cell count (~496):
+# (1) Exhaustive cross-product of every supported runtime-dep major-line
+#     combination on every supported Ruby (`combo-3.x` / `combo-4.0-*` /
+#     `combo-jruby` / `combo-redis-service`). Per-PR + per-main runs use
+#     Option-A relaxed pins (root Gemfile uses `>= floor` for each
+#     multi-line dep, so Bundler resolves latest-of-everything-installable
+#     per cell - matching what an end user gets). This workflow flips
+#     that: every dep is explicitly pinned per cell so the matrix actually
+#     probes every (redis x conn_pool x msgpack x parallel x
+#     parallel_tests x rspec x sqlite3) corner the user could land on.
+#
+# (2) Periphery mutation gates (`combo-mutation-rails` /
+#     `combo-mutation-reporters` / `combo-mutation-remote-cache`).
+#     Demoted from per-PR `lint-and-specs.yml` because the periphery
+#     subdirs ship with carve-out gates below 100% to accommodate
+#     structural ceilings (mutant first-token describe-label mapping;
+#     `Module#prepend` idempotency in shared-process spec suites). Below-
+#     100% gates are close to rubber-stamps; weekly cadence is sufficient
+#     signal at the periphery while per-PR mutation surface stays focused
+#     on the core engine (smoke + tracker + storage + rspec + top-level).
+#
+# Cell count for (1) (~496):
 #   - combinations-3.1:        16  (no conn_pool 3.x; no parallel 2.x; sqlite3 1.7 only)
 #   - combinations-3.2:        64  (no parallel 2.x)
 #   - combinations-3.3:       128
@@ -21,8 +35,12 @@ name: combinations
 #   - combinations-jruby:      16  (no sqlite3 specs; no conn_pool 3.x; no parallel 2.x)
 #   - combinations-redis-service: 16  (real-wire Redis 7.4 server x redis-gem 4.8/5.4)
 #
-# See docs/revamp/sessions/M3.8-part-c-runtime-dep-matrix.md (local) for
-# the full design rationale.
+# Plus 3 single-shot mutation jobs from (2) (no matrix axes; one cell
+# each on Ruby 3.3.10).
+#
+# See docs/revamp/sessions/M3.8-part-c-runtime-dep-matrix.md +
+# docs/revamp/sessions/M8.5-mutation-demote.md (local) for the full
+# design rationale.
 
 on:
   schedule:
@@ -464,3 +482,112 @@ jobs:
 
       - name: Test — Integration (remote cache + Redis)
         run: task test:integration:remote-cache:redis
+
+  # ---------------------------------------------------------------------
+  # Periphery mutation gates (demoted from per-PR `lint-and-specs.yml`).
+  # Per-subject carve-out thresholds documented inline in the matching
+  # `task test:mutation:<name>` Taskfile entry. Single-shot jobs (no
+  # matrix axes) on Ruby 3.3.10. Local Taskfile entries unchanged so
+  # developers can still run any of these on demand before opening a
+  # periphery-touching PR.
+  # ---------------------------------------------------------------------
+
+  combo_mutation_rails:
+    name: combo-mutation-rails
+    # Mutation pass on lib/rspec_tracer/rails/ (3 net-new subjects:
+    # Notifications, I18nTracking, Railtie; Preset stays in per-PR
+    # smoke). Smaller surface than remote-cache / reporters; 30 min
+    # cap matches the original lint-and-specs cell. Carve-outs sized
+    # for combined-describe + Module#prepend ceilings — see Taskfile
+    # inline rationale.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Mutation (rails)
+        run: task test:mutation:rails
+
+  combo_mutation_reporters:
+    name: combo-mutation-reporters
+    # Mutation pass on lib/rspec_tracer/reporters/ (6 subjects: Base,
+    # JsonReporter, TerminalReporter, HtmlReporter, PayloadBuilder,
+    # Registry). HtmlReporter (218 LOC) + PayloadBuilder (203 LOC) carry
+    # the bulk; 60 min cap matches the original lint-and-specs cell.
+    # Carve-outs sized for prose-form integration describe ceilings —
+    # see Taskfile inline rationale.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Mutation (reporters)
+        run: task test:mutation:reporters
+
+  combo_mutation_remote_cache:
+    name: combo-mutation-remote-cache
+    # Mutation pass on lib/rspec_tracer/remote_cache/ (8 subjects:
+    # Backend, Validator, Archive, GitAncestry, UserTasks, LocalFsBackend,
+    # RedisBackend, S3Backend). S3Backend (~567 LOC) is the bulk; sized
+    # comparable to per-PR test-mutation-storage's SqliteBackend (581
+    # LOC). 60 min cap matches the original lint-and-specs cell.
+    # Per-subject gates carve out the structural describe-label ceiling
+    # — see Taskfile inline rationale.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bundle — list resolved versions
+        run: bundle list
+
+      - name: Test — Mutation (remote-cache)
+        run: task test:mutation:remote-cache
