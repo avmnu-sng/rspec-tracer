@@ -25,8 +25,7 @@ module RSpecTracer
   # Top-level coordinator for the v2 core engine. Wires
   # CoverageAdapter + IOHooks + DeclaredGlobs + NewFileDetector +
   # WholeSuiteInvalidators + LoadedFilesTracker + ExampleRegistry +
-  # DependencyGraph + Storage into a single pipeline that replaces
-  # the legacy Runner + CoverageReporter triad on an opt-in basis.
+  # DependencyGraph + Storage into a single pipeline.
   #
   # Named `Engine` rather than `Tracker` because the `Tracker`
   # namespace is already taken by the sub-module that houses the
@@ -47,13 +46,12 @@ module RSpecTracer
   #   engine.on_example_{passed,failed,pending,skipped}(id, result)
   #   engine.finalize                    # persist snapshot + coverage
   #
-  # Coverage totals parity (AC1 from M3.6): the engine owns a
-  # per-example coverage delta map with identical semantics to the
-  # legacy CoverageReporter - diff between start-of-example and
-  # end-of-example ::Coverage.peek_result, storing
-  # {file_path => {line_number => delta}}. `merge_skipped_coverage`
-  # replays 1.x's algorithm verbatim so a parity test has something
-  # mechanical to compare.
+  # Per-example coverage delta map: peek baseline at example_started,
+  # peek again at example_finished, store the per-line strength delta
+  # under `@examples_coverage[id][file_path][line]`. Reporters::
+  # CoverageJsonReporter consumes the cumulative coverage at finalize
+  # via Tracker::CoverageAdapter#peek_unfiltered + the engine's
+  # `merge_skipped_coverage` algorithm.
   #
   # Cache parity: `finalize` builds a Snapshot with file-name-keyed
   # dependency / reverse_dependency / all_files maps (matching the
@@ -61,11 +59,6 @@ module RSpecTracer
   # "/") and hands it to Storage::JsonBackend. The schema bump to 3
   # from M3.7 adds `boot_set`; everything else mirrors the 1.x
   # cache layout byte-for-byte.
-  # The coordinator's surface is intentionally wide - it mirrors the
-  # full legacy Runner + CoverageReporter + Reporter triad so the
-  # bridge in `lib/rspec_tracer.rb` can swap engines without widening
-  # the RSpec hook's conditional footprint. Expected to shrink once
-  # Phase 5 retires the legacy path.
   # rubocop:disable Metrics/ClassLength
   class Engine
     EXAMPLE_RUN_REASON = {
@@ -295,11 +288,12 @@ module RSpecTracer
       snapshot
     end
 
-    # Replays the legacy CoverageReporter algorithm: for every
-    # previously-skipped example id, accumulate per-line coverage
-    # strengths from the previous run's per-example coverage map
-    # into the missed_coverage return value. Deleted files / missing
-    # entries are skipped silently.
+    # For every previously-skipped example id, accumulate per-line
+    # coverage strengths from the previous run's per-example coverage
+    # map into the missed_coverage return value. Deleted files /
+    # missing entries are skipped silently. Consumed by
+    # Reporters::CoverageJsonReporter at finalize time so coverage.json
+    # carries forward the contribution of skipped examples.
     #
     # Returns Hash[file_path => Hash[line_number => cumulative_strength]].
     def merge_skipped_coverage(skipped_ids, previous_examples_coverage = nil)

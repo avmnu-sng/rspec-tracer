@@ -711,5 +711,23 @@ RSpec.describe RSpecTracer::Engine do
       end.not_to raise_error
     end
   end
+
+  # M8.0 acceptance criterion #4: per-example hot path invokes
+  # ::Coverage.peek_result exactly twice (once at example_started for
+  # the baseline, once at example_finished for the diff). The legacy
+  # CoverageReporter previously double-peeked via reporter_hook.rb's
+  # record_coverage / compute_diff calls; M8.0's retirement reduces
+  # the per-example peek count from 4 to 2.
+  describe '#example_started + #example_finished peek count (M8.0 AC #4)' do
+    it 'invokes ::Coverage.peek_result exactly twice across one example lifecycle' do
+      tracker = build_tracker.tap(&:setup)
+      allow(Coverage).to receive(:peek_result).and_return({})
+
+      tracker.example_started
+      tracker.example_finished('ex-peek-count')
+
+      expect(Coverage).to have_received(:peek_result).exactly(2).times
+    end
+  end
 end
 # rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/MultipleMemoizedHelpers

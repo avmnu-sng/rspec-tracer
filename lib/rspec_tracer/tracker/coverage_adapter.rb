@@ -46,15 +46,21 @@ module RSpecTracer
       # component -- 2.0 ignores branch coverage (same as 1.x; noted in
       # the upgrade docs).
       def peek
-        raw = ::Coverage.peek_result
-        @mode = detect_mode(raw) if @mode == :auto
+        peek_normalized { |path| filtered?(path) }
+      end
 
-        raw.each_with_object({}) do |(path, stats), acc|
-          next unless path.start_with?(@root_prefix)
-          next if filtered?(path)
-
-          acc[path] = @mode == :hash ? stats[:lines] : stats
-        end
+      # Same shape as #peek but only filters by `@root_prefix` -- skips
+      # the user `filters` filter. The coverage.json emitter
+      # (`Reporters::CoverageJsonReporter`) calls this at finalize to
+      # capture cumulative coverage matching legacy semantics: 1.x's
+      # CoverageReporter#peek_coverage applied no `filters` filter at
+      # peek time and let `coverage_filters` do the final exclusion.
+      # Routing the emitter's finalize peek through this method keeps
+      # the lib/-wide `::Coverage.peek_result` call-site count at 3
+      # (one per file: this adapter, rspec/installation, and
+      # tracker/loaded_files_tracker) instead of adding a fourth.
+      def peek_unfiltered
+        peek_normalized { false }
       end
 
       # Pure function: returns Set<Input> for files whose line arrays
@@ -77,6 +83,22 @@ module RSpecTracer
       end
 
       private
+
+      # Single owner of the `::Coverage.peek_result` call site for
+      # `peek` and `peek_unfiltered`. Skip block decides exclusion;
+      # everything that survives gets normalized through the array/hash
+      # mode handling.
+      def peek_normalized
+        raw = ::Coverage.peek_result
+        @mode = detect_mode(raw) if @mode == :auto
+
+        raw.each_with_object({}) do |(path, stats), acc|
+          next unless path.start_with?(@root_prefix)
+          next if yield(path)
+
+          acc[path] = @mode == :hash ? stats[:lines] : stats
+        end
+      end
 
       def detect_mode(raw)
         return :array if raw.empty?

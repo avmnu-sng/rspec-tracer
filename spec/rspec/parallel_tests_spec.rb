@@ -354,20 +354,20 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect { described_class.merge_coverage! }.not_to raise_error
     end
 
-    it 'merges via CoverageMerger + writes the top-level coverage.json' do
-      merger = spy('CoverageMerger')
-      writer = spy('CoverageWriter')
-      allow(RSpecTracer::CoverageMerger).to receive(:new).and_return(merger)
-      allow(RSpecTracer::CoverageWriter).to receive(:new).and_return(writer)
+    it 'merges via Reporters::CoverageJsonReporter.merge_parallel + emits a debug rollup line' do
+      allow(RSpecTracer::Reporters::CoverageJsonReporter).to receive(:merge_parallel)
+      allow(described_class).to receive(:log_rollups?).and_return(true)
+      logger = spy('Logger')
+      allow(RSpecTracer).to receive(:logger).and_return(logger)
 
       described_class.merge_coverage!
 
-      expect(merger).to have_received(:merge).with(
-        [File.join(base_dir, 'parallel_tests_1'), File.join(base_dir, 'parallel_tests_2')]
+      expect(RSpecTracer::Reporters::CoverageJsonReporter).to have_received(:merge_parallel).with(
+        peer_paths: [File.join(base_dir, 'parallel_tests_1'), File.join(base_dir, 'parallel_tests_2')],
+        output_path: File.join(base_dir, 'coverage.json'),
+        logger: logger
       )
-      expect(RSpecTracer::CoverageWriter)
-        .to have_received(:new).with(File.join(base_dir, 'coverage.json'), merger)
-      expect(writer).to have_received(:write_report)
+      expect(logger).to have_received(:debug).with(/merged parallel tests coverage/)
     end
   end
 

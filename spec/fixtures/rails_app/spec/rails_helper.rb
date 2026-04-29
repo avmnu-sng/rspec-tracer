@@ -14,7 +14,14 @@ ENV['RAILS_ENV'] ||= 'test'
 #      `setup_rails`'s `defined?(::Rails::VERSION)` check resolves
 #      truthy and Engine.setup installs the Rails::Notifications +
 #      Rails::I18nTracking observers.
-if ENV['RSPEC_TRACER'] == '1'
+#
+# RSPEC_TRACER_FIXTURE_NO_SIMPLECOV=1 opts out of SimpleCov so
+# rspec-tracer's own coverage.json emitter writes to
+# rspec_tracer_coverage/coverage.json. Used by the
+# spec/integration/coverage_json_round_trip_spec.rb golden round-trip
+# (when SimpleCov is loaded, rspec-tracer defers coverage emission to
+# SimpleCov's at_exit and never writes its own coverage.json).
+if ENV['RSPEC_TRACER'] == '1' && ENV['RSPEC_TRACER_FIXTURE_NO_SIMPLECOV'] != '1'
   require 'simplecov'
   SimpleCov.start { add_filter(%r{^/spec/}) } unless SimpleCov.running
 end

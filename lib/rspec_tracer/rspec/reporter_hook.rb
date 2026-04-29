@@ -6,26 +6,22 @@ module RSpecTracer
     # `RSpecTracer::RSpec::Installation.install!`. Replaces the 1.x
     # `RSpecTracer::RSpecReporter` singleton-class prepend.
     #
-    # Forwards RSpec's example lifecycle notifications into the engine
-    # and the coverage_reporter, then chains to `super`. Every callback
-    # is no-op when either:
+    # Forwards RSpec's example lifecycle notifications into the engine,
+    # then chains to `super`. Every callback is no-op when either:
     #   - the engine isn't set up (start never called, graceful degrade)
     #   - the example carries no `:rspec_tracer_example_id` metadata
     #     (it was partitioned into `ignore_spec_files` by RunnerHook, so
     #     the tracer treats it as invisible)
     #
     # The per-example coverage peek+diff sequence (peek before, peek
-    # after) runs through CoverageReporter for coverage.json parity with
-    # 1.x and through Engine for dependency attribution. Two peeks per
-    # example costs microseconds; the double attribution was M3.6's
-    # deliberate "keep coverage.json emission on the legacy path" call.
+    # after) runs through Engine#example_started + Engine#example_finished
+    # only. M8.0 retired the legacy CoverageReporter that previously
+    # peeked a second time per example; coverage.json emission now
+    # consumes the Engine's per-example deltas + a single finalize-time
+    # peek through Tracker::CoverageAdapter#peek_unfiltered.
     module ReporterHook
-      def example_started(example)
-        engine = RSpecTracer.engine
-        if engine
-          RSpecTracer.coverage_reporter&.record_coverage
-          engine.example_started
-        end
+      def example_started(_example)
+        RSpecTracer.engine&.example_started
 
         super
       end
@@ -34,10 +30,7 @@ module RSpecTracer
         engine = RSpecTracer.engine
         if engine
           example_id = example.metadata[:rspec_tracer_example_id]
-          if example_id
-            engine.example_finished(example_id)
-            RSpecTracer.coverage_reporter&.compute_diff(example_id)
-          end
+          engine.example_finished(example_id) if example_id
         end
 
         super

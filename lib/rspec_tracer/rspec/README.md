@@ -7,7 +7,7 @@ responsibility.
 |------|------|
 | [`installation.rb`](installation.rb) | Prepends `RunnerHook` + `ReporterHook` onto `RSpec::Core::Runner` / `RSpec::Core::Reporter`. Idempotent. Called once from `RSpecTracer.start`. |
 | [`runner_hook.rb`](runner_hook.rb) | Overrides `run_specs`. Two-pass filter walk: Pass 1 reads `tracks:` metadata + registers per-example glob/env declarations on the engine; Pass 2 asks `Engine#run_example?` for filter decisions. Mutates `RSpec.world` to the filtered set, logs the `RSpec tracer is running N examples` banner. |
-| [`reporter_hook.rb`](reporter_hook.rb) | Overrides `example_started`, `example_finished`, `example_passed`, `example_failed`, `example_pending`. Forwards into `Engine` + `CoverageReporter` so dependency attribution + coverage.json emission stay synchronized. |
+| [`reporter_hook.rb`](reporter_hook.rb) | Overrides `example_started`, `example_finished`, `example_passed`, `example_failed`, `example_pending`. Forwards into `Engine` for dependency attribution; coverage.json emission lives on the dedicated `Reporters::CoverageJsonReporter` finalize path. |
 | [`parallel_tests.rb`](parallel_tests.rb) | `TEST_ENV_NUMBER` + `PARALLEL_TEST_GROUPS` detection, `rspec_tracer.lock` lifecycle, narrator selection for log silencing, last-process merge via `Storage::JsonBackend#merge_from_peers`. |
 | [`metadata.rb`](metadata.rb) | Per-example `tracks:` DSL walker. Reads `tracks: { files: ..., env: ... }` off an example plus every ancestor group, unions the entries (RSpec's default metadata cascade would clobber on shared keys), and returns the merged `{ files:, env: }` for RunnerHook to register with the engine. |
 

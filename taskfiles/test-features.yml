@@ -26,12 +26,15 @@ tasks:
 
   test:features:rails:
     desc: >-
-      M4.3 Rails integration test against the reference Rails app. Excluded
-      from the default rspec sweep (via .rspec --exclude-pattern) because a
-      full cycle is 12 scenarios x cold+warm subprocess runs, ~2-3 minutes.
-      The CI `rails` job invokes this per Rails matrix cell.
+      M4.3 Rails integration test against the reference Rails app. Also
+      includes the M8.0 coverage.json byte-equivalence round-trip spec
+      (drives the same fixture; opts out of SimpleCov via
+      RSPEC_TRACER_FIXTURE_NO_SIMPLECOV=1 inside the spec). Excluded
+      from the default rspec sweep (via .rspec --exclude-pattern) because
+      a full cycle is 12 scenarios x cold+warm subprocess runs,
+      ~2-3 minutes. The CI `rails` job invokes this per Rails matrix cell.
     cmds:
-      - bundle exec rspec --no-color spec/integration/rails_app_spec.rb
+      - bundle exec rspec --no-color spec/integration/rails_app_spec.rb spec/integration/coverage_json_round_trip_spec.rb
 
   test:features:rails:narrow-schema:
     desc: >-
