@@ -26,7 +26,6 @@ ROOT = Pathname(File.expand_path('..', __dir__))
 DEFAULT_GEMFILES = [
   ROOT.join('Gemfile'),
   ROOT.join('spec/fixtures/rails_app/Gemfile'),
-  ROOT.join('spec/fixtures/rails_app_big/Gemfile'),
   ROOT.join('benchmark/fixtures/ruby_app/Gemfile')
 ].freeze
 
