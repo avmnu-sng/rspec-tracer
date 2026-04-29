@@ -27,6 +27,17 @@ tasks:
     cmds:
       - bundle exec rspec spec/integration/dogfood_spec.rb spec/integration/ruby_app_spec.rb spec/integration/constants_regression_spec.rb
 
+  test:integration:check-bundle-drift:
+    desc: >-
+      M8.4-B drift task contract spec. Verifies
+      scripts/check_bundle_drift.rb exits zero on a known-good
+      Gemfile and non-zero on a fixture Gemfile with an
+      unsatisfiable constraint. Excluded from the default rspec
+      sweep (.rspec --exclude-pattern) because each `bundle install`
+      shell-out takes ~10-30 s.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/check_bundle_drift_spec.rb
+
   test:integration:parallel:
     desc: >-
       M5.1 parallel_tests integration test. Drives the benchmark ruby_app fixture
