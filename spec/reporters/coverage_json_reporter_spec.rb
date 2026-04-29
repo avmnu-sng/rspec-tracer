@@ -185,6 +185,26 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       expect(payload['RSpecTracer']['coverage'][tracked_file]).to eq([3, 4])
     end
 
+    it 'tolerates frozen line arrays from Coverage.peek_result (Ruby 3.2+)' do
+      # `::Coverage.peek_result` returns frozen line-count arrays on
+      # Ruby 3.2+. Surfaced via Solidus warm-cache run with skipped
+      # examples, where every cumulative-coverage file in the peek
+      # output is frozen. accumulate_skipped must dup-on-write.
+      frozen_line_array = [1, nil].freeze
+      allow(adapter).to receive(:peek_unfiltered).and_return(tracked_file => frozen_line_array)
+      allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
+      allow(engine).to receive(:merge_skipped_coverage).with(['ex_skipped']).and_return(
+        tracked_file => { '0' => 2, '1' => 4 }
+      )
+
+      expect { build_reporter.generate }.not_to raise_error
+
+      payload = JSON.parse(File.read(File.join(coverage_dir, 'coverage.json'), encoding: 'UTF-8'))
+      expect(payload['RSpecTracer']['coverage'][tracked_file]).to eq([3, 4])
+      # Original frozen array must NOT be mutated (dup-on-write contract).
+      expect(frozen_line_array).to eq([1, nil])
+    end
+
     it 'creates a stub line array when a skipped-only file is missing from peek output' do
       allow(adapter).to receive(:peek_unfiltered).and_return({})
       allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
