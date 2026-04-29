@@ -1,0 +1,27 @@
+# Legacy-style Rails fixtures — the YAML-driven alternative to FactoryBot.
+# Both styles ship so rspec-tracer can observe either dependency shape
+# (file reads on .yml vs AR model instantiation via factory).
+
+seed_admin:
+  name: Seed Admin
+  email: seed.admin@example.com
+  role: admin
+  activated_at: <%= Time.current.iso8601 %>
+  created_at: <%= 30.days.ago.iso8601 %>
+  updated_at: <%= 30.days.ago.iso8601 %>
+
+seed_member:
+  name: Seed Member
+  email: seed.member@example.com
+  role: member
+  activated_at: <%= Time.current.iso8601 %>
+  created_at: <%= 20.days.ago.iso8601 %>
+  updated_at: <%= 20.days.ago.iso8601 %>
+
+seed_guest:
+  name: Seed Guest
+  email: seed.guest@example.com
+  role: guest
+  activated_at:
+  created_at: <%= 10.days.ago.iso8601 %>
+  updated_at: <%= 10.days.ago.iso8601 %>

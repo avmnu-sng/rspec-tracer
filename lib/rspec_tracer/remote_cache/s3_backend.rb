@@ -97,22 +97,34 @@ module RSpecTracer
       # for the same ref. Validates the downloaded `last_run.json` via
       # schema_version before declaring success.
       #
+      # When `tree_sha` is provided, first consults the tree-SHA
+      # secondary index (`<tier>/by_tree/<tree_sha>`) to resolve the
+      # tree to a commit ref - catches rebase / revert scenarios where
+      # the same tree lives at a different commit hash than the one
+      # the caller is asking about. The standard `<tier>/<ref>` lookup
+      # is still tried as a fallback when the tree pointer is absent
+      # or its resolved ref has no archive.
+      #
       # Returns true on validated success, false on any failure. Cleans
       # up partially-downloaded files on failure so a subsequent fresh
       # load doesn't see stale data.
-      def download(ref)
+      def download(ref, tree_sha: nil)
         return false if ref.nil? || ref.to_s.empty?
 
-        tiers_to_try = [own_tier_prefix]
-        tiers_to_try << main_tier_prefix if pr_tier?
-
-        tiers_to_try.any? { |tier| try_download_from(tier, ref) }
+        attempts = build_download_attempts(ref, tree_sha)
+        attempts.any? { |tier, candidate| try_download_from(tier, candidate) }
       end
 
       # Upload the local cache to this backend's own tier under `ref`.
       # Packs the 15-file local layout into a single `cache.tar.gz` and
       # uploads that one object. Raises on wire failure. Idempotent.
-      def upload(ref)
+      #
+      # When `tree_sha` is provided, ALSO writes a small pointer file
+      # at `<tier>/by_tree/<tree_sha>` containing the commit-SHA. The
+      # pointer is consumed by `download(ref, tree_sha: ...)` to hit
+      # the cache when a different commit (rebase / revert) shares
+      # the same tree.
+      def upload(ref, tree_sha: nil)
         raise S3BackendError, 'ref is required' if blank?(ref)
 
         run_id = read_local_run_id
@@ -122,6 +134,7 @@ module RSpecTracer
         begin
           Archive.pack(cache_path: @cache_path, run_id: run_id, dest_path: archive_path)
           upload_file(archive_path, s3_archive_key(own_tier_prefix, ref))
+          upload_tree_pointer(ref, tree_sha) unless blank?(tree_sha)
           log_debug("uploaded cache for #{ref} to #{own_tier_prefix} (#{File.size(archive_path)} bytes)")
         ensure
           FileUtils.rm_f(archive_path)
@@ -271,6 +284,10 @@ module RSpecTracer
         join_key(@prefix, tier_prefix, ref, @test_suite_id, CACHE_ARCHIVE_FILENAME)
       end
 
+      def s3_tree_pointer_key(tier_prefix, tree_sha)
+        join_key(@prefix, tier_prefix, 'by_tree', tree_sha)
+      end
+
       def s3_branch_refs_key(branch_name)
         join_key(@prefix, PR_TIER, branch_name.chomp, BRANCH_REFS_FILENAME)
       end
@@ -309,6 +326,60 @@ module RSpecTracer
         run_id
       rescue StandardError
         nil
+      end
+
+      # -- Tree-SHA secondary index -----------------------
+
+      # Build the list of (tier_prefix, ref) pairs to try, in
+      # priority order:
+      #   1. Tree-pointer-resolved ref on own tier (rebase hit)
+      #   2. Tree-pointer-resolved ref on main tier (PR backends only)
+      #   3. Direct commit ref on own tier (standard path)
+      #   4. Direct commit ref on main tier (PR backends only)
+      # Tree-pointer attempts are only added when (a) tree_sha is
+      # given AND (b) the pointer file resolves to a non-empty ref.
+      def build_download_attempts(ref, tree_sha)
+        attempts = []
+        tree_resolved = resolve_tree_pointer(tree_sha)
+        if tree_resolved
+          attempts << [own_tier_prefix, tree_resolved]
+          attempts << [main_tier_prefix, tree_resolved] if pr_tier?
+        end
+        attempts << [own_tier_prefix, ref]
+        attempts << [main_tier_prefix, ref] if pr_tier?
+        attempts
+      end
+
+      # Read the tree pointer for `tree_sha` from the backend's own
+      # tier. Returns the resolved commit-SHA on hit, nil on miss /
+      # malformed content / wire error. Only the own-tier pointer is
+      # consulted - main-tier tree pointers from a parallel upload
+      # are not authoritative for a PR backend.
+      def resolve_tree_pointer(tree_sha)
+        return nil if blank?(tree_sha)
+
+        local_tmp = File.join(@cache_path, ".tree_pointer_download_#{Process.pid}_#{SecureRandom.hex(4)}.txt")
+        FileUtils.mkdir_p(@cache_path)
+
+        ok, = aws_cp_silent(s3_url(s3_tree_pointer_key(own_tier_prefix, tree_sha)), local_tmp)
+        return nil unless ok
+
+        resolved = File.read(local_tmp, encoding: ENCODING).strip
+        resolved.empty? ? nil : resolved
+      rescue StandardError => e
+        log_debug("tree pointer read failed (#{e.class}: #{e.message}); falling through")
+        nil
+      ensure
+        FileUtils.rm_f(local_tmp) if defined?(local_tmp) && local_tmp
+      end
+
+      def upload_tree_pointer(ref, tree_sha)
+        pointer_path = File.join(@cache_path, ".tree_pointer_upload_#{Process.pid}_#{SecureRandom.hex(4)}.txt")
+        File.write(pointer_path, ref.to_s, encoding: ENCODING)
+        upload_file(pointer_path, s3_tree_pointer_key(own_tier_prefix, tree_sha))
+        log_debug("wrote tree pointer #{tree_sha} -> #{ref} on #{own_tier_prefix}")
+      ensure
+        FileUtils.rm_f(pointer_path) if defined?(pointer_path) && pointer_path
       end
 
       # -- Download flow ----------------------------------

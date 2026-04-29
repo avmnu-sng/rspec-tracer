@@ -230,6 +230,88 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
       expect(removed).to eq(0)
     end
   end
+
+  # M8.4-B tree-SHA secondary index: rebase + revert commits produce
+  # a different commit-SHA but the SAME tree-SHA. The standard
+  # `<tier>/<ref>/cache.tar.gz` layout misses on those scenarios; the
+  # tree-SHA pointer at `<tier>/by_tree/<tree_sha>` resolves the tree
+  # to the original commit-SHA so the cache hits anyway.
+  describe 'tree-SHA secondary index' do
+    it 'writes a tree pointer alongside the cache archive on upload' do
+      prefix = "tree-sha-write-#{SecureRandom.hex(4)}"
+      backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
+      write_local_cache(run_id: 'run-tree-1')
+
+      backend.upload('commit-A', tree_sha: 'tree-T')
+
+      out, _err, status = Open3.capture3('awslocal', 's3', 'ls',
+                                         "s3://#{@bucket}/#{prefix}/main/by_tree/", '--recursive')
+      expect(status.success?).to be(true)
+      expect(out).to match(%r{main/by_tree/tree-T$})
+    end
+
+    it 'resolves a tree_sha to the original commit on download' do
+      prefix = "tree-sha-read-#{SecureRandom.hex(4)}"
+      backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
+      write_local_cache(run_id: 'run-tree-2')
+      original_content = File.read(File.join(@cache_path, 'run-tree-2', 'all_examples.json'), encoding: 'UTF-8')
+
+      backend.upload('commit-A', tree_sha: 'tree-T')
+
+      # New backend instance, fresh local cache - simulate a different
+      # commit with the same tree (rebased PR head) asking for the
+      # tree by tree_sha. ref='commit-B' has no archive, but the tree
+      # pointer resolves to commit-A which DOES.
+      FileUtils.rm_rf(Dir.glob(File.join(@cache_path, '*')))
+      result = backend.download('commit-B', tree_sha: 'tree-T')
+
+      expect(result).to be(true)
+      restored = File.read(File.join(@cache_path, 'run-tree-2', 'all_examples.json'), encoding: 'UTF-8')
+      expect(restored).to eq(original_content)
+    end
+
+    it 'falls back to direct ref when tree pointer is absent' do
+      prefix = "tree-sha-fallback-#{SecureRandom.hex(4)}"
+      backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
+      write_local_cache(run_id: 'run-tree-3')
+
+      # Upload WITHOUT tree_sha - no pointer written
+      backend.upload('commit-X')
+
+      FileUtils.rm_rf(Dir.glob(File.join(@cache_path, '*')))
+      # tree_sha is given but pointer doesn't exist; should fall back
+      # to direct commit-X lookup and succeed.
+      result = backend.download('commit-X', tree_sha: 'tree-missing')
+
+      expect(result).to be(true)
+    end
+
+    it 'returns false when both tree pointer AND ref are missing' do
+      prefix = "tree-sha-nothing-#{SecureRandom.hex(4)}"
+      backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
+
+      result = backend.download('nonexistent-ref', tree_sha: 'nonexistent-tree')
+
+      expect(result).to be(false)
+    end
+
+    it 'preserves the existing single-arg API contract' do
+      prefix = "tree-sha-noarg-#{SecureRandom.hex(4)}"
+      backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
+      write_local_cache(run_id: 'run-tree-4')
+
+      # No tree_sha kwarg = pre-M8.4-B behavior; works exactly as before.
+      backend.upload('commit-Y')
+
+      FileUtils.rm_rf(Dir.glob(File.join(@cache_path, '*')))
+      expect(backend.download('commit-Y')).to be(true)
+
+      # No tree pointer was written.
+      out, = Open3.capture3('awslocal', 's3', 'ls',
+                            "s3://#{@bucket}/#{prefix}/main/by_tree/", '--recursive')
+      expect(out).to be_empty
+    end
+  end
 end
 # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 # rubocop:enable RSpec/LeakyConstantDeclaration, RSpec/ExampleLength, RSpec/MultipleExpectations

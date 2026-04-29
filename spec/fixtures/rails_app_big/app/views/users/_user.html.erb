@@ -1,0 +1,10 @@
+<article class="user <%= user.admin? ? 'admin' : 'member' %>" id="<%= dom_id(user) %>">
+  <h2><%= link_to user.display_name, user_path(user) %></h2>
+  <p class="email"><%= mail_to user.email %></p>
+  <p class="role"><%= t("users.roles.#{user.role}") %></p>
+  <% if user.activated? %>
+    <p class="activated"><%= t('.activated_at', time: l(user.activated_at, format: :short)) %></p>
+  <% else %>
+    <p class="inactive"><%= t('.inactive') %></p>
+  <% end %>
+</article>

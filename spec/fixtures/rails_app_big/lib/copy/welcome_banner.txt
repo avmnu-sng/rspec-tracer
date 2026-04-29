@@ -1,0 +1,3 @@
+Welcome to the Rails App reference fixture.
+Posts and comments are a dependency-tracking test substrate.
+Edit this file to simulate a dependency churn that Coverage-only trackers miss.

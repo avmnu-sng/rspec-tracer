@@ -11,9 +11,26 @@ tasks:
     cmds:
       - bundle check
 
+  check:bundle:drift:
+    desc: >-
+      Verify every Gemfile in the repo resolves cleanly via a fresh
+      `bundle install`. Outer Gemfile + each fixture Gemfile (rails_app,
+      rails_app_big, benchmark ruby_app). Closes the M2.1-M2.4 absorbed
+      orphan "Proper lockfile-drift check" - the original framing was
+      "diff against committed Gemfile.lock" but every Gemfile.lock in
+      this repo is gitignored (outer is library-style; fixtures are
+      cross-interpreter). The meaningful drift signal is therefore "do
+      these Gemfiles resolve cleanly on a fresh clone?" - which is what
+      this task asserts. Each bundle install regenerates the gitignored
+      lockfile from scratch; user's local lockfile state is unaffected
+      since it's gitignored either way.
+    cmds:
+      - ruby scripts/check_bundle_drift.rb
+
   check:all:
     cmds:
       - task: check:bundle
+      - task: check:bundle:drift
 
   # ── Tests ──────────────────────────────────────────────
 

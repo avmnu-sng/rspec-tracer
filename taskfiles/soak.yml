@@ -1,0 +1,48 @@
+version: '3'
+
+# Soak test tasks. Drives spec/soak/rails_app_soak_spec.rb against the
+# 4x-clone fixture spec/fixtures/rails_app_big/ (built by
+# scripts/build_rails_app_big.rb; 1208 examples). The soak iterates
+# 100 subprocess runs of `bundle exec rspec`, deterministic-seeded
+# random file mutation per iter (9-kind rotation), asserts
+# memstat[N] <= memstat[5] * 1.05 for N >= 6.
+#
+# soak:smoke is the pre-PR parity proxy (10 iters, ~5 min). soak:full
+# is the nightly-cron driver (100 iters, ~3-4 h on GHA). Cron lives
+# at .github/workflows/soak.yml.
+#
+# MRI-only per feedback_jruby_ci_subprocess_floor: JRuby x Rails
+# 100-iter would compound to ~250 min wall clock per cell, untenable.
+
+tasks:
+  soak:fixture:
+    desc: >-
+      Regenerate the rails_app_big fixture from rails_app via
+      scripts/build_rails_app_big.rb. Idempotent (wipes
+      spec/fixtures/rails_app_big/ first). Run after changing the
+      source rails_app fixture.
+    cmds:
+      - ruby scripts/build_rails_app_big.rb
+
+  soak:smoke:
+    desc: >-
+      Soak smoke - 10 iter run for pre-PR parity (~5 min). Same spec
+      contract as soak:full; just fewer iterations so the warm-up
+      baseline + memory-bound assertion are exercised end-to-end
+      without the 3-4 h wall clock. Note - mutations accumulate
+      across iters in spec/fixtures/rails_app_big/ source files;
+      run `task soak:fixture` afterwards to regenerate the fixture
+      from a clean rails_app/ source.
+    env:
+      SOAK_ITERATIONS: '10'
+    cmds:
+      - bundle exec rspec --no-color spec/soak/rails_app_soak_spec.rb
+
+  soak:full:
+    desc: >-
+      Soak full - 100 iter run for the nightly cron (~3-4 h). Drives
+      the full memstat-vs-baseline gate.
+    env:
+      SOAK_ITERATIONS: '100'
+    cmds:
+      - bundle exec rspec --no-color spec/soak/rails_app_soak_spec.rb

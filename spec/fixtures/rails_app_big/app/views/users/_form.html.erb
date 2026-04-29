@@ -1,0 +1,29 @@
+<%= form_with model: user, local: true do |f| %>
+  <% if user.errors.any? %>
+    <div class="errors">
+      <h2><%= t('users.form.errors', count: user.errors.count) %></h2>
+      <ul>
+        <% user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name %>
+    <%= f.text_field :name, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :email %>
+    <%= f.email_field :email, required: true %>
+  </div>
+
+  <div class="field">
+    <%= f.label :role %>
+    <%= f.select :role, User::ROLES.map { |r| [t("users.roles.#{r}"), r] } %>
+  </div>
+
+  <%= f.submit %>
+<% end %>
