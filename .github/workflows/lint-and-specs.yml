@@ -134,83 +134,94 @@ jobs:
       - name: Test — Mutation (tracker)
         run: task test:mutation:tracker
 
-  # M8.6 — storage mutation split into 4 shards: 1 non-sqlite + 3
-  # SqliteBackend method-prefix shards. Each shard runs as its own
-  # parallel job so per-PR storage wall clock drops from ~45 min
-  # single-job to ~15 min sharded. All gated by inputs.mut_storage
-  # (PR-diff path-gating; safety net on caller side). The aggregate
-  # `task test:mutation:storage` Taskfile entry preserves the local
-  # single-command surface by sequencing all 4 shards.
+  # M8.6 — storage mutation split into 4 parallel jobs (rebalanced
+  # post-first-CI). Original 3-shard SqliteBackend split was
+  # over-sharded (each ~1-2 min CI), and the unsharded `non-sqlite`
+  # job hit ~17 min on CI because JsonBackend dominates with 2792
+  # mutations, 1032 of which timeout under default 5s timeout.
+  # Rebalance: collapse SqliteBackend to 2 shards (read / write+util),
+  # split JsonBackend into its own job with `--mutation-timeout 1
+  # --jobs 8` (timeouts count as kills in mutant 0.16 — coverage
+  # signal preserved), and keep the 3 small non-Json subjects in a
+  # `misc` job. All 4 jobs project under ~4 min CI. Gated by
+  # inputs.mut_storage (PR-diff path-gating; safety net on caller
+  # side). The aggregate `task test:mutation:storage` Taskfile entry
+  # preserves the local single-command surface by sequencing all 4.
 
-  test-mutation-storage-non-sqlite:
-    name: test-mutation-storage-non-sqlite
+  test-mutation-storage-misc:
+    name: test-mutation-storage-misc
     if: ${{ inputs.mut_storage }}
-    # 4 small subjects (LazySnapshot, Serializer::Json,
-    # Serializer::Msgpack, JsonBackend). Local M2 Max wall clock
-    # ~12 min (JsonBackend dominates with 2792 mutations); CI
-    # ubuntu-latest 1.4-1.6x slower per
-    # feedback_mutant_local_vs_ci_variance — projected ~18-20 min.
-    # 25 min cap gives headroom for GHA scheduling jitter.
+    # 3 small non-JsonBackend / non-SqliteBackend subjects
+    # (LazySnapshot, Serializer::Json, Serializer::Msgpack). Combined
+    # CI wall clock under 2 min.
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage non-sqlite)
-        run: task test:mutation:storage:non-sqlite
+      - name: Test — Mutation (storage misc)
+        run: task test:mutation:storage:misc
 
-  test-mutation-storage-sqlite-shard-1:
-    name: test-mutation-storage-sqlite-shard-1
+  test-mutation-storage-json-backend:
+    name: test-mutation-storage-json-backend
     if: ${{ inputs.mut_storage }}
-    # SqliteBackend read-side: load_graph, last_run_id, read_field,
-    # read_*, dispatch_read*. ~13 of ~43 SqliteBackend mutant subjects.
-    # 30 min cap (1/3 of the original 60 min single-job cap, with
-    # headroom for shard imbalance + GHA jitter).
+    # Storage::JsonBackend in isolation. 2792 mutations; 1032 timeouts
+    # at default 5s timeout drove the original non-sqlite job to
+    # ~17 min CI. With `--mutation-timeout 1 --jobs 8` (set in the
+    # Taskfile entry), wall clock projects to ~3 min CI. Mutant 0.16
+    # counts timeouts as kills for coverage purposes, so the shorter
+    # timeout doesn't change kill/alive classification — only how
+    # fast each verdict is reached.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage SqliteBackend shard-1)
-        run: task test:mutation:storage:sqlite-shard-1
+      - name: Test — Mutation (storage JsonBackend)
+        run: task test:mutation:storage:json-backend
 
-  test-mutation-storage-sqlite-shard-2:
-    name: test-mutation-storage-sqlite-shard-2
+  test-mutation-storage-sqlite-read:
+    name: test-mutation-storage-sqlite-read
     if: ${{ inputs.mut_storage }}
-    # SqliteBackend write-side: save_graph, transactional_save, clear!,
-    # write_*, insert_*, iterate_line_entries. ~16 of ~43 SqliteBackend
-    # mutant subjects.
+    # SqliteBackend read-side: 15 subjects (last_run_id, load_graph,
+    # read_field, read_*, dispatch_read*, SqliteFieldReader#read).
+    # SqliteBackend has near-zero timeouts in mutation runs (mostly
+    # cleanly killed against unit specs), so default `--mutation-
+    # timeout 5s` stays. CI wall clock target ~3 min.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage SqliteBackend shard-2)
-        run: task test:mutation:storage:sqlite-shard-2
+      - name: Test — Mutation (storage SqliteBackend read-side)
+        run: task test:mutation:storage:sqlite-read
 
-  test-mutation-storage-sqlite-shard-3:
-    name: test-mutation-storage-sqlite-shard-3
+  test-mutation-storage-sqlite-write:
+    name: test-mutation-storage-sqlite-write
     if: ${{ inputs.mut_storage }}
-    # SqliteBackend connection / schema / utility: initialize, with_*,
-    # db_path, load_sqlite_driver!, configure_connection,
-    # reset_corrupt_db_file!, meta_table_exists?, ensure_schema!,
-    # empty_default_for, decode_hash_with_sym_keys, fetch_hash, info,
-    # warn, debug. ~14 of ~43 SqliteBackend mutant subjects.
+    # SqliteBackend write-side + connection / schema / utility: 30
+    # subjects. Combines original shards 2 + 3 (write-side and
+    # init/util) since first CI showed 3-shard split was over-sharded.
+    # Includes #initialize and private connection/schema/utility
+    # helpers — these are the structural-ceiling subjects per
+    # feedback_mutant_describe_label_ceiling, which is why the
+    # combined-shard gate sits at 65% (vs read-side 73%). CI wall
+    # clock target ~3 min.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test — Mutation (storage SqliteBackend shard-3)
-        run: task test:mutation:storage:sqlite-shard-3
+      - name: Test — Mutation (storage SqliteBackend write+util)
+        run: task test:mutation:storage:sqlite-write
 
   test-mutation-rspec:
     name: test-mutation-rspec
@@ -331,10 +342,10 @@ jobs:
       - test-fuzz
       - test-mutation-smoke
       - test-mutation-tracker
-      - test-mutation-storage-non-sqlite
-      - test-mutation-storage-sqlite-shard-1
-      - test-mutation-storage-sqlite-shard-2
-      - test-mutation-storage-sqlite-shard-3
+      - test-mutation-storage-misc
+      - test-mutation-storage-json-backend
+      - test-mutation-storage-sqlite-read
+      - test-mutation-storage-sqlite-write
       - test-mutation-rspec
       - test-mutation-top-level
       - test-integration-remote
