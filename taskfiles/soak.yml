@@ -189,10 +189,10 @@ tasks:
   soak:setup:spree:
     desc: >-
       Inject rspec-tracer into Spree's spree/Gemfile + bundle install
-      + generate test_app for the core engine via the spree/Rakefile
-      test_app task. Spree's monorepo has the actual gem source under
-      spree/ (not at clone root), so injection + bundle happen in that
-      subdir. Used both locally and from CI.
+      + generate test_app for the core engine. Spree's monorepo has
+      the actual gem source under spree/ (not at clone root), so
+      injection + bundle happen in that subdir. Used both locally
+      and from CI.
     cmds:
       - cmd: |
           cd tmp/soak-fixtures/spree/spree
@@ -201,8 +201,15 @@ tasks:
           fi
           bundle config set --local path vendor/bundle
           DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
+          # Generate the core engine's dummy_app directly (not via
+          # spree/Rakefile's test_app which iterates ALL engines and
+          # aborts on `cannot load such file -- spree/emails` when
+          # spree-emails isn't bundled - that's an OPTIONAL gem in
+          # SPREE_OPTIONAL_GEMS that we don't install). cd into core
+          # and run its own test_app rake task which only generates
+          # the core dummy.
           if [ ! -d core/spec/dummy ]; then
-            DB=sqlite bundle exec rake test_app
+            (cd core && DB=sqlite bundle exec rake test_app)
           fi
 
   soak:smoke:spree:

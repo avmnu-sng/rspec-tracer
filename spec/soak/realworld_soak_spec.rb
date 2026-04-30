@@ -211,8 +211,14 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       memstat, output, success = run_soak_subprocess(iter)
 
       unless success
-        tail = output[-2_000..] || output
-        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{tail}"
+        # Capture both head + tail so the actual error message
+        # (usually at the top of the subprocess's stderr) survives
+        # along with the tail backtrace context. 2 KB head + 4 KB
+        # tail keeps the failure signal usable on CI.
+        head = output[0, 2_000]
+        tail = output.length > 6_000 ? output[-4_000..] : ''
+        chunk = tail.empty? ? head : "#{head}\n[... truncated ...]\n#{tail}"
+        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{chunk}"
       end
 
       raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
