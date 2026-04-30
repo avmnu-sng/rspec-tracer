@@ -250,7 +250,10 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     ITERATIONS.times do |i|
       iter = i + 1
       mutate_for_iter(iter)
+      iter_start = Time.now
+      announce_iter_start(iter)
       memstat, output, success = run_soak_subprocess(iter)
+      announce_iter_done(iter, iter_start, success)
 
       # Pin SHAs are the maintainer-verified trust anchor: at the
       # pinned ref, the full suite runs clean. Any subprocess
@@ -334,11 +337,24 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     end
   end
 
-  def run_soak_subprocess(iter)
-    iter_dir = SOAK_TMP.join("iter-#{iter}")
-    FileUtils.mkdir_p(iter_dir)
+  # rubocop:disable RSpec/Output -- iter-progress markers are the spec's
+  #   primary observability artifact; without them the GHA UI shows zero
+  #   activity for 30+ min which looks like a hang.
+  def announce_iter_start(iter)
+    $stdout.write("\n=== #{PROJECT} iter #{iter}/#{ITERATIONS} starting ===\n")
+    $stdout.flush
+  end
 
-    env = {
+  def announce_iter_done(iter, started_at, success)
+    elapsed = format('%.1f', Time.now - started_at)
+    state = success ? 'OK' : 'FAIL'
+    $stdout.write("=== #{PROJECT} iter #{iter}/#{ITERATIONS} done in #{elapsed}s (status=#{state}) ===\n\n")
+    $stdout.flush
+  end
+  # rubocop:enable RSpec/Output
+
+  def soak_subprocess_env(iter_dir)
+    {
       'BUNDLE_GEMFILE' => GEMFILE_PATH.to_s,
       'RUBYOPT' => "-r#{SOAK_START} -r#{MEMSTAT_AT_EXIT}",
       'SOAK_MEMSTAT_DIR' => iter_dir.to_s,
@@ -346,21 +362,38 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       # Delete CI from the child env (nil unsets it in Open3's env
       # hash). Empty string is TRUTHY in Ruby, which trips Gemfile
       # conditionals like Spree's `gem 'mysql2' if ENV['CI']` and
-      # makes Bundler.setup demand a non-resolved gem. Per
-      # feedback_rails_eager_load_coverage_timing the goal is to
-      # prevent the rails_helper's CI-mode eager_load - nil
-      # achieves that AND keeps Gemfile conditionals quiet.
+      # makes Bundler.setup demand a non-resolved gem.
       'CI' => nil,
       'RAILS_ENV' => 'test'
     }.merge(INVOCATION[:extra_env])
+  end
 
+  def run_soak_subprocess(iter)
+    iter_dir = SOAK_TMP.join("iter-#{iter}")
+    FileUtils.mkdir_p(iter_dir)
+    env = soak_subprocess_env(iter_dir)
+
+    # Stream subprocess output line-by-line to $stdout in real time
+    # (vs Open3.capture2e's buffer-until-exit) so the soak appears
+    # LIVE in CI logs / local terminal. Each line is also
+    # accumulated to output_buffer for the failure-case raise.
+    output_buffer = +''
+    status = nil
     Bundler.with_unbundled_env do
-      output, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec',
-                                       '--no-color', '--format', 'progress',
-                                       *INVOCATION[:rspec_args],
-                                       chdir: ENGINE_PATH.to_s)
-      [collect_memstat(iter_dir), output, status.success?]
+      Open3.popen2e(env, 'bundle', 'exec', 'rspec',
+                    '--no-color', '--format', 'progress',
+                    *INVOCATION[:rspec_args],
+                    chdir: ENGINE_PATH.to_s) do |_stdin, out, wait_thr|
+        out.each_line do |line|
+          $stdout.write("  [#{PROJECT} iter #{iter}] #{line}") # rubocop:disable RSpec/Output
+          $stdout.flush
+          output_buffer << line
+        end
+        status = wait_thr.value
+      end
     end
+
+    [collect_memstat(iter_dir), output_buffer, status.success?]
   end
 
   def collect_memstat(iter_dir)
