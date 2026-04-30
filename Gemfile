@@ -43,6 +43,14 @@ group :development do
   # rspec: 3.12 (LTS-ish) and 3.13 (current). Default resolves to 3.13.
   gem 'rspec', ENV.fetch('RSPEC_VERSION', '>= 3.12')
 
+  # Ruby 4.0 extracted `benchmark` from the stdlib into a bundled gem.
+  # benchmark/harness.rb uses Benchmark.realtime + spec/benchmark/
+  # harness_spec.rb requires the harness, both of which need the gem
+  # in the bundle on 4.0+. On Ruby <= 3.4 it's still in stdlib so
+  # `gem 'benchmark'` is harmless. Floor of 0.4 is the first 4.0-
+  # extracted release.
+  gem 'benchmark', ENV.fetch('RSPEC_TRACER_BENCHMARK_VERSION', '>= 0.4')
+
   # parallel + parallel_tests: 1.x / 2.x and 4.x / 5.x respectively.
   # parallel 2.x requires Ruby >= 3.3; on lower Rubies Bundler picks 1.x.
   gem 'parallel', ENV.fetch('RSPEC_TRACER_PARALLEL_VERSION', '>= 1.26')

@@ -49,10 +49,37 @@ module BenchmarkHarness
   # scenario threshold; tracked as a 2.1 followup.
   REGRESSION_FAIL_RATIO = 1.30
 
+  # Scenarios whose wall-clock variance exceeds the gate threshold
+  # by structural property (worker-subprocess CPU contention on
+  # shared runners) get reported but NOT gated. Their ratio is
+  # printed as `INFO` and never contributes to exit-non-zero.
+  #
+  # Currently only `parallel_tests_2_workers` qualifies: the GHA-
+  # baseline regen recorded p50=0.8665 / p95=1.8682 (p95/p50 = 2.16x)
+  # within its own 10-iter sample - the baseline itself acknowledges
+  # >2x variance, so any threshold below 2.16x will fail on noise
+  # alone. Two structural causes compound:
+  #
+  #   1. Process contention: `parallel_rspec` spawns driver + 2
+  #      workers = 3 Ruby processes on GHA's 2-vCPU runners. Worst-
+  #      case wall = max(worker_wall) + merge overhead; on contended
+  #      CPU each worker can be 2x of dedicated wall.
+  #   2. Worker startup variance amplified by max-of-N: each worker
+  #      boots Ruby + Bundler + gem set independently; the driver
+  #      waits for the slowest to finish.
+  #
+  # The right regression signal for these scenarios would be a
+  # behavior assertion (cache-merge correctness, no worker crash)
+  # rather than wall-clock comparison. Wall-clock stays as
+  # informational summary output for trend-watching but doesn't
+  # gate. See benchmark/README.md "Informational scenarios" for
+  # the user-facing rationale.
+  INFORMATIONAL_SCENARIOS = %w[parallel_tests_2_workers].freeze
+
   DEFAULT_ITERATIONS_FULL = 5
   DEFAULT_ITERATIONS_SMOKE = 3
 
-  STATUS_ICONS = { ok: '✓', warn: '⚠', fail: '✗' }.freeze
+  STATUS_ICONS = { ok: '✓', warn: '⚠', fail: '✗', informational: 'ℹ' }.freeze
 
   # Per-interpreter ratchet multipliers. The committed ratchet.json is a
   # canonical MRI baseline (Apple M2 Max + Ruby 3.3.10). Non-MRI
@@ -343,7 +370,9 @@ module BenchmarkHarness
       threshold = base * multiplier
       ratio = result['p50'] / threshold
       statuses[name] =
-        if ratio > REGRESSION_FAIL_RATIO then { status: :fail, ratio: ratio, threshold: threshold }
+        if INFORMATIONAL_SCENARIOS.include?(name)
+          { status: :informational, ratio: ratio, threshold: threshold }
+        elsif ratio > REGRESSION_FAIL_RATIO then { status: :fail, ratio: ratio, threshold: threshold }
         elsif ratio > REGRESSION_WARN_RATIO then { status: :warn, ratio: ratio, threshold: threshold }
         else { status: :ok, ratio: ratio, threshold: threshold }
         end
@@ -364,9 +393,10 @@ module BenchmarkHarness
       line = format('  %<name>-14s p50=%<p50>.3fs p95=%<p95>.3fs',
                     name: name, p50: result['p50'], p95: result['p95'])
       if status.is_a?(Hash)
+        label = status[:status] == :informational ? 'INFO (not gated)' : status[:status].upcase
         line += format('  [%<ratio>.2fx threshold %<threshold>.3fs] %<status>s',
                        ratio: status[:ratio], threshold: status[:threshold],
-                       status: status[:status].upcase)
+                       status: label)
       end
       warn line
     end
@@ -427,7 +457,8 @@ module BenchmarkHarness
       '|---|---|---|---|---|',
       *rows,
       '',
-      'Thresholds: ≤ 1.10× silent pass · 1.10–1.30× warning · > 1.30× fail.'
+      'Thresholds: ≤ 1.10× silent pass · 1.10–1.30× warning · > 1.30× fail. ' \
+      "Scenarios marked INFO are reported but not gated (see #{INFORMATIONAL_SCENARIOS.join(', ')})."
     ]
     body << '' << 'No ratchet loaded — comparison skipped.' if ratchet.nil?
     FileUtils.mkdir_p(File.dirname(path))
