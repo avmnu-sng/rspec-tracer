@@ -30,11 +30,7 @@ name: example-tracer-cache
 on:
   workflow_dispatch:
   push:
-    # NOTE: the m8.4-d/* branch entry is a temporary debug aid to
-    # exercise the cold-then-warm cycle on this PR's branch before
-    # merge - reverted in the final commit before merging the PR
-    # (matches the pull_request: pattern used in PR #137 / e1c3214).
-    branches: [main, m8.4-d/cache-pattern-demo-workflow]
+    branches: [main]
     paths:
       - .github/workflows/example-tracer-cache.yml
 
