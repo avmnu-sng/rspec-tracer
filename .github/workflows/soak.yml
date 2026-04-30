@@ -100,17 +100,21 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # libvips is the image-processing system library that Solidus
-      # (kt-paperclip) + Refinery (dragonfly) load via FFI for image
-      # specs. ubuntu-latest doesn't ship it; without the install,
-      # Solidus's product image specs LoadError on `libvips.so.42`
-      # and Refinery's thumbnail_dimensions specs return 0x0
-      # silently. Installed for all cells (Spree doesn't need it but
-      # the install is ~5s, cheaper than per-cell branching).
-      - name: Install libvips (image-processing dep for Solidus + Refinery)
+      # Image-processing backends for the realworld targets:
+      # - libvips (Solidus's kt-paperclip via FFI; without it the
+      #   product image specs LoadError on `libvips.so.42`).
+      # - imagemagick (Refinery's dragonfly 1.4 shells out to
+      #   `identify` for image.width/height; without it
+      #   thumbnail_dimensions returns 0x0 silently and the
+      #   image_spec assertions fail).
+      # Both are listed as pre-installed in actions/runner-images
+      # but explicit install removes the assumption + survives any
+      # future image trimming. Spree doesn't need either but the
+      # install is ~5 s, cheaper than per-cell branching.
+      - name: Install image-processing libraries (libvips + imagemagick)
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libvips42t64 libvips-tools
+          sudo apt-get install -y --no-install-recommends libvips42t64 libvips-tools imagemagick
 
       - name: Read pin
         id: pin
