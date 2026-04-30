@@ -197,18 +197,22 @@ tasks:
 
   soak:setup:spree:
     desc: >-
-      Inject rspec-tracer into Spree's spree/core/Gemfile + bundle
-      install + generate test_app via core/Rakefile. Spree's
-      monorepo has gem sources under spree/<engine>/ each with its
-      own self-contained Gemfile (eval common_deps + gemspec). We
-      bundle directly at spree/core/ so BUNDLE_GEMFILE at runtime
-      consumes one consistent Bundler context. Used both locally
-      and from CI.
+      Inject rspec-tracer + the spree-umbrella gem (path '..') into
+      spree/core/Gemfile + bundle install + generate test_app via
+      core/Rakefile. The spree-umbrella gem provides the install
+      generator that core/Rakefile's test_app task needs to migrate
+      Spree's tables into the dummy DB; without it the dummy DB
+      only has the placeholder spree_dummy_models table and lib
+      specs fail with "Could not find table 'spree_taxonomies'".
+      Used both locally and from CI.
     cmds:
       - cmd: |
           cd tmp/soak-fixtures/spree/spree/core
           if ! grep -q "rspec-tracer" Gemfile; then
             printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
+          fi
+          if ! grep -qE '^gem "spree", path: "\.\."' Gemfile; then
+            printf 'gem "spree", path: ".."\n' >> Gemfile
           fi
           bundle config set --local path vendor/bundle
           # Unset CI so Spree's common_spree_dependencies.rb's

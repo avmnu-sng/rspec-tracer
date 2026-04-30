@@ -76,31 +76,73 @@ PROJECT_INVOCATIONS = {
   solidus: {
     gemfile_dir: '',
     engine_dir: 'api',
-    # Run the full api engine spec/ tree (~700 examples). The soak
-    # tolerates non-zero subprocess exit codes (real-world projects
-    # accumulate transient flakes - DB driver / factory / locale
-    # drift) - the soak signal is cache-state validity + memory
-    # bound, NOT upstream's full pass-rate. Running the full engine
-    # exercises the tracker's working set realistically.
-    rspec_args: [],
+    # Full api engine spec/ tree (~700 examples). Verified clean
+    # at the pinned SHA (CI run 25143397673 cell `soak (solidus)`
+    # passed in 4m31s with full suite).
+    rspec_args: ['spec'],
     extra_env: { 'DB' => 'sqlite' }
   },
   refinery: {
     gemfile_dir: '',
     engine_dir: '',
     # Refinery's clone-root has no root-level spec/ - specs live
-    # per-engine. Pass all engines explicitly so a single
-    # bundle-exec-rspec discovers them in the root Bundler context
-    # (vs `rake spec` which cd's per-engine and would need
-    # per-engine bundle setup).
-    rspec_args: %w[core/spec pages/spec images/spec resources/spec],
+    # per-engine. Pass non-system spec dirs explicitly. system/
+    # specs need browser drivers (Capybara + Chrome/Selenium) not
+    # configured in CI; lib + controllers + helpers + presenters +
+    # models cover ~399 examples cleanly at the pinned main HEAD.
+    rspec_args: %w[
+      core/spec/lib core/spec/controllers core/spec/helpers core/spec/presenters
+      pages/spec/lib pages/spec/controllers pages/spec/helpers pages/spec/presenters pages/spec/models
+      images/spec/lib images/spec/models
+      resources/spec/lib resources/spec/models
+      dragonfly/spec/lib
+    ],
     extra_env: {}
   },
   spree: {
     gemfile_dir: 'spree/core',
     engine_dir: 'spree/core',
-    # core engine's full spec/ tree (~1500 examples).
-    rspec_args: [],
+    # spree/core spec subset minus the SQLite-busy flake on
+    # select_shipping_method (4 of 11 examples in that file
+    # consistently fail under sqlite due to concurrent transaction
+    # locks; flagged in Spree's own pending docs). 1307 examples
+    # verified clean locally at the pinned SHA in ~5 min.
+    # spec/services explicit dir list with checkout's individual
+    # files (minus select_shipping_method) so rspec discovery skips
+    # the flake without an --exclude-pattern (which is silently
+    # ignored when positional paths are passed - per
+    # feedback_rspec_exclude_pattern_positional).
+    rspec_args: %w[
+      spec/lib spec/finders spec/helpers spec/jobs spec/presenters spec/validators
+      spec/services/spree/account
+      spec/services/spree/addresses
+      spec/services/spree/cart
+      spec/services/spree/carts
+      spec/services/spree/checkout/add_store_credit_spec.rb
+      spec/services/spree/checkout/advance_spec.rb
+      spec/services/spree/checkout/get_shipping_rates_spec.rb
+      spec/services/spree/checkout/remove_store_credit_spec.rb
+      spec/services/spree/checkout/update_spec.rb
+      spec/services/spree/classifications
+      spec/services/spree/credit_cards
+      spec/services/spree/gift_cards
+      spec/services/spree/imports
+      spec/services/spree/line_items
+      spec/services/spree/locales
+      spec/services/spree/newsletter
+      spec/services/spree/orders
+      spec/services/spree/payments
+      spec/services/spree/products
+      spec/services/spree/sample_data
+      spec/services/spree/seeds
+      spec/services/spree/shipments
+      spec/services/spree/stock_locations
+      spec/services/spree/stores
+      spec/services/spree/tags
+      spec/services/spree/taxons
+      spec/services/spree/variants
+      spec/services/spree/wallet
+    ],
     extra_env: { 'DB' => 'sqlite' }
   }
 }.freeze
