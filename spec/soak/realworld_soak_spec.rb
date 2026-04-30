@@ -88,8 +88,12 @@ PROJECT_INVOCATIONS = {
   refinery: {
     gemfile_dir: '',
     engine_dir: '',
-    # Refinery's clone-root rspec discovers all engines' specs.
-    rspec_args: [],
+    # Refinery's clone-root has no root-level spec/ - specs live
+    # per-engine. Pass all engines explicitly so a single
+    # bundle-exec-rspec discovers them in the root Bundler context
+    # (vs `rake spec` which cd's per-engine and would need
+    # per-engine bundle setup).
+    rspec_args: %w[core/spec pages/spec images/spec resources/spec],
     extra_env: {}
   },
   spree: {
@@ -206,27 +210,18 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       mutate_for_iter(iter)
       memstat, output, success = run_soak_subprocess(iter)
 
-      # Real-world fixtures' specs include transient flakes that
-      # are NOT relevant to the soak signal. The soak measures
-      # tracker stability (cache writes, memory growth), not
-      # upstream's full pass-rate. Tolerate non-zero subprocess
-      # exit; assert on cache validity + memstat capture instead.
+      # Pin SHAs are the maintainer-verified trust anchor: at the
+      # pinned ref, the full suite runs clean. Any subprocess
+      # failure is a real signal (env mismatch, harness break, or
+      # actual upstream regression that warrants a pin re-validation).
       unless success
-        # rubocop:disable RSpec/Output
-        puts "iter #{iter} (#{PROJECT}): subprocess exited non-zero " \
-             '(likely upstream spec flakes; soak signal continues)'
-        # rubocop:enable RSpec/Output
-      end
-
-      # If the subprocess crashed BEFORE rspec-tracer wrote anything,
-      # there's no memstat + no cache. That IS a soak failure (means
-      # the harness itself is broken, not just upstream flakes).
-      if memstat.nil?
         head = output[0, 2_000]
         tail = output.length > 6_000 ? output[-4_000..] : ''
         chunk = tail.empty? ? head : "#{head}\n[... truncated ...]\n#{tail}"
-        raise "iter #{iter} (#{PROJECT}): subprocess produced no memstat (harness failure):\n#{chunk}"
+        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{chunk}"
       end
+
+      raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
 
       memstats << memstat
       verify_cache_state(iter)
