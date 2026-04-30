@@ -33,6 +33,17 @@ on:
         description: Iter count override (default per-project; 50/100/50)
         required: false
         default: ''
+  # TEMP TRIGGER for PR #137 - revert before merge to main.
+  # Triggers the 3-cell matrix on PR push so the Spree fix + Refinery
+  # diagnostic improvement get validated end-to-end before merge.
+  # Hard-coded SOAK_ITERATIONS=3 keeps wall clock manageable
+  # (~10-15 min/cell cold-cache vs the full 50/100 nightly count).
+  pull_request:
+    paths:
+      - .github/workflows/soak.yml
+      - .github/sha-pins/**
+      - spec/soak/**
+      - taskfiles/soak.yml
 
 permissions:
   contents: read
@@ -66,7 +77,12 @@ jobs:
     env:
       SOAK_PROJECT: ${{ matrix.project }}
       SOAK_FIXTURE_ROOT: ${{ github.workspace }}/tmp/soak-fixtures/${{ matrix.project }}
-      SOAK_ITERATIONS: ${{ inputs.iterations }}
+      # TEMP: pull_request events force iterations=3 to keep PR wall
+      # clock manageable. workflow_dispatch with explicit input wins;
+      # workflow_dispatch with no input + cron use per-project default
+      # (50/100/50). Revert this conditional with the pull_request
+      # trigger before merge.
+      SOAK_ITERATIONS: ${{ github.event_name == 'pull_request' && '3' || inputs.iterations }}
     steps:
       - name: Checkout rspec-tracer
         uses: actions/checkout@v6
