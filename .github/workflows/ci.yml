@@ -138,17 +138,15 @@ jobs:
                 ;;
             esac
 
-            # M8.4-B run_rails: rails fixture cell is the
-            # `rails:` job in full-matrix.yml driving
-            # spec/integration/rails_app_spec.rb +
-            # narrow_ar_schema_spec.rb against
-            # spec/fixtures/rails_app. A diff touching any of these
-            # paths warrants a full-matrix rails run even on a
-            # tier=test PR (spec-only / docs-only) - otherwise a
-            # fixture edit silently skips the only signal that
-            # exercises it across the matrix.
+            # run_rails: rails fixture cell is the `rails:` job in
+            # full-matrix.yml driving spec/integration/rails_app_spec.rb +
+            # narrow_ar_schema_spec.rb against spec/fixtures/rails_app.
+            # A diff touching any of these paths warrants a full-matrix
+            # rails run even on a tier=test PR (spec-only / docs-only) -
+            # otherwise a fixture edit silently skips the only signal
+            # that exercises it across the matrix.
             case "$f" in
-              spec/fixtures/rails_app/*|spec/fixtures/rails_app_big/*|spec/integration/rails_app_spec.rb|spec/integration/narrow_ar_schema_spec.rb|spec/support/fixture_bundle_helper.rb|scripts/build_rails_app_big.rb)
+              spec/fixtures/rails_app/*|spec/integration/rails_app_spec.rb|spec/integration/narrow_ar_schema_spec.rb|spec/support/fixture_bundle_helper.rb)
                 RUN_RAILS=1
                 ;;
             esac
