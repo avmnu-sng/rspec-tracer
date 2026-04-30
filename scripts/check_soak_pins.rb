@@ -40,9 +40,11 @@ PROJECTS = {
   refinery: {
     repo: 'refinery/refinerycms',
     license_path: 'license.md',
-    # Refinery doesn't publish via GitHub Releases as of 4.0.2;
-    # tags are the only source of "latest" signal.
-    release_source: :tags
+    # Refinery's tags lag main by years (latest tag 4.0.2 was 2024;
+    # main has Ruby 4.0 / Rails 8.1 support). Pin tracks main HEAD,
+    # cron flags HEAD drift.
+    release_source: :branch,
+    branch: 'main'
   },
   spree: {
     repo: 'spree/spree',
@@ -74,18 +76,20 @@ def parse_pin(pin_file)
   data
 end
 
-def latest_tag(meta)
+def latest_ref(meta)
   case meta[:release_source]
   when :releases then gh_api_jq("repos/#{meta[:repo]}/releases/latest", '.tag_name')
   when :tags then gh_api_jq("repos/#{meta[:repo]}/tags", '.[0].name')
+  when :branch then meta[:branch]
   end
 end
 
-# Resolves a tag to its commit SHA. Auto-derefs annotated tags
-# (which are common: v4.7.0 / v5.4.2 are annotated tag objects, not
-# lightweight tags). The /commits/<ref> endpoint handles both.
-def commit_sha_for_tag(repo, tag)
-  gh_api_jq("repos/#{repo}/commits/#{tag}", '.sha')
+# Resolves a ref (tag or branch) to its commit SHA. Auto-derefs
+# annotated tags (which are common: v4.7.0 / v5.4.2 are annotated
+# tag objects, not lightweight tags). The /commits/<ref> endpoint
+# handles tags + branches uniformly.
+def commit_sha_for_ref(repo, ref)
+  gh_api_jq("repos/#{repo}/commits/#{ref}", '.sha')
 end
 
 def license_sha256_at_tag(repo, license_path, tag)
@@ -118,14 +122,14 @@ def load_pin(project)
 end
 
 def fetch_latest(meta)
-  latest = latest_tag(meta)
-  return [nil, nil, nil, 'failed to resolve latest tag from GitHub API'] if latest.nil?
+  latest = latest_ref(meta)
+  return [nil, nil, nil, 'failed to resolve latest ref from GitHub API'] if latest.nil?
 
-  commit = commit_sha_for_tag(meta[:repo], latest)
+  commit = commit_sha_for_ref(meta[:repo], latest)
   return [latest, nil, nil, 'failed to resolve latest commit SHA'] if commit.nil?
 
   license_sha = license_sha256_at_tag(meta[:repo], meta[:license_path], latest)
-  return [latest, commit, nil, "failed to fetch LICENSE content at tag #{latest}"] if license_sha.nil?
+  return [latest, commit, nil, "failed to fetch LICENSE content at #{latest}"] if license_sha.nil?
 
   [latest, commit, license_sha, nil]
 end
@@ -137,7 +141,16 @@ def check_project(project, meta)
   latest, commit, new_license, err = fetch_latest(meta)
   return { project: project, pinned_tag: pin[:tag], latest_tag: latest, error: err } if err
 
-  major_bump = (major_for(pin[:tag]) || 0) < (major_for(latest) || 0)
+  # Major-bump flag only applies when both pinned + latest are
+  # SemVer-shaped tags. Branch-tracked projects (Refinery's main)
+  # have tag='main' which doesn't parse as SemVer; treat any HEAD
+  # drift as the actionable signal instead.
+  major_bump =
+    if meta[:release_source] == :branch
+      false
+    else
+      (major_for(pin[:tag]) || 0) < (major_for(latest) || 0)
+    end
 
   {
     project: project,
@@ -145,7 +158,8 @@ def check_project(project, meta)
     latest_tag: latest, latest_sha: commit, new_license_sha: new_license,
     sha_changed: pin[:sha] != commit,
     major_bump: major_bump,
-    license_stable: pin[:license_sha256] == new_license
+    license_stable: pin[:license_sha256] == new_license,
+    branch_tracked: meta[:release_source] == :branch
   }
 end
 
@@ -170,10 +184,12 @@ results.each do |r|
 end
 
 out << ''
-flagged = results.reject { |r| r[:error] }.select { |r| r[:major_bump] || !r[:license_stable] }
+flagged = results.reject { |r| r[:error] }.select do |r|
+  r[:major_bump] || !r[:license_stable] || (r[:branch_tracked] && r[:sha_changed])
+end
 
 if flagged.empty?
-  out << '_No major bumps + no license drift. Pins are current; no action needed._'
+  out << '_No major bumps + no license drift + no branch HEAD drift. Pins are current._'
 else
   out << '## Action items'
   out << ''
@@ -182,6 +198,10 @@ else
     out << "- Pinned: `#{r[:pinned_tag]}` (sha `#{r[:pinned_sha][0, 12]}…`)"
     out << "- Latest: `#{r[:latest_tag]}` (sha `#{r[:latest_sha][0, 12]}…`)"
     out << '- **Major bump available.** Pin stays put until a maintainer opens a bump PR.' if r[:major_bump]
+    if r[:branch_tracked] && r[:sha_changed]
+      out << "- **Branch HEAD drifted.** `#{r[:pinned_tag]}` advanced past the pinned commit."
+      out << '  Maintainer reviews + opens bump PR if appropriate.'
+    end
     unless r[:license_stable]
       old_short = r[:pinned_license_sha][0, 12]
       new_short = r[:new_license_sha][0, 12]
