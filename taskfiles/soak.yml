@@ -140,6 +140,15 @@ tasks:
             printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
           fi
           bundle config set --local path vendor/bundle
+          # Unset CI for bundle install. Refinery main's Gemfile has
+          # `if !ENV['CI']` gating for sqlite3. On GHA, ENV['CI']=true
+          # so sqlite3 wouldn't be in the lockfile - but the soak
+          # subprocess sets CI=>nil (per
+          # feedback_env_empty_string_is_truthy), at which point
+          # Bundler.setup re-evaluates the Gemfile and demands sqlite3,
+          # finding it missing. Match the subprocess runtime by also
+          # unsetting CI here.
+          unset CI
           bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; bundle install --jobs 4; }
           if [ ! -d core/spec/dummy ] && [ ! -d spec/dummy ]; then
             bundle exec rake refinery:testing:dummy_app

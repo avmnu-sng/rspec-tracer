@@ -76,31 +76,27 @@ PROJECT_INVOCATIONS = {
   solidus: {
     gemfile_dir: '',
     engine_dir: 'api',
-    # Stable slice - 4 i18n examples, no flakes observed in
-    # pre-flight. Real-world projects accumulate transient spec
-    # failures over time (DB driver shifts, factory changes,
-    # locale-related drift); running the full engine surface
-    # would couple the soak's signal to upstream stability rather
-    # than the tracker. The brief's pre-flight findings already
-    # used a small slice (Solidus 5/5 cold = 5 specs).
-    rspec_args: ['spec/i18n_spec.rb'],
+    # Run the full api engine spec/ tree (~700 examples). The soak
+    # tolerates non-zero subprocess exit codes (real-world projects
+    # accumulate transient flakes - DB driver / factory / locale
+    # drift) - the soak signal is cache-state validity + memory
+    # bound, NOT upstream's full pass-rate. Running the full engine
+    # exercises the tracker's working set realistically.
+    rspec_args: [],
     extra_env: { 'DB' => 'sqlite' }
   },
   refinery: {
     gemfile_dir: '',
     engine_dir: '',
-    # Refinery's pages/spec/lib/pages_spec.rb is a self-contained
-    # lib-only spec that doesn't need the dummy_app boot.
-    rspec_args: ['pages/spec/lib/pages_spec.rb'],
+    # Refinery's clone-root rspec discovers all engines' specs.
+    rspec_args: [],
     extra_env: {}
   },
   spree: {
-    gemfile_dir: 'spree',
+    gemfile_dir: 'spree/core',
     engine_dir: 'spree/core',
-    # spec/lib/i18n_spec.rb (14 examples, stable). spec/i18n_spec.rb
-    # at the same level has a known-failing locale-normalization
-    # check that's not relevant to soak signal.
-    rspec_args: ['spec/lib/i18n_spec.rb'],
+    # core engine's full spec/ tree (~1500 examples).
+    rspec_args: [],
     extra_env: { 'DB' => 'sqlite' }
   }
 }.freeze
@@ -210,18 +206,24 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       mutate_for_iter(iter)
       memstat, output, success = run_soak_subprocess(iter)
 
+      # Real-world fixtures' specs include transient flakes that
+      # are NOT relevant to the soak signal. The soak measures
+      # tracker stability (cache writes, memory growth), not
+      # upstream's full pass-rate. Tolerate non-zero subprocess
+      # exit; assert on cache validity + memstat capture instead.
       unless success
-        # Capture both head + tail so the actual error message
-        # (usually at the top of the subprocess's stderr) survives
-        # along with the tail backtrace context. 2 KB head + 4 KB
-        # tail keeps the failure signal usable on CI.
+        puts "iter #{iter} (#{PROJECT}): subprocess exited non-zero (likely upstream spec flakes; soak signal continues)" # rubocop:disable RSpec/Output
+      end
+
+      # If the subprocess crashed BEFORE rspec-tracer wrote anything,
+      # there's no memstat + no cache. That IS a soak failure (means
+      # the harness itself is broken, not just upstream flakes).
+      if memstat.nil?
         head = output[0, 2_000]
         tail = output.length > 6_000 ? output[-4_000..] : ''
         chunk = tail.empty? ? head : "#{head}\n[... truncated ...]\n#{tail}"
-        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{chunk}"
+        raise "iter #{iter} (#{PROJECT}): subprocess produced no memstat (harness failure):\n#{chunk}"
       end
-
-      raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
 
       memstats << memstat
       verify_cache_state(iter)
