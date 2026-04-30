@@ -100,6 +100,18 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # libvips is the image-processing system library that Solidus
+      # (kt-paperclip) + Refinery (dragonfly) load via FFI for image
+      # specs. ubuntu-latest doesn't ship it; without the install,
+      # Solidus's product image specs LoadError on `libvips.so.42`
+      # and Refinery's thumbnail_dimensions specs return 0x0
+      # silently. Installed for all cells (Spree doesn't need it but
+      # the install is ~5s, cheaper than per-cell branching).
+      - name: Install libvips (image-processing dep for Solidus + Refinery)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips42t64 libvips-tools
+
       - name: Read pin
         id: pin
         run: |
