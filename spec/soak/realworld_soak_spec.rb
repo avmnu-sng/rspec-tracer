@@ -212,7 +212,10 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       # upstream's full pass-rate. Tolerate non-zero subprocess
       # exit; assert on cache validity + memstat capture instead.
       unless success
-        puts "iter #{iter} (#{PROJECT}): subprocess exited non-zero (likely upstream spec flakes; soak signal continues)" # rubocop:disable RSpec/Output
+        # rubocop:disable RSpec/Output
+        puts "iter #{iter} (#{PROJECT}): subprocess exited non-zero " \
+             '(likely upstream spec flakes; soak signal continues)'
+        # rubocop:enable RSpec/Output
       end
 
       # If the subprocess crashed BEFORE rspec-tracer wrote anything,
