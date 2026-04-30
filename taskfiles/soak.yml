@@ -66,9 +66,10 @@ tasks:
 
   soak:setup:solidus:
     desc: >-
-      Inject rspec-tracer into Solidus Gemfile + bundle install.
-      Used both locally (after soak:_clone:solidus) and from the CI
-      workflow (after actions/checkout@v6 of the external repo).
+      Inject rspec-tracer into Solidus Gemfile + bundle install +
+      generate dummy_app for the api engine. Used both locally
+      (after soak:_clone:solidus) and from the CI workflow (after
+      actions/checkout@v6 of the external repo).
     cmds:
       - cmd: |
           cd tmp/soak-fixtures/solidus
@@ -77,6 +78,12 @@ tasks:
           fi
           bundle config set --local path vendor/bundle
           DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
+          # Generate the api engine's dummy_app (idempotent - rake
+          # task no-ops if dummy already exists). Solidus's api/Rakefile
+          # provides DummyApp::RakeTasks per-engine.
+          if [ ! -d api/spec/dummy ]; then
+            (cd api && DB=sqlite bundle exec rake test_app)
+          fi
 
   soak:smoke:solidus:
     desc: >-
@@ -181,18 +188,20 @@ tasks:
 
   soak:setup:spree:
     desc: >-
-      Inject rspec-tracer into Spree Gemfile + bundle install +
-      generate the test_app via the test_app Rake task. Used both
-      locally and from CI.
+      Inject rspec-tracer into Spree's spree/Gemfile + bundle install
+      + generate test_app for the core engine via the spree/Rakefile
+      test_app task. Spree's monorepo has the actual gem source under
+      spree/ (not at clone root), so injection + bundle happen in that
+      subdir. Used both locally and from CI.
     cmds:
       - cmd: |
-          cd tmp/soak-fixtures/spree
+          cd tmp/soak-fixtures/spree/spree
           if ! grep -q "rspec-tracer" Gemfile; then
             printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
           fi
           bundle config set --local path vendor/bundle
           DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
-          if [ ! -d spec/dummy ] && [ ! -d core/spec/dummy ]; then
+          if [ ! -d core/spec/dummy ]; then
             DB=sqlite bundle exec rake test_app
           fi
 
