@@ -140,6 +140,15 @@ tasks:
             printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
           fi
           bundle config set --local path vendor/bundle
+          # Unset CI for bundle install. Refinery main's Gemfile has
+          # `if !ENV['CI']` gating for sqlite3. On GHA, ENV['CI']=true
+          # so sqlite3 wouldn't be in the lockfile - but the soak
+          # subprocess sets CI=>nil (per
+          # feedback_env_empty_string_is_truthy), at which point
+          # Bundler.setup re-evaluates the Gemfile and demands sqlite3,
+          # finding it missing. Match the subprocess runtime by also
+          # unsetting CI here.
+          unset CI
           bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; bundle install --jobs 4; }
           if [ ! -d core/spec/dummy ] && [ ! -d spec/dummy ]; then
             bundle exec rake refinery:testing:dummy_app
@@ -188,20 +197,36 @@ tasks:
 
   soak:setup:spree:
     desc: >-
-      Inject rspec-tracer into Spree's spree/Gemfile + bundle install
-      + generate test_app for the core engine via the spree/Rakefile
-      test_app task. Spree's monorepo has the actual gem source under
-      spree/ (not at clone root), so injection + bundle happen in that
-      subdir. Used both locally and from CI.
+      Inject rspec-tracer + the spree-umbrella gem (path '..') into
+      spree/core/Gemfile + bundle install + generate test_app via
+      core/Rakefile. The spree-umbrella gem provides the install
+      generator that core/Rakefile's test_app task needs to migrate
+      Spree's tables into the dummy DB; without it the dummy DB
+      only has the placeholder spree_dummy_models table and lib
+      specs fail with "Could not find table 'spree_taxonomies'".
+      Used both locally and from CI.
     cmds:
       - cmd: |
-          cd tmp/soak-fixtures/spree/spree
+          cd tmp/soak-fixtures/spree/spree/core
           if ! grep -q "rspec-tracer" Gemfile; then
             printf '\n# soak-injected\ngem "rspec-tracer", path: "{{.RSPEC_TRACER_ROOT}}"\n' >> Gemfile
           fi
+          if ! grep -qE '^gem "spree", path: "\.\."' Gemfile; then
+            printf 'gem "spree", path: ".."\n' >> Gemfile
+          fi
           bundle config set --local path vendor/bundle
+          # Unset CI so Spree's common_spree_dependencies.rb's
+          # `gem 'mysql2' if ENV['CI']` / `gem 'pg' if ENV['CI']`
+          # stay quiet. Subprocess runtime also has CI=>nil, so
+          # this matches.
+          unset CI
           DB=sqlite bundle check >/dev/null 2>&1 || { rm -f Gemfile.lock; DB=sqlite bundle install --jobs 4; }
-          if [ ! -d core/spec/dummy ]; then
+          # Generate the core engine's dummy_app via core/Rakefile's
+          # own test_app task (not spree/Rakefile's all-engines
+          # iterator which aborts on `cannot load such file --
+          # spree/emails` - emails is in SPREE_OPTIONAL_GEMS and we
+          # don't bundle it).
+          if [ ! -d spec/dummy ]; then
             DB=sqlite bundle exec rake test_app
           fi
 

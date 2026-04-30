@@ -76,31 +76,73 @@ PROJECT_INVOCATIONS = {
   solidus: {
     gemfile_dir: '',
     engine_dir: 'api',
-    # Stable slice - 4 i18n examples, no flakes observed in
-    # pre-flight. Real-world projects accumulate transient spec
-    # failures over time (DB driver shifts, factory changes,
-    # locale-related drift); running the full engine surface
-    # would couple the soak's signal to upstream stability rather
-    # than the tracker. The brief's pre-flight findings already
-    # used a small slice (Solidus 5/5 cold = 5 specs).
-    rspec_args: ['spec/i18n_spec.rb'],
+    # Full api engine spec/ tree (~700 examples). Verified clean
+    # at the pinned SHA (CI run 25143397673 cell `soak (solidus)`
+    # passed in 4m31s with full suite).
+    rspec_args: ['spec'],
     extra_env: { 'DB' => 'sqlite' }
   },
   refinery: {
     gemfile_dir: '',
     engine_dir: '',
-    # Refinery's pages/spec/lib/pages_spec.rb is a self-contained
-    # lib-only spec that doesn't need the dummy_app boot.
-    rspec_args: ['pages/spec/lib/pages_spec.rb'],
+    # Refinery's clone-root has no root-level spec/ - specs live
+    # per-engine. Pass non-system spec dirs explicitly. system/
+    # specs need browser drivers (Capybara + Chrome/Selenium) not
+    # configured in CI; lib + controllers + helpers + presenters +
+    # models cover ~399 examples cleanly at the pinned main HEAD.
+    rspec_args: %w[
+      core/spec/lib core/spec/controllers core/spec/helpers core/spec/presenters
+      pages/spec/lib pages/spec/controllers pages/spec/helpers pages/spec/presenters pages/spec/models
+      images/spec/lib images/spec/models
+      resources/spec/lib resources/spec/models
+      dragonfly/spec/lib
+    ],
     extra_env: {}
   },
   spree: {
-    gemfile_dir: 'spree',
+    gemfile_dir: 'spree/core',
     engine_dir: 'spree/core',
-    # spec/lib/i18n_spec.rb (14 examples, stable). spec/i18n_spec.rb
-    # at the same level has a known-failing locale-normalization
-    # check that's not relevant to soak signal.
-    rspec_args: ['spec/lib/i18n_spec.rb'],
+    # spree/core spec subset minus the SQLite-busy flake on
+    # select_shipping_method (4 of 11 examples in that file
+    # consistently fail under sqlite due to concurrent transaction
+    # locks; flagged in Spree's own pending docs). 1307 examples
+    # verified clean locally at the pinned SHA in ~5 min.
+    # spec/services explicit dir list with checkout's individual
+    # files (minus select_shipping_method) so rspec discovery skips
+    # the flake without an --exclude-pattern (which is silently
+    # ignored when positional paths are passed - per
+    # feedback_rspec_exclude_pattern_positional).
+    rspec_args: %w[
+      spec/lib spec/finders spec/helpers spec/jobs spec/presenters spec/validators
+      spec/services/spree/account
+      spec/services/spree/addresses
+      spec/services/spree/cart
+      spec/services/spree/carts
+      spec/services/spree/checkout/add_store_credit_spec.rb
+      spec/services/spree/checkout/advance_spec.rb
+      spec/services/spree/checkout/get_shipping_rates_spec.rb
+      spec/services/spree/checkout/remove_store_credit_spec.rb
+      spec/services/spree/checkout/update_spec.rb
+      spec/services/spree/classifications
+      spec/services/spree/credit_cards
+      spec/services/spree/gift_cards
+      spec/services/spree/imports
+      spec/services/spree/line_items
+      spec/services/spree/locales
+      spec/services/spree/newsletter
+      spec/services/spree/orders
+      spec/services/spree/payments
+      spec/services/spree/products
+      spec/services/spree/sample_data
+      spec/services/spree/seeds
+      spec/services/spree/shipments
+      spec/services/spree/stock_locations
+      spec/services/spree/stores
+      spec/services/spree/tags
+      spec/services/spree/taxons
+      spec/services/spree/variants
+      spec/services/spree/wallet
+    ],
     extra_env: { 'DB' => 'sqlite' }
   }
 }.freeze
@@ -208,11 +250,20 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     ITERATIONS.times do |i|
       iter = i + 1
       mutate_for_iter(iter)
+      iter_start = Time.now
+      announce_iter_start(iter)
       memstat, output, success = run_soak_subprocess(iter)
+      announce_iter_done(iter, iter_start, success)
 
+      # Pin SHAs are the maintainer-verified trust anchor: at the
+      # pinned ref, the full suite runs clean. Any subprocess
+      # failure is a real signal (env mismatch, harness break, or
+      # actual upstream regression that warrants a pin re-validation).
       unless success
-        tail = output[-2_000..] || output
-        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{tail}"
+        head = output[0, 2_000]
+        tail = output.length > 6_000 ? output[-4_000..] : ''
+        chunk = tail.empty? ? head : "#{head}\n[... truncated ...]\n#{tail}"
+        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{chunk}"
       end
 
       raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
@@ -286,11 +337,24 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     end
   end
 
-  def run_soak_subprocess(iter)
-    iter_dir = SOAK_TMP.join("iter-#{iter}")
-    FileUtils.mkdir_p(iter_dir)
+  # rubocop:disable RSpec/Output -- iter-progress markers are the spec's
+  #   primary observability artifact; without them the GHA UI shows zero
+  #   activity for 30+ min which looks like a hang.
+  def announce_iter_start(iter)
+    $stdout.write("\n=== #{PROJECT} iter #{iter}/#{ITERATIONS} starting ===\n")
+    $stdout.flush
+  end
 
-    env = {
+  def announce_iter_done(iter, started_at, success)
+    elapsed = format('%.1f', Time.now - started_at)
+    state = success ? 'OK' : 'FAIL'
+    $stdout.write("=== #{PROJECT} iter #{iter}/#{ITERATIONS} done in #{elapsed}s (status=#{state}) ===\n\n")
+    $stdout.flush
+  end
+  # rubocop:enable RSpec/Output
+
+  def soak_subprocess_env(iter_dir)
+    {
       'BUNDLE_GEMFILE' => GEMFILE_PATH.to_s,
       'RUBYOPT' => "-r#{SOAK_START} -r#{MEMSTAT_AT_EXIT}",
       'SOAK_MEMSTAT_DIR' => iter_dir.to_s,
@@ -298,21 +362,38 @@ RSpec.describe "realworld soak (#{PROJECT})" do
       # Delete CI from the child env (nil unsets it in Open3's env
       # hash). Empty string is TRUTHY in Ruby, which trips Gemfile
       # conditionals like Spree's `gem 'mysql2' if ENV['CI']` and
-      # makes Bundler.setup demand a non-resolved gem. Per
-      # feedback_rails_eager_load_coverage_timing the goal is to
-      # prevent the rails_helper's CI-mode eager_load - nil
-      # achieves that AND keeps Gemfile conditionals quiet.
+      # makes Bundler.setup demand a non-resolved gem.
       'CI' => nil,
       'RAILS_ENV' => 'test'
     }.merge(INVOCATION[:extra_env])
+  end
 
+  def run_soak_subprocess(iter)
+    iter_dir = SOAK_TMP.join("iter-#{iter}")
+    FileUtils.mkdir_p(iter_dir)
+    env = soak_subprocess_env(iter_dir)
+
+    # Stream subprocess output line-by-line to $stdout in real time
+    # (vs Open3.capture2e's buffer-until-exit) so the soak appears
+    # LIVE in CI logs / local terminal. Each line is also
+    # accumulated to output_buffer for the failure-case raise.
+    output_buffer = +''
+    status = nil
     Bundler.with_unbundled_env do
-      output, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec',
-                                       '--no-color', '--format', 'progress',
-                                       *INVOCATION[:rspec_args],
-                                       chdir: ENGINE_PATH.to_s)
-      [collect_memstat(iter_dir), output, status.success?]
+      Open3.popen2e(env, 'bundle', 'exec', 'rspec',
+                    '--no-color', '--format', 'progress',
+                    *INVOCATION[:rspec_args],
+                    chdir: ENGINE_PATH.to_s) do |_stdin, out, wait_thr|
+        out.each_line do |line|
+          $stdout.write("  [#{PROJECT} iter #{iter}] #{line}") # rubocop:disable RSpec/Output
+          $stdout.flush
+          output_buffer << line
+        end
+        status = wait_thr.value
+      end
     end
+
+    [collect_memstat(iter_dir), output_buffer, status.success?]
   end
 
   def collect_memstat(iter_dir)
