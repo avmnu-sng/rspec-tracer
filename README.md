@@ -39,6 +39,7 @@ describing the **intention** and implementation details of **managing dependency
   * [Working with JRuby](#working-with-jruby)
   * [Working with Parallel Tests](#working-with-parallel-tests)
 * [Configuring CI](#configuring-ci)
+  * [Caching rspec-tracer in CI](#caching-rspec-tracer-in-ci)
 * [Advanced Configuration](#advanced-configuration)
   * [Available Settings](#available-settings)
 * [Filters](#filters)
@@ -182,6 +183,87 @@ uses cache for specific test suites and not merge them.
   TEST_SUITE_ID=1 bundle exec rspec spec/models
   TEST_SUITE_ID=2 bundle exec rspec spec/helpers
   ```
+
+### Caching rspec-tracer in CI
+
+The remote-cache rake tasks above are designed for sharing cache
+across builds via an S3 bucket. If you don't have S3 — or you only
+need to persist the cache between runs of a single workflow on the
+same branch — GitHub Actions' built-in cache works as a drop-in
+storage substrate. The lifecycle is the same: restore
+`rspec_tracer_cache/` before running specs, run the suite (RSpec
+Tracer reads the restored cache and decides what to skip), then let
+the post-step save write the updated cache back.
+
+A reference workflow lives at
+[`.github/workflows/example-tracer-cache.yml`](./.github/workflows/example-tracer-cache.yml)
+in this repo. The relevant cache step is:
+
+```yaml
+- name: Restore rspec-tracer cache
+  uses: actions/cache@v5
+  with:
+    path: spec/fixtures/rails_app/rspec_tracer_cache
+    key: >-
+      ${{ runner.os
+      }}-${{ hashFiles('.ruby-version')
+      }}-${{ hashFiles('lib/rspec_tracer/version.rb')
+      }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
+      }}-rspec-tracer-cache
+    restore-keys: |
+      ${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('lib/rspec_tracer/version.rb') }}-
+      ${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+      ${{ runner.os }}-
+```
+
+The cache key has four components, each chosen to invalidate when
+something would make the previous run's cached decisions
+incorrect:
+
+- **`runner.os`** — native gem binaries (e.g. `sqlite3`,
+  `nokogiri`) are not portable across Linux / macOS runners.
+- **`.ruby-version`** — Ruby ABI changes invalidate native
+  extensions, which can shift the inputs each example sees.
+- **`lib/rspec_tracer/version.rb`** — the tracer's own version.
+  A tracer upgrade can change the cache schema; restoring an
+  old-shape cache after an upgrade is a wasted restore.
+- **The project `Gemfile`** — gem-set changes are the most common
+  reason a previously-populated cache is out of date for skip
+  decisions.
+
+Adapt the path (`spec/fixtures/rails_app/rspec_tracer_cache` →
+your project's cache dir, default `./rspec_tracer_cache`) and the
+hashed `Gemfile` location to match your project layout. The
+`restore-keys` ladder progressively trims trailing components so a
+tracer or Gemfile bump still warm-starts from the closest prior
+shape rather than going fully cold.
+
+A few things worth knowing when you copy this:
+
+- **The first run on a given key is cold.** `actions/cache@v5`
+  saves in a post-step hook that only runs on successful job
+  completion. If a tight `timeout-minutes` cancels the cold run,
+  no cache is written and the next run is also cold. Calibrate
+  the cap generously enough for the cold path to finish.
+- **Too narrow a key wastes cache.** Including `github.sha` in the
+  key means every commit is a cache miss — you get cold runs every
+  time and pay storage for nothing. The key above intentionally
+  ignores the commit SHA: cache hits across commits are the whole
+  point.
+- **Too broad a key is the user-trust risk.** If the key omits a
+  field that materially changes which examples should re-run
+  (e.g. you drop the tracer-version hash), you may restore a
+  cache whose schema is incompatible with the current tracer.
+  RSpec Tracer's per-example input digesting re-validates what
+  it restores, so the worst-case is a degraded hit rate rather
+  than wrong skip decisions — but the safer key shape is the one
+  that invalidates explicitly when these inputs shift.
+- **Lockfile drift isn't in the key.** If your project's
+  `Gemfile.lock` is committed, add it to the hashed paths
+  alongside `Gemfile` for tighter invalidation. If the lockfile
+  is gitignored (as it is in this repo's fixture), the tracer's
+  per-example input digest is what catches transitive shifts on
+  the next run.
 
 ## Advanced Configuration
 
