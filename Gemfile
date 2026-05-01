@@ -106,6 +106,16 @@ group :development do
   # are wrapped via benchmark/profile.rb's StackProf.run driver; the
   # gem is only required there, never by lib/ code.
   gem 'stackprof', '~> 0.2' if RUBY_ENGINE == 'ruby'
+
+  # Coexistence smoke specs (M9.0). Used only by spec/regressions/
+  # rspec_retry_coexistence_spec.rb + rspec_rerun_coexistence_spec.rb
+  # to verify that popular RSpec extensions compose with rspec-tracer's
+  # Module#prepend chain on RSpec::Core::Runner / Reporter. Installed
+  # by default but never required by lib/ or unit specs - the
+  # regression specs explicitly require them in subprocess shape, so
+  # the outer rspec process is unaffected.
+  gem 'rspec-rerun', '~> 1.1'
+  gem 'rspec-retry', '~> 0.6'
 end
 
 gemspec

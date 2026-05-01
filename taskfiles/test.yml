@@ -143,3 +143,36 @@ tasks:
     deps: [ci:redis:ready]
     cmds:
       - bundle exec rspec --no-color spec/integration/remote_cache_redis_spec.rb
+
+  test:regressions:plain:
+    desc: >-
+      M9.0 plain (non-Rails) regression specs at spec/regressions/.
+      Covers upstream PR #72 (gem-generated examples with phantom
+      file_path - rswag-shape - graceful degradation in Example.from
+      and SourceFile.file_path) plus the rspec-retry + rspec-rerun
+      coexistence smoke specs (subprocess shape, outer-Gemfile bundle
+      context, no Rails fixture required). Fast (~2 s total).
+    cmds:
+      - bundle exec rspec --no-color spec/regressions/gem_generated_example_no_source_spec.rb spec/regressions/rspec_retry_coexistence_spec.rb spec/regressions/rspec_rerun_coexistence_spec.rb
+
+  test:regressions:rails:
+    desc: >-
+      M9.0 Rails-fixture-driving regression specs at spec/regressions/.
+      Covers upstream issue #66 (template-change invalidates dependents
+      via the render_template.action_view subscriber). Drives the
+      rails_app fixture; same bundle-install + db:test:prepare ladder
+      as test:features:rails. Wired into the canary cell of
+      full-matrix.yml's `rails:` job (matrix.ruby == '3.3' &&
+      matrix.rails == '7.1') because the assertion is engine-uniform.
+    cmds:
+      - bundle exec rspec --no-color spec/regressions/template_change_invalidates_dependents_spec.rb
+
+  test:regressions:
+    desc: >-
+      M9.0 aggregate regression suite. Runs both test:regressions:plain
+      (non-Rails) and test:regressions:rails (drives rails_app
+      fixture). Excluded from the default rspec sweep via
+      .rspec --exclude-pattern.
+    cmds:
+      - task: test:regressions:plain
+      - task: test:regressions:rails

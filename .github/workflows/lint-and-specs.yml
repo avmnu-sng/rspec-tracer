@@ -97,6 +97,26 @@ jobs:
       - name: Test — Edge cases
         run: task test:edge-cases
 
+  # M9.0: non-Rails regression specs (upstream PR #72 phantom file_path
+  # graceful-degradation + rspec-retry / rspec-rerun coexistence smoke).
+  # Pure-Ruby + subprocess-shape - no rails_app fixture bundle install
+  # required, so this lives on the per-PR fast-track. The Rails-fixture
+  # regression spec (template-change invalidates dependents, upstream
+  # issue #66) lives on full-matrix.yml's `rails:` canary cell instead -
+  # it shares the rails_app fixture's bundle prep with the existing
+  # `test:features:rails*` steps.
+  test-regressions-plain:
+    name: test-regressions-plain
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test — Regressions (plain, no Rails fixture)
+        run: task test:regressions:plain
+
   test-fuzz:
     name: test-fuzz
     runs-on: ubuntu-latest

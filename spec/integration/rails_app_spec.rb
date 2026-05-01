@@ -73,6 +73,16 @@ RSpec.describe 'rails_app behavior matrix' do
     reverse_deps = FixtureBundleHelper.load_cache_file('reverse_dependency.json')
     @show_erb_renderers = reverse_deps.fetch('/app/views/users/show.html.erb', []).to_set
     raise 'expected show.html.erb to have cold renderers' if @show_erb_renderers.empty?
+
+    # M9.0: wide_schema_spec.rb's pure-compute describe sets
+    # `self.use_transactional_tests = false` and skips the
+    # :db_cleaned around hook, so its example fires no
+    # sql.active_record events and db/schema.rb is NOT in its
+    # dependency set. Schema-mutation scenarios assert against the
+    # cold schema-dependent set rather than `all_example_ids` so the
+    # boundary set by the wide-schema fixture stays observable.
+    @schema_dependents = reverse_deps.fetch('/db/schema.rb', []).to_set
+    raise 'expected db/schema.rb to have cold dependents' if @schema_dependents.empty?
   end
 
   after(:all) do
@@ -154,16 +164,20 @@ RSpec.describe 'rails_app behavior matrix' do
   end
 
   describe 'scenario 5: schema mutation (db/schema.rb)' do
-    it 're-runs every example that touched AR (every example under use_transactional_fixtures)' do
+    it 're-runs every example that depends on the schema (every transactional-fixture-wrapped example)' do
       mutate('db/schema.rb') do
         result = warm_run
         # use_transactional_fixtures wraps every example in an AR
         # transaction; the sql.active_record subscriber emits
-        # schema.rb for every example on first query. Narrow AR
-        # attribution only shows when some examples genuinely don't
-        # touch the DB - this fixture has none.
-        expect(result[:re_run]).to(eq(all_example_ids),
-                                   -> { diff_message(expected: all_example_ids, actual: result[:re_run]) })
+        # schema.rb for every example on first query. The
+        # M9.0 wide_schema_spec.rb pure-compute describe explicitly
+        # opts out of transactional fixtures + the :db_cleaned around
+        # hook, so its example genuinely doesn't depend on the
+        # schema and isn't re-run on schema mutation. Asserting
+        # against the cold schema-dependent set documents the
+        # widening boundary precisely.
+        expect(result[:re_run]).to(eq(@schema_dependents),
+                                   -> { diff_message(expected: @schema_dependents, actual: result[:re_run]) })
       end
     end
   end
