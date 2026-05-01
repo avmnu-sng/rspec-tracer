@@ -339,12 +339,7 @@ module RSpecTracer
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       reports_dir = []
 
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        cache_path = File.dirname(RSpecTracer.cache_path)
-        cache_dir = File.join(cache_path, "parallel_tests_#{test_num}")
-
-        next unless File.directory?(cache_dir)
-
+      parallel_tests_peer_dirs(File.dirname(RSpecTracer.cache_path)).each do |cache_dir|
         run_id = JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))['run_id']
 
         reports_dir << File.join(cache_dir, run_id)
@@ -374,14 +369,8 @@ module RSpecTracer
       return unless parallel_tests_executed? && !simplecov?
 
       starting = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      reports_dir = []
 
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        coverage_path = File.dirname(RSpecTracer.coverage_path)
-        coverage_dir = File.join(coverage_path, "parallel_tests_#{test_num}")
-
-        reports_dir << coverage_dir if File.directory?(coverage_dir)
-      end
+      reports_dir = parallel_tests_peer_dirs(File.dirname(RSpecTracer.coverage_path))
 
       coverage_merger.merge(reports_dir)
 
@@ -410,10 +399,31 @@ module RSpecTracer
     def purge_parallel_tests_reports
       return unless parallel_tests_executed?
 
-      1.upto(ENV['PARALLEL_TEST_GROUPS'].to_i) do |test_num|
-        [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
-          FileUtils.rm_rf(File.join(File.dirname(path), "parallel_tests_#{test_num}"))
+      [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
+        parallel_tests_peer_dirs(File.dirname(path)).each do |worker_dir|
+          FileUtils.rm_rf(worker_dir)
         end
+      end
+    end
+
+    # Returns every `parallel_tests_*` subdirectory directly under
+    # `base_path`. Used by the parallel_tests merge + purge paths.
+    #
+    # Earlier patches iterated `1..ENV['PARALLEL_TEST_GROUPS'].to_i`
+    # to construct dir names, but parallel_tests's own runner sets
+    # PARALLEL_TEST_GROUPS to the user-requested process count
+    # (`Parallel.processor_count` by default), NOT the actual worker
+    # count. When num_processes < spawned_worker_count, the upper
+    # bound was too small: peer caches with TEST_ENV_NUMBER above the
+    # bound were silently dropped from the merge AND left behind by
+    # the purge. PR #101 (v1.1.1) documented this gem behaviour for
+    # `last_process?` detection but did not extend the fix to the
+    # iteration call-sites; this method closes that gap. Globbing the
+    # actual filesystem state is robust to the env discrepancy
+    # regardless of how the gem partitions specs.
+    def parallel_tests_peer_dirs(base_path)
+      Dir.glob(File.join(base_path, 'parallel_tests_*')).select do |path|
+        File.directory?(path)
       end
     end
 
