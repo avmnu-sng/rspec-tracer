@@ -93,4 +93,53 @@ RSpec.describe RSpecTracer::Tracker::EnvSnapshot do
       expect(result['RSPEC_TRACER_ENV_SPEC_PROBE']).to eq(Digest::MD5.hexdigest(''))
     end
   end
+
+  describe 'M5.3 union of config-level + per-example concrete names' do
+    let(:env) do
+      {
+        'AUTH_TOKEN' => 'literal-config',
+        'RAILS_ENV' => 'test',
+        'RAILS_MAX_THREADS' => '5',
+        'PER_EXAMPLE_KEY' => 'p'
+      }
+    end
+    let(:observer) { described_class.new(env: env) }
+
+    it 'digests every concrete name regardless of how it entered the names set' do
+      # Mimics Engine post-EnvMatcher.expand: union of config-level
+      # concrete names (literal AUTH_TOKEN + wildcard-expanded RAILS_*)
+      # plus per-example concrete names (PER_EXAMPLE_KEY).
+      names = Set.new(%w[AUTH_TOKEN RAILS_ENV RAILS_MAX_THREADS PER_EXAMPLE_KEY])
+
+      result = observer.digest_snapshot(names)
+
+      expect(result.keys).to match_array(names.to_a)
+    end
+
+    # Engine expands "RAILS_*" via EnvMatcher.expand before reaching
+    # digest_snapshot — the persisted snapshot carries env keys, not
+    # patterns, so the shape stays Hash[name => md5_hex] per the M5.2
+    # schema (no wildcard literal survives across runs).
+    it 'persists wildcard-expanded names as concrete keys' do
+      result = observer.digest_snapshot(%w[RAILS_ENV RAILS_MAX_THREADS])
+
+      expect(result.keys).to match_array(%w[RAILS_ENV RAILS_MAX_THREADS])
+    end
+
+    it 'never persists the wildcard pattern itself' do
+      result = observer.digest_snapshot(%w[RAILS_ENV RAILS_MAX_THREADS])
+
+      expect(result.keys).not_to include('RAILS_*')
+    end
+
+    it 'invalidates a config-level wildcard-expanded key when its value flips' do
+      prev = { 'RAILS_ENV' => Digest::MD5.hexdigest('test') }
+      changed_env = env.merge('RAILS_ENV' => 'production')
+      changed_observer = described_class.new(env: changed_env)
+
+      result = changed_observer.invalidated_keys(prev, %w[RAILS_ENV])
+
+      expect(result).to eq(Set.new(%w[RAILS_ENV]))
+    end
+  end
 end

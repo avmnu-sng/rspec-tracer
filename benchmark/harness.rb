@@ -143,6 +143,27 @@ module BenchmarkHarness
       warmup: ->(cwd) { run_rspec_once(cwd, { 'RSPEC_TRACER_BENCH_ENV' => 'baseline' }) },
       smoke: false
     },
+    'track_env_warm_mismatch' => {
+      # M5.3 config-level + wildcard env-snapshot mismatch. The fixture's
+      # .rspec-tracer declares `track_env 'RSPEC_TRACER_BENCH_CONFIG_*'`
+      # at config level. Warmup primes the cache with
+      # RSPEC_TRACER_BENCH_CONFIG_KEY = 'baseline' (matched by the
+      # wildcard at register_config_tracked_env_names time); iterations
+      # run with the env flipped to 'changed', forcing every example
+      # through the config-level env_changed path
+      # (apply_env_filter_decisions's invalidated.intersect?(@config_*)
+      # branch). Holds the steady-state config-level wildcard expansion
+      # + global mark-every-example overhead on the ratchet so
+      # regressions in the M5.3 hot-path show up. smoke:false matches
+      # warm_env_mismatch's shape (subprocess boot dominates 3-iter
+      # variance against own ratchet).
+      desc: 'Warm run with config-level wildcard env_snapshot mismatch on first iteration (M5.3)',
+      cwd: RUBY_FIXTURE,
+      cmd: %w[bundle exec rspec --no-color],
+      env: { 'RSPEC_TRACER_BENCH_CONFIG_KEY' => 'changed' },
+      warmup: ->(cwd) { run_rspec_once(cwd, { 'RSPEC_TRACER_BENCH_CONFIG_KEY' => 'baseline' }) },
+      smoke: false
+    },
     'parallel_tests_2_workers' => {
       desc: 'parallel_tests with 2 workers, cold: worker split + merge at exit',
       cwd: RUBY_FIXTURE,

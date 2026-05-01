@@ -20,7 +20,15 @@ PROPERTY_FILES_POOL = %w[
   app/**/*.rb config/**/*.yml lib/tasks/*.rake db/schema.rb
   app/policies/**/*.rb app/helpers/*.rb
 ].freeze
-PROPERTY_ENVS_POOL = %w[API_KEY ROLE_CONFIG FEATURE_FLAG RAILS_ENV DATABASE_URL].freeze
+# Wildcard entries (M5.3) are opaque strings to Metadata.tracks_for —
+# the cascade walker just unions them; expansion happens downstream in
+# Engine#register_tracks via Tracker::EnvMatcher.expand. Mixing
+# literals + wildcards in the property pool asserts the walker stays
+# pattern-agnostic.
+PROPERTY_ENVS_POOL = %w[
+  API_KEY ROLE_CONFIG FEATURE_FLAG RAILS_ENV DATABASE_URL
+  RAILS_* AWS_* *_TOKEN *
+].freeze
 
 module MetadataCascadeGen
   module_function

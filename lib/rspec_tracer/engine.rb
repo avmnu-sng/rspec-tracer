@@ -8,6 +8,7 @@ require 'set'
 require_relative 'tracker/coverage_adapter'
 require_relative 'tracker/declared_globs'
 require_relative 'tracker/dependency_graph'
+require_relative 'tracker/env_matcher'
 require_relative 'tracker/env_snapshot'
 require_relative 'tracker/example_registry'
 require_relative 'tracker/file_digest'
@@ -103,6 +104,7 @@ module RSpecTracer
       @tracks_files = Hash.new { |h, id| h[id] = Set.new } # id => Set<abs_path>
       @tracks_env = Hash.new { |h, id| h[id] = Set.new }   # id => Set<env_name>
       @tracked_env_names = Set.new
+      @config_tracked_env_names = Set.new # M5.3 config-level subset (post-expansion)
       @previous_snapshot = nil
       @run_id = nil
       @before_peek = nil
@@ -121,6 +123,7 @@ module RSpecTracer
 
       @previous_snapshot = load_previous_snapshot
       seed_state_from_previous(@previous_snapshot) if @previous_snapshot
+      register_config_tracked_env_names
       compute_filter_decisions
       self
     end
@@ -157,6 +160,12 @@ module RSpecTracer
     # example's dependency set. Env names are accumulated into
     # `@tracked_env_names` so the finalize snapshot covers every key
     # the run cared about.
+    #
+    # M5.3: per-example env entries may carry wildcard patterns
+    # (`tracks: { env: 'RAILS_*' }`). `EnvMatcher.expand` is the
+    # single funnel - literals pass through, wildcards expand against
+    # the live ENV, and unsupported syntax raises ArgumentError at
+    # this point (RunnerHook Pass 1, before any example body runs).
     # rubocop:disable Metrics/PerceivedComplexity
     def register_tracks(example_id, tracks)
       files = tracks[:files] || tracks['files'] || Set.new
@@ -165,22 +174,30 @@ module RSpecTracer
       files.each { |glob| @tracks_files[example_id].merge(resolved_glob_inputs(glob)) } unless files.empty?
       return self if envs.empty?
 
-      envs_strs = envs.map(&:to_s)
-      @tracks_env[example_id].merge(envs_strs)
-      @tracked_env_names.merge(envs_strs)
+      expanded = RSpecTracer::Tracker::EnvMatcher.expand(envs.map(&:to_s))
+      @tracks_env[example_id].merge(expanded)
+      @tracked_env_names.merge(expanded)
       self
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    # M5.2. Called from RunnerHook AFTER the filter-decision pre-walk
-    # has populated `@tracks_env` / `@tracked_env_names` for every
-    # example. Compares each declared env key against the previous
-    # snapshot's `env_snapshot` via Tracker::EnvSnapshot; marks any
-    # example whose tracked-env set intersects the invalidated set
-    # as re-runnable. Strictly additive vs other filter reasons -
-    # if the example was already in `@filtered_examples` for a
-    # stronger reason (files_changed / whole_suite_invalidator /
-    # failed_example / ...), env_changed does NOT overwrite.
+    # M5.2 / M5.3. Called from RunnerHook AFTER the filter-decision
+    # pre-walk has populated `@tracks_env` / `@tracked_env_names` for
+    # every example. Compares each declared env key against the
+    # previous snapshot's `env_snapshot` via Tracker::EnvSnapshot;
+    # marks any example whose tracked-env set intersects the
+    # invalidated set as re-runnable. Strictly additive vs other
+    # filter reasons - if the example was already in
+    # `@filtered_examples` for a stronger reason (files_changed /
+    # whole_suite_invalidator / failed_example / ...), env_changed
+    # does NOT overwrite.
+    #
+    # M5.3 config-level path: when an invalidated key intersects
+    # `@config_tracked_env_names` (the post-expansion config-level
+    # set), every previously-seen example re-runs - mirrors the
+    # `track_files` "declared globs attach to every example"
+    # semantics. New examples (not in @previous_snapshot.all_examples)
+    # already run via the no_cache path; no special-casing needed.
     def apply_env_filter_decisions
       return self if @previous_snapshot.nil?
       return self if @tracked_env_names.empty?
@@ -191,12 +208,8 @@ module RSpecTracer
       return self if invalidated.empty?
 
       reason = FILTER_REASON_STRINGS.fetch(:env_changed)
-      @tracks_env.each do |example_id, envs|
-        next unless envs.intersect?(invalidated)
-        next if @filtered_examples.key?(example_id)
-
-        @filtered_examples[example_id] = reason
-      end
+      mark_all_prev_examples(reason) if invalidated.intersect?(@config_tracked_env_names)
+      mark_per_example_intersections(invalidated, reason)
       self
     end
 
@@ -324,6 +337,45 @@ module RSpecTracer
     end
 
     private
+
+    # M5.3. Read the config-level `track_env(*names)` accumulator,
+    # expand any wildcard patterns against the live ENV via
+    # EnvMatcher.expand (which raises ArgumentError on unsupported
+    # syntax - intentionally surfaces config errors at run start),
+    # and seed both `@config_tracked_env_names` (for the global
+    # mark-every-example branch in apply_env_filter_decisions) and
+    # `@tracked_env_names` (so the finalize snapshot includes every
+    # config-level key alongside per-example keys).
+    def register_config_tracked_env_names
+      patterns = @configuration.tracked_env_names
+      return if patterns.nil? || patterns.empty?
+
+      expanded = RSpecTracer::Tracker::EnvMatcher.expand(patterns)
+      @config_tracked_env_names.merge(expanded)
+      @tracked_env_names.merge(expanded)
+    end
+
+    # M5.3. Mark every previously-seen example for re-run. Called
+    # when a config-level env key flips between runs.
+    def mark_all_prev_examples(reason)
+      @previous_snapshot.all_examples.each_key do |example_id|
+        next if @filtered_examples.key?(example_id)
+
+        @filtered_examples[example_id] = reason
+      end
+    end
+
+    # M5.2 / M5.3 per-example env-changed mark. Walks @tracks_env,
+    # marks examples whose declared env set intersects invalidated.
+    # Additive vs other filter reasons (won't overwrite).
+    def mark_per_example_intersections(invalidated, reason)
+      @tracks_env.each do |example_id, envs|
+        next unless envs.intersect?(invalidated)
+        next if @filtered_examples.key?(example_id)
+
+        @filtered_examples[example_id] = reason
+      end
+    end
 
     def build_observers
       @registry = RSpecTracer::Tracker::ExampleRegistry.new

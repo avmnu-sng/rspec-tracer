@@ -209,6 +209,89 @@ RSpec.describe RSpecTracer::Configuration do
 
       expect(config.declared_globs).to eq(['a.rb'])
     end
+
+    it 'prevents subsequent track_env calls' do
+      config.track_env('AUTH_TOKEN')
+      config.freeze_declared_globs!
+
+      expect { config.track_env('OTHER') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /cannot be called/)
+    end
+
+    it 'keeps previously-declared env names readable after freezing' do
+      config.track_env('AUTH_TOKEN')
+      config.freeze_declared_globs!
+
+      expect(config.tracked_env_names).to eq(['AUTH_TOKEN'])
+    end
+  end
+
+  describe '#track_env' do
+    it 'returns an empty list when never configured' do
+      expect(config.tracked_env_names).to eq([])
+    end
+
+    it 'accumulates names across multiple calls' do
+      config.track_env('AUTH_TOKEN')
+      config.track_env('ROLE_CONFIG')
+
+      expect(config.tracked_env_names).to eq(%w[AUTH_TOKEN ROLE_CONFIG])
+    end
+
+    it 'accepts multiple names per call' do
+      config.track_env('A', 'B')
+
+      expect(config.tracked_env_names).to eq(%w[A B])
+    end
+
+    it 'flattens nested arrays' do
+      config.track_env(%w[A B])
+
+      expect(config.tracked_env_names).to eq(%w[A B])
+    end
+
+    it 'coerces non-string entries to strings (Symbol support)' do
+      config.track_env(:AUTH_TOKEN)
+
+      expect(config.tracked_env_names).to eq(['AUTH_TOKEN'])
+    end
+
+    it 'drops nil entries silently' do
+      config.track_env(nil, 'AUTH_TOKEN', nil)
+
+      expect(config.tracked_env_names).to eq(['AUTH_TOKEN'])
+    end
+
+    it 'preserves duplicates in the accumulator (Engine de-dupes downstream via EnvMatcher.expand.uniq)' do
+      config.track_env('AUTH_TOKEN')
+      config.track_env('AUTH_TOKEN')
+
+      expect(config.tracked_env_names).to eq(%w[AUTH_TOKEN AUTH_TOKEN])
+    end
+
+    it 'accepts wildcard patterns as opaque strings (validation happens in EnvMatcher.expand)' do
+      config.track_env('RAILS_*')
+
+      expect(config.tracked_env_names).to eq(['RAILS_*'])
+    end
+
+    it 'returns a frozen view from the setter' do
+      result = config.track_env('AUTH_TOKEN')
+
+      expect(result).to be_frozen
+    end
+
+    it 'returns a frozen view from the reader' do
+      config.track_env('AUTH_TOKEN')
+
+      expect(config.tracked_env_names).to be_frozen
+    end
+
+    it 'returns a frozen empty array from the reader when never set' do
+      result = config.tracked_env_names
+
+      expect(result).to be_frozen
+    end
   end
 
   describe '#track_rails_defaults' do

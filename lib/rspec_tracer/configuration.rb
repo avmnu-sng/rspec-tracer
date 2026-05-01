@@ -584,6 +584,45 @@ module RSpecTracer
       @declared_globs_frozen = true
     end
 
+    # M5.3 config-level env-tracking DSL. Accumulates names across
+    # calls; bare entries flow into `Engine#setup`, are wildcard-
+    # expanded via `Tracker::EnvMatcher`, and attach to every
+    # previously-seen example (parallel to `track_files`'s "declared
+    # globs attach to every example" semantics).
+    #
+    # Wildcards: single trailing (`PREFIX_*`) or single leading
+    # (`*_SUFFIX`) only; `*` alone matches every env key. Multi-`*`,
+    # character classes, `?`, `!`, `\\` raise ArgumentError at run
+    # start (Engine#setup) so users see config errors immediately.
+    #
+    # Returns a frozen Array view (mirrors `ignore_spec_files` /
+    # `add_reporter` shape — defensive against callers mutating an
+    # internal accumulator). Setter raises if called after
+    # `freeze_declared_globs!` flipped the latch (same "tracker has
+    # started, no more declarations" contract as `track_files`).
+    def track_env(*names)
+      if defined?(@declared_globs_frozen) && @declared_globs_frozen
+        raise InvalidUsageError,
+              'track_env cannot be called after the tracker has started'
+      end
+
+      @track_env_names ||= []
+      @track_env_names.concat(names.flatten.compact.map(&:to_s))
+      @track_env_names.dup.freeze
+    end
+
+    # Reader for the accumulated config-level env names. Returns a
+    # frozen Array (`[].freeze` when never set), parallel to
+    # `declared_globs`'s shape.
+    def tracked_env_names
+      return EMPTY_TRACKED_ENV_NAMES unless defined?(@track_env_names) && @track_env_names
+
+      @track_env_names.dup.freeze
+    end
+
+    EMPTY_TRACKED_ENV_NAMES = [].freeze
+    private_constant :EMPTY_TRACKED_ENV_NAMES
+
     # M5.1 per-spec-file exclusion (closes upstream #41). Accumulates
     # glob patterns that match test files rspec-tracer should leave
     # alone: matching examples pass through RSpec unchanged, but the

@@ -111,6 +111,18 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/integration/per_example_dsl_spec.rb
 
+  test:integration:track-env-config:
+    desc: >-
+      M5.3 config-level track_env(*names) DSL + wildcard env matching.
+      Drives the Rails fixture with a synthesized .rspec-tracer that
+      declares `track_env 'AUTH_TOKEN'` (literal) or `track_env 'M53_PROBE_*'`
+      (wildcard). Asserts every previously-seen example re-runs when a
+      config-level tracked env flips, and that env_snapshot.json carries
+      wildcard-expanded concrete keys (no pattern leakage). Excluded
+      from the default rspec sweep (subprocess, multiple cold/warm cycles).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/track_env_config_spec.rb
+
   test:integration:remote-cache:
     desc: >-
       M7.1 S3Backend integration test against LocalStack. End-to-end

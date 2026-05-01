@@ -9,11 +9,12 @@ version: '3'
 tasks:
   test:mutation:smoke:
     desc: >-
-      Mutation smoke — 13 subjects (TimeFormatter.format_time, Tracker::Input,
+      Mutation smoke — 14 subjects (TimeFormatter.format_time, Tracker::Input,
       Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators, Storage::Schema,
       Storage::Snapshot, Storage::Backend, Tracker::DependencyGraph,
       Tracker::ExampleRegistry, Tracker::Filter, Tracker::LoadedFilesTracker,
-      Rails::Preset, Tracker::EnvSnapshot) must each hit >= 90% (< 2 min budget)
+      Rails::Preset, Tracker::EnvSnapshot, Tracker::EnvMatcher)
+      must each hit >= 90% (< 2 min budget)
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -89,6 +90,9 @@ tasks:
         run_mutant_subject "Tracker::EnvSnapshot" \
           "rspec_tracer/tracker/env_snapshot" \
           "RSpecTracer::Tracker::EnvSnapshot*" || fail=1
+        run_mutant_subject "Tracker::EnvMatcher" \
+          "rspec_tracer/tracker/env_matcher" \
+          "RSpecTracer::Tracker::EnvMatcher*" || fail=1
         # Rails::Notifications deferred to M8.3 - the subscribe-side
         # surface (ActiveSupport::Notifications stubs + thread-local
         # bucket lifecycle) yields a large population of alive

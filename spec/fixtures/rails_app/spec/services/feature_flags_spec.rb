@@ -96,4 +96,30 @@ RSpec.describe FeatureFlags do
       expect(described_class.require_review?).to be(false)
     end
   end
+
+  # M5.3 per-example wildcard DSL: same env-branch blind spot as the
+  # M5.2 describe above, but the tracks declaration is `RAILS_APP_*`
+  # (wildcard) rather than the literal name. EnvMatcher.expand resolves
+  # the pattern at register_tracks time; the persisted env_snapshot
+  # carries the concrete `RAILS_APP_FORCE_REVIEW` key (no wildcard
+  # leak). The integration spec at spec/integration/per_example_dsl_spec.rb
+  # asserts these examples re-run when RAILS_APP_FORCE_REVIEW flips.
+  describe '.require_review? wildcard exercise (M5.3)',
+           tracks: { env: 'RAILS_APP_*' } do
+    around do |example|
+      before = ENV['RAILS_APP_FORCE_REVIEW']
+      example.run
+      ENV['RAILS_APP_FORCE_REVIEW'] = before
+    end
+
+    it 'matches RAILS_APP_FORCE_REVIEW via the RAILS_APP_* wildcard' do
+      ENV['RAILS_APP_FORCE_REVIEW'] = '1'
+      expect(described_class.require_review?).to be(true)
+    end
+
+    it 'pulls the un-set default through the wildcard match' do
+      ENV.delete('RAILS_APP_FORCE_REVIEW')
+      expect(described_class.require_review?).to be(false)
+    end
+  end
 end
