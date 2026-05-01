@@ -567,6 +567,7 @@ jobs:
       - test-mutation-top-level-b
       - test-mutation-top-level-c
       - test-integration-remote
+      - test-regressions-plain
     steps:
       - name: Consolidate
         env:
