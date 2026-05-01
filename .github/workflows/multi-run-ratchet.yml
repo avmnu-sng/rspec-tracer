@@ -1,0 +1,210 @@
+---
+name: multi-run-ratchet
+
+# Multi-run ratchet baseline for GHA `ubuntu-latest` runner-CPU
+# heterogeneity. Replaces the single-run `regen-ratchet.yml` workflow
+# for periodic re-baselining. Strategy:
+#
+#   1. Fan N parallel jobs (default 30, configurable via
+#      workflow_dispatch input). Each job mirrors `regen-ratchet.yml`'s
+#      setup + runs `task benchmark:ratchet:update` to produce its
+#      own per-run `ratchet.json`.
+#   2. Each job uploads its `ratchet.json` as an artifact named
+#      `multi-run-ratchet-N` so the aggregator can find them.
+#   3. The aggregate job downloads all N artifacts + invokes
+#      `scripts/aggregate_ratchet.rb` to compute min/p50/p75/p90/p95
+#      /p99/max across runs of within-run-p50 per scenario.
+#   4. The candidate `benchmark/ratchet.json` is uploaded as an
+#      artifact + a per-scenario distribution table is written to
+#      `GITHUB_STEP_SUMMARY`.
+#   5. Maintainer reviews the summary, then commits the candidate
+#      ratchet on a small follow-up PR.
+#
+# Why N=30: GHA `ubuntu-latest` mixes ~2-3 distinct CPU SKUs (EPYC
+# 9V74 / EPYC 7763 / occasional Intel Xeon). 30 runs samples each
+# SKU ~10 times - enough to land a stable p95-of-p50 baseline.
+# Beyond N=30, ROI plateaus because the p95 estimate is dominated by
+# which SKUs exist, not how many times each is sampled. Configurable
+# via the `runs` input for higher-confidence re-baselines.
+#
+# Why p95-of-p50: 95% of runs land at-or-below this threshold (silent
+# OK); the slowest 5% (slowest SKU on a noisy day) WARN/FAIL but
+# don't define the threshold. p50-of-p50 would WARN half the runs
+# (defeats the gate); max-of-p50 would let one outlier define the
+# threshold (gating becomes useless).
+#
+# Trigger via:
+#   gh workflow run multi-run-ratchet.yml --ref <branch> [--field runs=30]
+#
+# Then download the candidate:
+#   gh run download <run-id> -n multi-run-ratchet-candidate
+#
+# And review the summary in the workflow run page before committing
+# the candidate `benchmark/ratchet.json` on a small PR.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Number of parallel benchmark runs to aggregate (default 30)
+        required: false
+        default: '30'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      indices: ${{ steps.compute.outputs.indices }}
+    steps:
+      - name: Compute matrix indices
+        id: compute
+        env:
+          RUNS: ${{ inputs.runs }}
+        run: |
+          # Emit JSON array [1, 2, ..., N]. Validates N is a positive
+          # integer in the 1..200 range to prevent runaway matrices.
+          if ! [[ "$RUNS" =~ ^[1-9][0-9]?$|^1[0-9][0-9]$|^200$ ]]; then
+            echo "::error::runs input '$RUNS' must be a positive integer 1-200"
+            exit 1
+          fi
+          indices=$(seq 1 "$RUNS" | jq -nR '[inputs | tonumber]')
+          echo "indices=$(echo "$indices" | jq -c .)" >> "$GITHUB_OUTPUT"
+          echo "Will fan $RUNS parallel benchmark runs"
+
+  regen-run:
+    name: regen-run-${{ matrix.idx }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # Fan all N runs in parallel; one slow VM doesn't block the
+      # rest. fail-fast disabled so a single-run flake doesn't
+      # cancel the aggregation.
+      fail-fast: false
+      matrix:
+        idx: ${{ fromJSON(needs.prepare.outputs.indices) }}
+    # Mirror the canonical benchmark cell's env pins (full-matrix.yml's
+    # `benchmark:` job) so resolution converges on the same Rails /
+    # rspec-rails / sqlite3 majors. Apples-to-apples across the N
+    # parallel runs.
+    env:
+      RAILS_VERSION: "~> 7.1.0"
+      RSPEC_RAILS_VERSION: "~> 6.1.0"
+      SQLITE3_VERSION: "~> 1.4"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler: '4.0.10'
+          bundler-cache: true
+
+      - name: Setup Task
+        uses: go-task/setup-task@v2
+        with:
+          version: 3.45.4
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Same fixture-bundle caches as the canonical `benchmark:` job
+      # in full-matrix.yml + regen-ratchet.yml; share keys so each
+      # matrix job runs warm on existing caches without re-downloading
+      # the fixture gem set.
+      - name: Cache benchmark ruby_app fixture bundle
+        uses: actions/cache@v5
+        with:
+          path: benchmark/fixtures/ruby_app/vendor/bundle
+          key: fixture-bundle-ruby-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('benchmark/fixtures/ruby_app/Gemfile') }}
+          restore-keys: |
+            fixture-bundle-ruby-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+
+      - name: Cache rails_app fixture bundle
+        uses: actions/cache@v5
+        with:
+          path: spec/fixtures/rails_app/vendor/bundle
+          key: >-
+            fixture-bundle-rails-app-${{ runner.os
+            }}-${{ hashFiles('.ruby-version')
+            }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
+            }}-${{ env.RAILS_VERSION
+            }}-${{ env.RSPEC_RAILS_VERSION
+            }}-${{ env.SQLITE3_VERSION }}
+          restore-keys: |
+            fixture-bundle-rails-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}-
+            fixture-bundle-rails-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
+
+      - name: Point fixture bundler at vendor/bundle
+        run: |
+          (cd benchmark/fixtures/ruby_app && bundle config set --local path vendor/bundle)
+          (cd spec/fixtures/rails_app && bundle config set --local path vendor/bundle)
+
+      - name: Install fixture bundles
+        run: task benchmark:bundle
+
+      - name: Prepare Rails fixture database
+        run: bundle exec rails db:test:prepare
+        working-directory: spec/fixtures/rails_app
+
+      - name: Run benchmark (10 iters per scenario)
+        run: task benchmark:ratchet:update
+
+      # Capture the per-run ratchet.json with the matrix index in the
+      # artifact name so the aggregator can find each one. The CPU
+      # model is preserved inside the ratchet's environment block so
+      # the aggregator can tally distinct SKUs seen.
+      - name: Upload per-run ratchet
+        uses: actions/upload-artifact@v7
+        with:
+          name: multi-run-ratchet-${{ matrix.idx }}
+          path: benchmark/ratchet.json
+          if-no-files-found: error
+
+  aggregate:
+    name: aggregate
+    needs: regen-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '.ruby-version'
+          bundler-cache: false
+
+      # Download every per-run artifact under tmp/multi-run-ratchet/.
+      # actions/download-artifact@v6 with `pattern:` and
+      # `merge-multiple: false` preserves the per-run subdirs (e.g.
+      # tmp/multi-run-ratchet/multi-run-ratchet-7/ratchet.json) so
+      # the aggregator can iterate them.
+      - name: Download all per-run artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: tmp/multi-run-ratchet
+          pattern: multi-run-ratchet-*
+          merge-multiple: false
+
+      - name: Aggregate per-run ratchets
+        run: |
+          ruby scripts/aggregate_ratchet.rb \
+            --runs-dir tmp/multi-run-ratchet \
+            --out tmp/candidate-ratchet.json \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --baseline-percentile 95
+
+      - name: Upload candidate ratchet
+        uses: actions/upload-artifact@v7
+        with:
+          name: multi-run-ratchet-candidate
+          path: tmp/candidate-ratchet.json
+          if-no-files-found: error

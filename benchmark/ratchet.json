@@ -3,74 +3,81 @@
     "ruby": "3.3.10",
     "ruby_platform": "x86_64-linux",
     "os": "linux",
-    "cpu": "AMD EPYC 9V74 80-Core Processor",
-    "cores": 4,
-    "recorded_at": "2026-04-29T20:33:02Z"
+    "recorded_at": "2026-05-01T21:18:31Z",
+    "baseline_methodology": {
+      "across_runs": 30,
+      "baseline_percentile": 95,
+      "cpus_seen": {
+        "AMD EPYC 9V74 80-Core Processor": 11,
+        "AMD EPYC 7763 64-Core Processor": 16,
+        "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": 3
+      }
+    }
   },
   "scenarios": {
-    "cold_ruby": {
-      "p50": 0.4033,
-      "p95": 0.4366,
-      "iterations": 10
-    },
-    "warm_noop": {
-      "p50": 0.3346,
-      "p95": 0.3753,
-      "iterations": 10
-    },
-    "warm_env_mismatch": {
-      "p50": 0.3318,
-      "p95": 0.4807,
-      "iterations": 10
-    },
-    "track_env_warm_mismatch": {
-      "p50": 0.3086,
-      "p95": 0.3409,
-      "iterations": 10
-    },
-    "parallel_tests_2_workers": {
-      "p50": 0.8665,
-      "p95": 1.8682,
-      "iterations": 10
-    },
-    "cold_rails": {
-      "p50": 7.0289,
-      "p95": 7.3304,
-      "iterations": 10
-    },
-    "cold_rails_v2": {
-      "p50": 16.4719,
-      "p95": 17.2098,
-      "iterations": 10
-    },
-    "coverage_adapter": {
-      "p50": 0.9474,
-      "p95": 0.9886,
-      "iterations": 10
-    },
     "cache_load": {
-      "p50": 0.6352,
-      "p95": 0.6557,
+      "p50": 0.7729,
+      "p95": 0.7961,
       "iterations": 10
     },
     "cache_load_msgpack": {
-      "p50": 0.6623,
-      "p95": 0.6794,
+      "p50": 0.8261,
+      "p95": 0.8364,
       "iterations": 10
     },
     "cache_load_sqlite": {
-      "p50": 1.1576,
-      "p95": 1.808,
+      "p50": 1.0321,
+      "p95": 1.0568,
+      "iterations": 10
+    },
+    "cold_rails": {
+      "p50": 8.4521,
+      "p95": 8.6651,
+      "iterations": 10
+    },
+    "cold_rails_v2": {
+      "p50": 19.8368,
+      "p95": 20.396,
+      "iterations": 10
+    },
+    "cold_ruby": {
+      "p50": 0.4507,
+      "p95": 0.4763,
+      "iterations": 10
+    },
+    "coverage_adapter": {
+      "p50": 1.1969,
+      "p95": 1.2228,
       "iterations": 10
     },
     "file_read_hook": {
-      "p50": 3.9904,
-      "p95": 4.0616,
+      "p50": 5.0953,
+      "p95": 5.1474,
       "iterations": 10
     },
     "loaded_files_tracker": {
-      "p50": 1.1102,
-      "p95": 1.1553,
+      "p50": 1.4107,
+      "p95": 1.4407,
+      "iterations": 10
+    },
+    "parallel_tests_2_workers": {
+      "p50": 1.0626,
+      "p95": 2.0554,
+      "iterations": 10
+    },
+    "track_env_warm_mismatch": {
+      "p50": 0.402,
+      "p95": 0.445,
+      "iterations": 10
+    },
+    "warm_env_mismatch": {
+      "p50": 0.4099,
+      "p95": 0.4247,
+      "iterations": 10
+    },
+    "warm_noop": {
+      "p50": 0.4044,
+      "p95": 0.4439,
       "iterations": 10
     }
   }
