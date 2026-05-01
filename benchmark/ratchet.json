@@ -24,8 +24,8 @@
       "iterations": 10
     },
     "track_env_warm_mismatch": {
-      "p50": 0.3318,
-      "p95": 0.4807,
+      "p50": 0.3086,
+      "p95": 0.3409,
       "iterations": 10
     },
     "parallel_tests_2_workers": {
