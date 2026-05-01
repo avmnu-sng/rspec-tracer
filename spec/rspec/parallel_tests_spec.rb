@@ -212,19 +212,8 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
     end
   end
 
-  describe '.worker_group_count' do
-    it 'returns 0 when PARALLEL_TEST_GROUPS is unset' do
-      expect(described_class.worker_group_count).to eq(0)
-    end
-
-    it 'returns the integer value of PARALLEL_TEST_GROUPS' do
-      ENV['PARALLEL_TEST_GROUPS'] = '4'
-      expect(described_class.worker_group_count).to eq(4)
-    end
-  end
-
   describe '.peer_paths_for' do
-    it 'returns only the existing parallel_tests_N subdirs' do
+    it 'returns the existing parallel_tests_* subdirs in the base dir' do
       ENV['PARALLEL_TEST_GROUPS'] = '3'
       base = File.join(tmp_base, 'peers')
       FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
@@ -233,6 +222,52 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class.peer_paths_for(base)).to contain_exactly(
         File.join(base, 'parallel_tests_1'),
         File.join(base, 'parallel_tests_3')
+      )
+    end
+
+    # Regression: parallel_tests sets PARALLEL_TEST_GROUPS to the
+    # user-requested num_processes (CPU count by default), not the
+    # actual worker count. When num_processes < spawned-worker count,
+    # iterating `1..ENV['PARALLEL_TEST_GROUPS']` would skip the trailing
+    # peer dirs and silently lose their snapshots in the merge.
+    it 'finds peer dirs whose index exceeds PARALLEL_TEST_GROUPS' do
+      ENV['PARALLEL_TEST_GROUPS'] = '2'
+      base = File.join(tmp_base, 'peers')
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_2'))
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_4'))
+
+      expect(described_class.peer_paths_for(base)).to contain_exactly(
+        File.join(base, 'parallel_tests_1'),
+        File.join(base, 'parallel_tests_2'),
+        File.join(base, 'parallel_tests_4')
+      )
+    end
+
+    it 'finds peer dirs even when PARALLEL_TEST_GROUPS is unset' do
+      base = File.join(tmp_base, 'peers')
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
+
+      expect(described_class.peer_paths_for(base)).to contain_exactly(
+        File.join(base, 'parallel_tests_1')
+      )
+    end
+
+    it 'returns an empty array when no parallel_tests_* dirs exist' do
+      ENV['PARALLEL_TEST_GROUPS'] = '4'
+      base = File.join(tmp_base, 'peers')
+      FileUtils.mkdir_p(base)
+
+      expect(described_class.peer_paths_for(base)).to eq([])
+    end
+
+    it 'rejects file entries with parallel_tests_ prefix' do
+      base = File.join(tmp_base, 'peers')
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
+      File.write(File.join(base, 'parallel_tests_2.json'), 'not a dir')
+
+      expect(described_class.peer_paths_for(base)).to contain_exactly(
+        File.join(base, 'parallel_tests_1')
       )
     end
   end
@@ -386,6 +421,40 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
           expect(File.directory?(File.join(File.dirname(path), "parallel_tests_#{n}"))).to be(false)
         end
       end
+    end
+
+    # Regression for spec/integration/parallel_tests_spec.rb:88 flake
+    # on ruby-parallel CI cells: parallel_tests sets
+    # PARALLEL_TEST_GROUPS = num_processes (the user-requested process
+    # count), not the actual worker count. When the spawned worker
+    # count exceeds num_processes (e.g. via spec-count partitioning
+    # interactions or shared-runner CPU detection drift), iterating
+    # `1..ENV['PARALLEL_TEST_GROUPS']` left worker dirs above that
+    # bound behind. Globbing the actual filesystem state is robust.
+    it 'sweeps worker dirs whose index exceeds PARALLEL_TEST_GROUPS' do
+      ENV['PARALLEL_TEST_GROUPS'] = '2'
+      base = File.dirname(cache_path)
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_4'))
+
+      described_class.purge_worker_dirs!
+
+      expect(Dir.glob(File.join(base, 'parallel_tests_*'))).to be_empty
+    end
+
+    it 'sweeps worker dirs even when PARALLEL_TEST_GROUPS is unset' do
+      base = File.dirname(cache_path)
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_1'))
+      FileUtils.mkdir_p(File.join(base, 'parallel_tests_2'))
+
+      described_class.purge_worker_dirs!
+
+      expect(Dir.glob(File.join(base, 'parallel_tests_*'))).to be_empty
+    end
+
+    it 'is a no-op when no worker dirs exist' do
+      ENV['PARALLEL_TEST_GROUPS'] = '4'
+      expect { described_class.purge_worker_dirs! }.not_to raise_error
     end
   end
 end
