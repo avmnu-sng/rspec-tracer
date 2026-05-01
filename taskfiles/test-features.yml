@@ -44,12 +44,75 @@ tasks:
       schema-subscriber attribution path
       (lib/rspec_tracer/rails/notifications.rb #record_ar_schema) only
       attributes db/schema.rb to the AR-touching example - so a schema
-      mutation re-runs only that example, not the entire suite.
-      DatabaseCleaner :truncation in the fixture rails_helper handles the
-      per-example commit cleanup automatically when the env toggle is on.
+      mutation re-runs only that example, not the entire suite. The
+      fixture's narrow_schema_spec.rb uses sequence-based unique
+      factories (Time.now.to_f + pid suffix on User.email) so per-example
+      commits don't collide on the email uniqueness index without any
+      cleanup mechanism that would itself contaminate attribution.
       Excluded from the default rspec sweep (subprocess + Rails fixture).
     cmds:
       - bundle exec rspec --no-color spec/integration/narrow_ar_schema_spec.rb
+
+  test:features:rails:wide-schema:transactional:
+    desc: >-
+      M9.0 wide-AR-schema integration test under the Rails-default
+      `use_transactional_fixtures = true`. Drives spec/wide_schema_spec.rb
+      (3 AR-touching examples + 1 pure-compute) and asserts: (1) cold
+      attributes db/schema.rb to every AR-touching example because the
+      per-example BEGIN/COMMIT fires sql.active_record inside the bucket;
+      (2) schema mutation re-runs every AR-touching example; (3) the
+      pure-compute describe (which sets self.use_transactional_fixtures
+      = false) is NOT re-run, demonstrating the widening boundary.
+      Documents the SAFE-BUT-WIDE schema attribution under the most
+      common Rails setup (memory: feedback_no_user_surprises).
+    cmds:
+      - bundle exec rspec --no-color spec/integration/wide_ar_schema_transactional_spec.rb
+
+  test:features:rails:wide-schema:db-cleaner-truncation:
+    desc: >-
+      M9.0 wide-AR-schema integration test under the
+      `database_cleaner-active_record :truncation` strategy in an around
+      hook. Drives spec/wide_schema_spec.rb with
+      RSPEC_TRACER_RAILS_TRANSACTIONAL=false +
+      RSPEC_TRACER_DB_CLEANER_STRATEGY=truncation; the rails_helper's
+      `config.around(:each, :db_cleaned)` wraps tagged examples in
+      DatabaseCleaner.cleaning so TRUNCATE queries fire sql.active_record
+      inside the per-example bucket. Asserts the same widening-boundary
+      shape as wide-schema:transactional.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/wide_ar_schema_db_cleaner_truncation_spec.rb
+
+  test:features:rails:wide-schema:db-cleaner-deletion:
+    desc: >-
+      M9.0 wide-AR-schema integration test under the
+      `database_cleaner-active_record :deletion` strategy. Same shape as
+      wide-schema:db-cleaner-truncation; DELETE queries fire
+      sql.active_record inside the bucket instead of TRUNCATE.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/wide_ar_schema_db_cleaner_deletion_spec.rb
+
+  test:features:rails:wide-schema:db-cleaner-transaction:
+    desc: >-
+      M9.0 wide-AR-schema integration test under the
+      `database_cleaner-active_record :transaction` strategy. Same shape
+      as wide-schema:db-cleaner-truncation; BEGIN / SAVEPOINT / ROLLBACK
+      queries fire sql.active_record inside the bucket. Distinct from
+      Rails transactional fixtures because the strategy is driven by the
+      around hook on tagged examples, not by Rails' fixture machinery.
+    cmds:
+      - bundle exec rspec --no-color spec/integration/wide_ar_schema_db_cleaner_transaction_spec.rb
+
+  test:features:rails:wide-schema:suite:
+    desc: >-
+      M9.0 aggregator: runs all four wide-AR-schema integration specs
+      back-to-back. Used by the canary CI cell to wire one workflow step
+      instead of four. Per-spec wall clock ~2-3 min; suite total ~10-12
+      min on the canary `ruby-3.3 x Rails 7.1` MRI cell.
+    cmds:
+      - task: test:features:rails:wide-schema:transactional
+      - task: test:features:rails:wide-schema:db-cleaner-truncation
+      - task: test:features:rails:wide-schema:db-cleaner-deletion
+      - task: test:features:rails:wide-schema:db-cleaner-transaction
 
   test:features:rails:jruby:
     desc: >-

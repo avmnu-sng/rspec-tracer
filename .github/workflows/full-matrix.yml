@@ -393,6 +393,36 @@ jobs:
           SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
         run: task test:features:rails:narrow-schema
 
+      # M9.0: wide-AR-schema integration specs (4 scenarios:
+      # transactional fixtures + DBC :truncation / :deletion /
+      # :transaction). The contract under test is engine-uniform - the
+      # widening behavior is the same on every Ruby + Rails cell - so
+      # gating on the canary `ruby-3.3 x Rails 7.1` MRI cell is
+      # structurally sufficient. Per-scenario wall-clock is ~5 s
+      # locally on M2 Max; expected ~10-15 s per scenario on
+      # ubuntu-latest under load. Suite total adds ~1 min to ONE MRI
+      # cell, well inside the 45-min cell timeout.
+      - name: Test — Features (Rails, MRI, wide AR schema suite)
+        if: matrix.ruby == '3.3' && matrix.rails == '7.1'
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
+          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
+        run: task test:features:rails:wide-schema:suite
+
+      # M9.0: Rails-fixture-driving regression spec (upstream issue
+      # #66, template change invalidates dependents via the
+      # render_template.action_view subscriber). Same canary-cell
+      # gate as the wide-schema suite; reuses the rails_app fixture's
+      # bundle install + db:test:prepare from the prior step.
+      - name: Test — Regressions (Rails fixture)
+        if: matrix.ruby == '3.3' && matrix.rails == '7.1'
+        env:
+          RAILS_VERSION: "~> ${{ matrix.rails }}.0"
+          RSPEC_RAILS_VERSION: "~> ${{ matrix.rspec_rails }}.0"
+          SQLITE3_VERSION: "~> ${{ matrix.sqlite3 }}"
+        run: task test:regressions:rails
+
       # JRuby cell: fixture Gemfile branches on RUBY_ENGINE and pulls in
       # activerecord-jdbcsqlite3-adapter ~> 71.0 (Rails 7.1 line). The
       # JDBC chain registers itself as the "sqlite3" adapter so

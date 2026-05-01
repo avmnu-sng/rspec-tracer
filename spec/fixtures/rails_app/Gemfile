@@ -71,4 +71,10 @@ group :test do
   # simplecov is hardcoded across the matrix - only one supported line
   # (0.22) and no plan to widen support, so no env override.
   gem "simplecov", "~> 0.22"
+  # database_cleaner-active_record drives the wide-schema integration
+  # specs (spec/integration/wide_ar_schema_db_cleaner_*_spec.rb). Loaded
+  # only when RSPEC_TRACER_DB_CLEANER_STRATEGY is set; the default
+  # narrow-schema + transactional flows never require it. Pinned to the
+  # ~> 2.2 line (Rails 7.x compatible).
+  gem "database_cleaner-active_record", "~> 2.2"
 end

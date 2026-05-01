@@ -50,6 +50,19 @@ require_relative 'spec_helper'
 
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 
+# Optional DatabaseCleaner driver for the wide-schema integration specs.
+# RSPEC_TRACER_DB_CLEANER_STRATEGY = truncation | deletion | transaction
+# loads database_cleaner-active_record and wraps each example in a
+# DatabaseCleaner.cleaning around hook with the requested strategy. The
+# narrow-schema + transactional + non-DSL flows leave the env unset, so
+# the gem is never required and the existing Gemfile resolve still works
+# on every matrix cell.
+db_cleaner_strategy = ENV['RSPEC_TRACER_DB_CLEANER_STRATEGY']
+if db_cleaner_strategy && !db_cleaner_strategy.empty?
+  require 'database_cleaner/active_record'
+  DatabaseCleaner.strategy = db_cleaner_strategy.to_sym
+end
+
 RSpec.configure do |config|
   # rspec-rails renamed `fixture_path=` (singular) to `fixture_paths=`
   # (Array) in 6.2. The Rails 7.0 matrix cell pins rspec-rails 6.1, so
@@ -75,4 +88,20 @@ RSpec.configure do |config|
 
   config.include FactoryBot::Syntax::Methods
   config.include ActiveSupport::Testing::TimeHelpers
+
+  # When DatabaseCleaner is in play, wrap every opted-in example in a
+  # cleaning block. The cleanup queries (TRUNCATE / DELETE /
+  # BEGIN..ROLLBACK) fire `sql.active_record` events INSIDE the
+  # per-example bucket window - exactly the contamination the
+  # wide-schema specs assert on. The hook is opt-in via the
+  # `:db_cleaned` metadata so the fixture can express the
+  # widening-boundary: AR-touching describes tag `:db_cleaned` and get
+  # schema attribution via cleanup events, while pure-compute describes
+  # leave the tag off, get no around hook, fire no AR events, and so
+  # legitimately do NOT re-run on schema mutation.
+  if db_cleaner_strategy && !db_cleaner_strategy.empty?
+    config.around(:each, :db_cleaned) do |example|
+      DatabaseCleaner.cleaning { example.run }
+    end
+  end
 end
