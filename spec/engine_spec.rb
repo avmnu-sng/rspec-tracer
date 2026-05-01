@@ -39,7 +39,7 @@ RSpec.describe RSpecTracer::Engine do
   def stub_configuration(overrides = {})
     defaults = {
       root: root, cache_path: cache_path, logger: logger,
-      filters: [], declared_globs: [],
+      filters: [], declared_globs: [], tracked_env_names: [],
       run_all_examples: false, transitive_load_tracking: false,
       rails?: false, track_ar_schema_notifications?: false,
       cache_retention_local_count: nil,
@@ -557,6 +557,170 @@ RSpec.describe RSpecTracer::Engine do
       tracker = build_tracker.tap(&:setup)
 
       expect(tracker.apply_env_filter_decisions).to be(tracker)
+    end
+  end
+
+  describe 'M5.3 config-level track_env DSL' do
+    let(:prev_cache_path) { File.join(tmp_base, 'cache') }
+    let(:current_wsi) do
+      RSpecTracer::Tracker::WholeSuiteInvalidators.new(root: root).digest_snapshot
+    end
+    let(:previous_snapshot) do
+      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+        s.all_examples = {
+          'ex1' => build_example('ex1'),
+          'ex2' => build_example('ex2'),
+          'ex3' => build_example('ex3')
+        }
+        s.dependency = {
+          'ex1' => Set.new(['/lib/a.rb']),
+          'ex2' => Set.new(['/lib/b.rb']),
+          'ex3' => Set.new(['/lib/a.rb'])
+        }
+        s.all_files = {
+          '/lib/a.rb' => { file_name: '/lib/a.rb', file_path: File.join(root, 'lib/a.rb'),
+                           digest: Digest::SHA256.file(File.join(root, 'lib/a.rb')).hexdigest },
+          '/lib/b.rb' => { file_name: '/lib/b.rb', file_path: File.join(root, 'lib/b.rb'),
+                           digest: Digest::SHA256.file(File.join(root, 'lib/b.rb')).hexdigest }
+        }
+        s.env_snapshot = {
+          'AUTH_TOKEN' => Digest::MD5.hexdigest('old'),
+          'RAILS_ENV' => Digest::MD5.hexdigest('test')
+        }
+        s.wsi_snapshot = current_wsi
+      end
+    end
+
+    def prime_previous_cache
+      FileUtils.mkdir_p(prev_cache_path)
+      backend = RSpecTracer::Storage::JsonBackend.new(cache_path: prev_cache_path, logger: logger)
+      backend.save_graph(previous_snapshot, schema_version: 3)
+    end
+
+    it 'unions config-level tracked names into @tracked_env_names at setup' do
+      configuration = stub_configuration(tracked_env_names: ['AUTH_TOKEN'])
+      tracker = build_tracker(configuration).tap(&:setup)
+
+      expect(tracker.instance_variable_get(:@tracked_env_names)).to include('AUTH_TOKEN')
+    end
+
+    it 'expands config-level wildcards against the live ENV at setup' do
+      stub_const('ENV', 'RAILS_ENV' => 'test', 'RAILS_MAX_THREADS' => '5', 'OTHER' => 'x')
+      configuration = stub_configuration(tracked_env_names: ['RAILS_*'])
+      tracker = build_tracker(configuration).tap(&:setup)
+
+      tracked = tracker.instance_variable_get(:@tracked_env_names)
+      expect(tracked).to include('RAILS_ENV', 'RAILS_MAX_THREADS')
+      expect(tracked).not_to include('OTHER')
+    end
+
+    it 'persists config-level tracked names in env_snapshot.json on finalize' do
+      stub_const('ENV', 'AUTH_TOKEN' => 'v1')
+      configuration = stub_configuration(tracked_env_names: ['AUTH_TOKEN'])
+      tracker = build_tracker(configuration).tap(&:setup)
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot).to have_key('AUTH_TOKEN')
+    end
+
+    it 'marks every previously-seen example when a config-level env flips between runs' do
+      stub_const('ENV', 'AUTH_TOKEN' => 'new')
+      prime_previous_cache
+      configuration = stub_configuration(
+        tracked_env_names: ['AUTH_TOKEN'], cache_path: prev_cache_path
+      )
+      tracker = build_tracker(configuration).tap(&:setup)
+
+      tracker.apply_env_filter_decisions
+
+      %w[ex1 ex2 ex3].each do |id|
+        expect(tracker.run_example?(id)).to be(true)
+        expect(tracker.run_example_reason(id)).to eq('Environment changed')
+      end
+    end
+
+    it 'expands config-level wildcards before checking against the previous snapshot' do
+      stub_const('ENV', 'RAILS_ENV' => 'production')
+      prime_previous_cache
+      configuration = stub_configuration(
+        tracked_env_names: ['RAILS_*'], cache_path: prev_cache_path
+      )
+      tracker = build_tracker(configuration).tap(&:setup)
+
+      tracker.apply_env_filter_decisions
+
+      expect(tracker.run_example?('ex1')).to be(true)
+      expect(tracker.run_example_reason('ex1')).to eq('Environment changed')
+    end
+
+    it 'is a no-op when configuration.tracked_env_names is empty' do
+      configuration = stub_configuration(tracked_env_names: [])
+
+      expect { build_tracker(configuration).tap(&:setup) }.not_to raise_error
+    end
+
+    it 'raises ArgumentError on unsupported config-level pattern syntax' do
+      configuration = stub_configuration(tracked_env_names: ['RAILS_*_ENV'])
+
+      expect { build_tracker(configuration).tap(&:setup) }
+        .to raise_error(ArgumentError, /embedded wildcard/)
+    end
+
+    it 'does not mark previously-seen examples when only an unrelated per-example env changes' do
+      # AUTH_TOKEN stays at 'old' (matches prev snapshot) so config-level
+      # is NOT invalidated; only OTHER (per-example) changes.
+      stub_const('ENV', 'AUTH_TOKEN' => 'old', 'OTHER' => 'flipped')
+      prime_previous_cache
+      configuration = stub_configuration(
+        tracked_env_names: ['AUTH_TOKEN'], cache_path: prev_cache_path
+      )
+      tracker = build_tracker(configuration).tap(&:setup)
+      # Per-example tracks an unrelated key. Config-level (AUTH_TOKEN) is
+      # NOT invalidated — every prev example must NOT be marked.
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['OTHER']))
+
+      tracker.apply_env_filter_decisions
+
+      expect(tracker.run_example?('ex2')).to be(false)
+      expect(tracker.run_example?('ex3')).to be(false)
+      expect(tracker.run_example?('ex1')).to be(true) # per-example match
+    end
+  end
+
+  describe 'M5.3 per-example wildcard expansion' do
+    subject(:tracker) { build_tracker.tap(&:setup) }
+
+    it 'expands wildcard patterns in tracks: { env: ... } against the live ENV' do
+      stub_const('ENV', 'RAILS_ENV' => 'test', 'RAILS_MAX_THREADS' => '5', 'OTHER' => 'x')
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['RAILS_*']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot.keys).to include('RAILS_ENV', 'RAILS_MAX_THREADS')
+      expect(snapshot.env_snapshot.keys).not_to include('OTHER')
+    end
+
+    it 'persists wildcard-expanded names per-example in env_dependency' do
+      stub_const('ENV', 'RAILS_ENV' => 'test', 'RAILS_MAX_THREADS' => '5')
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['RAILS_*']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_dependency['ex1']).to contain_exactly('RAILS_ENV', 'RAILS_MAX_THREADS')
+    end
+
+    it 'raises ArgumentError on unsupported per-example pattern syntax' do
+      expect { tracker.register_tracks('ex1', files: Set.new, env: Set.new(['RAILS_?'])) }
+        .to raise_error(ArgumentError, /unsupported character/)
+    end
+
+    it 'passes literal patterns through unchanged' do
+      tracker.register_tracks('ex1', files: Set.new, env: Set.new(['AUTH_TOKEN']))
+
+      snapshot = tracker.finalize
+
+      expect(snapshot.env_snapshot.keys).to eq(['AUTH_TOKEN'])
     end
   end
 

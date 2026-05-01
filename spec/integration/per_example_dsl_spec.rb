@@ -79,6 +79,17 @@ module PerExampleDslSpecHelpers
     ]
   end
 
+  # M5.3 wildcard exercise: the same fixture spec also has a separate
+  # describe with `tracks: { env: 'RAILS_APP_*' }`. Its two examples
+  # depend on RAILS_APP_FORCE_REVIEW via the wildcard expansion path,
+  # not the literal name path.
+  def wildcard_branch_example_descriptions
+    [
+      'matches RAILS_APP_FORCE_REVIEW via the RAILS_APP_* wildcard',
+      'pulls the un-set default through the wildcard match'
+    ]
+  end
+
   # Filter the all_examples map down to the env-branch describe's
   # examples by full_description prefix match.
   def env_branch_ids(all_examples)
@@ -87,9 +98,17 @@ module PerExampleDslSpecHelpers
       env_branch_example_descriptions.any? { |d| full.to_s.include?(d) }
     end.keys.to_set
   end
+
+  def wildcard_branch_ids(all_examples)
+    all_examples.select do |_, meta|
+      full = meta['full_description'] || meta[:full_description]
+      wildcard_branch_example_descriptions.any? { |d| full.to_s.include?(d) }
+    end.keys.to_set
+  end
 end
 
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
 RSpec.describe 'M5.2 per-example tracks DSL integration' do
   include PerExampleDslSpecHelpers
 
@@ -136,9 +155,19 @@ RSpec.describe 'M5.2 per-example tracks DSL integration' do
                                                "expected 3 env-branch examples, got #{@expected_env_branch_ids.size}"
     end
 
-    it 're-runs exactly the env-branch examples, skipping everything else' do
-      unexpected_reruns = @re_run_ids - @expected_env_branch_ids
-      missed_reruns = @expected_env_branch_ids - @re_run_ids
+    # M5.3: re-run set is the union of M5.2's literal-tracks describe
+    # (3 examples) + M5.3's wildcard-tracks describe (2 examples). Both
+    # depend on RAILS_APP_FORCE_REVIEW; the wildcard `RAILS_APP_*`
+    # expands to the same concrete env name at register_tracks time.
+    it 're-runs exactly the literal + wildcard env-branch examples, skipping everything else' do
+      wildcard_ids = PerExampleDslSpecHelpers.wildcard_branch_ids(@cold_all_examples)
+      expected = @expected_env_branch_ids + wildcard_ids
+
+      expect(expected.size).to eq(5),
+                               "expected 3 literal + 2 wildcard env-branch examples, got #{expected.size}"
+
+      unexpected_reruns = @re_run_ids - expected
+      missed_reruns = expected - @re_run_ids
       diff_msg = "unexpected reruns: #{unexpected_reruns.to_a} / missed: #{missed_reruns.to_a}"
 
       expect([unexpected_reruns, missed_reruns]).to eq([Set.new, Set.new]), diff_msg
@@ -150,3 +179,4 @@ RSpec.describe 'M5.2 per-example tracks DSL integration' do
   end
 end
 # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
+# rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations
