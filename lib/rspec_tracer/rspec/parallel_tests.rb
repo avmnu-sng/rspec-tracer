@@ -150,14 +150,29 @@ module RSpecTracer
         ::FileUtils.rm_f(RSpecTracer.lock_file)
       end
 
-      def self.worker_group_count
-        ::ENV.fetch('PARALLEL_TEST_GROUPS', '0').to_i
-      end
-
+      # parallel_tests sets `PARALLEL_TEST_GROUPS = num_processes.to_s`
+      # for each child, where `num_processes` is the user-requested
+      # process count (Parallel.processor_count by default) - NOT the
+      # number of workers actually spawned. When `num_processes` and
+      # the spawned-worker count diverge (e.g. when the spec count caps
+      # the partition below the CPU count, or when shared-runner
+      # cgroup throttling shifts the visible CPU count between when
+      # the parent computed `num_processes` and the spec count is
+      # observed), iterating `1..ENV['PARALLEL_TEST_GROUPS']` either
+      # over-iterates (cheap; rm_rf on a non-existent path is a no-op)
+      # or UNDER-iterates (expensive; merge skips peers + purge leaves
+      # `parallel_tests_N` stragglers behind, breaking the integration
+      # spec at `spec/integration/parallel_tests_spec.rb:88`).
+      #
+      # Glob the actual filesystem state rather than reconstructing dir
+      # names from an env var with surprising semantics. The directory
+      # IS the source of truth for which workers ran. The wait at
+      # `finalize!` (`wait_for_other_processes_to_finish`) guarantees
+      # every other worker's at_exit has flushed its `parallel_tests_N`
+      # tree before this method runs, so the glob captures every peer.
       def self.peer_paths_for(base_dir)
-        (1..worker_group_count).filter_map do |n|
-          path = ::File.join(base_dir, "parallel_tests_#{n}")
-          path if ::File.directory?(path)
+        ::Dir.glob(::File.join(base_dir, 'parallel_tests_*')).select do |path|
+          ::File.directory?(path)
         end
       end
 
@@ -214,11 +229,16 @@ module RSpecTracer
         RSpecTracer.logger.debug("RSpec tracer merged parallel tests coverage (took #{elapsed})") if log_rollups?
       end
 
+      # Sweep every `parallel_tests_*` subdirectory under each managed
+      # base path. Globbing matches the same source-of-truth contract
+      # documented on `peer_paths_for`: the directories that actually
+      # exist are exactly the workers that ran, regardless of what
+      # PARALLEL_TEST_GROUPS reports.
       def self.purge_worker_dirs!
         [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path].each do |path|
           base_dir = ::File.dirname(path)
-          (1..worker_group_count).each do |n|
-            ::FileUtils.rm_rf(::File.join(base_dir, "parallel_tests_#{n}"))
+          ::Dir.glob(::File.join(base_dir, 'parallel_tests_*')).each do |worker_dir|
+            ::FileUtils.rm_rf(worker_dir)
           end
         end
       end
