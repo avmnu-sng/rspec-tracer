@@ -1,3 +1,32 @@
+## [1.2.1] - 2026-05-01
+
+### Fixed
+
+- **Parallel-tests merge silently dropped peer caches and left worker
+  directories behind** when the spawned-worker count exceeded
+  `ENV['PARALLEL_TEST_GROUPS']`. The merge + purge call-sites in
+  `lib/rspec_tracer.rb` (`merge_parallel_tests_reports`,
+  `merge_parallel_tests_coverage_reports`,
+  `purge_parallel_tests_reports`) iterated `1..ENV['PARALLEL_TEST_GROUPS']`
+  to construct per-worker directory names. But parallel_tests sets
+  `PARALLEL_TEST_GROUPS = num_processes.to_s` for each child, where
+  `num_processes` is the user-requested process count
+  (`Parallel.processor_count` by default) — not the actual worker
+  count. When `num_processes < spawned_worker_count` (e.g. when the
+  spec-count partition produces more non-empty groups than
+  `num_processes`, or shared-runner CPU detection drifts mid-run),
+  peer caches with `TEST_ENV_NUMBER` above the env bound were silently
+  dropped from the merge (warm-run skip decisions get made against
+  an under-sampled merged manifest) and left behind by the purge
+  (visible as straggler `parallel_tests_<N>/` directories under
+  `rspec_tracer_cache/`). The same gem behaviour was documented on
+  v1.1.1's `last_process?` fix
+  ([PR #101](https://github.com/avmnu-sng/rspec-tracer/pull/101)) but
+  the iteration call-sites kept the buggy bound. Each method now globs
+  the actual `parallel_tests_*` subdirectories under its base path,
+  making the merge + purge robust to whatever count parallel_tests
+  spawned. No cache format change.
+
 ## [1.2.0] - 2026-04-24
 
 ### Added
