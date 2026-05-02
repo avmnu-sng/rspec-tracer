@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require 'time'
 require 'uri'
 
@@ -67,9 +68,10 @@ module RSpecTracer
           return false
         end
 
+        tree_sha = head_tree_sha
         refs.each do |ref|
           @logger.debug "rspec-tracer remote_cache: trying ref #{ref}"
-          return true if backend.download(ref)
+          return true if backend.download(ref, tree_sha: tree_sha)
         end
 
         @logger.warn 'rspec-tracer remote_cache: no suitable cache found; cold run'
@@ -84,7 +86,7 @@ module RSpecTracer
         ancestry.merge_base_branch!
         backend = build_backend(ancestry)
 
-        backend.upload(ancestry.branch_ref)
+        backend.upload(ancestry.branch_ref, tree_sha: head_tree_sha)
         maybe_update_branch_refs(backend, ancestry)
         maybe_prune(backend, ancestry)
         maybe_warn_unbounded(backend)
@@ -284,6 +286,25 @@ module RSpecTracer
       def safe_config(method)
         @config.public_send(method)
       rescue NoMethodError
+        nil
+      end
+
+      # Resolve HEAD's tree SHA via `git rev-parse HEAD^{tree}` for
+      # forwarding to the backend's tree-SHA secondary index. Same
+      # shell-invocation shape as `GitAncestry`'s `git rev-parse` calls,
+      # but graceful nil instead of raising: tree_sha is best-effort.
+      # When git is unavailable, the rev-parse fails, or HEAD doesn't
+      # exist (shallow clone, fresh repo), nil signals "skip the tree-
+      # SHA index" to the backend - S3Backend treats nil as no-op and
+      # falls through to the standard commit-SHA lookup; LocalFs / Redis
+      # accept the kwarg as a no-op.
+      def head_tree_sha
+        output = `git rev-parse HEAD^{tree} 2>/dev/null`.chomp
+        return nil unless $CHILD_STATUS&.success?
+        return nil if output.empty?
+
+        output
+      rescue StandardError
         nil
       end
     end

@@ -38,13 +38,14 @@ jobs:
         id: cfg
         # rails_cells pairs each (ruby, rails) with the matching rspec-rails
         # and sqlite3 majors. rspec-rails 6.1 for Rails ≤ 7.1, 7.0 for Rails
-        # ≥ 7.2; sqlite3 1.4 for Rails ≤ 7.2.
-        # Rails 8.0 cells are deferred pending M4.3: the current cucumber
-        # features (sample_projects/rails_app, Rails 7-tuned) hardcode
-        # coverage assertions like "71 / 84 LOC (84.52%)" whose line counts
-        # shift under Rails 8.0's different initializer load pattern.
-        # Re-add 8.0 cells when M4.3 wires the new fixture
-        # (spec/fixtures/rails_app, 8.0-capable) into the CI test target.
+        # ≥ 7.2; sqlite3 1.4 for Rails ≤ 7.2, 2.1 for Rails 8.0 (Rails 8.0's
+        # activerecord adapter requires sqlite3 >= 2.1).
+        #
+        # Rails 8.0 cells: Ruby 3.2+ only (Rails 8.0 dropped Ruby 3.1
+        # support). JRuby x Rails 8.0 is unsupported - no
+        # activerecord-jdbcsqlite3-adapter ~> 80.0 exists upstream
+        # (https://github.com/jruby/activerecord-jdbc-adapter), so the
+        # JRuby x Rails matrix stays Rails 7.1-only.
         run: |
           # M8.6-B Lever 5: the JRuby x Rails 7.1 cell fans out across 7
           # shards (6 rails_app-N-M shards covering 2 scenarios each from
@@ -63,15 +64,19 @@ jobs:
             {"ruby":"3.2","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.2","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.2","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.2","rails":"8.0","rspec_rails":"7.0","sqlite3":"2.1","shard":""},
             {"ruby":"3.3","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.3","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.3","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.3","rails":"8.0","rspec_rails":"7.0","sqlite3":"2.1","shard":""},
             {"ruby":"3.4","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"3.4","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"3.4","rails":"8.0","rspec_rails":"7.0","sqlite3":"2.1","shard":""},
             {"ruby":"4.0","rails":"7.0","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"4.0","rails":"7.1","rspec_rails":"6.1","sqlite3":"1.4","shard":""},
             {"ruby":"4.0","rails":"7.2","rspec_rails":"7.0","sqlite3":"1.4","shard":""},
+            {"ruby":"4.0","rails":"8.0","rspec_rails":"7.0","sqlite3":"2.1","shard":""},
             {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-1-2"},
             {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-3-4"},
             {"ruby":"jruby-9.4","rails":"7.1","rspec_rails":"6.1","sqlite3":"jdbc","shard":"rails_app-5-6"},

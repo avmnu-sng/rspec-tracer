@@ -9,9 +9,12 @@ name: flake-gate
 #
 # Triggers:
 #   - workflow_dispatch (manual; configurable cell + iter count)
-#   - push to `m8.2-b/**` branches (auto during the M8.2-B dev window;
-#     once the branch lands, this auto-trigger can stay or be removed
-#     depending on whether the branch family is reused)
+#
+# Demoted to manual-only after 3 consecutive green runs on `main`
+# (1 historical on the M8.2-B feature branch + 2 fresh on main, all
+# passing) cleared the historical `warm_skipped != cold_examples` shape.
+# Kept available for on-demand re-targeting any cell when a future flake
+# investigation needs the 100x-iter shape.
 #
 # This is a POST-FIX gate, not the primary investigation tool. Per
 # memory feedback_no_hit_and_trial_ci, reproduce + investigate + fix +
@@ -34,9 +37,6 @@ on:
         description: "Rspec gem pin via RSPEC_VERSION env (default '~> 3.12.0')"
         required: false
         default: "~> 3.12.0"
-  push:
-    branches:
-      - 'm8.2-b/**'
 
 permissions:
   contents: read

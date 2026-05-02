@@ -22,8 +22,18 @@ require_relative '../support/fixture_bundle_helper'
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/MultipleExpectations, RSpec/ExampleLength
 # rubocop:disable RSpec/InstanceVariable
 RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
-  let(:golden_path) { File.join(FixtureBundleHelper::FIXTURE_ROOT, 'coverage_json.golden') }
+  # Rails-major-specific golden: Rails 8.0 changes route loading to fire
+  # AFTER Coverage.start (vs 7.x where it boots before), so config/routes.rb
+  # enters the coverage map under 8.0 but not under 7.x. Same fixture, same
+  # spec, different file boot order. Pick the golden that matches the
+  # RAILS_VERSION env the matrix passes; fall back to the 7.x default.
+  let(:golden_path) { File.join(FixtureBundleHelper::FIXTURE_ROOT, golden_filename) }
   let(:coverage_json_path) { File.join(FixtureBundleHelper::COVERAGE_DIR, 'coverage.json') }
+
+  let(:golden_filename) do
+    rails_version = ENV.fetch('RAILS_VERSION', '')
+    rails_version.include?('8.') ? 'coverage_json.golden.rails8' : 'coverage_json.golden'
+  end
 
   before(:all) do
     FixtureBundleHelper.ensure_bundle_and_db
