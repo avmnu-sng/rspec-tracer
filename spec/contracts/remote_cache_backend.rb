@@ -37,6 +37,14 @@ RSpec.shared_examples 'a RemoteCache::Backend' do
     it 'returns false for empty-string ref without touching storage' do
       expect(backend.download('')).to be(false)
     end
+
+    it 'accepts a tree_sha: kwarg without raising' do
+      expect { backend.download(nil, tree_sha: nil) }.not_to raise_error
+    end
+
+    it 'accepts a tree_sha: kwarg with a value without raising' do
+      expect { backend.download(nil, tree_sha: 'abc123') }.not_to raise_error
+    end
   end
 
   describe '#branch_refs' do

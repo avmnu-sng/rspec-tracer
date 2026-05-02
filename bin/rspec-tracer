@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Entry point for the `rspec-tracer` CLI. The binary is opt-in for
+# users who want diagnostics, cache inspection, or report-opening
+# from the command line; the canonical CI flow continues to go
+# through `rake rspec_tracer:remote_cache:*` tasks per
+# USER_FACING_SURFACE.md §5.
+
+lib_dir = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
+
+require 'rspec_tracer/cli'
+
+exit RSpecTracer::CLI.run(ARGV)

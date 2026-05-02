@@ -51,13 +51,15 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
         self
       end
 
-      def download(ref)
+      def download(ref, tree_sha: nil)
         @calls[:download] << ref
+        @calls[:download_tree_sha] << tree_sha
         @download_responses.fetch(ref, false)
       end
 
-      def upload(ref)
+      def upload(ref, tree_sha: nil)
         @calls[:upload] << ref
+        @calls[:upload_tree_sha] << tree_sha
         raise @upload_error if @upload_error
       end
 
@@ -378,6 +380,74 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       described_class.new(configuration: config, env: build_env).upload!
 
       expect(captured_logs).not_to include([:warn, 'too many refs'])
+    end
+  end
+
+  describe '#head_tree_sha (private)' do
+    let(:tasks) do
+      config = build_config(remote_cache_backend_entry: nil)
+      described_class.new(configuration: config, env: build_env)
+    end
+
+    it 'resolves the HEAD tree SHA in the project git repo' do
+      sha = tasks.send(:head_tree_sha)
+
+      expect(sha).to match(/\A[0-9a-f]{40}\z/)
+    end
+
+    it 'returns nil outside a git repo (graceful nil contract)' do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          expect(tasks.send(:head_tree_sha)).to be_nil
+        end
+      end
+    end
+
+    it 'returns nil when the git binary raises (StandardError rescue)' do
+      allow(tasks).to receive(:`).and_raise(Errno::ENOENT, 'No such file or directory')
+
+      expect(tasks.send(:head_tree_sha)).to be_nil
+    end
+  end
+
+  describe 'tree_sha forwarding' do
+    let(:backend_entry) { [fake_backend_class, {}] }
+
+    it 'forwards the resolved tree_sha through to backend.upload on PR build' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'feat', default_branch: 'main', branch_ref: 'feat-sha',
+                    ancestry_refs: { 'anc1' => 100 })
+      tasks = described_class.new(configuration: config, env: build_env(branch: 'feat'))
+      allow(tasks).to receive(:head_tree_sha).and_return('tree-sha-abc123')
+
+      tasks.upload!
+
+      backend = fake_backend_class.all_instances.last
+      expect(backend.calls[:upload_tree_sha]).to eq(['tree-sha-abc123'])
+    end
+
+    it 'forwards the resolved tree_sha through to every backend.download attempt' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(ancestry_refs: { 'sha1' => 100, 'sha2' => 200 })
+      tasks = described_class.new(configuration: config, env: build_env)
+      allow(tasks).to receive(:head_tree_sha).and_return('tree-sha-xyz789')
+
+      tasks.download!
+
+      backend = fake_backend_class.all_instances.last
+      expect(backend.calls[:download_tree_sha]).to eq(%w[tree-sha-xyz789 tree-sha-xyz789])
+    end
+
+    it 'forwards nil when head_tree_sha is unavailable (graceful nil contract)' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'main', default_branch: 'main', branch_ref: 'main-sha')
+      tasks = described_class.new(configuration: config, env: build_env)
+      allow(tasks).to receive(:head_tree_sha).and_return(nil)
+
+      tasks.upload!
+
+      backend = fake_backend_class.all_instances.last
+      expect(backend.calls[:upload_tree_sha]).to eq([nil])
     end
   end
 

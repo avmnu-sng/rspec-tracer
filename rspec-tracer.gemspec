@@ -36,5 +36,7 @@ Gem::Specification.new do |spec|
 
   spec.files = `git ls-files -- lib/*`.chomp.split("\n")
   spec.files += %w[CHANGELOG.md README.md LICENSE]
+  spec.bindir = 'bin'
+  spec.executables = ['rspec-tracer']
   spec.require_paths = ['lib']
 end

@@ -66,7 +66,13 @@ module RSpecTracer
       # for the same ref. Validates via `schema_version` before
       # declaring success. Returns true on validated success, false
       # otherwise. Cleans up partially-extracted state on failure.
-      def download(ref)
+      #
+      # `tree_sha:` is accepted for protocol uniformity with S3Backend
+      # but is currently a no-op: the tree-SHA secondary index is an
+      # S3-only feature (M8.4-B). Future enhancement may extend it
+      # here; the orchestrator already forwards the kwarg.
+      def download(ref, tree_sha: nil)
+        _ = tree_sha
         return false if blank?(ref)
 
         tiers_to_try = [own_tier_prefix]
@@ -79,7 +85,11 @@ module RSpecTracer
       # Packs the 15-file local layout into a `cache.tar.gz` via
       # `Archive.pack`, renames into place atomically. Raises on a
       # malformed local cache or an I/O failure.
-      def upload(ref)
+      #
+      # `tree_sha:` is accepted for protocol uniformity with S3Backend
+      # (no-op here; see `download`).
+      def upload(ref, tree_sha: nil)
+        _ = tree_sha
         raise LocalFsBackendError, 'ref is required' if blank?(ref)
 
         run_id = read_local_run_id
