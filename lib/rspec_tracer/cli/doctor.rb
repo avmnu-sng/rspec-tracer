@@ -7,6 +7,11 @@ module RSpecTracer
     # cache / coverage / report directory state, and SimpleCov / Rails
     # presence. Exits 0 on healthy diagnosis, 1 if any check fails.
     module Doctor
+      # @param args [Array<String>] sub-command args (`-h` / `--help`).
+      # @param stdout [IO]
+      # @param stderr [IO]
+      # @return [Integer] exit status (0 = healthy, 1 = any check
+      #   FAILed; warnings keep status 0).
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 

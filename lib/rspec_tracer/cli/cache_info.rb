@@ -8,6 +8,10 @@ module RSpecTracer
     # invalidation stats. Reads `last_run.json` + the run-id'd JSON
     # files written by Storage::JsonBackend.
     module CacheInfo
+      # @param args [Array<String>] sub-command args (`-h` / `--help`).
+      # @param stdout [IO]
+      # @param stderr [IO]
+      # @return [Integer] exit status (0 = success).
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 

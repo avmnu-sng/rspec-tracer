@@ -1,8 +1,8 @@
 # CI recipes for rspec-tracer
 
 The canonical GitHub Actions pattern lives at
-[`.github/workflows/example-tracer-cache.yml`](../.github/workflows/example-tracer-cache.yml)
-(M8.4-D). This doc translates the same cache-key shape to four other
+[`.github/workflows/example-tracer-cache.yml`](../.github/workflows/example-tracer-cache.yml).
+This doc translates the same cache-key shape to four other
 popular CI providers — **CircleCI**, **GitLab CI**, **Buildkite**,
 and **Heroku CI**. The cache contract is the same on every platform:
 

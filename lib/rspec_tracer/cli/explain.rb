@@ -10,6 +10,12 @@ module RSpecTracer
     # + failed_examples.json + flaky_examples.json) to surface the
     # dependency set, last-run status, and the run-decision reason.
     module Explain
+      # @param args [Array<String>] sub-command args. First positional
+      #   arg is the example_id (or substring) to explain.
+      # @param stdout [IO]
+      # @param stderr [IO]
+      # @return [Integer] exit status (0 = explanation printed,
+      #   1 = example not found / cache missing).
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.empty? || args.include?('-h') || args.include?('--help')
 

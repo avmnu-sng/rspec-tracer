@@ -13,7 +13,7 @@ module RSpecTracer
       # the entire process for the life of the run, even between
       # examples and during boot. Without the guard each File.read
       # paid 2 method-dispatch frames + IOHooks._record's
-      # @root_prefix nil-check before the inner bucket check could
+      # `@root_prefix` nil-check before the inner bucket check could
       # bail. With the guard, the bucket check happens at FileReads
       # so the reject path skips IOHooks.record entirely. Cuts the
       # M2 Max reject overhead from ~530 ns/call to ~300 ns/call

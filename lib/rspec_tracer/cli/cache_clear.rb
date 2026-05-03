@@ -8,6 +8,11 @@ module RSpecTracer
     # directories. Prompts for confirmation unless `--yes` is passed.
     # The next rspec run is a cold run.
     module CacheClear
+      # @param args [Array<String>] sub-command args (`-y` / `--yes`
+      #   skips confirmation; `-h` / `--help` prints help).
+      # @param stdout [IO]
+      # @param stderr [IO]
+      # @return [Integer] exit status (0 = success / aborted, 1 = error).
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 

@@ -136,8 +136,8 @@ module RSpecTracer
       # whole-suite invalidator.
       #
       # Invariant (enforced by capture_boot_set!): every path in
-      # @boot_set has a matching @input_cache entry, so the fetch
-      # never raises. Disabled trackers produce an empty @boot_set,
+      # `@boot_set` has a matching `@input_cache` entry, so the fetch
+      # never raises. Disabled trackers produce an empty `@boot_set`,
       # so the enumeration naturally returns {} without a guard.
       def boot_set_digest_snapshot
         return {} if @boot_set.nil?
@@ -211,7 +211,7 @@ module RSpecTracer
 
       # Full filtered peek - returns a Set of every under-root String
       # path in the peek result. Used by capture_boot_set! (no prior
-      # @loaded_set to diff against).
+      # `@loaded_set` to diff against).
       def filtered_peek_paths
         @peek.call.each_with_object(Set.new) do |path, acc|
           acc << path if path.is_a?(String) && path.start_with?(@root_prefix)
@@ -253,9 +253,9 @@ module RSpecTracer
       # digest failed). Side effect: populates @input_cache.
       #
       # Callers are responsible for passing only paths absent from
-      # @input_cache (capture_boot_set! on empty cache, stop_example
-      # on `filtered_peek_keys - @loaded_set` where @loaded_set
-      # mirrors @input_cache's keys modulo digest failures).
+      # `@input_cache` (capture_boot_set! on empty cache, stop_example
+      # on `filtered_peek_keys - @loaded_set` where `@loaded_set`
+      # mirrors `@input_cache`'s keys modulo digest failures).
       def build_inputs(paths)
         paths.each_with_object(Set.new) do |path, acc|
           digest = file_digest(path)

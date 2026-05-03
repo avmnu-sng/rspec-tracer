@@ -7,6 +7,11 @@ module RSpecTracer
     # `open` (macOS) / `xdg-open` (Linux). Falls back to printing the
     # path when no opener is available.
     module ReportOpen
+      # @param args [Array<String>] sub-command args (`-h` / `--help`).
+      # @param stdout [IO]
+      # @param stderr [IO]
+      # @return [Integer] exit status (0 = opened or path printed,
+      #   1 = report missing).
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 

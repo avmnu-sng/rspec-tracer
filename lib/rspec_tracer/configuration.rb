@@ -6,8 +6,42 @@ require_relative 'filter'
 require_relative 'logger'
 
 module RSpecTracer
+  # The user-facing configuration DSL. Mixed into `RSpecTracer` itself,
+  # so calls inside a `.rspec-tracer` (or `~/.rspec-tracer`) file appear
+  # against the top-level module:
+  #
+  # @example A typical `.rspec-tracer`
+  #   RSpecTracer.configure do
+  #     project_name 'My App'
+  #     track_files 'config/locales/**/*.yml', 'db/schema.rb', 'Gemfile.lock'
+  #     track_env   'AUTH_TOKEN', 'DATABASE_URL', 'RAILS_*'
+  #     track_rails_defaults
+  #
+  #     storage_backend :sqlite
+  #     remote_cache_backend :s3, bucket: 'my-bucket', prefix: 'rspec-tracer'
+  #
+  #     add_filter '/vendor/'
+  #     add_coverage_filter %w[/spec/ /test/]
+  #   end
+  #
+  # The DSL methods are technically `private` in Ruby; the `configure`
+  # block uses Docile to expose them as if public. Calling them
+  # outside a `.rspec-tracer` file raises `InvalidUsageError`. The
+  # configuration loader allowlist enforces this gate (see
+  # {ALLOWED_CONFIGURER}).
+  #
+  # See also:
+  # - {file:README.md} — user guide.
+  # - {file:UPGRADING.md} — 1.x → 2.0 migration.
+  # - {file:ARCHITECTURE.md} — input taxonomy + layer structure.
+  # - {file:COOKBOOK.md} — recipes for common scenarios.
+  #
   # rubocop:disable Metrics/ModuleLength
   module Configuration
+    # Raised when the configuration DSL is invoked outside a
+    # `.rspec-tracer` / `~/.rspec-tracer` loader, when a typo'd DSL
+    # method is called (with a `did_you_mean?` suggestion when one
+    # exists), or when an option value fails validation.
     class InvalidUsageError < StandardError; end
 
     ALLOWED_CONFIGURER = %w[
@@ -87,6 +121,16 @@ module RSpecTracer
 
     private
 
+    # Set the project root directory. Defaults to `Dir.getwd`.
+    # Affects how all other path-based DSL methods (`cache_dir`,
+    # `report_dir`, `coverage_dir`, `track_files` globs) are
+    # resolved.
+    #
+    # @param root [String, nil] absolute or relative path; nil
+    #   returns the current value (or default).
+    # @return [String] absolute project root path.
+    # @example
+    #   RSpecTracer.configure { root '/path/to/project' }
     def root(root = nil)
       return @root if defined?(@root) && root.nil?
 
@@ -97,6 +141,11 @@ module RSpecTracer
       @root = File.expand_path(root || Dir.getwd)
     end
 
+    # Set the project's display name; appears in HTML reports.
+    # Defaults to a humanized form of the project root's basename.
+    #
+    # @param new_name [String, nil] human-readable project name.
+    # @return [String] the configured (or derived) project name.
     def project_name(new_name = nil)
       return @project_name if defined?(@project_name) && @project_name && new_name.nil?
 
@@ -104,6 +153,14 @@ module RSpecTracer
       @project_name ||= File.basename(root.split('/').last).capitalize.tr('_', ' ')
     end
 
+    # Override the on-disk cache directory (default
+    # `rspec_tracer_cache`). Also reads `RSPEC_TRACER_CACHE_DIR`
+    # from env when set. The directory ships in the canonical
+    # `.gitignore` recipe; renaming silently leaks cache into
+    # source control.
+    #
+    # @param dir [String, nil] relative-to-root or absolute path.
+    # @return [String] configured cache directory.
     def cache_dir(dir = nil)
       return @cache_dir if defined?(@cache_dir) && dir.nil?
 
@@ -115,6 +172,11 @@ module RSpecTracer
                    end
     end
 
+    # Resolve the absolute cache path; expanded against {#root} and
+    # scoped per `TEST_SUITE_ID` / `parallel_tests` worker. Creates
+    # the directory on first access.
+    #
+    # @return [String] absolute cache path.
     def cache_path
       @cache_path ||= begin
         cache_path = File.expand_path(cache_dir, root)
@@ -127,6 +189,11 @@ module RSpecTracer
       end
     end
 
+    # Override the on-disk HTML/JSON report directory (default
+    # `rspec_tracer_report`). Also reads `RSPEC_TRACER_REPORT_DIR`.
+    #
+    # @param dir [String, nil] relative-to-root or absolute path.
+    # @return [String] configured report directory.
     def report_dir(dir = nil)
       return @report_dir if defined?(@report_dir) && dir.nil?
 
@@ -138,6 +205,11 @@ module RSpecTracer
                     end
     end
 
+    # Resolve the absolute report path; expanded against {#root} and
+    # scoped per `TEST_SUITE_ID` / `parallel_tests` worker. Creates
+    # the directory on first access.
+    #
+    # @return [String] absolute report path.
     def report_path
       @report_path ||= begin
         report_path = File.expand_path(report_dir, root)
@@ -150,6 +222,11 @@ module RSpecTracer
       end
     end
 
+    # Override the coverage output directory (default
+    # `rspec_tracer_coverage`). Also reads `RSPEC_TRACER_COVERAGE_DIR`.
+    #
+    # @param dir [String, nil] relative-to-root or absolute path.
+    # @return [String] configured coverage directory.
     def coverage_dir(dir = nil)
       return @coverage_dir if defined?(@coverage_dir) && dir.nil?
 
@@ -161,6 +238,11 @@ module RSpecTracer
                       end
     end
 
+    # Resolve the absolute coverage path; expanded against {#root}
+    # and scoped per `TEST_SUITE_ID` / `parallel_tests` worker.
+    # Creates the directory on first access.
+    #
+    # @return [String] absolute coverage path.
     def coverage_path
       @coverage_path ||= begin
         coverage_path = File.expand_path(coverage_dir, root)
@@ -173,19 +255,29 @@ module RSpecTracer
       end
     end
 
-    # M7.1 canonical DSL for the remote cache backend. Single-entry
-    # accumulator; raises on a second call so a misconfigured
-    # `.rspec-tracer` fails fast instead of silently picking one.
+    # Configure the remote-cache backend used by the
+    # `rake rspec_tracer:remote_cache:download` / `:upload` tasks.
+    # Single-entry accumulator: a second call raises
+    # {InvalidUsageError} so a misconfigured `.rspec-tracer` fails
+    # fast.
     #
-    # Shapes:
+    # @param name_or_class [Symbol, Class] one of `:s3`, `:local_fs`,
+    #   `:redis`, OR a custom class implementing
+    #   {RSpecTracer::RemoteCache::Backend}.
+    # @param opts [Hash] backend-specific keyword args (e.g. `bucket:`
+    #   `prefix:` for `:s3`; `root:` for `:local_fs`; `url:` `ttl:`
+    #   for `:redis`).
+    # @return [Array(Symbol, Hash)] the persisted entry pair.
+    # @example S3 (preserves the 1.x layout)
     #   remote_cache_backend :s3, bucket: 'my-bucket', prefix: 'rspec-tracer'
-    #   remote_cache_backend :s3, bucket: 'x', prefix: 'y', local: true
-    #   remote_cache_backend MyBackend, some_opt: 'value'
-    #
-    # Symbol names are not validated at config time because M7.2
-    # backends (`:local_fs`, `:redis`) resolve at UserTasks build time;
-    # a typo there surfaces as an "unknown remote_cache_backend: :s3x"
-    # error in the Rake task, which is the right layer for the message.
+    # @example LocalStack / awslocal (development)
+    #   remote_cache_backend :s3, bucket: 'my-bucket', prefix: 'x', local: true
+    # @example Filesystem-backed (no S3 needed)
+    #   remote_cache_backend :local_fs, root: '/tmp/rspec-tracer-cache'
+    # @example Redis (with TTL + PR-branch tracking sidecar)
+    #   remote_cache_backend :redis, url: ENV['REDIS_URL'], ttl: 7 * 86_400
+    # @example Custom backend class
+    #   remote_cache_backend MyCustomBackend, custom_opt: 'value'
     def remote_cache_backend(name_or_class, **opts)
       if defined?(@remote_cache_backend_entry) && @remote_cache_backend_entry
         raise InvalidUsageError, 'remote_cache_backend already configured'
@@ -213,6 +305,22 @@ module RSpecTracer
       end
     end
 
+    # Convenience DSL accepting a single URI string and dispatching
+    # to {#remote_cache_backend} with the parsed bucket / prefix /
+    # host / path. Also reads `RSPEC_TRACER_REMOTE_CACHE_URI` from env.
+    #
+    # @param uri [String, nil] one of `s3://bucket/prefix`,
+    #   `file:///abs/path`, `redis://host:port/db`. Pass nil to read
+    #   the env var (or return the cached value if set).
+    # @return [String, nil] the configured URI, or nil when neither
+    #   arg nor env is set.
+    # @example
+    #   remote_cache_uri 's3://my-bucket/rspec-tracer'
+    # @example
+    #   remote_cache_uri 'file:///tmp/rspec-tracer-cache'
+    # @example
+    #   remote_cache_uri 'redis://localhost:6379/0'
+    #
     # Convenience DSL: `remote_cache_uri '<scheme>://...'` parses the
     # URI and calls `remote_cache_backend` with the right backend +
     # connection params. Also accepts ENV `RSPEC_TRACER_REMOTE_CACHE_URI`.
@@ -276,6 +384,14 @@ module RSpecTracer
     # Retention knobs (closes issue #20). Mutually exclusive: count
     # and duration bound the main tier from different axes. PR tier
     # uses `cache_retention_pr_branch_ttl` independently.
+    # Cap remote-cache main-tier refs to a count. Mutually exclusive
+    # with {#cache_retention_duration}; setting both raises.
+    #
+    # @param count [Integer, nil] positive integer; nil reads current
+    #   value.
+    # @return [Integer, nil] configured count.
+    # @raise [InvalidUsageError] when count is non-positive or when
+    #   {#cache_retention_duration} is already set.
     def cache_retention_count(count = nil)
       return @cache_retention_count if defined?(@cache_retention_count) && count.nil?
       return nil if count.nil?
@@ -288,6 +404,15 @@ module RSpecTracer
       @cache_retention_count = count
     end
 
+    # Cap remote-cache main-tier refs by age. Mutually exclusive with
+    # {#cache_retention_count}; setting both raises.
+    #
+    # @param spec [String, Integer, nil] duration string (e.g.
+    #   `'7d'`, `'48h'`, `'30m'`) OR seconds as integer. nil reads
+    #   current.
+    # @return [String, Integer, nil] configured raw spec.
+    # @raise [InvalidUsageError] when spec is unparseable or when
+    #   {#cache_retention_count} is already set.
     def cache_retention_duration(spec = nil)
       return @cache_retention_duration_raw if defined?(@cache_retention_duration_raw) && spec.nil?
       return nil if spec.nil?
@@ -298,12 +423,20 @@ module RSpecTracer
       @cache_retention_duration_seconds = seconds
     end
 
+    # @return [Integer, nil] {#cache_retention_duration} expressed
+    #   in seconds, or nil if not set.
     def cache_retention_duration_seconds
       return nil unless defined?(@cache_retention_duration_seconds)
 
       @cache_retention_duration_seconds
     end
 
+    # Cap remote-cache PR-tier refs by age. Independent of main-tier
+    # retention (PR branches typically need shorter TTLs than the
+    # historical main).
+    #
+    # @param spec [String, Integer, nil] duration string or seconds.
+    # @return [String, Integer, nil] configured raw spec.
     def cache_retention_pr_branch_ttl(spec = nil)
       return @cache_retention_pr_branch_ttl_raw if defined?(@cache_retention_pr_branch_ttl_raw) && spec.nil?
       return nil if spec.nil?
@@ -313,6 +446,8 @@ module RSpecTracer
       @cache_retention_pr_branch_ttl_seconds = seconds
     end
 
+    # @return [Integer, nil] {#cache_retention_pr_branch_ttl}
+    #   expressed in seconds.
     def cache_retention_pr_branch_ttl_seconds
       return nil unless defined?(@cache_retention_pr_branch_ttl_seconds)
 
@@ -363,6 +498,12 @@ module RSpecTracer
     # options keep working with one-time warnings." Migration target:
     # `remote_cache_uri` (for the URI form) or
     # `remote_cache_backend :s3, bucket:, prefix:` (for structured form).
+    # @deprecated Use {#remote_cache_uri} or {#remote_cache_backend}.
+    #   Pre-2.0 1.x compatibility shim. Fires a one-time `logger.warn`
+    #   at first use; the value still resolves so 1.x configs keep
+    #   working until the 3.0 removal.
+    # @param s3_path [String, nil] `s3://bucket/prefix`.
+    # @return [String, nil]
     def reports_s3_path(s3_path = nil)
       return @reports_s3_path if defined?(@reports_s3_path) && s3_path.nil?
 
@@ -384,6 +525,11 @@ module RSpecTracer
     # Deprecated in 2.0. Migration: `remote_cache_backend :s3, ...,
     # local: true`. Kept for backward compat; UserTasks derives the
     # `local:` opt from this when `remote_cache_backend` is absent.
+    # @deprecated Use `remote_cache_backend :s3, ..., local: true`.
+    #   Pre-2.0 1.x compatibility shim for `awslocal` / LocalStack.
+    #   Fires a one-time `logger.warn` at first use.
+    # @param new_flag [Boolean, nil]
+    # @return [Boolean]
     def use_local_aws(new_flag = nil)
       return @use_local_aws if defined?(@use_local_aws) && new_flag.nil?
 
@@ -408,6 +554,12 @@ module RSpecTracer
       logger.warn("rspec-tracer deprecation: #{message}")
     end
 
+    # Allow remote-cache uploads from non-CI environments (default
+    # `false`). Reads `RSPEC_TRACER_UPLOAD_NON_CI_REPORTS=true` as
+    # an alternate enable.
+    #
+    # @param new_flag [Boolean, nil]
+    # @return [Boolean]
     def upload_non_ci_reports(new_flag = nil)
       return @upload_non_ci_reports if defined?(@upload_non_ci_reports) && new_flag.nil?
 
@@ -418,6 +570,13 @@ module RSpecTracer
                                end
     end
 
+    # Force every example to run (default `false` — the tracer's
+    # whole point is to skip unaffected examples). Reads
+    # `RSPEC_TRACER_RUN_ALL_EXAMPLES=true` as an alternate enable.
+    # Useful for one-off "rebaseline the cache" runs.
+    #
+    # @param new_flag [Boolean, nil]
+    # @return [Boolean]
     def run_all_examples(new_flag = nil)
       return @run_all_examples if defined?(@run_all_examples) && new_flag.nil?
 
@@ -428,6 +587,13 @@ module RSpecTracer
                           end
     end
 
+    # Exit with non-zero when duplicate-identity examples are
+    # detected (default `true` — duplicates break per-example
+    # attribution). Reads `RSPEC_TRACER_FAIL_ON_DUPLICATES=false` as
+    # an alternate disable.
+    #
+    # @param new_flag [Boolean, nil]
+    # @return [Boolean]
     def fail_on_duplicates(new_flag = nil)
       return @fail_on_duplicates if defined?(@fail_on_duplicates) && new_flag.nil?
 
@@ -484,12 +650,32 @@ module RSpecTracer
     # :schema category on alongside this flag is a no-op in terms of
     # the final re-run set - declared-glob attaches schema to every
     # example regardless of what this subscriber emits.
+    # Setter DSL — bare call enables, explicit `(false)` disables.
+    # Any other positional value coerces to disabled (defensive for
+    # typos). Read the resulting state via {#track_ar_schema_notifications?}.
+    #
+    # @param args [Array] positional args (bare = enable; `false` =
+    #   disable; anything else = disable defensively).
+    # @return [Boolean]
+    # @note **Common Rails setups widen this to whole-suite-on-schema-
+    #   change.** Per-example AR cleanup mechanisms
+    #   (`use_transactional_fixtures = true`, DatabaseCleaner
+    #   `:truncation` / `:deletion` / `:transaction`) fire
+    #   `sql.active_record` inside the per-example bucket, attributing
+    #   `db/schema.rb` to every AR-touching example. A boot-time warn
+    #   fires when the precondition isn't met. See README "Narrow
+    #   AR-schema attribution".
     def track_ar_schema_notifications(*args)
       # Setter DSL: bare call enables, explicit `(false)` disables,
       # any other positional coerces to false (defensive for typos).
       @track_ar_schema_notifications = args.empty? || args.first == true
     end
 
+    # Reads the resolved AR-schema-notifications state. The
+    # `RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS` env var overrides the
+    # DSL value when set.
+    #
+    # @return [Boolean]
     def track_ar_schema_notifications?
       return ENV['RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS'] == 'true' if ENV.key?('RSPEC_TRACER_AR_SCHEMA_NOTIFICATIONS')
       return false unless defined?(@track_ar_schema_notifications)
@@ -497,6 +683,11 @@ module RSpecTracer
       @track_ar_schema_notifications == true
     end
 
+    # Override the parallel_tests lock-file path (default
+    # `rspec_tracer.lock`). Reads `RSPEC_TRACER_LOCK_FILE`.
+    #
+    # @param new_file [String, nil]
+    # @return [String]
     def lock_file(new_file = nil)
       return @lock_file if defined?(@lock_file) && @lock_file && new_file.nil?
 
@@ -507,6 +698,11 @@ module RSpecTracer
                    end
     end
 
+    # Set the tracer's log level. Reads `RSPEC_TRACER_LOG_LEVEL`.
+    #
+    # @param new_level [Symbol, String, nil] one of `:off`, `:debug`,
+    #   `:info`, `:warn`, `:error`. Default `:info`.
+    # @return [Integer] numeric level (LOG_LEVEL constant value).
     def log_level(new_level = nil)
       return @log_level if defined?(@log_level) && @log_level && new_level.nil?
 
@@ -520,23 +716,42 @@ module RSpecTracer
       @log_level = LOG_LEVEL[level.to_s.to_sym].to_i
     end
 
+    # Lazy-initialized {RSpecTracer::Logger} instance honoring
+    # {#log_level}.
+    #
+    # @return [RSpecTracer::Logger]
     def logger
       @logger ||= RSpecTracer::Logger.new(log_level)
     end
 
+    # Track files for SimpleCov coverage emission only (NOT for the
+    # tracer's per-example dependency graph). Use {#track_files} for
+    # the dependency graph.
+    #
+    # @param glob [String] file glob pattern.
+    # @return [String]
     def coverage_track_files(glob)
       @coverage_track_files = glob
     end
 
+    # @return [String, nil] the configured {#coverage_track_files} value.
     def coverage_tracked_files
       @coverage_track_files if defined?(@coverage_track_files)
     end
 
-    # M3.3 declared-globs DSL. Accumulates every call into a single
-    # array that DeclaredGlobs / NewFileDetector consume at boot.
-    # Coexists with legacy `coverage_track_files` (single-arg setter,
-    # overwrite-on-call) without changing that surface - see
-    # `#declared_globs` for the consolidated view.
+    # Declare globs of files every example depends on (e.g.
+    # `Gemfile.lock`, `db/schema.rb`, `config/locales/**/*.yml`).
+    # Globs accumulate across calls; the tracker resolves matched
+    # files at boot and attaches them as `:declared`-kind inputs
+    # to every example. For files only specific examples depend on,
+    # use the per-example `tracks: { files: '...' }` metadata DSL.
+    #
+    # @param globs [Array<String>] file glob patterns (each matched
+    #   via `Dir.glob` with `FNM_PATHNAME | FNM_EXTGLOB`).
+    # @return [Array<String>] the accumulated glob list.
+    # @raise [InvalidUsageError] if called after the tracker started.
+    # @example
+    #   track_files 'config/locales/**/*.yml', 'db/schema.rb', 'Gemfile.lock'
     def track_files(*globs)
       if defined?(@declared_globs_frozen) && @declared_globs_frozen
         raise InvalidUsageError,
@@ -559,17 +774,22 @@ module RSpecTracer
       all.uniq.freeze
     end
 
-    # Rails preset hook. Expands to the Rails glob set defined in
-    # RSpecTracer::Rails::Preset (views, helpers, locales, config,
-    # schema, factories, fixtures) and accumulates those globs into
-    # `@track_files_globs`. Per-category opt-out via the `except:`
-    # keyword argument (e.g. `track_rails_defaults except: [:views]`).
+    # Rails preset — attaches the common Rails-side declared globs in
+    # one DSL call. Expands to the glob set defined in
+    # `RSpecTracer::Rails::Preset` (views, helpers, locales, config,
+    # schema, factories, fixtures).
     #
-    # Requires 'rspec_tracer/rails/preset' lazily so pure-Ruby suites
-    # that never call `track_rails_defaults` do not pay for the file
-    # load. Deduplication and whole-suite-invalidator reuse happen in
-    # `#declared_globs` / `Tracker::WholeSuiteInvalidators`; this method
-    # is intentionally idempotent on repeat calls.
+    # @param except [Array<Symbol>] categories to opt out of (so a
+    #   per-example subscriber attributes them instead). Common
+    #   recipe: `track_rails_defaults except: [:views, :schema]`
+    #   pairs with {#track_ar_schema_notifications} for narrow
+    #   per-example schema attribution.
+    # @return [Array<String>] the resulting accumulated glob list.
+    # @example Default — all categories on
+    #   track_rails_defaults
+    # @example Opt out of views + schema for per-example subscribers
+    #   track_rails_defaults except: [:views, :schema]
+    #   track_ar_schema_notifications
     def track_rails_defaults(except: [])
       require_relative 'rails/preset'
 
@@ -600,6 +820,19 @@ module RSpecTracer
     # internal accumulator). Setter raises if called after
     # `freeze_declared_globs!` flipped the latch (same "tracker has
     # started, no more declarations" contract as `track_files`).
+    # Declare env vars every example depends on. Wildcards expand
+    # against the live ENV at config load. For env vars only specific
+    # examples branch on, use the per-example
+    # `tracks: { env: '...' }` metadata DSL.
+    #
+    # @param names [Array<String, Symbol>] literal env names OR
+    #   single-wildcard patterns (`'PREFIX_*'`, `'*_SUFFIX'`, `'*'`).
+    # @return [Array<String>] frozen accumulated names list.
+    # @raise [InvalidUsageError] if called after the tracker started,
+    #   or if a pattern is malformed (multi-segment wildcards like
+    #   `'A_*_B'`, character classes, etc. are rejected).
+    # @example
+    #   track_env 'AUTH_TOKEN', 'DATABASE_URL', 'RAILS_*', '*_API_KEY'
     def track_env(*names)
       if defined?(@declared_globs_frozen) && @declared_globs_frozen
         raise InvalidUsageError,
@@ -782,6 +1015,24 @@ module RSpecTracer
     # :sqlite does not accept any opts - its storage layout is a
     # single sqlite3 file with a normalized schema; serializer
     # substitution does not apply.
+    # Configure the on-disk storage backend. Reads
+    # `RSPEC_TRACER_STORAGE` for env-based override.
+    #
+    # @param name [Symbol, nil] one of `:json` (default; preserves
+    #   1.x layout) or `:sqlite` (single-file DB; MRI 3.2+ only;
+    #   JRuby auto-falls-back to `:json` with a one-time warn).
+    # @param opts [Hash] backend-specific opts. `:json` accepts
+    #   `serializer:` (`:json` default or `:msgpack`); `:sqlite`
+    #   accepts no opts.
+    # @return [Symbol] the resolved backend name.
+    # @raise [InvalidUsageError] for unknown backend names or
+    #   invalid opts.
+    # @example JSON (default)
+    #   storage_backend :json
+    # @example SQLite (faster cold reads above ~5,000 examples)
+    #   storage_backend :sqlite
+    # @example JSON with msgpack serializer
+    #   storage_backend :json, serializer: :msgpack
     def storage_backend(name = nil, **opts)
       if defined?(@storage_backend_name) && @storage_backend_name && name.nil? && opts.empty?
         return @storage_backend_name
@@ -894,26 +1145,65 @@ module RSpecTracer
       RSpecTracer::Reporters::Registry::BUILT_INS.keys
     end
 
+    # Add a filter to exclude files from the tracer's per-example
+    # dependency graph. Files matching the filter are not registered
+    # as deps, so changes to them don't trigger re-runs.
+    #
+    # @param filter [String, Regexp, Array, RSpecTracer::Filter, nil]
+    #   filter spec. Nil + a block also accepted; the block receives
+    #   a `source_file` Hash (`:name` / `:file_path`) and returns
+    #   true to exclude.
+    # @return [Array] the updated filters list.
+    # @example String match (substring)
+    #   add_filter '/vendor/bundle/'
+    # @example Regex match
+    #   add_filter %r{^/helpers/}
+    # @example Block
+    #   add_filter { |source_file| source_file[:file_path].include?('/helpers/') }
+    # @example Array of mixed types
+    #   add_filter ['/helpers/', %r{^/utils/}]
     def add_filter(filter = nil, &)
       filters << parse_filter(filter, &)
     end
 
+    # @return [Array] the currently-registered dep-graph filters.
+    #   Use `filters.clear` to reset.
     def filters
       @filters ||= []
     end
 
+    # Bulk filters assignment is intentionally rejected — use
+    # {#filters} `.clear` + repeated {#add_filter} instead so each
+    # entry routes through the same parser.
+    #
+    # @raise [NotImplementedError]
     def filters=(new_filteres)
       raise NotImplementedError
     end
 
+    # Add a filter to exclude files from coverage reporting (NOT
+    # from the tracer's dep graph). Use {#add_filter} for the
+    # dep graph; this controls SimpleCov-style coverage output only.
+    #
+    # @param filter [String, Regexp, Array, nil] same shape as
+    #   {#add_filter}'s filter arg.
+    # @return [Array]
+    # @example
+    #   add_coverage_filter %w[/spec/ /test/ /vendor/bundle/]
     def add_coverage_filter(filter = nil, &)
       coverage_filters << parse_filter(filter, &)
     end
 
+    # @return [Array] the currently-registered coverage filters.
+    #   Use `coverage_filters.clear` to reset.
     def coverage_filters
       @coverage_filters ||= []
     end
 
+    # Bulk coverage_filters assignment intentionally rejected — see
+    # {#filters=}.
+    #
+    # @raise [NotImplementedError]
     def coverage_filters=(new_filteres)
       raise NotImplementedError
     end
