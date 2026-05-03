@@ -3,8 +3,6 @@
 source 'https://rubygems.org'
 
 group :development do
-  gem 'aruba', '~> 2.2'
-  gem 'cucumber', '~> 9.2'
   gem 'pry', '~> 0.14'
   gem 'rake', '~> 13.2'
   gem 'rantly', '~> 2.0'
@@ -15,6 +13,7 @@ group :development do
   gem 'simplecov', '~> 0.22'
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
+  gem 'yard', '~> 0.9'
   gem 'yui-compressor', '~> 0.12'
 
   # Optional / matrix-driven runtime deps. Each is a `>= floor` so the
@@ -33,9 +32,10 @@ group :development do
   # in the install-time bundle. Prefixing keeps the two scopes
   # independent. `RSPEC_VERSION` is intentionally NOT prefixed: the
   # workflow always sets it at JOB level (so setup-ruby's bundle install
-  # and the test step's bundle exec see the same value), and several
-  # cucumber sample_projects/Gemfiles also read it - keeping the
-  # existing name avoids fanning out the rename.
+  # and the test step's bundle exec see the same value), and the prior
+  # cucumber sample_projects/Gemfiles (retired in 2.0.0) also read the
+  # unprefixed name - keeping the existing name avoids churn for users
+  # tracking the env in their own Gemfiles.
   #
   # Floors are the lowest currently-maintained major-line of each gem.
   # See .github/workflows/combinations.yml for the explicit matrix.

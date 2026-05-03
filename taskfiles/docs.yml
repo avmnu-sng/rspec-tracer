@@ -1,0 +1,28 @@
+version: '3'
+
+# Docs tasks: yard HTML generation + lightweight checks.
+# Cross-file dep-free.
+
+tasks:
+  docs:yard:
+    desc: >-
+      Generate the YARD HTML documentation under doc/yard/. Reads
+      .yardopts at repo root for source globs + extras (README,
+      ARCHITECTURE, UPGRADING, CHANGELOG, ROADMAP).
+    cmds:
+      - bundle exec yard doc
+
+  docs:yard:check:
+    desc: >-
+      Run yardoc with --no-output to confirm zero parse errors on
+      the public API surface; CI-friendly (no HTML written, just
+      validates parseability).
+    cmds:
+      - bundle exec yard doc --no-output
+
+  docs:yard:stats:
+    desc: >-
+      Print YARD documentation coverage stats. Useful for tracking
+      which public API methods still lack doc comments.
+    cmds:
+      - bundle exec yard stats --list-undoc

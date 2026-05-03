@@ -1,0 +1,14 @@
+--readme README.md
+--markup markdown
+--output-dir doc/yard
+--no-private
+--exclude lib/rspec_tracer/storage/lazy_snapshot.rb
+--exclude lib/rspec_tracer/tracker/io_hooks.rb
+--protected
+-
+ARCHITECTURE.md
+UPGRADING.md
+CHANGELOG.md
+ROADMAP.md
+LICENSE
+lib/**/*.rb

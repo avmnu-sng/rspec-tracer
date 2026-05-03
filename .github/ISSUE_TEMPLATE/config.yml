@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage question / discussion
+    url: https://github.com/avmnu-sng/rspec-tracer/discussions
+    about: |
+      Got a "how do I?" or design-discussion question? Open a
+      Discussion instead of an issue. Issues are reserved for
+      reproducible bugs and concrete feature requests.
+  - name: Documentation
+    url: https://github.com/avmnu-sng/rspec-tracer#readme
+    about: |
+      README, UPGRADING, ARCHITECTURE, and CHANGELOG cover most
+      questions. Worth a skim before opening a new issue.

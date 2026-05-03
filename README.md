@@ -1,144 +1,252 @@
-![](./readme_files/rspec_tracer.png)
+# rspec-tracer
 
-[![Open Source Helpers](https://www.codetriage.com/avmnu-sng/rspec-tracer/badges/users.svg)](https://www.codetriage.com/avmnu-sng/rspec-tracer)
+[![CI](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml/badge.svg)](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml)
 [![Gem Version](https://badge.fury.io/rb/rspec-tracer.svg)](https://badge.fury.io/rb/rspec-tracer)
 
-![](./readme_files/next_run.gif)
+**RSpec Tracer** is a specs dependency analyzer, flaky-test detector,
+test accelerator, and coverage reporter for RSpec. It records the
+inputs every example consumes — Ruby files (via `Coverage`), file
+I/O (via prepended `File` / `IO` / `YAML` / `JSON` hooks), Rails
+template + AR notifications, and user-declared globs — then re-runs
+only the examples whose inputs changed since the last run.
 
-RSpec Tracer is a **specs dependency analyzer**, **flaky tests detector**, **tests accelerator**,
-and **coverage reporter** tool. It maintains a list of files for each test, enabling
-itself to skip tests in the subsequent runs if none of the dependent files are changed.
+It never skips:
+- **Failed**, **flaky**, or **pending** examples.
+- Examples whose dependent inputs changed (the whole point).
 
-It uses [Ruby's built-in coverage library](https://ruby-doc.org/stdlib/libdoc/coverage/rdoc/Coverage.html)
-to keep track of the coverage for each test. For each test executed, the coverage
-diff provides the desired file list. RSpec Tracer takes care of reporting the
-**correct code coverage when skipping tests** by using the cached reports. Also,
-note that it will **never skip**:
+For a complete account of the input taxonomy and how the engine fits
+together, read [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
-- **Flaky examples**
-- **Failed examples**
-- **Pending examples**
+## Table of contents
 
-Knowing the examples and files dependency gives us a better insight into the codebase,
-and we have **a clear idea of what to test for when making any changes**. With this data,
-we can also analyze the coupling between different components and much more.
+- [Quick start](#quick-start)
+- [How it works](#how-it-works)
+- [Per-example `tracks:` DSL](#per-example-tracks-dsl)
+- [Rails quick start](#rails-quick-start)
+- [Configuring CI](#configuring-ci)
+- [Remote cache backends](#remote-cache-backends)
+- [Pluggable storage](#pluggable-storage)
+- [Command-line tools](#command-line-tools)
+- [SimpleCov interop](#simplecov-interop)
+- [FAQ + comparison](#faq--comparison)
+- [Reports](#reports)
+- [Help and community](#help-and-community)
+- [Section anchor map (1.x → 2.0)](#section-anchor-map-1x--20)
 
-RSpec Tracer requires **Ruby 2.5+** and **rspec-core >= 3.6.0**. To use with **Rails 5+**,
-make sure to use **rspec-rails >= 4.0.0**. If you are using SimpleCov, it is
-recommended to use **simplecov >= 0.17.0**. To use RSpec Tracer **cache on CI**, you
-need to have an **S3 bucket** and **[AWS CLI](https://aws.amazon.com/cli/)**
-installed.
+## Quick start
 
-> You should take some time and go through the **[document](./RSPEC_TRACER.md)**
-describing the **intention** and implementation details of **managing dependency**,
-**managing flaky tests**, **skipping tests**, and **caching on CI**.
+Requires Ruby 3.1+ and rspec-core 3.12+. Rails 7.0+ when using Rails;
+Rails 8.0 needs Ruby 3.2+. JRuby 9.4 is supported.
 
-## Table of Contents
+1. Add the gem:
 
-* [Getting Started](#getting-started)
-  * [Working with JRuby](#working-with-jruby)
-  * [Working with Parallel Tests](#working-with-parallel-tests)
-* [Configuring CI](#configuring-ci)
-  * [Caching rspec-tracer in CI](#caching-rspec-tracer-in-ci)
-* [Advanced Configuration](#advanced-configuration)
-  * [Available Settings](#available-settings)
-* [Filters](#filters)
-* [Duplicate Examples](#duplicate-examples)
-* [Demo](#demo)
+   ```ruby
+   gem 'rspec-tracer', '~> 2.0', group: :test, require: false
+   ```
 
-## Getting Started
+2. Add the canonical directories to your `.gitignore`:
 
-1. Add this line to your `Gemfile` and `bundle install`:
-    ```ruby
-    gem 'rspec-tracer', '~> 1.0', group: :test, require: false
-    ```
+   ```
+   rspec_tracer.lock
+   rspec_tracer_cache/
+   rspec_tracer_coverage/
+   rspec_tracer_report/
+   ```
 
-    And, add the followings to your `.gitignore`:
-    ```
-    rspec_tracer.lock
-    rspec_tracer_cache/
-    rspec_tracer_coverage/
-    rspec_tracer_report/
-    ```
-2. Load and launch RSpec Tracer at the very top of `spec_helper.rb` (or `rails_helper.rb`,
-`test/test_helper.rb`). Note that `RSpecTracer.start` must be issued **before loading
-any of the application code.**
+3. Load and start at the very top of `spec_helper.rb` /
+   `rails_helper.rb`, **before any application code:**
 
-    ```ruby
-    # Load RSpec Tracer
-    require 'rspec_tracer'
-    RSpecTracer.start
-    ```
+   ```ruby
+   require 'rspec_tracer'
+   RSpecTracer.start
+   ```
 
-    **If you are using SimpleCov**, load RSpec Tracer right after the SimpleCov load
-    and launch:
+   With SimpleCov, start SimpleCov first (load order is part of the
+   contract):
 
-    ```ruby
-    require 'simplecov'
-    SimpleCov.start
+   ```ruby
+   require 'simplecov'
+   SimpleCov.start
+   require 'rspec_tracer'
+   RSpecTracer.start
+   ```
 
-    # Load RSpec Tracer
-    require 'rspec_tracer'
-    RSpecTracer.start
-    ```
+4. Run your suite. After the run, open
+   `rspec_tracer_report/index.html` for the HTML report, and
+   `rspec_tracer_report/report.json` for machine-readable output.
 
-    If you use RSpec Tracer with SimpleCov, then **SimpleCov would not report branch
-    coverage results even when enabled**.
+   The terminal prints a one-line summary with cache size and the
+   reasons examples re-ran:
 
-3. After running your tests, open `rspec_tracer_report/index.html` in the browser
-of your choice.
+   ```
+   rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
+   by reason: 38 Files changed · 4 Failed previously
+   cache: rspec_tracer_cache (14.4 MiB; +6.7 KiB vs prev run)
+   ```
 
-### Working with JRuby
+## How it works
 
-Use **JRuby 9.4.x** (the 2.0 supported floor; CI-gated against
-`jruby-9.4` which resolves to the latest 9.4.x patch). Configure it
-with **`JRUBY_OPTS="--debug -X+O"`** or have the `.jrubyrc` file:
+Every test is a pure function of its inputs; the tracker's job is to
+identify every input and hash it. Inputs come from six buckets:
+
+1. **Ruby-executed source** — observed via Ruby's `Coverage` module.
+2. **File I/O** (`File.read`, `YAML.load_file`, etc.) — observed via
+   `Module#prepend` hooks.
+3. **Framework events** — Rails template renders + (opt-in) AR
+   schema-touching queries via `ActiveSupport::Notifications`.
+4. **Declared globs** — what you tell the tracker to track via
+   `track_files` / `tracks:` / `track_rails_defaults`.
+5. **Whole-suite invalidators** — `Gemfile.lock`, `.ruby-version`,
+   `.rspec-tracer`, the rspec-tracer gem version itself.
+6. **Truly unobservable inputs** — env-var branches, refinements
+   in unexecuted files. Use `track_env` / `tracks: { env: ... }`
+   to declare them; the tracker can't auto-detect them.
+
+A digest of every observed input is stored per-example. The next run
+loads the cached digest set, recomputes per-input digests, and skips
+examples whose inputs are unchanged.
+
+Read [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full layer
+structure (Tracker / Storage / RemoteCache / Reporters), data flows,
+and extension protocols.
+
+### Per-example precision under Rails `config.eager_load`
+
+A precision tradeoff worth knowing before you run a suite that uses
+Rails:
+
+- **`config.eager_load = false`** in test env — per-example precision
+  works as designed. Files autoloaded during an example land in
+  per-example deps; editing one re-runs only the examples that
+  touched it.
+- **`config.eager_load = true`** (Rails default for CI tests to
+  mirror prod) — all `app/` files load at boot and land in the
+  whole-suite invalidator set. Editing any `app/` file re-runs
+  every example. **Safe** (never misses a dep) but **coarser** than
+  per-example attribution.
+
+If your CI suite runs with `eager_load = true` and your `app/`-edit
+cycle is bottlenecked by whole-suite re-runs, set `config.eager_load
+= false` in test env to recover per-example precision. A future 2.1
+enhancement (working name: `track_class_attribution`) will install
+class-dispatch tracking to trim the invalidator scope under
+eager-loaded test environments — see
+[`CHANGELOG.md`](CHANGELOG.md) "Deferred to 2.1" for the planned
+contract.
+
+## Per-example `tracks:` DSL
+
+Annotate any describe / context / example with extra inputs the
+tracker can't auto-observe — config files baked at boot, env-var
+branches, non-Ruby deps:
 
 ```ruby
-debug.fullTrace=true
-objectspace.enabled=true
+RSpec.describe AdminController,
+               tracks: { files: 'app/policies/**/*.rb',
+                         env: 'ROLE_CONFIG' } do
+  it 'gates on the feature flag' do
+    # ...
+  end
+end
 ```
 
-A few things to note when running rspec-tracer on JRuby:
+| Key      | Value shape                       | Semantics                                                              |
+|----------|-----------------------------------|------------------------------------------------------------------------|
+| `:files` | String glob OR Array of strings   | Each matched file is attached as a `:declared`-kind dep on the example. |
+| `:env`   | String name OR Array OR wildcard  | Each named env var is digested at finalize. Missing env reads as empty.  |
 
-- The `:sqlite` storage backend is unavailable (the `sqlite3` gem
-  targets MRI's C API and has no `-java` platform variant).
-  `Storage::SqliteBackend` raises `SqliteBackendError` on JRuby; the
-  engine warns once and falls back to the default `:json` backend.
-- Edge cases relying on `Process.fork` (concurrent SQLite writers,
-  fork-based cleanup) auto-skip on JRuby — the JSON backend's flock-
-  serialized writes are exercised on the default code path and don't
-  need fork-level concurrency tests.
-- Per-iter benchmark wall clock is materially higher on JRuby because
-  every test subprocess pays full JVM boot. This is JVM cost, not
-  rspec-tracer overhead.
-- Rails on JRuby uses the JDBC adapter chain. Add
-  `gem "activerecord-jdbcsqlite3-adapter", "~> 71.0", platforms: :jruby`
-  (or the matching major for your Rails line: 70.x / 71.x / 72.x track
-  Rails 7.0 / 7.1 / 7.2 respectively) to your project's `Gemfile` for
-  SQLite under JRuby. The `adapter: sqlite3` string in your
-  `config/database.yml` resolves to the JDBC chain transparently — no
-  per-environment override needed. Other databases use the
-  matching `activerecord-jdbc<driver>-adapter` gem (postgres / mysql /
-  etc.). The CI cell pinned in this repo is `jruby-9.4 × Rails 7.1 ×
-  rspec-rails 6.1`.
+**Wildcards** (`'RAILS_*'`, `'*_TOKEN'`, `'*'`) expand against the
+live ENV at register time; the persisted snapshot only carries
+concrete keys.
 
-### Working with TruffleRuby
+**Cascade.** Nested groups contribute additively. A parent's
+`tracks: { files: 'a/*' }` and a child's `tracks: { env: 'B' }` both
+attach to the child's examples; the child does not clobber the parent
+on any shared key.
 
-TruffleRuby 24.x is **best-effort** (CI cell runs as
-`continue-on-error`, so failures surface but don't block releases).
-The same caveats as JRuby apply: `:sqlite` backend unavailable,
-fork-based edge cases skip. The Rails integration is not yet validated
-on TruffleRuby; if you run rspec-tracer with Rails on TruffleRuby and
-hit issues, please open an issue on GitHub.
+**Use `track_files` / `track_env` for the global case.** Files /
+env vars **every** test depends on (`Gemfile.lock`, `AUTH_TOKEN`,
+`RAILS_ENV`) belong in `.rspec-tracer`:
 
-### Working with Parallel Tests
+```ruby
+RSpecTracer.configure do
+  track_files 'config/locales/**/*.yml', 'db/schema.rb', 'Gemfile.lock'
+  track_env   'AUTH_TOKEN', 'DATABASE_URL', 'RAILS_*'
+end
+```
 
-The Rspec tracer, by default, supports working with [parallel_tests](https://github.com/grosser/parallel_tests/)
-gem. It maintains a lock file `rspec_tracer.lock` to identify the last
-running process. Usually, you are not required to do anything special unless you
-interrupt the execution in between and the process did not complete correctly.
-In such a case, you must delete the lock file before the next run.
+## Rails quick start
+
+```ruby
+# spec/rails_helper.rb
+require 'simplecov'      # if used; load BEFORE rspec_tracer
+SimpleCov.start
+
+require 'rspec_tracer'
+RSpecTracer.start
+
+require File.expand_path('../config/environment', __dir__)
+require 'rspec/rails'
+```
+
+```ruby
+# .rspec-tracer
+RSpecTracer.configure do
+  track_rails_defaults
+end
+```
+
+`track_rails_defaults` attaches the common Rails-side declared globs:
+views, locales, fixtures, factories, helpers, config. Drop a
+specific glob to hand attribution off to the per-example subscribers
+instead:
+
+```ruby
+RSpecTracer.configure do
+  # Templates → render_template.action_view subscriber attributes
+  # them per-example. Schema → opt-in sql.active_record observer
+  # attributes db/schema.rb + db/structure.sql per AR-touching
+  # example (read the Narrow AR-schema attribution section before
+  # enabling).
+  track_rails_defaults except: [:views, :schema]
+  track_ar_schema_notifications
+end
+```
+
+Supported Rails matrix: 7.0 / 7.1 / 7.2 / 8.0 (8.0 requires Ruby
+3.2+). On JRuby use `JRUBY_OPTS="--debug -X+O"` and the JDBC
+adapter (`gem 'activerecord-jdbcsqlite3-adapter', '~> 71.0',
+platforms: :jruby` for Rails 7.1; track the major to your Rails
+line).
+
+### Narrow AR-schema attribution
+
+`track_ar_schema_notifications` promises per-example attribution of
+`db/schema.rb` via the `sql.active_record` subscriber. **The narrow
+promise only holds when no per-example AR cleanup mechanism fires
+queries inside the per-example bucket.** Common Rails setups trip
+this:
+
+- `use_transactional_fixtures = true` (Rails default) — per-example
+  BEGIN/COMMIT fires `sql.active_record`.
+- DatabaseCleaner `:truncation` / `:deletion` / `:transaction` in
+  `around` hooks — cleanup queries fire inside the bucket.
+
+Either case attributes `db/schema.rb` to every AR-touching example
+(safe, but widens invalidation). A boot-time warn fires when the
+precondition is unmet so you don't discover this from a confused
+cache-hit-rate chart later.
+
+For genuinely narrow attribution: set `use_transactional_fixtures =
+false` and use sequence-based factories (or another non-AR cleanup
+mechanism that doesn't fire `sql.active_record` inside the example
+window).
+
+### Working with parallel_tests
+
+Supported out of the box. The tracker writes to per-worker
+directories and merges at finalize on the elected last worker. If you
+interrupt a run mid-flight, delete the lock file:
 
 ```sh
 rm -f rspec_tracer.lock && bundle exec parallel_rspec
@@ -146,453 +254,230 @@ rm -f rspec_tracer.lock && bundle exec parallel_rspec
 
 ## Configuring CI
 
-To enable RSpec Tracer to share cache between different builds on CI, update the
-Rakefile in your project to have the following:
+The 1.x flow is preserved bit-for-bit. In your project's `Rakefile`:
+
 ```ruby
 spec = Gem::Specification.find_by_name('rspec-tracer')
-
 load "#{spec.gem_dir}/lib/rspec_tracer/remote_cache/Rakefile"
 ```
 
-Before running tests, download the remote cache using the following rake task:
+Then in your CI pipeline:
+
 ```sh
 bundle exec rake rspec_tracer:remote_cache:download
-```
-
-After running tests, upload the local cache using the following rake task:
-```sh
+bundle exec rspec
 bundle exec rake rspec_tracer:remote_cache:upload
 ```
 
-You must set the following environment variables:
+With these env vars:
 
-- **`GIT_DEFAULT_BRANCH`** is the default branch name for the repo, e.g., `main` or `master`.
-
-- **`GIT_BRANCH`** is the git branch name you are running the CI build on.
-
-- **`TEST_SUITES`** is the total number of different test suites you are running.
-  ```sh
-  export TEST_SUITES=8
-  ```
-
-- **`TEST_SUITE_ID`** is the CI build ID. If you have a large set of tests to run,
-it is recommended to run them in separate groups. This way, RSpec Tracer is not
-overwhelmed with loading massive cached data in the memory. Also, it generates and
-uses cache for specific test suites and not merge them.
-  ```sh
-  TEST_SUITE_ID=1 bundle exec rspec spec/models
-  TEST_SUITE_ID=2 bundle exec rspec spec/helpers
-  ```
+- **`GIT_DEFAULT_BRANCH`** — your repo's default branch (`main` /
+  `master`).
+- **`GIT_BRANCH`** — the branch the build is on.
+- **`TEST_SUITES`** — total number of suite shards (when sharding).
+- **`TEST_SUITE_ID`** — current shard identifier.
+- **`RSPEC_TRACER_REMOTE_CACHE_URI`** — the remote-cache URI
+  (`s3://bucket/prefix`, `file:///tmp/cache`, `redis://host`).
 
 ### Caching rspec-tracer in CI
 
-The remote-cache rake tasks above are designed for sharing cache
-across builds via an S3 bucket. If you don't have S3 — or you only
-need to persist the cache between runs of a single workflow on the
-same branch — GitHub Actions' built-in cache works as a drop-in
-storage substrate. The lifecycle is the same: restore
-`rspec_tracer_cache/` before running specs, run the suite (RSpec
-Tracer reads the restored cache and decides what to skip), then let
-the post-step save write the updated cache back.
-
-A reference workflow lives at
-[`.github/workflows/example-tracer-cache.yml`](./.github/workflows/example-tracer-cache.yml)
-in this repo. The relevant cache step is:
+If you don't have S3 — or only need cache between runs of a single
+workflow — GitHub Actions' built-in cache is a drop-in storage
+substrate. Restore `rspec_tracer_cache/` before specs, run the
+suite, let the post-step save it back. A reference workflow lives at
+[`.github/workflows/example-tracer-cache.yml`](.github/workflows/example-tracer-cache.yml).
+The cache step:
 
 ```yaml
 - name: Restore rspec-tracer cache
   uses: actions/cache@v5
   with:
-    path: spec/fixtures/rails_app/rspec_tracer_cache
+    path: rspec_tracer_cache
     key: >-
       ${{ runner.os
       }}-${{ hashFiles('.ruby-version')
-      }}-${{ hashFiles('lib/rspec_tracer/version.rb')
-      }}-${{ hashFiles('spec/fixtures/rails_app/Gemfile')
+      }}-${{ hashFiles('Gemfile.lock')
       }}-rspec-tracer-cache
     restore-keys: |
-      ${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('lib/rspec_tracer/version.rb') }}-
       ${{ runner.os }}-${{ hashFiles('.ruby-version') }}-
       ${{ runner.os }}-
 ```
 
-The cache key has four components, each chosen to invalidate when
-something would make the previous run's cached decisions
-incorrect:
+The 4-component cache key (`runner.os` + Ruby version + the
+rspec-tracer gem's own version + your project's Gemfile lock)
+invalidates when something would make the previous run's decisions
+incorrect: native gem binaries differ across runner OSes, Ruby ABI
+changes invalidate native extensions, a tracer upgrade can change the
+cache schema, and gem-set drift is the most common cache-staleness
+trigger.
 
-- **`runner.os`** — native gem binaries (e.g. `sqlite3`,
-  `nokogiri`) are not portable across Linux / macOS runners.
-- **`.ruby-version`** — Ruby ABI changes invalidate native
-  extensions, which can shift the inputs each example sees.
-- **`lib/rspec_tracer/version.rb`** — the tracer's own version.
-  A tracer upgrade can change the cache schema; restoring an
-  old-shape cache after an upgrade is a wasted restore.
-- **The project `Gemfile`** — gem-set changes are the most common
-  reason a previously-populated cache is out of date for skip
-  decisions.
+**The pattern translates 1:1 to CircleCI, GitLab CI, Buildkite, and
+Heroku CI**; only the YAML envelope is GHA-specific. See
+[`docs/CI_RECIPES.md`](docs/CI_RECIPES.md) for per-provider recipes.
 
-Adapt the path (`spec/fixtures/rails_app/rspec_tracer_cache` →
-your project's cache dir, default `./rspec_tracer_cache`) and the
-hashed `Gemfile` location to match your project layout. The
-`restore-keys` ladder progressively trims trailing components so a
-tracer or Gemfile bump still warm-starts from the closest prior
-shape rather than going fully cold.
+## Remote cache backends
 
-A few things worth knowing when you copy this:
-
-- **The first run on a given key is cold.** `actions/cache@v5`
-  saves in a post-step hook that only runs on successful job
-  completion. If a tight `timeout-minutes` cancels the cold run,
-  no cache is written and the next run is also cold. Calibrate
-  the cap generously enough for the cold path to finish.
-- **Too narrow a key wastes cache.** Including `github.sha` in the
-  key means every commit is a cache miss — you get cold runs every
-  time and pay storage for nothing. The key above intentionally
-  ignores the commit SHA: cache hits across commits are the whole
-  point.
-- **Too broad a key is the user-trust risk.** If the key omits a
-  field that materially changes which examples should re-run
-  (e.g. you drop the tracer-version hash), you may restore a
-  cache whose schema is incompatible with the current tracer.
-  RSpec Tracer's per-example input digesting re-validates what
-  it restores, so the worst-case is a degraded hit rate rather
-  than wrong skip decisions — but the safer key shape is the one
-  that invalidates explicitly when these inputs shift.
-- **Lockfile drift isn't in the key.** If your project's
-  `Gemfile.lock` is committed, add it to the hashed paths
-  alongside `Gemfile` for tighter invalidation. If the lockfile
-  is gitignored (as it is in this repo's fixture), the tracer's
-  per-example input digest is what catches transitive shifts on
-  the next run.
-
-## Advanced Configuration
-
-Configuration settings must be defined in **`.rspec-tracer`** file:
-```ruby
-RSpecTracer.configure do
-  config_option 'foo'
-end
-```
-
-You can additionally define a global config file `~/.rspec-tracer` to share the
-common settings across projects.
-
-### Available Settings
-
-- **`root dir`** to set the project root. The default value is the current working
-directory.
-
-- **`project_name name`** to set the project name. The default value is the last
-part of the project root directory.
-
-- **`cache_dir dir`** to set the cache directory. The default value is `./rspec_tracer_cache`.
-You can also set the **`RSPEC_TRACER_CACHE_DIR`** environment variable.
-
-- **`coverage_dir dir`** to set the coverage reports directory. The default is the
-`./rspec_tracer_coverage`. You can also set the **`RSPEC_TRACER_COVERAGE_DIR`**
-environment variable.
-
-- **`report_dir dir`** to set the HTML reports directory. The default is the
-`./rspec_tracer_report`.  You can also set the **`RSPEC_TRACER_REPORT_DIR`**
-environment variable.
-
-- **`reports_s3_path uri`** to set the AWS S3 URI for all the reports from the current
-run. You can also set the **`RSPEC_TRACER_REPORTS_S3_PATH`** environment variable.
-
-- **`use_local_aws bool_flag`** to use the `awslocal` AWS CLI with `LocalStack`. You can
-also set the **`RSPEC_TRACER_USE_LOCAL_AWS`** environment variable.
-
-- **`upload_non_ci_reports bool_flag`** to upload execution reports in a non-CI
-environment. You can also set the **`RSPEC_TRACER_UPLOAD_NON_CI_REPORTS`** environment
-variable.
-
-- **`run_all_examples bool_flag`** to always run all the examples irrespective of cache.
-You can also set the **`RSPEC_TRACER_RUN_ALL_EXAMPLES`** environment variable.
-
-- **`fail_on_duplicates bool_flag`** to fail with a non-zero exit code in case of
-duplicate examples. The default value is `true`. You can also set the **`RSPEC_TRACER_FAIL_ON_DUPLICATES`** 
-environment variable.
-
-- **`lock_file file`** to set the lock file when executing with `parallel_tests`. The default
-value is `./rspec_tracer.lock`. You can also set the **`RSPEC_TRACER_LOCK_FILE`** environment
-variable.
-
-- **`log_level level`** to set the log level. The default value is `info`. The possible
-values are `off`, `debug`, `info`, `warn`, and `error`. You can also set the
-**`RSPEC_TRACER_LOG_LEVEL`** environment variable.
-
-- **`add_filter filter`** to apply filters on the source files to exclude them
-from the dependent files list.
-
-- **`filters.clear`** to remove the configured dependent files filters so far.
-
-- **`add_coverage_filter filter`** to apply filters on the source files to exclude
-them from the coverage report.
-
-- **`coverage_filters.clear`** to remove the configured coverage files filters so far.
-
-- **`coverage_track_files glob`** to include files in the given glob pattern in
-the coverage report if these files are not already present.
+Three backends ship in 2.0. Pick one in `.rspec-tracer`:
 
 ```ruby
 RSpecTracer.configure do
-  # Configure project root
-  root '/tmp/my_project'
+  # S3 (preserves 1.x layout; supports awslocal / LocalStack).
+  remote_cache_backend :s3, local: false
 
-  # Clear existing filters
-  filters.clear
-  # Add dependent files filter
-  add_filter %r{^/tasks/}
+  # Filesystem-backed (no S3 needed).
+  # remote_cache_backend :local_fs, root: '/tmp/rspec-tracer-cache'
 
-  # Clear existing coverage filters
-  coverage_filters.clear
-  # Add coverage files filter
-  add_coverage_filter %w[/features/ /spec/ /tests/]
-
-  # Define glob to track files in the coverage report
-  coverage_track_files '{app,lib}/**/*.rb'
+  # Redis (with optional per-key TTL + PR-branch tracking sidecar).
+  # remote_cache_backend :redis, url: ENV['REDIS_URL'], ttl: 7 * 86_400
 end
 ```
 
-## Filters
+The `rake rspec_tracer:remote_cache:*` task surface is unchanged —
+backend selection happens in config; the rake tasks dispatch
+identically.
 
-By default, RSpec Tracer ignores all the files outside of the project root directory -
-otherwise you would end up with the source files in the gems you are using in the
-project. It also applies the following filters:
+## Pluggable storage
+
+Two on-disk storage formats:
+
 ```ruby
 RSpecTracer.configure do
-  log_level 'warn'
+  # JSON (default) — preserves the 1.x 10-file layout per run.
+  storage_backend :json
 
-  add_filter '/vendor/bundle/'
-
-  add_coverage_filter %w[
-    /autotest/
-    /features/
-    /spec/
-    /test/
-    /vendor/bundle/
-  ].freeze
+  # SQLite — single-file database. Faster cold reads above ~5,000
+  # examples. JRuby auto-falls-back to :json with a one-time warn.
+  # storage_backend :sqlite
 end
 ```
 
-### Defining Custom Filteres
+Or override per-run via env: `RSPEC_TRACER_STORAGE=sqlite`.
 
-You can currently define a filter using either a String or Regexp (that will then
-be Regexp-matched against each source file's name relative to the project root),
-a block or by passing in your own Filter class.
+## Command-line tools
 
-- **String Filter**: The string filter matches files that have the given string
-in their name. For example, the following string filter will remove all files that
-have `"/helpers/"` in their name.
-  ```ruby
-  RSpecTracer.configure do
-    add_filter '/helpers/'
-  end
-  ```
+`bin/rspec-tracer` exposes five sub-commands:
 
-- **Regex Filter**: The regex filter removes all files that have a successful name
-match against the given regex expression. This simple regex filter will remove
-all files that start with `%r{^/helper/}` in their name:
-  ```ruby
-  RSpecTracer.configure do
-    add_filter %r{^/helpers/}
-  end
-  ```
+```sh
+bin/rspec-tracer doctor         # diagnose config + environment
+bin/rspec-tracer cache:info     # size, last run, invalidation stats
+bin/rspec-tracer cache:clear    # rm cache dirs
+bin/rspec-tracer report:open    # open the HTML report
+bin/rspec-tracer explain <id>   # why is <example_id> scheduled to (re-)run?
+```
 
-- **Block Filter**: Block filters receive a `Hash` object and expect your block
-to return either **true** (if the file is to be removed from the result) or **false**
-(if the result should be kept). In the below example, the filter will remove all
-files that match `"/helpers/"` in their path.
-  ```ruby
-  RSpecTracer.configure do
-    add_filter do |source_file|
-      source_file[:file_path].include?('/helpers/')
-    end
-  end
-  ```
+The CLI is opt-in for local-dev convenience. The
+`rake rspec_tracer:remote_cache:*` tasks remain first-class for CI
+integration — nothing in the CLI replaces them.
 
-  You can also use `source_file[:name]` to define the return value of the block
-  filter for the given source file.
+## SimpleCov interop
 
-- **Array Filter**: You can pass in an array containing any of the other filter types:
-  ```ruby
-  RSpecTracer.configure do
-    add_filter ['/helpers/', %r{^/utils/}]
-  end
-  ```
+**Load order is part of the contract.** SimpleCov first, then
+rspec-tracer:
 
-## Duplicate Examples
-
-To uniquely identify the examples is one of the requirements for the correctness
-of the RSpec Tracer. Sometimes, it would not be possible to do so depending upon
-how we have written the specs. The following attributes determine the uniqueness:
-
-- The example group
-- The example full description
-- The spec file location, i.e., file name and line number
-- All the shared examples and contexts
-
-Consider the following `Calculator` module:
 ```ruby
-module Calculator
-  module_function
+require 'simplecov'
+SimpleCov.start
 
-  def add(a, b) a + b; end
-  def sub(a, b) a - b; end
-  def mul(a, b) a * b; end
-end
+require 'rspec_tracer'
+RSpecTracer.start
 ```
 
-And the corresponding spec file `spec/calculator_spec.rb`:
-```ruby
-RSpec.describe Calculator do
-  describe '#add' do
-    [
-      [1, 2, 3],
-      [0, 0, 0],
-      [5, 32, 37],
-      [-1, -8, -9],
-      [10, -10, 0]
-    ].each { |a, b, r| it { expect(described_class.add(a, b)).to eq(r) } }
-  end
+If you call `require 'simplecov'` but skip `SimpleCov.start` before
+`RSpecTracer.start`, a boot-time warn fires pointing this out
+(silent-degradation breaks coverage output).
 
-  describe '#sub' do
-    [
-      [1, 2, -1],
-      [10, 0, 10],
-      [37, 5, 32],
-      [-1, -8, 7],
-      [10, 10, 0]
-    ].each do |a, b, r|
-      it 'performs subtraction' do
-        expect(described_class.sub(a, b)).to eq(r)
-      end
-    end
-  end
+**Branch coverage works alongside rspec-tracer in 2.0.** The 1.x
+caveat ("SimpleCov would not report branch coverage results even
+when enabled") is no longer applicable — the coverage emission
+decoupled from SimpleCov's branch-tracking. Re-enable
+`enable_coverage :branch` in your `SimpleCov.start` block and you get
+both.
 
-  describe '#mul' do
-    [
-      [1, 2, -2],
-      [10, 0, 0],
-      [5, 7, 35],
-      [-1, -8, 8],
-      [10, 10, 100]
-    ].each do |a, b, r|
-      it "multiplies #{a} and #{b} to #{r}" do
-        expect(described_class.mul(a, b)).to eq(r)
-      end
-    end
-  end
-end
-```
+Filter chains compose: SimpleCov's `add_filter` / `coverage_filters`
+control SimpleCov's HTML output; rspec-tracer's `add_filter` /
+`add_coverage_filter` control which files contribute to the
+dependency graph.
 
-Running the spec with `bundle exec rspec spec/calculator_spec.rb` generates the
-following output:
-```
-Calculator
-  #mul
-    multiplies 5 and 7 to 35
-    multiplies 10 and 10 to 100
-    multiplies 10 and 0 to 0
-    multiplies 1 and 2 to -2 (FAILED - 1)
-    multiplies -1 and -8 to 8
-  #add
-    example at ./spec/calculator_spec.rb:13
-    example at ./spec/calculator_spec.rb:13
-    example at ./spec/calculator_spec.rb:13
-    example at ./spec/calculator_spec.rb:13
-    example at ./spec/calculator_spec.rb:13
-  #sub
-    performs subtraction
-    performs subtraction
-    performs subtraction
-    performs subtraction
-    performs subtraction
-```
+## FAQ + comparison
 
-In this scenario, RSpec Tracer cannot determine the `Calculator#add` and
-`Calculator#sub` group examples.
+**Why not just SimpleCov filtering?** SimpleCov tells you which
+*files* are covered. rspec-tracer tells you which *examples* depend
+on which inputs, so it can skip the ones whose inputs didn't change.
+The two solve adjacent problems; you typically want both.
 
-```
-================================================================================
-   IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY
-================================================================================
-RSpec tracer could not uniquely identify the following 10 examples:
-  - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
-      * Calculator#add (spec/calculator_spec.rb:13)
-      * Calculator#add (spec/calculator_spec.rb:13)
-      * Calculator#add (spec/calculator_spec.rb:13)
-      * Calculator#add (spec/calculator_spec.rb:13)
-      * Calculator#add (spec/calculator_spec.rb:13)
-  - Example ID: 72171b502c5a42b9aa133f165cf09ec2 (5 examples)
-      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
-      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
-      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
-      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
-      * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
-```
+**Knapsack / Knapsack Pro / Test Boosters?** Those are test-splitting
+tools — they shard your suite across CI workers. rspec-tracer is
+orthogonal: it skips already-passing examples on a single worker.
+Compose them: shard with Knapsack, then skip with rspec-tracer.
+A composition smoke spec (`spec/regressions/knapsack_coexistence_spec.rb`)
+proves they coexist.
 
-## Demo
+**`RSpec::Retry` / `RSpec::Rerun`?** Retries flaky failures.
+rspec-tracer detects flaky examples (same inputs, different outcomes)
+and refuses to skip them on the next run. Compose: retry to make a
+flaky suite green, let rspec-tracer flag the flakes for you to
+actually fix.
 
-**First Run**
-![](./readme_files/first_run.gif)
+**Monorepo with N apps?** Set per-app `cache_dir` in each app's
+`.rspec-tracer` (the default `rspec_tracer_cache/` would otherwise
+collide across apps).
 
-**Next Run**
-![](./readme_files/next_run.gif)
+**`tracks:` vs `track_rails_defaults` overlap?** When both attribute
+the same file to an example, the declared-glob attribution wins.
+Deterministic; see [`ARCHITECTURE.md`](ARCHITECTURE.md) "Input
+taxonomy" for the rule.
 
-You get the following three reports:
+## Reports
 
-### All Examples Report
+After the run, `rspec_tracer_report/index.html` opens five HTML
+reports:
 
-These reports provide basic test information:
+- **All Examples** — basic test info (id, status, duration, the inputs
+  the example consumed).
+- **Duplicate Examples** — pairs RSpec couldn't uniquely identify
+  (file:line collisions; only appears when duplicates are present).
+- **Flaky Examples** — examples that passed after previously failing
+  without any dependency change. The tracker refuses to skip these
+  on subsequent runs.
+- **Examples Dependency** — per-example file dependency lists; the
+  "what does this test depend on?" view.
+- **Files Dependency** — the inverse: "what tests run if I change
+  this file?" The unique-to-rspec-tracer report that makes refactors
+  safer.
 
-**First Run**
+Plus a machine-readable `rspec_tracer_report/report.json` for CI
+dashboards and the terminal one-liner shown in [Quick start](#quick-start).
 
-![](./readme_files/examples_report_first_run.png)
+## Help and community
 
-**Next Run**
+- **Bug reports + feature requests** — [GitHub Issues](https://github.com/avmnu-sng/rspec-tracer/issues).
+  Include Ruby / Rails / RSpec / SimpleCov versions and your
+  `.rspec-tracer` config.
+- **Usage questions, design discussion, "how do I X?"** — [GitHub Discussions](https://github.com/avmnu-sng/rspec-tracer/discussions).
+- **Roadmap** — [`ROADMAP.md`](ROADMAP.md) at repo root + the live
+  [project board](https://github.com/users/avmnu-sng/projects).
+- **Architecture deep-dive** — [`ARCHITECTURE.md`](ARCHITECTURE.md).
+- **Upgrading from 1.x** — [`UPGRADING.md`](UPGRADING.md).
+- **Contributing** — [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md).
 
-![](./readme_files/examples_report_next_run.png)
+Released under the [MIT License](LICENSE). Everyone interacting in
+the project is expected to follow the
+[Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
-### Duplicate Examples Report
+## Section anchor map (1.x → 2.0)
 
-These reports provide duplicate tests information.
+The README was restructured in 2.0. If you bookmarked a 1.x section,
+here's where its content lives now:
 
-![](./readme_files/duplicate_examples_report.png)
-
-### Flaky Examples Report
-
-These reports provide flaky tests information. Assuming **the following two tests
-failed in the first run.**
-
-**Next Run**
-
-![](./readme_files/flaky_examples_report_first_run.png)
-
-**Another Run**
-
-![](./readme_files/flaky_examples_report_next_run.png)
-
-### Examples Dependency Report
-
-These reports show a list of dependent files for each test.
-
-![](./readme_files/examples_dependency_report.png)
-
-### Files Dependency Report
-
-These reports provide information on the total number of tests that will run after changing this particular file.
-
-![](./readme_files/files_dependency_report.png)
-
-## Contributing
-
-Read the [contribution guide](https://github.com/avmnu-sng/rspec-tracer/blob/main/.github/CONTRIBUTING.md).
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the Rspec Tracer project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [Code of Conduct](https://github.com/avmnu-sng/rspec-tracer/blob/main/.github/CODE_OF_CONDUCT.md).
+| 1.x anchor                            | 2.0 anchor                                              |
+|---------------------------------------|---------------------------------------------------------|
+| `#getting-started`                    | [Quick start](#quick-start)                             |
+| `#working-with-jruby`                 | [Quick start](#quick-start) (JRuby noted under floors in [`UPGRADING.md`](UPGRADING.md)) |
+| `#working-with-parallel-tests`        | [Working with parallel_tests](#working-with-parallel_tests) under Rails quick start |
+| `#configuring-ci`                     | [Configuring CI](#configuring-ci)                       |
+| `#caching-rspec-tracer-in-ci`         | [Caching rspec-tracer in CI](#caching-rspec-tracer-in-ci) |
+| `#advanced-configuration`             | Split between [Per-example `tracks:` DSL](#per-example-tracks-dsl), [Pluggable storage](#pluggable-storage), and [`UPGRADING.md`](UPGRADING.md) |
+| `#available-settings`                 | Inline across the new sections; see also [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| `#filters`                            | Inline under [SimpleCov interop](#simplecov-interop) and the configuration DSL examples |
+| `#duplicate-examples`                 | [Reports](#reports) under "Duplicate Examples"          |
+| `#demo`                               | [Reports](#reports)                                     |

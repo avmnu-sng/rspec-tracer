@@ -1,4 +1,4 @@
-![](./readme_files/rspec_tracer.png)
+# rspec-tracer (1.x narrative)
 
 > **2.0 NOTE.** This document is the original 1.x architecture/intent
 > writeup. The canonical 2.0 architecture document is now

@@ -467,12 +467,57 @@ module RSpecTracer
         root: @configuration.root, filter: filter
       )
 
+      arm_ar_schema_setup_warn if ar_schema_notifications_enabled?
+
       @rails_observers_installed = true
     rescue StandardError => e
       @configuration.logger.warn(
         "rspec-tracer: Rails observer install failed (#{e.class}: #{e.message})"
       )
       @rails_observers_installed = false
+    end
+
+    # `track_ar_schema_notifications` promises per-example attribution
+    # of `db/schema.rb` via the `sql.active_record` subscriber. That
+    # narrow promise only holds when no per-example AR cleanup
+    # mechanism fires queries inside the rspec-tracer per-example
+    # bucket window. Common Rails setups trip this:
+    #
+    #   - `use_transactional_fixtures = true` (Rails default): per-
+    #     example BEGIN/COMMIT fires sql.active_record -> every
+    #     example gets schema attributed -> any schema mutation re-
+    #     runs every example (safe but wide).
+    #   - DatabaseCleaner :truncation / :deletion / :transaction in
+    #     around hooks: same outcome.
+    #
+    # Defer the check to before(:suite): at engine.setup the user has
+    # not run their RSpec.configure block yet, so
+    # `use_transactional_fixtures` is unset.
+    def arm_ar_schema_setup_warn
+      return unless defined?(::RSpec) && ::RSpec.respond_to?(:configure)
+
+      logger = @configuration.logger
+      ::RSpec.configure do |config|
+        config.before(:suite) do
+          next unless ::RSpec.configuration.respond_to?(:use_transactional_fixtures)
+          next if ::RSpec.configuration.use_transactional_fixtures == false
+
+          logger.warn(
+            'rspec-tracer: track_ar_schema_notifications is enabled but ' \
+            'use_transactional_fixtures defaults to true; per-example ' \
+            'BEGIN/COMMIT fires sql.active_record so db/schema.rb gets ' \
+            'attributed to every AR-touching example (safe, but widens ' \
+            'invalidation). For narrow attribution, set ' \
+            'use_transactional_fixtures = false and use sequence-based ' \
+            'factories (or another non-AR cleanup mechanism). See ' \
+            'README section "Narrow AR-schema attribution".'
+          )
+        end
+      end
+    rescue StandardError => e
+      @configuration.logger.warn(
+        "rspec-tracer: ar-schema warn install failed (#{e.class}: #{e.message})"
+      )
     end
 
     def uninstall_rails_observers

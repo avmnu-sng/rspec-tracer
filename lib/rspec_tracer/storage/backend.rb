@@ -27,6 +27,19 @@ module RSpecTracer
     # define stubs that raise NotImplementedError, because mutant
     # would flag every `raise` as an alive mutation with no way to
     # kill it. The shared-examples contract is the real gate.
+    #
+    # @example Registering a custom storage backend
+    #   class MyBackend
+    #     def load_graph(schema_version:); end
+    #     def save_graph(snapshot, schema_version:); end
+    #     def last_run_id; end
+    #     def transactional_save(&block); yield; end
+    #     def clear!; end
+    #   end
+    #
+    #   RSpecTracer.configure do
+    #     storage_backend MyBackend.new
+    #   end
     module Backend
       REQUIRED_METHODS = %i[
         load_graph
@@ -36,6 +49,13 @@ module RSpecTracer
         clear!
       ].freeze
 
+      # Verifies a candidate object satisfies the backend protocol.
+      # Used by {RSpecTracer::Configuration#storage_backend} to gate
+      # custom-backend registration at config-load time.
+      #
+      # @param backend [Object] candidate backend instance
+      # @return [Boolean] true if every {REQUIRED_METHODS} entry is
+      #   responded to
       def self.conforms?(backend)
         REQUIRED_METHODS.all? { |m| backend.respond_to?(m) }
       end

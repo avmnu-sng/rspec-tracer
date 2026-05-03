@@ -54,6 +54,21 @@ module RSpecTracer
   class << self
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
 
+    # Boot the tracer. Idempotent — safe to call multiple times in a
+    # single process (subsequent calls return without re-installing
+    # hooks). Drives the lifecycle:
+    #
+    #   * Installs the RSpec runner / reporter prepend chain.
+    #   * Starts `::Coverage` unless SimpleCov already owns it.
+    #   * Detects Rails (memoized in `RSpecTracer.rails?`).
+    #   * Builds the {RSpecTracer::Engine} and installs observers.
+    #
+    # Must be called BEFORE any application code loads so the boot
+    # set captured by `Coverage.peek_result` is empty. With SimpleCov,
+    # call `SimpleCov.start` first; rspec-tracer warns at boot when
+    # SimpleCov is loaded but not started.
+    #
+    # @return [void]
     def start
       return if defined?(@started) && @started
 
