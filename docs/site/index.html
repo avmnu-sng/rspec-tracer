@@ -143,27 +143,52 @@
     preserved indefinitely. <span id="generated-at"></span></p>
   </footer>
 
+  <!--
+    Build-time injected version data. Replaced by `task docs:site:build`
+    (preview path) + the docs-publish.yml workflow (production path)
+    via a `sed` substitution against the BEGIN/END markers below.
+    Keeping the data inline (rather than fetching versions.json at
+    page-load) lets the page render correctly under both `file://`
+    (local preview) and `http://` (production) — `fetch()` refuses
+    file:// for CORS/security reasons.
+
+    The page also tries to fetch versions.json as a secondary path
+    so that if the inline data is stale (e.g. someone opens an old
+    cached page after a new tag shipped), the dynamic fetch wins.
+  -->
+  <script id="versions-data">
+    window.RSPEC_TRACER_VERSIONS = /* BEGIN_VERSIONS_DATA */ null /* END_VERSIONS_DATA */;
+  </script>
+
   <script>
-    // Load versions.json from the same origin and render the version
-    // list. Falls back to a static "main only" entry if the fetch
-    // fails (e.g. older deploys before the versioned layout shipped).
+    // Render the version list from inline data first; if that's null
+    // (placeholder before any build), try fetching versions.json
+    // (works under HTTP). Falls back to a static "main only" entry
+    // if both fail.
     (async function renderVersions() {
       const list = document.getElementById('version-list');
       const loading = document.getElementById('version-list-loading');
       const generatedAt = document.getElementById('generated-at');
 
-      let data;
-      try {
-        const res = await fetch('versions.json', { cache: 'no-store' });
-        if (!res.ok) throw new Error('versions.json HTTP ' + res.status);
-        data = await res.json();
-      } catch (err) {
+      let data = window.RSPEC_TRACER_VERSIONS;
+
+      // Secondary fetch — only attempted under http(s) protocol since
+      // file:// rejects fetch() with TypeError.
+      if (!data && (location.protocol === 'http:' || location.protocol === 'https:')) {
+        try {
+          const res = await fetch('versions.json', { cache: 'no-store' });
+          if (res.ok) data = await res.json();
+        } catch (_) { /* swallow — fall through to static fallback */ }
+      }
+
+      if (!data) {
         loading.textContent =
-          'Could not load versions.json — falling back to /main/. (' + err + ')';
+          'Version data unavailable — showing rolling main only.';
         loading.classList.remove('empty');
         const li = document.createElement('li');
         li.innerHTML =
-          '<a href="main/yard/index.html">main</a> ' +
+          '<a href="main/yard/index.html">main</a>' +
+          '<span class="pill">rolling</span> ' +
           '<span class="meta">YARD</span> &middot; ' +
           '<a href="main/demo/index.html">demo</a>';
         list.appendChild(li);

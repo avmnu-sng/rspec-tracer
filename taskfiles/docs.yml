@@ -55,12 +55,12 @@ tasks:
 
   docs:site:preview:
     desc: >-
-      Build the docs site AND copy the landing page + a
-      placeholder versions.json into doc/preview/ so you can open
-      doc/preview/index.html locally to verify the version-aware
-      layout before pushing. The placeholder versions.json mimics
-      what the docs-publish workflow would generate; the only
-      version listed is "main" (no tags).
+      Build the docs site AND copy the landing page + a placeholder
+      versions.json into doc/preview/ so you can open
+      doc/preview/index.html DIRECTLY (no HTTP server needed) and
+      verify the version-aware layout before pushing. The version
+      data is inlined into index.html via the BEGIN_VERSIONS_DATA
+      marker so file:// rendering works without fetch().
     cmds:
       - task: docs:site:build
       - rm -rf doc/preview
@@ -79,6 +79,22 @@ tasks:
           "all_versions": []
         }
         EOF
-      - echo "Preview ready. Open with a local HTTP server (the landing page fetches versions.json):"
-      - echo "  cd doc/preview && python3 -m http.server 8000"
-      - echo "  open http://localhost:8000/"
+      - |
+        python3 - <<'PY'
+        import pathlib, re
+        html_path = pathlib.Path('doc/preview/index.html')
+        json_path = pathlib.Path('doc/preview/versions.json')
+        html = html_path.read_text(encoding='utf-8')
+        data = json_path.read_text(encoding='utf-8').strip()
+        new_html, count = re.subn(
+          r'/\* BEGIN_VERSIONS_DATA \*/.*?/\* END_VERSIONS_DATA \*/',
+          '/* BEGIN_VERSIONS_DATA */ ' + data + ' /* END_VERSIONS_DATA */',
+          html, count=1, flags=re.DOTALL,
+        )
+        if count == 0:
+          raise SystemExit('BEGIN_VERSIONS_DATA marker missing from index.html')
+        html_path.write_text(new_html, encoding='utf-8')
+        print(f'inlined {len(data)} bytes of versions data into index.html')
+        PY
+      - echo "Preview ready. Open directly (no HTTP server needed):"
+      - echo "  open doc/preview/index.html"

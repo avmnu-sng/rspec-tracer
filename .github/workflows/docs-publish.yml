@@ -184,6 +184,34 @@ jobs:
           echo "--- versions.json:"
           cat doc/root/versions.json
 
+          # Also inline the version data into index.html via the
+          # BEGIN_VERSIONS_DATA / END_VERSIONS_DATA marker so the
+          # landing page renders correctly even when opened from
+          # disk (file:// rejects fetch()).
+          python3 - <<'PY'
+          import json, pathlib, re
+
+          html_path = pathlib.Path('doc/root/index.html')
+          json_path = pathlib.Path('doc/root/versions.json')
+
+          html = html_path.read_text(encoding='utf-8')
+          data_json = json_path.read_text(encoding='utf-8')
+
+          # Replace `/* BEGIN_VERSIONS_DATA */ null /* END_VERSIONS_DATA */`
+          # with the actual JSON payload.
+          new_html, count = re.subn(
+            r'/\* BEGIN_VERSIONS_DATA \*/.*?/\* END_VERSIONS_DATA \*/',
+            '/* BEGIN_VERSIONS_DATA */ ' + data_json.strip() + ' /* END_VERSIONS_DATA */',
+            html,
+            count=1,
+            flags=re.DOTALL,
+          )
+          if count == 0:
+            raise SystemExit('inline-version-data marker not found in index.html')
+          html_path.write_text(new_html, encoding='utf-8')
+          print(f'inlined {len(data_json)} bytes of versions data into index.html')
+          PY
+
       # Second publish: write the root-level landing page +
       # versions.json. Uses keep_files: true so other top-level dirs
       # (/main/, /v*/, etc.) are preserved; only the explicit files in
