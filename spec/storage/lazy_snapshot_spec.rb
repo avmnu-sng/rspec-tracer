@@ -38,7 +38,8 @@ RSpec.describe RSpecTracer::Storage::LazySnapshot do
       boot_set: {},
       wsi_snapshot: {},
       env_snapshot: {},
-      env_dependency: {}
+      env_dependency: {},
+      cache_hit_reason: {}
     }
   end
 

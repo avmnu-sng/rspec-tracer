@@ -65,9 +65,26 @@ class FakeRedisStore
   # rubocop:disable Naming/PredicateMethod
   def expire(key, seconds)
     @calls[:expire] << [key, seconds]
+    @sets ||= {}
     true
   end
   # rubocop:enable Naming/PredicateMethod
+
+  def sadd(key, member)
+    @calls[:sadd] << [key, member]
+    @sets ||= {}
+    set = (@sets[key] ||= [])
+    return 0 if set.include?(member)
+
+    set << member
+    1
+  end
+
+  def smembers(key)
+    @calls[:smembers] << key
+    @sets ||= {}
+    (@sets[key] || []).dup
+  end
 
   def multi
     @calls[:multi] << :enter
@@ -343,6 +360,93 @@ RSpec.describe RSpecTracer::RemoteCache::RedisBackend do
 
       expect(@fake.calls[:multi]).to eq(%i[enter exit])
       expect(@fake.calls[:del].flatten).to include('rspec-tracer:main:multi-sha')
+    end
+
+    context 'with ttl: positive integer (per-key EXPIRE atomic with HSET)' do
+      it 'fires EXPIRE inside the same MULTI block as the HSET' do
+        backend = described_class.new(
+          prefix: 'rspec-tracer', branch: 'main', default_branch: 'main',
+          cache_path: @cache_path, redis_client: @fake, ttl: 86_400
+        )
+        write_local_cache(run_id: 'run-ttl')
+        backend.upload('ttl-sha')
+
+        expect(@fake.calls[:expire]).to include(['rspec-tracer:main:ttl-sha', 86_400])
+        expect(@fake.calls[:multi]).to eq(%i[enter exit])
+      end
+
+      it 'omits EXPIRE when ttl is nil (default; relies on user Redis eviction policy)' do
+        backend = new_backend
+        write_local_cache(run_id: 'run-no-ttl')
+        backend.upload('no-ttl-sha')
+
+        expect(@fake.calls[:expire]).to be_empty
+      end
+
+      it 'raises RedisBackendError on non-positive ttl' do
+        expect do
+          described_class.new(prefix: 'p', branch: 'main', default_branch: 'main',
+                              cache_path: @cache_path, redis_client: @fake, ttl: 0)
+        end.to raise_error(described_class::RedisBackendError, /positive integer/)
+      end
+
+      it 'raises RedisBackendError on negative ttl' do
+        expect do
+          described_class.new(prefix: 'p', branch: 'main', default_branch: 'main',
+                              cache_path: @cache_path, redis_client: @fake, ttl: -10)
+        end.to raise_error(described_class::RedisBackendError, /positive integer/)
+      end
+
+      it 'raises RedisBackendError on non-integer ttl (e.g. float, string)' do
+        expect do
+          described_class.new(prefix: 'p', branch: 'main', default_branch: 'main',
+                              cache_path: @cache_path, redis_client: @fake, ttl: 1.5)
+        end.to raise_error(described_class::RedisBackendError, /positive integer/)
+
+        expect do
+          described_class.new(prefix: 'p', branch: 'main', default_branch: 'main',
+                              cache_path: @cache_path, redis_client: @fake, ttl: '60')
+        end.to raise_error(described_class::RedisBackendError, /positive integer/)
+      end
+    end
+
+    context 'with PR-branch enumeration sidecar (SADD into <prefix>:pr_branches on PR-tier)' do
+      it 'SADDs the branch into <prefix>:pr_branches when uploading on a PR-tier backend' do
+        pr = new_backend(branch: 'feat-x', default_branch: 'main')
+        write_local_cache(run_id: 'run-side-pr')
+        pr.upload('side-sha')
+
+        expect(@fake.calls[:sadd]).to include(['rspec-tracer:pr_branches', 'feat-x'])
+        expect(@fake.smembers('rspec-tracer:pr_branches')).to include('feat-x')
+      end
+
+      it 'does NOT SADD on main-tier uploads (sidecar is PR-tier only)' do
+        backend = new_backend(branch: 'main', default_branch: 'main')
+        write_local_cache(run_id: 'run-side-main')
+        backend.upload('main-sha')
+
+        expect(@fake.calls[:sadd]).to be_empty
+      end
+
+      it 'accumulates multiple PR branches into the same sidecar SET' do
+        write_local_cache(run_id: 'run-a')
+        new_backend(branch: 'feat-a', default_branch: 'main').upload('sha-a')
+        write_local_cache(run_id: 'run-b')
+        new_backend(branch: 'feat-b', default_branch: 'main').upload('sha-b')
+
+        expect(@fake.smembers('rspec-tracer:pr_branches')).to contain_exactly('feat-a', 'feat-b')
+      end
+
+      it 'fires SADD inside the same MULTI block as the HSET (single round-trip)' do
+        pr = new_backend(branch: 'feat-multi', default_branch: 'main')
+        write_local_cache(run_id: 'run-multi')
+        pr.upload('multi-sha')
+
+        # MULTI exit fires once; SADD recorded between enter + exit (no
+        # second multi block).
+        expect(@fake.calls[:multi]).to eq(%i[enter exit])
+        expect(@fake.calls[:sadd]).not_to be_empty
+      end
     end
   end
 

@@ -36,7 +36,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       boot_set: { 'lib/boot.rb' => 'deadbeef', 'spec/spec_helper.rb' => 'cafef00d' },
       wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' },
       env_snapshot: { 'API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d' },
-      env_dependency: { 'ex1' => ['API_KEY'], 'ex2' => %w[ROLE_CONFIG API_KEY] }
+      env_dependency: { 'ex1' => ['API_KEY'], 'ex2' => %w[ROLE_CONFIG API_KEY] },
+      cache_hit_reason: { 'Files changed' => 3, 'No cache' => 1 }
     )
   end
 
@@ -56,7 +57,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 15 per-run files (boot_set+wsi+env_snapshot+env_dependency added in M3.7+M4.3+M5.2+M6.1)' do
+    it 'lists exactly the 16 per-run files (cache_hit_reason added alongside the existing 15)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -67,7 +68,41 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
         boot_set.json wsi_snapshot.json env_snapshot.json env_dependency.json
+        cache_hit_reason.json
       ]
+    end
+  end
+
+  describe 'cache_hit_reason round-trip' do
+    it 'persists and reloads the suite-level reason aggregate' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.cache_hit_reason).to eq('Files changed' => 3, 'No cache' => 1)
+    end
+
+    it 'writes cache_hit_reason.json with a plain Hash[reason_string => count] body' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'cache_hit_reason.json')
+
+      expect(JSON.parse(File.read(path))).to eq('Files changed' => 3, 'No cache' => 1)
+    end
+
+    it 'coerces a missing cache_hit_reason.json to {} (load tolerant of pre-M8.11 caches)' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      File.delete(File.join(cache_path, sample_snapshot.run_id, 'cache_hit_reason.json'))
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.cache_hit_reason).to eq({})
+    end
+
+    it 'tolerates a malformed cache_hit_reason.json (returns {})' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'cache_hit_reason.json')
+      File.binwrite(path, "\x00 garbage".b)
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.cache_hit_reason).to eq({})
     end
   end
 

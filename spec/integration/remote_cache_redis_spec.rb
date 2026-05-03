@@ -241,6 +241,72 @@ RSpec.describe 'RemoteCache::RedisBackend against localhost Redis', :integration
       expect(@client.exists?("#{@prefix}:pr:dead-all:branch_refs")).to be(false)
     end
   end
+
+  describe 'ttl: per-key EXPIRE (atomic with HSET inside MULTI)' do
+    def build_backend_with_ttl(branch:, ttl:, default_branch: 'main')
+      RSpecTracer::RemoteCache::RedisBackend.new(
+        prefix: @prefix, branch: branch, default_branch: default_branch,
+        cache_path: @cache_path, url: REDIS_URL, ttl: ttl
+      )
+    end
+
+    it 'sets TTL via EXPIRE atomic with the upload (verified via Redis TTL command)' do
+      backend = build_backend_with_ttl(branch: 'main', ttl: 600)
+      write_local_cache(run_id: 'run-ttl')
+      backend.upload('ttl-sha')
+
+      ttl_remaining = @client.ttl("#{@prefix}:main:ttl-sha")
+      # Allow 1s slop for upload + Redis round-trip; Redis returns the
+      # remaining TTL in seconds (positive), -1 if no TTL, -2 if missing.
+      expect(ttl_remaining).to be_between(1, 600)
+    end
+
+    it 'omits TTL when ttl: nil (Redis reports no TTL = -1)' do
+      backend = build_backend(branch: 'main')
+      write_local_cache(run_id: 'run-no-ttl')
+      backend.upload('no-ttl-sha')
+
+      expect(@client.ttl("#{@prefix}:main:no-ttl-sha")).to eq(-1)
+    end
+
+    it 'expires the key after the TTL elapses (small TTL + sleep)' do
+      backend = build_backend_with_ttl(branch: 'main', ttl: 1)
+      write_local_cache(run_id: 'run-expire')
+      backend.upload('expire-sha')
+
+      sleep 1.5
+
+      expect(@client.exists?("#{@prefix}:main:expire-sha")).to be(false)
+    end
+  end
+
+  describe 'pr_branches sidecar SET (PR-tier upload telemetry)' do
+    it 'SADDs the branch into <prefix>:pr_branches on PR-tier upload' do
+      pr = build_backend(branch: 'feat-side', default_branch: 'main')
+      write_local_cache(run_id: 'run-side')
+      pr.upload('side-sha')
+
+      expect(@client.smembers("#{@prefix}:pr_branches")).to include('feat-side')
+    end
+
+    it 'does NOT SADD on main-tier upload (sidecar is PR-tier only)' do
+      backend = build_backend(branch: 'main', default_branch: 'main')
+      write_local_cache(run_id: 'run-main-side')
+      backend.upload('main-side-sha')
+
+      expect(@client.smembers("#{@prefix}:pr_branches")).to be_empty
+    end
+
+    it 'accumulates multiple PR branches as they each upload' do
+      branches = %w[feat-a feat-b feat-c]
+      branches.each_with_index do |b, i|
+        write_local_cache(run_id: "run-#{i}")
+        build_backend(branch: b, default_branch: 'main').upload("sha-#{i}")
+      end
+
+      expect(@client.smembers("#{@prefix}:pr_branches")).to match_array(branches)
+    end
+  end
 end
 # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 # rubocop:enable RSpec/LeakyConstantDeclaration, RSpec/ExampleLength, RSpec/MultipleExpectations

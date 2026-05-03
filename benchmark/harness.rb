@@ -199,7 +199,15 @@ module BenchmarkHarness
       # example AND the Engine peek+diff. Post-retirement only Engine
       # peeks. The wall-clock delta on this scenario is the largest
       # single signal for M8.0's perf payoff. M4.3 handoff target was
-      # `<= 1.5x` of stock-rspec; M8.4 owns closing the residual gap.
+      # `<= 1.5x` of stock-rspec; structural Rails-boot floor caps the
+      # achievable wall-clock ratio for this per-iter-subprocess shape
+      # at ~1.6x (per feedback_macro_vs_micro_perf_signal). The
+      # `cold_rails_v2_warm_iter` companion below measures the
+      # amortized-boot variant where Rails loads ONCE in a long-running
+      # parent process; that scenario captures the steady-state
+      # per-rerun overhead users see in iterative dev loops, while
+      # this scenario captures the cold-start cost users see in CI
+      # post-checkout.
       desc: 'Cold start: Rails fixture, full spec/ tree (broader than cold_rails)',
       cwd: RAILS_FIXTURE,
       cmd: %w[bundle exec rspec --no-color],
@@ -214,6 +222,37 @@ module BenchmarkHarness
         system('bundle', 'exec', 'rails', 'db:test:prepare',
                chdir: cwd, out: File::NULL, err: File::NULL)
       end,
+      smoke: false
+    },
+    'cold_rails_v2_warm_iter' => {
+      # Long-running parent-process variant of cold_rails_v2. Boots
+      # Rails ONCE in the parent, then fork()s for each measured
+      # iteration. Iter timing captures rspec invocation +
+      # rspec-tracer engine setup + per-example overhead, BUT
+      # excludes the cold Rails boot (which is amortized across iters
+      # in the parent). Captures the steady-state per-rerun cost users
+      # see in iterative dev loops (where Spring or zeus-style
+      # preloading would amortize boot the same way).
+      #
+      # Single Open3 invocation; the script emits N per-iter JSON
+      # timings on stdout. Harness aggregates via the long_running
+      # branch in run_scenario.
+      desc: 'Long-running parent + fork-per-iter: amortizes Rails-boot, measures steady-state overhead',
+      cwd: RAILS_FIXTURE,
+      cmd: ['bundle', 'exec', 'ruby', File.join(REPO_ROOT, 'benchmark/scenarios/cold_rails_v2_warm_iter.rb')],
+      env: {
+        'RAILS_VERSION' => '~> 7.1.0',
+        'RSPEC_RAILS_VERSION' => '~> 6.1.0',
+        'SQLITE3_VERSION' => '~> 1.4',
+        'RSPEC_TRACER' => '1',
+        'RAILS_ENV' => 'test'
+      },
+      cleanup: %w[rspec_tracer_cache rspec_tracer_report rspec_tracer_coverage coverage],
+      setup: lambda do |cwd|
+        system('bundle', 'exec', 'rails', 'db:test:prepare',
+               chdir: cwd, out: File::NULL, err: File::NULL)
+      end,
+      long_running: true,
       smoke: false
     },
     'coverage_adapter' => {
@@ -336,6 +375,8 @@ module BenchmarkHarness
     # Warmup (not timed): e.g. populate cache for warm/cache-load scenarios.
     spec[:warmup]&.call(spec[:cwd])
 
+    return run_scenario_long_running(name, spec, iterations: iterations) if spec[:long_running]
+
     timings = []
     iterations.times do |i|
       Array(spec[:cleanup]).each do |rel|
@@ -361,6 +402,55 @@ module BenchmarkHarness
     }
   end
   # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+  # Long-running variant: ONE Open3 call to a persistent parent
+  # process; the script does N internal iterations and emits per-iter
+  # JSON lines on stdout. We aggregate those instead of timing N
+  # subprocess wall-clocks. The script self-cleans iter state so
+  # spec[:cleanup] is unused here (the script knows what to wipe).
+  # Per-iter wall-clock measured in the script EXCLUDES Rails-boot
+  # (paid once at script start) — so the aggregated p50/p95 capture
+  # steady-state overhead, not cold-start.
+  def run_scenario_long_running(name, spec, iterations:)
+    env = (spec[:env] || {}).merge('BENCH_ITERATIONS' => iterations.to_s)
+    out, status = Open3.capture2e(env, *spec[:cmd], chdir: spec[:cwd])
+    unless status.success?
+      warn "  long-running script failed (exit #{status.exitstatus}); aborting scenario"
+      warn out
+      return nil
+    end
+
+    timings = parse_long_running_timings(out)
+    if timings.empty?
+      warn '  long-running script emitted no parseable timings; aborting scenario'
+      warn out
+      return nil
+    end
+
+    timings.each_with_index { |t, i| warn format('  iter %<n>d: %<t>.3fs', n: i + 1, t: t) }
+
+    {
+      'scenario' => name,
+      'iterations' => timings.length,
+      'timings' => timings.map { |t| t.round(4) },
+      'p50' => median(timings).round(4),
+      'p95' => percentile(timings, 95).round(4)
+    }
+  end
+
+  # Parse `{"iter":N,"timing":F}` JSON lines from the script's stdout.
+  # Tolerates extra non-JSON lines (Bundler messages, Rails warnings,
+  # rspec progress dots etc.) by skipping them silently. Output may
+  # carry non-ASCII bytes from rspec's UTF-8 progress glyphs - force
+  # the encoding to UTF-8 before line iteration so US-ASCII-defaulted
+  # parsers (mutant, frozen-string-literal Rubies) don't choke.
+  def parse_long_running_timings(out)
+    out.force_encoding('UTF-8').each_line.filter_map do |line|
+      JSON.parse(line.strip)['timing']
+    rescue JSON::ParserError, Encoding::CompatibilityError
+      nil
+    end.compact
+  end
 
   def interpreter_multiplier
     INTERPRETER_RATCHET_MULTIPLIERS.fetch(RUBY_ENGINE, 1.0)

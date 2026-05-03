@@ -96,7 +96,7 @@ module RSpecTracer
       # DB. Kept in step with Snapshot.members minus the envelope.
       READABLE_FIELDS = (
         %i[all_examples duplicate_examples all_files dependency
-           reverse_dependency examples_coverage env_dependency] +
+           reverse_dependency examples_coverage env_dependency cache_hit_reason] +
           STATUS_FIELDS.keys + DIGEST_MAP_KINDS.keys
       ).freeze
 
@@ -459,6 +459,10 @@ module RSpecTracer
         when :reverse_dependency then read_reverse_dependency(db)
         when :examples_coverage then read_examples_coverage(db)
         when :env_dependency    then read_env_dependency(db)
+        when :cache_hit_reason  then {} # JSON-backend-only surface; sqlite no-op
+        # ^^ SqliteBackend does not persist the cache_hit_reason aggregate; future
+        # enhancement may add a meta-table column. Empty default mirrors the
+        # missing-file-coerces-to-{} contract used by JsonBackend's per-field reads.
         else                    dispatch_read_grouped(db, field)
         end
       end

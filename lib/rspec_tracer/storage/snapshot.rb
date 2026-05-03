@@ -59,6 +59,17 @@ module RSpecTracer
     # per-run `@tracks_env` map would otherwise be lost at finalize.
     # Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
     # missing file coerces to `{}`, no schema_version bump.
+    #
+    # `cache_hit_reason` is a SUITE-LEVEL aggregate. It maps
+    # `reason_string => count` (e.g. `{"Files changed" => 12,
+    # "No cache" => 5}`) and surfaces "why did each non-skipped
+    # example run." JsonBackend persists it as `cache_hit_reason.json`
+    # under the per-run dir (same shape as wsi_snapshot / env_snapshot:
+    # one file per field; missing file coerces to `{}`, no
+    # schema_version bump). SqliteBackend does not persist it (would
+    # require a meta-table column / schema bump); SqliteBackend users
+    # see the field as `{}` on read until a future enhancement
+    # extends the meta table.
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -77,6 +88,7 @@ module RSpecTracer
       :wsi_snapshot,
       :env_snapshot,
       :env_dependency,
+      :cache_hit_reason,
       keyword_init: true
     )
 
@@ -103,7 +115,8 @@ module RSpecTracer
           boot_set: {},
           wsi_snapshot: {},
           env_snapshot: {},
-          env_dependency: {}
+          env_dependency: {},
+          cache_hit_reason: {}
         )
       end
     end

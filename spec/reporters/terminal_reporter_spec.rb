@@ -147,7 +147,7 @@ RSpec.describe RSpecTracer::Reporters::TerminalReporter do
       expect(io.string).to include('1 duplicate')
     end
 
-    it 'caps output at 4 lines in the happy path (header + cache + report)' do
+    it 'caps output at 4 lines in the happy path (header + cache + report) when no kind-breakdown' do
       result = build_reporter.generate
 
       expect(result.length).to be <= 4
@@ -155,6 +155,109 @@ RSpec.describe RSpecTracer::Reporters::TerminalReporter do
 
     it 'returns the emitted lines as an Array' do
       expect(build_reporter.generate).to be_an(Array)
+    end
+  end
+
+  describe 'kind-breakdown line (cache_hit_reason aggregate)' do
+    it 'omits the line when snapshot.cache_hit_reason is empty' do
+      build_reporter.generate
+
+      expect(io.string).not_to include('by reason:')
+    end
+
+    it 'emits per-reason counts when populated' do
+      reasons = { 'Files changed' => 12, 'No cache' => 5, 'Environment changed' => 3 }
+      build_reporter(snap: build_populated_snapshot(cache_hit_reason: reasons)).generate
+
+      expect(io.string).to include('by reason:', '12 Files changed', '5 No cache', '3 Environment changed')
+    end
+
+    it 'sorts breakdown parts by count descending' do
+      reasons = { 'No cache' => 1, 'Files changed' => 99, 'Environment changed' => 7 }
+      build_reporter(snap: build_populated_snapshot(cache_hit_reason: reasons)).generate
+      line = io.string.lines.find { |l| l.include?('by reason:') }
+
+      expect(line.index('99 Files changed')).to be < line.index('7 Environment changed')
+    end
+  end
+
+  describe 'cache size + delta suffix' do
+    let(:cache_root) { Dir.mktmpdir }
+    let(:size_reporter) do
+      described_class.new(
+        snapshot: build_populated_snapshot, report_dir: report_dir,
+        run_metadata: metadata_with_cache, logger: nil, io: io
+      )
+    end
+    let(:metadata_with_cache) { { cache_path: cache_root } }
+
+    after { FileUtils.remove_entry(cache_root) if File.directory?(cache_root) }
+
+    def write_run_dir(run_id, byte_size)
+      run_dir = File.join(cache_root, run_id)
+      FileUtils.mkdir_p(run_dir)
+      File.binwrite(File.join(run_dir, 'sample.json'), "\x00" * byte_size)
+      run_dir
+    end
+
+    def cache_line_in_output
+      io.string.lines.find { |l| l.start_with?('cache:') }
+    end
+
+    it 'emits size only when no prior run dir exists' do
+      write_run_dir('rid', 4096)
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include("(4.0 KiB)\n")
+      expect(cache_line_in_output).not_to include('vs prev run')
+    end
+
+    it 'emits size + signed delta when a prior run dir is present' do
+      File.utime(Time.now - 60, Time.now - 60, write_run_dir('rid-prev', 1024))
+      write_run_dir('rid', 4096)
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include('4.0 KiB', '+3.0 KiB vs prev run')
+    end
+
+    it 'emits a negative delta when the current run is smaller than the prior' do
+      prior = write_run_dir('rid-prev', 8192)
+      File.utime(Time.now - 60, Time.now - 60, prior)
+      write_run_dir('rid', 1024)
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include('-7.0 KiB vs prev run')
+    end
+
+    it 'omits the size suffix entirely when the current run dir is missing' do
+      size_reporter.generate
+
+      expect(cache_line_in_output).to eq("cache: #{cache_root}\n")
+    end
+
+    it 'formats sub-KiB sizes in bytes' do
+      write_run_dir('rid', 256)
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include('256 B')
+    end
+
+    it 'formats megabyte+ sizes in MiB' do
+      write_run_dir('rid', 5 * 1_048_576)
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include('5.0 MiB')
+    end
+
+    it 'returns empty suffix when the current run dir does not exist' do
+      expect(size_reporter.send(:cache_size_suffix, cache_root)).to eq('')
+    end
+
+    it 'rescues filesystem errors silently and returns empty suffix' do
+      write_run_dir('rid', 4096)
+      allow(size_reporter).to receive(:directory_size_bytes).and_raise(Errno::EACCES)
+
+      expect(size_reporter.send(:cache_size_suffix, cache_root)).to eq('')
     end
   end
 

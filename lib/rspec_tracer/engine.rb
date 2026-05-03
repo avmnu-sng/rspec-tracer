@@ -770,7 +770,8 @@ module RSpecTracer
         boot_set: @loaded_files_tracker.boot_set_digest_snapshot,
         wsi_snapshot: @whole_suite_invalidators.digest_snapshot,
         env_snapshot: env_snapshot_for_persistence,
-        env_dependency: env_dependency_for_persistence
+        env_dependency: env_dependency_for_persistence,
+        cache_hit_reason: @filtered_examples.values.tally
       )
     end
 
