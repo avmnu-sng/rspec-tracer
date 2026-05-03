@@ -1,6 +1,6 @@
 # rspec-tracer
 
-[![CI](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml/badge.svg)](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml)
+[![CI](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg)](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/rspec-tracer.svg)](https://badge.fury.io/rb/rspec-tracer)
 
 **RSpec Tracer** is a specs dependency analyzer, flaky-test detector,

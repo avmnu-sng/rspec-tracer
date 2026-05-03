@@ -66,6 +66,12 @@ jobs:
     env:
       SOAK_PROJECT: ${{ matrix.project }}
       SOAK_FIXTURE_ROOT: ${{ github.workspace }}/tmp/soak-fixtures/${{ matrix.project }}
+      # On `schedule:` triggers GitHub Actions populates `inputs.*`
+      # with each input's default value, which here is `''`. That
+      # propagates as the literal empty string to the env var, which
+      # used to break the spec (`Integer("")` raised). The spec now
+      # treats empty as "use default"; this comment is the trail of
+      # the gotcha for future maintainers reading the YAML alone.
       SOAK_ITERATIONS: ${{ inputs.iterations }}
     steps:
       - name: Checkout rspec-tracer

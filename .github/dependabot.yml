@@ -22,6 +22,11 @@ updates:
       # ignore matching upgrade PRs.
       - dependency-name: "erb"
         versions: [">= 5.0"]
+      # rantly >= 3.0 requires Ruby >= 3.3. Used by spec/properties/
+      # (property-based test suite); pin stays at ~> 2.0 in the
+      # Gemfile to keep Ruby 3.1 / 3.2 cells resolvable.
+      - dependency-name: "rantly"
+        versions: [">= 3.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

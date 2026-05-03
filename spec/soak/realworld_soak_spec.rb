@@ -213,7 +213,17 @@ FIXTURE_ROOT = Pathname(
 GEMFILE_PATH = FIXTURE_ROOT.join(INVOCATION[:gemfile_dir], 'Gemfile')
 ENGINE_PATH = FIXTURE_ROOT.join(INVOCATION[:engine_dir])
 CACHE_PATH = ENGINE_PATH.join('rspec_tracer_cache')
-ITERATIONS = Integer(ENV.fetch('SOAK_ITERATIONS') { DEFAULT_ITERATIONS.fetch(PROJECT).to_s })
+# GitHub Actions populates `inputs.<name>` with each input's default
+# value on `schedule:` triggers (vs `pull_request:` where the inputs
+# context is absent), so the soak workflow's `SOAK_ITERATIONS:
+# ${{ inputs.iterations }}` resolves to "" on cron runs. ENV.fetch's
+# block fallback only fires on UNSET keys, not on set-but-empty ones,
+# so a naive `ENV.fetch('SOAK_ITERATIONS') { default }` returned ""
+# and `Integer("")` raised. Coerce empty string to "use the
+# per-project default" to match the unset semantics.
+soak_iterations_env = ENV['SOAK_ITERATIONS'].to_s
+soak_iterations_env = nil if soak_iterations_env.empty?
+ITERATIONS = Integer(soak_iterations_env || DEFAULT_ITERATIONS.fetch(PROJECT).to_s)
 WARMUP_ITERS = Integer(ENV.fetch('SOAK_WARMUP_ITERS', '5'))
 MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.20'))
 
