@@ -5,7 +5,7 @@ source 'https://rubygems.org'
 group :development do
   gem 'pry', '~> 0.14'
   gem 'rake', '~> 13.2'
-  gem 'rantly', '~> 2.0'
+  gem 'rantly', '~> 3.0'
   gem 'rubocop', '~> 1.60'
   gem 'rubocop-performance', '~> 1.20'
   gem 'rubocop-rake', '~> 0.6'
