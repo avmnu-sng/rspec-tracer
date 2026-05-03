@@ -40,6 +40,11 @@
       "p95": 20.396,
       "iterations": 10
     },
+    "cold_rails_v2_warm_iter": {
+      "p50": 5.1733,
+      "p95": 5.334,
+      "iterations": 10
+    },
     "cold_ruby": {
       "p50": 0.4507,
       "p95": 0.4763,
