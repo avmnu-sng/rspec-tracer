@@ -149,9 +149,17 @@ RSpec.describe 'rake rspec_tracer:remote_cache:* tasks against LocalStack', :int
         out, status = run_rake(task: 'rspec_tracer:remote_cache:upload', dir: dir)
 
         expect(status.success?).to(be(true), "upload rake task failed:\n#{out}")
-        ls_out, ls_err, ls_status = Open3.capture3('awslocal', 's3', 'ls', "s3://#{@bucket}/rake-spec/", '--recursive')
-        expect(ls_status.success?).to(be(true), "awslocal s3 ls failed (bucket=#{@bucket}):\nstdout=#{ls_out}\nstderr=#{ls_err}\nrake-output=\n#{out}")
-        expect(ls_out).to(match(/cache\.tar\.gz$/), "expected cache archive under bucket #{@bucket}/rake-spec/; got:\n#{ls_out}\nrake-output=\n#{out}")
+        ls_out, ls_err, ls_status = Open3.capture3(
+          'awslocal', 's3', 'ls', "s3://#{@bucket}/rake-spec/", '--recursive'
+        )
+        ls_failure_msg =
+          "awslocal s3 ls failed (bucket=#{@bucket}):\n" \
+          "stdout=#{ls_out}\nstderr=#{ls_err}\nrake-output=\n#{out}"
+        expect(ls_status.success?).to(be(true), ls_failure_msg)
+        no_archive_msg =
+          "expected cache archive under bucket #{@bucket}/rake-spec/; " \
+          "got:\n#{ls_out}\nrake-output=\n#{out}"
+        expect(ls_out).to(match(/cache\.tar\.gz$/), no_archive_msg)
       end
     end
   end
