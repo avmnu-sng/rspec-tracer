@@ -8,18 +8,20 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    # The `required_ruby_version` floor is `>= 3.1.0` (see rspec-tracer.gemspec).
-    # The upgrades below would break that by transitively requiring Ruby
-    # >= 3.2 or >= 3.3 via bundler or the `parallel` gem. Dependabot reports
-    # these as hard failures every week otherwise. Revisit when we raise
-    # the Ruby floor (likely in 2.0).
+    # `rspec-tracer.gemspec` declares `required_ruby_version >= 3.1.0`
+    # and the CI matrix gates Ruby 3.1 / 3.2 / 3.3 / 3.4 / 4.0 + JRuby
+    # 9.4. The upgrades below transitively require Ruby >= 3.2 or
+    # >= 3.3, which would break Ruby 3.1 cells. Revisit when the
+    # Ruby 3.1 floor is dropped.
     ignore:
+      # parallel >= 2.0 requires Ruby >= 3.3.
       - dependency-name: "parallel"
         versions: [">= 2.0"]
-      - dependency-name: "aruba"
-        versions: [">= 2.3"]
-      - dependency-name: "cucumber"
-        versions: [">= 10.0"]
+      # erb >= 5.0 requires Ruby >= 3.2 (pulled transitively via
+      # irb -> rdoc -> erb). Pinned to ~> 4.0 in the Gemfile;
+      # ignore matching upgrade PRs.
+      - dependency-name: "erb"
+        versions: [">= 5.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

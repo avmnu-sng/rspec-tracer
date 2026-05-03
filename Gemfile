@@ -3,8 +3,6 @@
 source 'https://rubygems.org'
 
 group :development do
-  gem 'aruba', '~> 2.2'
-  gem 'cucumber', '~> 9.2'
   gem 'pry', '~> 0.14'
   gem 'rake', '~> 13.2'
   gem 'rantly', '~> 2.0'
@@ -15,6 +13,7 @@ group :development do
   gem 'simplecov', '~> 0.22'
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
+  gem 'yard', '~> 0.9'
   gem 'yui-compressor', '~> 0.12'
 
   # Optional / matrix-driven runtime deps. Each is a `>= floor` so the
@@ -33,9 +32,10 @@ group :development do
   # in the install-time bundle. Prefixing keeps the two scopes
   # independent. `RSPEC_VERSION` is intentionally NOT prefixed: the
   # workflow always sets it at JOB level (so setup-ruby's bundle install
-  # and the test step's bundle exec see the same value), and several
-  # cucumber sample_projects/Gemfiles also read it - keeping the
-  # existing name avoids fanning out the rename.
+  # and the test step's bundle exec see the same value), and the prior
+  # cucumber sample_projects/Gemfiles (retired in 2.0.0) also read the
+  # unprefixed name - keeping the existing name avoids churn for users
+  # tracking the env in their own Gemfiles.
   #
   # Floors are the lowest currently-maintained major-line of each gem.
   # See .github/workflows/combinations.yml for the explicit matrix.
@@ -67,6 +67,14 @@ group :development do
   # msgpack: single 1.x major line. -java platform variant exists for
   # JRuby. Both 1.7.x and 1.8.x install on every Ruby in the matrix.
   gem 'msgpack', ENV.fetch('RSPEC_TRACER_MSGPACK_VERSION', '>= 1.7')
+
+  # erb: pulled transitively via irb -> rdoc -> erb. erb 5.0+ bumped its
+  # required_ruby_version to 3.2+; the matrix supports Ruby 3.1, so
+  # Bundler resolution (and Dependabot, which pretends to resolve under
+  # the lowest matrix Ruby) fails when erb >= 5.0 wins. Pin to the 4.x
+  # line so resolution succeeds on every supported Ruby. Drop this pin
+  # if the Ruby 3.1 floor is ever dropped from the matrix.
+  gem 'erb', ENV.fetch('RSPEC_TRACER_ERB_VERSION', '~> 4.0')
 
   # sqlite3: per-Ruby gate because precompiled-binary ceilings differ
   # between 1.x and 2.x lines and the source-build path needs a C

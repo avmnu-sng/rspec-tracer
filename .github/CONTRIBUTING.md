@@ -47,11 +47,57 @@ merge your work quickly.
   not drop versions because supporting them is extra work.
 - **Graceful degradation.** The tracer must never propagate a failure
   into the user's test suite. Log, degrade, continue.
-- **Taskfile is the dev loop.** `bundle exec rake` is a legacy path
-  kept only for the cucumber integration suite; it is removed in
-  2.0.0.
+- **Taskfile is the dev loop.** `task` is the canonical entry point;
+  `bundle exec rake` runs only `rubocop` + `rspec` for backward
+  compatibility. The Cucumber feature-file suite was retired in
+  2.0.0 — RSpec subprocess specs under `spec/integration/` cover the
+  same surface.
 
 See `task --list` for the full command catalogue.
+
+## YARD comments on public APIs
+
+Add YARD comments to any new public entry point (`RSpecTracer.start`
+extensions, new `Configuration#*` DSL methods, new backend protocol
+methods, new CLI sub-commands). The .yardopts pinned at the repo
+root scopes the public API surface; private helpers don't need
+documentation. `task docs:yard` generates the HTML locally.
+
+## Documentation surfaces
+
+- **README** — user-facing concepts, quick start, anything a user
+  meets on first install.
+- **UPGRADING.md** — every behavior change between major versions
+  with a concrete recipe.
+- **CHANGELOG.md** — Keep-a-changelog format. Cite commit SHAs /
+  version tags / upstream PR numbers. Internal vocabulary
+  (working-name milestones, planning IDs) doesn't appear in
+  user-facing files.
+- **ARCHITECTURE.md** — internals + extension protocols.
+- **ROADMAP.md** — phase-level only; the live status lives on the
+  GitHub project board.
+- **YARD comments** — public API documentation in source.
+
+## Recording demo casts (optional)
+
+The README intentionally ships text-only — selectable, vector,
+search-engine-friendly, ages well. If you want to add a terminal
+demo cast for a specific feature:
+
+```sh
+brew install asciinema
+asciinema rec demo.cast --idle-time-limit 2 --cols 100 --rows 28
+# inside the recording: clear; bundle exec rspec --no-color; etc.
+asciinema upload demo.cast    # prints a https://asciinema.org/a/<id> URL
+```
+
+Embed in markdown via the SVG variant:
+
+```markdown
+[![asciicast](https://asciinema.org/a/<id>.svg)](https://asciinema.org/a/<id>)
+```
+
+The SVG renders inline; click navigates to the playable cast.
 
 ## License
 

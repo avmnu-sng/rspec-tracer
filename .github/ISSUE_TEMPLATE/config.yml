@@ -1,0 +1,23 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question (usage / how-do-I / configuration)
+    url: https://github.com/avmnu-sng/rspec-tracer/discussions/categories/q-a
+    about: |
+      Got a "how do I?" or "is this possible?" question? Post in
+      Q&A. Issues are reserved for reproducible bugs.
+  - name: Suggest an idea / feature
+    url: https://github.com/avmnu-sng/rspec-tracer/discussions/categories/ideas
+    about: |
+      Have a feature idea worth discussing first? Start in Ideas.
+      Concrete, well-scoped feature requests can go straight to
+      the feature-request issue template.
+  - name: General discussion
+    url: https://github.com/avmnu-sng/rspec-tracer/discussions/categories/general
+    about: |
+      Testing strategies, CI patterns, dependency-tracking
+      conversations — General is the home for open-ended chat.
+  - name: Documentation
+    url: https://github.com/avmnu-sng/rspec-tracer#readme
+    about: |
+      README, UPGRADING, ROADMAP, ARCHITECTURE, and CHANGELOG cover
+      most questions. Worth a skim before opening a new issue.

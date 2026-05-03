@@ -28,6 +28,15 @@ module RSpecTracer
       'explain' => 'Explain'
     }.freeze
 
+    # CLI entry. Called by `bin/rspec-tracer` with `ARGV`. Wraps every
+    # sub-command in a top-level rescue so the binary always exits
+    # with a meaningful integer status (0 / 1) instead of a backtrace.
+    #
+    # @param argv [Array<String>] command-line arguments (excluding
+    #   the program name)
+    # @param stdout [IO] stream for normal output (default `$stdout`)
+    # @param stderr [IO] stream for errors / diagnostics (default `$stderr`)
+    # @return [Integer] exit status (0 = success, 1 = failure)
     def self.run(argv, stdout: $stdout, stderr: $stderr)
       args = argv.dup
       return print_top_level_help(stdout) if args.empty? || %w[-h --help help].include?(args.first)

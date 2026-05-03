@@ -1,3 +1,192 @@
+## [2.0.0.pre.1] - TBD
+
+The first pre-release of the 2.0 line. Architecture rewrite around
+the input-taxonomy mental model documented in
+[`ARCHITECTURE.md`](ARCHITECTURE.md): every test is a pure function
+of its inputs; tracking is input identification; cache invalidation
+is input-digest mismatch.
+
+The 1.x cache is not readable by 2.0 — first run on the new version
+is cold, then warm caches resume. Existing CI integration (`rake
+rspec_tracer:remote_cache:download` / `:upload`, the env vars,
+the `rspec_tracer_cache/` / `rspec_tracer_coverage/` /
+`rspec_tracer_report/` directory contracts) is preserved bit-for-bit.
+
+### Added
+
+- **Pluggable storage backends.** `storage_backend :json` (default,
+  preserves 1.x JSON layout) or `storage_backend :sqlite` (single-
+  file SQLite database; MRI only — JRuby falls back to `:json` with
+  a one-time warn). The 10-file per-run JSON layout (`last_run.json`
+  + `<run_id>/{all_examples,duplicate_examples,interrupted_examples,
+  flaky_examples,failed_examples,pending_examples,skipped_examples,
+  all_files,dependency,examples_coverage}.json`) is unchanged.
+- **Pluggable remote-cache backends.** `remote_cache_backend :s3`
+  (preserves the 1.x S3 layout including `awslocal` / LocalStack
+  support), `:local_fs` (filesystem-backed; no S3 needed), or
+  `:redis` (with optional per-key TTL + `<prefix>:pr_branches`
+  sidecar SADD on PR-tier uploads for ops dashboards).
+- **Per-example `tracks:` DSL.** Annotate any describe / context /
+  example with `tracks: { files: 'app/policies/**/*.rb', env:
+  'ROLE_CONFIG' }` to declare extra inputs the tracker can't auto-
+  observe — config files baked at boot, env-var branches, and
+  similar. `:files` accepts a string glob or array; `:env` accepts a
+  literal name, array, or single-wildcard pattern (`'RAILS_*'`,
+  `'*_TOKEN'`, `'*'`). Cascade unions parent + child without
+  clobbering.
+- **`track_env(*names)` config-level DSL** for env vars every test
+  depends on (`AUTH_TOKEN`, `DATABASE_URL`, `RAILS_ENV`). Same
+  wildcard syntax as the per-example `tracks: { env: ... }`.
+  Persists as `env_snapshot.json` (concrete keys only, no pattern
+  leakage).
+- **`track_files(*globs)` config-level DSL** for files every test
+  depends on (`Gemfile.lock`, schema, locale catalogs).
+- **Rails preset** via `track_rails_defaults` — auto-attaches the
+  common Rails-side declared globs (views, locales, fixtures,
+  factories, helpers, config). `track_rails_defaults except:
+  [:views, :schema]` opts specific globs out so framework-event
+  subscribers (`render_template.action_view` for views; the opt-in
+  `sql.active_record` observer enabled by
+  `track_ar_schema_notifications` for `db/schema.rb`) attribute
+  them per-example instead.
+- **Auto-detection of Rails** at start time; the engine attaches
+  `ActionView` template + `ActiveRecord` schema (when opted in)
+  notification observers automatically when `::Rails::VERSION` is
+  defined.
+- **`bin/rspec-tracer` CLI** with five sub-commands:
+  `doctor` (config + environment diagnosis, schema-version + remote-
+  cache reachability + AR-schema-narrow checks), `cache:info`
+  (size, last run, invalidation stats), `cache:clear` (rm cache
+  dirs), `report:open` (open the HTML report in the default
+  browser), `explain <example_id>` (show why a given example is
+  scheduled to run or skip). The CLI is opt-in for local-dev
+  convenience; the `rake rspec_tracer:remote_cache:*` tasks remain
+  first-class for CI integration.
+- **Boot-time warns** for two common user-trust traps:
+  - SimpleCov loaded but not started before `RSpecTracer.start`
+    (load-order is part of the documented contract; the warn
+    surfaces it instead of silently bolting onto a Coverage already
+    in flight).
+  - `track_ar_schema_notifications` enabled with
+    `use_transactional_fixtures` defaulting to true (per-example
+    BEGIN/COMMIT fires `sql.active_record` and attributes
+    `db/schema.rb` to every AR-touching example; the warn points
+    at the README "Narrow AR-schema attribution" guidance).
+- **`.rspec-tracer` DSL typo `did you mean?` suggestions** at config
+  load — typos like `track_filez` raise `InvalidUsageError` with a
+  pointer at `track_files`.
+- **Rails 8.0 CI-gated support** (Ruby 3.2+ required; Rails 8.0
+  dropped Ruby 3.1 support upstream). `jruby-9.4 × Rails 8.0` is
+  unsupported (no `activerecord-jdbcsqlite3-adapter ~> 80.0`
+  upstream).
+- **Schema-version field** in `last_run.json` for explicit
+  cross-version cache validation. Cache-shape changes bump the
+  field; mismatched caches refuse-to-load with an info-level "cold
+  run" log line.
+- **`docs/CI_RECIPES.md`** translating the
+  [`.github/workflows/example-tracer-cache.yml`](.github/workflows/example-tracer-cache.yml)
+  GitHub Actions cache pattern to CircleCI / GitLab CI / Buildkite
+  / Heroku CI. The 4-component cache key (`runner.os` +
+  `.ruby-version` + `lib/rspec_tracer/version.rb` + Gemfile-hash)
+  translates 1:1 across providers; only the YAML envelope is
+  GHA-specific.
+- **Coexistence smokes** for `rspec-retry`, `rspec-rerun`, and
+  `knapsack`. All three compose with rspec-tracer's `Module#prepend`
+  chain on `RSpec::Core::Runner` / `Reporter` without override.
+- **`bin/rspec-tracer doctor` reachability checks** for the
+  configured remote-cache backend (S3 / Local-FS / Redis) — surfaces
+  misconfigured credentials / missing buckets / unreachable Redis
+  hosts at first invocation instead of mid-CI-run.
+- **HTML reporter** (committed build output, no `assets:precompile`
+  step on user installs) and **JSON reporter** (machine-readable,
+  for CI dashboards) alongside the existing terminal output. The
+  terminal line now includes a `by reason:` breakdown
+  (`12 Files changed · 3 Whole-suite invalidator changed · ...`)
+  and a cache size + delta suffix (`14.4 MiB; +6.7 KiB vs prev
+  run`).
+
+### Changed
+
+- **Ruby ≥ 3.1** is the floor (1.x supported Ruby 2.5+). 3.2, 3.3,
+  3.4, 4.0 + JRuby 9.4 are CI-gated. Rails 7.0 / 7.1 / 7.2 / 8.0 +
+  RSpec 3.12 / 3.13 are CI-gated.
+- **SimpleCov branch coverage now works alongside rspec-tracer.**
+  The 1.x caveat ("SimpleCov would not report branch coverage
+  results even when enabled") is **no longer applicable** — the
+  coverage-stack rewrite decoupled rspec-tracer's line-only
+  emission from SimpleCov's branch-tracking. Users who turned
+  `enable_coverage :branch` off when adopting rspec-tracer 1.x can
+  re-enable in 2.0.
+- **Cache schema bump.** First run on 2.0 is cold; subsequent runs
+  return to warm.
+- **Coverage adapter** consolidated: a single
+  `Reporters::CoverageJsonReporter` owns `coverage.json` emission
+  (replacing the 1.x `CoverageReporter` + `CoverageWriter` pair).
+  Output shape preserved.
+- **Parallel-tests reporter behavior:** terminal / JSON / HTML
+  reports now emit ONCE at the merged top-level location after
+  `merge_snapshot!` runs, instead of per-worker (where
+  `purge_worker_dirs!` then removed them and left users with no
+  usable output). Per-worker emission was a pre-2.0 behavior bug.
+
+### Fixed
+
+- **ERB template tracking via `render_template.action_view`** (closes
+  the issue behind upstream
+  [#66](https://github.com/avmnu-sng/rspec-tracer/issues/66)). The
+  Rails subscriber attributes rendered ERB partials to the example
+  that triggered the render.
+- **Phantom `metadata[:file_path]` graceful skip** (closes the issue
+  behind upstream
+  [#72](https://github.com/avmnu-sng/rspec-tracer/issues/72)). Specs
+  whose `metadata[:file_path]` doesn't resolve to a readable file
+  (gem-generated examples, deleted-between-runs files) now log
+  debug + skip dependency registration instead of raising.
+
+### Deprecated
+
+The 1.x configuration surface keeps working; each deprecated entry
+fires one `logger.warn` at first use pointing at the replacement.
+The deprecated values still resolve semantically. All four are slated
+for removal in 3.0.
+
+- **`reports_s3_path(uri)`** → use **`remote_cache_uri(uri)`**.
+- **`use_local_aws(bool)`** → use **`remote_cache_backend :s3,
+  local: true`**.
+- **`RSPEC_TRACER_REPORTS_S3_PATH`** → use
+  **`RSPEC_TRACER_REMOTE_CACHE_URI`**.
+- **`RSPEC_TRACER_USE_LOCAL_AWS`** → fold into
+  `remote_cache_backend` params.
+
+### Removed
+
+- **Cucumber feature-file integration suite.** Contributor-facing
+  only; users see no change. Replaced by RSpec subprocess
+  integration specs under `spec/integration/`. The `bundle exec
+  rake` legacy entry point is removed; `task` (Taskfile) is the
+  canonical dev loop.
+- **Ruby ≤ 3.0 and Rails ≤ 6.x support** (already dropped in 1.1.0;
+  re-stated here for clarity at the major boundary).
+- **Windows support** (no CI gate; never actively maintained).
+
+### Deferred to 2.1
+
+- **Per-example dependency attribution under Rails
+  `config.eager_load = true`.** When `eager_load = true` (Rails
+  default for CI tests to mirror prod), all `app/` files load at
+  boot and land in the boot-set; the whole-suite invalidator fires
+  on any `app/` edit, re-running every example. This is SAFE (never
+  misses a dep) but coarser than per-example attribution. The 2.1
+  enhancement will install a class-attribution mechanism (working
+  name: `track_class_attribution`) using `TracePoint(:class)` at
+  boot + `TracePoint(:call)` per example to trim the invalidator
+  scope to only examples that touched the changed file's class /
+  method surface. Opt-in by default; designed from scratch on the
+  user-shape problem (not a resurrection of any 1.x DSL name).
+  Today's escape hatches: set `config.eager_load = false` in test
+  env for full per-example precision, or use `tracks: { files:
+  '...' }` for per-example narrowing on specific groups.
+
 ## [1.2.0] - 2026-04-24
 
 ### Added

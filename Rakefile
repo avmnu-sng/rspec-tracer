@@ -6,12 +6,4 @@ RuboCop::RakeTask.new
 require 'rspec/core/rake_task'
 RSpec::Core::RakeTask.new(:rspec)
 
-Dir.glob('tasks/features/**/*.rake') { |task| load task }
-
-task default: %i[
-  rubocop
-  rspec
-  features:coverage:rspec_tracer:measure_line_coverage
-  features:coverage:simplecov:measure_branch_coverage
-  features:coverage:simplecov:measure_line_coverage
-]
+task default: %i[rubocop rspec]
