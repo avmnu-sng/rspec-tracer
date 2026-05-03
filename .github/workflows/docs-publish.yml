@@ -1,0 +1,73 @@
+# Build + publish the docs site (YARD API reference + sample HTML
+# report + landing page) to GitHub Pages.
+#
+# Triggers:
+#   - push to main (continuous deployment of latest docs)
+#   - tag push v* (deployment of release docs)
+#   - workflow_dispatch (manual re-run, e.g. after enabling Pages)
+#
+# Required setup (one-time, repo owner):
+#   1. Settings -> Pages -> Source: GitHub Actions.
+#   2. The `pages: write` + `id-token: write` permissions below need
+#      no further config; GitHub grants them on the workflow trigger.
+#
+# The site lives at:
+#   https://avmnu-sng.github.io/rspec-tracer/
+
+name: docs-publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+# Single in-flight run per ref; new pushes cancel older builds.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build docs site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Install task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the docs site
+        run: task docs:site:build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc/site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

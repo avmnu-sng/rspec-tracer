@@ -26,3 +26,27 @@ tasks:
       which public API methods still lack doc comments.
     cmds:
       - bundle exec yard stats --list-undoc
+
+  docs:wcag:
+    desc: >-
+      Run WCAG 2.1 AA accessibility audit on the HTML reporter via
+      axe-core. Requires Node + Chrome (auto-installs ChromeDriver
+      via browser-driver-manager on first run).
+      Generates rspec_tracer_report/ first if missing by running
+      task test:features:rails.
+    cmds:
+      - test -f rspec_tracer_report/index.html || task test:features:rails
+      - npx --yes @axe-core/cli "file://$(pwd)/rspec_tracer_report/index.html" --tags wcag2aa,wcag21aa --timeout 240
+
+  docs:site:build:
+    desc: >-
+      Build the unified docs site (YARD HTML + sample HTML report
+      + landing page) under doc/site/ for GitHub Pages publishing.
+      The docs-publish workflow runs the same task on push to main.
+    cmds:
+      - rm -rf doc/site
+      - mkdir -p doc/site/yard doc/site/demo
+      - bundle exec yard doc --output-dir doc/site/yard
+      - test -f rspec_tracer_report/index.html || task test:features:rails
+      - cp -r rspec_tracer_report/* doc/site/demo/
+      - cp docs/site/index.html doc/site/index.html

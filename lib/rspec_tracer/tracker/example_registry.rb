@@ -48,7 +48,7 @@ module RSpecTracer
       # identity_hash for duplicate detection. First call wins for
       # the identity_hash binding; subsequent calls with the same
       # identity_hash but a different example_id accumulate into
-      # @duplicates and do not re-bind.
+      # `@duplicates` and do not re-bind.
       def register(example_id, metadata: {}, identity_hash: nil)
         @examples[example_id] ||= { metadata: metadata.dup, status: nil }
         track_identity(example_id, identity_hash) if identity_hash

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>rspec-tracer — Documentation</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #fff;
+      --fg: #1a1a1a;
+      --muted: #666;
+      --accent: #c33;
+      --border: #ddd;
+      --code-bg: #f6f8fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a;
+        --fg: #f0f0f0;
+        --muted: #aaa;
+        --accent: #f55;
+        --border: #444;
+        --code-bg: #2a2a2a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, "Helvetica Neue", Arial, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+    h2 { font-size: 1.25rem; margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 1.5rem; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 1rem; }
+    .card { border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem; }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .card p { margin: 0 0 0.5rem; color: var(--muted); font-size: 0.95rem; }
+    code { background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 3px; font-size: 0.9em; }
+    .badges img { margin-right: 0.5rem; vertical-align: middle; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>rspec-tracer</h1>
+    <p class="lede">Specs dependency analyzer, flaky-test detector, test accelerator, and coverage reporter for RSpec.</p>
+    <p class="badges">
+      <a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml">
+        <img alt="CI status" src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml/badge.svg">
+      </a>
+      <a href="https://badge.fury.io/rb/rspec-tracer">
+        <img alt="Gem version" src="https://badge.fury.io/rb/rspec-tracer.svg">
+      </a>
+    </p>
+  </header>
+
+  <h2>Quick links</h2>
+  <div class="grid">
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer#readme">README</a></h3>
+      <p>Getting started, configuration, CI integration, FAQ.</p>
+    </article>
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/UPGRADING.md">UPGRADING</a></h3>
+      <p>Migrating from rspec-tracer 1.x to 2.0. Floors, deprecated DSLs, behavior changes.</p>
+    </article>
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/COOKBOOK.md">COOKBOOK</a></h3>
+      <p>13 recipes for common setups: Rails apps, parallel_tests, JRuby, custom backends.</p>
+    </article>
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/ARCHITECTURE.md">ARCHITECTURE</a></h3>
+      <p>The input-taxonomy mental model, layer structure, contracts between layers.</p>
+    </article>
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/ROADMAP.md">ROADMAP</a></h3>
+      <p>Shipped in 2.0, planned for 2.1, considering for 3.0+.</p>
+    </article>
+    <article class="card">
+      <h3><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/CHANGELOG.md">CHANGELOG</a></h3>
+      <p>Every release with a Keep-a-Changelog summary.</p>
+    </article>
+  </div>
+
+  <h2>API reference</h2>
+  <p>Full YARD-generated API docs for every public method, the
+  Configuration DSL, and the backend protocols.</p>
+  <p><a href="yard/index.html">→ Browse the YARD API reference</a></p>
+
+  <h2>Live HTML report demo</h2>
+  <p>The HTML reporter rspec-tracer generates after each test run.
+  This sample is generated from the in-repo Rails fixture; your own
+  reports will look the same shape with your suite's data.</p>
+  <p><a href="demo/index.html">→ Open the sample HTML report</a></p>
+
+  <h2>Internals (contributor docs)</h2>
+  <ul>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/docs/internals/HOW_TRACKS_CASCADES.md">How <code>tracks:</code> cascades</a></li>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/docs/internals/HOW_PARALLEL_TESTS_MERGE.md">How parallel_tests merge works</a></li>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/docs/internals/HOW_REMOTE_CACHE_BACKENDS.md">How remote-cache backends work</a></li>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/docs/internals/HOW_STORAGE_BACKENDS.md">How storage backends work</a></li>
+  </ul>
+
+  <h2>Community</h2>
+  <ul>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a> — usage questions, ideas, general chat.</li>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/issues">GitHub Issues</a> — reproducible bugs + concrete feature requests.</li>
+    <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/.github/CONTRIBUTING.md">CONTRIBUTING</a> — how to land a PR.</li>
+  </ul>
+
+  <footer>
+    <p>rspec-tracer is released under the
+    <a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/LICENSE">MIT License</a>.
+    Built with <code>task docs:site:build</code>; published via GitHub Actions.</p>
+  </footer>
+</body>
+</html>

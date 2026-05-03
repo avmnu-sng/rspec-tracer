@@ -124,23 +124,41 @@ module RSpecTracer
       RSpecTracer.running = false
     end
 
+    # The current {RSpecTracer::Engine} instance, or nil if
+    # {.start} hasn't been called yet.
+    #
+    # @return [RSpecTracer::Engine, nil]
     def engine
       @engine if defined?(@engine)
     end
 
+    # True if SimpleCov was loaded AND running at the time
+    # {.start} was invoked. Determines whether rspec-tracer
+    # owns `::Coverage.start` itself (false) or defers to
+    # SimpleCov's coverage lifecycle (true).
+    #
+    # @return [Boolean]
     def simplecov?
       defined?(@simplecov) && @simplecov == true
     end
 
+    # True if `parallel_tests` is in use (detected via
+    # `ParallelTests.active?` at {.start} time). Affects
+    # cache + report directory scoping (per-worker dirs)
+    # and finalize-time merging.
+    #
+    # @return [Boolean]
     def parallel_tests?
       defined?(@parallel_tests) && @parallel_tests == true
     end
 
-    # True iff Rails is loaded in this process. Computed once during
-    # `initial_setup` (via `setup_rails`) and memoized; subsequent Rails
-    # activations within the same run are not re-detected. Matches the
-    # `simplecov?` / `parallel_tests?` shape so callers can branch on
-    # framework presence uniformly.
+    # True if Rails is loaded in this process (detected via
+    # `defined?(::Rails::VERSION)` at {.start} time). Memoized;
+    # subsequent Rails activations within the same run are not
+    # re-detected. Drives the auto-installation of Rails-side
+    # observers (template + AR notification subscribers).
+    #
+    # @return [Boolean]
     def rails?
       defined?(@rails) && @rails == true
     end
