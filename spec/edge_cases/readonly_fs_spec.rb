@@ -2,7 +2,7 @@
 
 # Read-only cache filesystem - graceful degradation across the
 # storage layer + the engine's run_finalize path. The architecture
-# contract (docs/revamp/ARCHITECTURE.md §Cache corruption recovery)
+# contract (ARCHITECTURE.md §Cache corruption recovery)
 # says "Never propagate storage errors to the caller" - so a
 # read-only cache_path must NOT crash the user's test suite.
 #

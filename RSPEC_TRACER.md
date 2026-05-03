@@ -1,5 +1,19 @@
 ![](./readme_files/rspec_tracer.png)
 
+> **2.0 NOTE.** This document is the original 1.x architecture/intent
+> writeup. The canonical 2.0 architecture document is now
+> [`ARCHITECTURE.md`](ARCHITECTURE.md) at the repo root — it covers
+> the 2.0 input taxonomy, layer structure, pluggable storage
+> backends (`:json` + `:sqlite`), remote-cache backends (`:s3` +
+> `:local_fs` + `:redis`), per-example `tracks:` DSL, Rails preset,
+> CLI, and the schema-versioning + cold-run policy. **Read
+> `ARCHITECTURE.md` for the 2.0 picture; this file remains as the
+> 1.x intent narrative for users still on the `1.x` line.** The
+> linkback below stays valid for both versions: rspec-tracer is a
+> dependency-tracking + flaky-test-detecting + tests-accelerator +
+> coverage-reporter tool whose mental model is "a test is a pure
+> function of its inputs."
+
 This document sheds some light on why RSpec Tracer might be helpful and talks
 about implementation details of **managing dependency**, **managing flaky tests**,
 **skipping tests**, and **caching on CI**.

@@ -32,6 +32,32 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe 'unknown DSL method handling (M8.9)' do
+    # Typos in `.rspec-tracer` previously raised bare `NoMethodError`
+    # with a Ruby backtrace. Now they raise `InvalidUsageError` with
+    # a stdlib `DidYouMean` suggestion when the typo is close to a
+    # real DSL method; falls through to NoMethodError when no close
+    # match exists so internal `respond_to?` probes retain standard
+    # Ruby semantics.
+    it 'raises InvalidUsageError on a typo with a did-you-mean suggestion' do
+      expect { RSpecTracer.track_files_glob('config/**/*') }
+        .to raise_error(
+          RSpecTracer::Configuration::InvalidUsageError,
+          /unknown \.rspec-tracer DSL method :track_files_glob.*did you mean.*track_files/
+        )
+    end
+
+    it 'falls through to NoMethodError when no close match exists' do
+      expect { RSpecTracer.zzzbogus('x') }
+        .to raise_error(NoMethodError)
+    end
+
+    it 'falls through to NoMethodError on assignment-style calls' do
+      expect { RSpecTracer.send(:totally_unknown=, 'x') }
+        .to raise_error(NoMethodError)
+    end
+  end
+
   describe '#root' do
     context 'when not configured' do
       it 'returns current working directory' do

@@ -941,6 +941,64 @@ module RSpecTracer
 
       RSpecTracer::Filter.register(arg)
     end
+
+    public
+
+    # Catches typos in `.rspec-tracer` config files. When the user
+    # mistypes a DSL name (e.g. `track_files_glob` for `track_files`),
+    # bare `NoMethodError` puts a Ruby backtrace in their face. This
+    # surface raises `InvalidUsageError` with a stdlib `DidYouMean`
+    # suggestion when the typo is close to a known DSL method;
+    # otherwise it falls through to NoMethodError so internal
+    # respond_to? probes / non-DSL undefined-method usage retains
+    # standard Ruby semantics.
+    def method_missing(name, *args, **kwargs, &)
+      return super if name.to_s.end_with?('=')
+
+      candidates = RSpecTracer::Configuration::DslTypoSuggester.candidates
+      suggestion = candidates.empty? ? nil : RSpecTracer::Configuration::DslTypoSuggester.nearest(name.to_s, candidates)
+      return super if suggestion.nil?
+
+      raise InvalidUsageError,
+            "unknown .rspec-tracer DSL method #{name.inspect}; did you mean #{suggestion.inspect}?"
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      super
+    end
+
+    # Helpers for the DSL-typo `did you mean` surface. Lives in a
+    # dedicated module so its methods stay outside the configure-time
+    # `alias_method :"_#{name}"` wrapper loop in `Configuration#configure`
+    # (which iterates Configuration's `private_instance_methods(false)`
+    # twice during `load_default_config` + `load_local_config` and would
+    # double-alias any helper instance methods we kept here).
+    module DslTypoSuggester
+      def self.candidates
+        # Strip one or more leading `_` to canonicalize through the
+        # configure wrapper's aliasing levels (single underscore after
+        # one configure, double after two, etc.).
+        RSpecTracer.private_methods(true).each_with_object([]) do |m, acc|
+          s = m.to_s
+          next unless s.start_with?('_')
+          next if s.end_with?('=')
+
+          acc << s.sub(/\A_+/, '')
+        end.uniq
+      end
+
+      def self.nearest(typed, candidates)
+        prefix_match = candidates
+          .select { |c| typed.start_with?(c) || c.start_with?(typed) }
+          .max_by(&:length)
+        return prefix_match if prefix_match
+
+        require 'did_you_mean'
+        ::DidYouMean::SpellChecker.new(dictionary: candidates).correct(typed).first
+      rescue LoadError
+        nil
+      end
+    end
   end
   # rubocop:enable Metrics/ModuleLength
 end
