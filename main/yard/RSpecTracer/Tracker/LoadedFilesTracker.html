@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Class: RSpecTracer::Tracker::LoadedFilesTracker
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::Tracker::LoadedFilesTracker";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (L)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span>
+     &raquo; 
+    <span class="title">LoadedFilesTracker</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Class: RSpecTracer::Tracker::LoadedFilesTracker
+  
+  
+  
+</h1>
+<div class="box_info">
+  
+  <dl>
+    <dt>Inherits:</dt>
+    <dd>
+      <span class="inheritName">Object</span>
+      
+        <ul class="fullTree">
+          <li>Object</li>
+          
+            <li class="next">RSpecTracer::Tracker::LoadedFilesTracker</li>
+          
+        </ul>
+        <a href="#" class="inheritanceTree">show all</a>
+      
+    </dd>
+  </dl>
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/tracker/loaded_files_tracker.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p>Observer #5 in the 2.0 tracker pipeline. Closes the constants-
+lookup blind spot documented in KNOWN_ISSUES.md B10.</p>
+<p>The bug: when file A defines constants at load time and example E2
+references them without triggering a re-require, E2's coverage
+diff is empty for A. If A changes, the filter incorrectly skips
+E2 on the next run.</p>
+<p>The fix: track every project file Ruby has ever loaded during the
+process, and attribute them as transitive dependencies of every
+example that runs afterward.</p>
+<pre class="code ruby"><code class="ruby">- `@boot_set`: frozen Set&lt;String&gt; captured at Tracker.setup.
+Files loaded before any example runs (spec_helper requires,
+gem boot code, constant autoloads). Changes to these are
+whole-suite invalidators - any modification re-runs every
+example.
+- `@loaded_set`: append-only Set&lt;String&gt;. Grows as examples run
+and Coverage observes new files. Before each example, the
+filter treats the entire @loaded_set as input to that example;
+after each example, any newly-loaded path is attributed
+specifically to the just-completed example *and* added to
+@loaded_set for the benefit of subsequent examples.
+</code></pre>
+<h2 id="Rationale___why_not_smarter_">Rationale - why not smarter?</h2>
+<p>The cheaper alternatives all fail correctness or cost:</p>
+<pre class="code ruby"><code class="ruby">- TracePoint(:class, :c_return) fires on every C method call;
+orders-of-magnitude overhead.
+- Ruby-AST scans for constant references are unreliable under
+metaprogramming (const_get, send, autoload blocks).
+- Constant-table introspection doesn&#39;t tell us which *example*
+used which constant.
+- Stack-trace sampling is probabilistic - inappropriate for
+cache correctness.
+</code></pre>
+<p>The &quot;loaded set&quot; approach is the cheapest correct solution. Cost:
+the test cache is slightly less selective (a lib/constants.rb
+change re-runs every example that ran after it loaded rather than
+just some subset). Correctness is the win.</p>
+<h2 id="Input_kind_reuse">Input kind reuse</h2>
+<p>Emits Input values with <code>kind: :ruby</code> - every file in the
+loaded-set is a Ruby source file (<code>::Coverage</code> tracks Ruby only),
+and the dependency graph keys on path (ignoring kind) so a
+separate <code>:transitive_load</code> kind would buy nothing observable.
+Overlap with CoverageAdapter's <code>:ruby</code> emissions dedupes naturally
+at graph registration.</p>
+<h2 id="Digest_cache">Digest cache</h2>
+<p>Each path is digested at most once per run (first time it appears
+in either the boot set or a stop_example diff). The cache backs
+both <code>loaded_set_inputs</code> and <code>boot_set_digest_snapshot</code>, so
+boot-set invalidation comparison is free after the initial capture.</p>
+<h2 id="Enablement_flag">Enablement flag</h2>
+<p><code>enabled:</code> (default true) threads through from
+Configuration#transitive_load_tracking. When false, every method
+degrades to a no-op that returns empty collections. This gives
+teams an opt-out for pathological suites where the transitive
+over-approximation is too aggressive.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="DEFAULT_PEEK-constant" class="">DEFAULT_PEEK =
+          
+        </dt>
+        <dd><pre class="code"><span class='tlambda'>-&gt;</span> <span class='tlambeg'>{</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_peek_result'>peek_result</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='rbrace'>}</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+  <h2>Instance Attribute Summary <small><a href="#" class="summary_toggle">collapse</a></small></h2>
+  <ul class="summary">
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#boot_set-instance_method" title="#boot_set (instance method)">#<strong>boot_set</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+      <span class="note title readonly">readonly</span>
+    
+    
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>boot_set is exposed as an attr_reader rather than a hand- rolled method so RuboCop's Style/TrivialAccessors stays quiet; nil is a valid &quot;not yet captured&quot; state callers rely on.</p></div></span>
+  
+</li>
+
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#root-instance_method" title="#root (instance method)">#<strong>root</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+      <span class="note title readonly">readonly</span>
+    
+    
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>boot_set is exposed as an attr_reader rather than a hand- rolled method so RuboCop's Style/TrivialAccessors stays quiet; nil is a valid &quot;not yet captured&quot; state callers rely on.</p></div></span>
+  
+</li>
+
+    
+  </ul>
+
+
+
+
+  
+    <h2>
+      Instance Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#boot_set_digest_snapshot-instance_method" title="#boot_set_digest_snapshot (instance method)">#<strong>boot_set_digest_snapshot</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Hash[relative_path =&gt; sha256_hex] for every file in the boot set.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#boot_set_invalidated%3F-instance_method" title="#boot_set_invalidated? (instance method)">#<strong>boot_set_invalidated?</strong>(previous_snapshot)  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Compare the current boot set's digest snapshot against a previously-stored one.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#capture_boot_set!-instance_method" title="#capture_boot_set! (instance method)">#<strong>capture_boot_set!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Capture the boot set once.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#enabled%3F-instance_method" title="#enabled? (instance method)">#<strong>enabled?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#initialize-instance_method" title="#initialize (instance method)">#<strong>initialize</strong>(root:, peek: DEFAULT_PEEK, enabled: true)  &#x21d2; LoadedFilesTracker </a>
+    
+
+    
+  </span>
+  
+  
+    <span class="note title constructor">constructor</span>
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>A new instance of LoadedFilesTracker.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#loaded_set-instance_method" title="#loaded_set (instance method)">#<strong>loaded_set</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Defensive copy for external callers / property specs.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#loaded_set_inputs-instance_method" title="#loaded_set_inputs (instance method)">#<strong>loaded_set_inputs</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Set<Input> covering the full @loaded_set.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#loaded_set_size-instance_method" title="#loaded_set_size (instance method)">#<strong>loaded_set_size</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#stop_example-instance_method" title="#stop_example (instance method)">#<strong>stop_example</strong>(_example_id)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Diff-and-grow.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+<div id="constructor_details" class="method_details_list">
+  <h2>Constructor Details</h2>
+  
+    <div class="method_details first">
+  <h3 class="signature first" id="initialize-instance_method">
+  
+    #<strong>initialize</strong>(root:, peek: DEFAULT_PEEK, enabled: true)  &#x21d2; <tt><span class='object_link'><a href="" title="RSpecTracer::Tracker::LoadedFilesTracker (class)">LoadedFilesTracker</a></span></tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Returns a new instance of LoadedFilesTracker.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 82</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>peek:</span> <span class='const'><span class='object_link'><a href="#DEFAULT_PEEK-constant" title="RSpecTracer::Tracker::LoadedFilesTracker::DEFAULT_PEEK (constant)">DEFAULT_PEEK</a></span></span><span class='comma'>,</span> <span class='label'>enabled:</span> <span class='kw'>true</span><span class='rparen'>)</span>
+  <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
+  <span class='ivar'>@root_prefix</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='ivar'>@root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span>
+  <span class='ivar'>@peek</span> <span class='op'>=</span> <span class='id identifier rubyid_peek'>peek</span>
+  <span class='ivar'>@enabled</span> <span class='op'>=</span> <span class='id identifier rubyid_enabled'>enabled</span>
+  <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='kw'>nil</span>
+  <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+  <span class='ivar'>@input_cache</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+  <span class='comment'># Steady-state fast-path cache for stop_example: ::Coverage&#39;s
+</span>  <span class='comment'># tracked-file set grows monotonically; if peek_result.length
+</span>  <span class='comment'># is unchanged since the last stop_example call, no new project
+</span>  <span class='comment'># files can have appeared. Skip the per-path filter loop
+</span>  <span class='comment'># entirely. Initialized to nil so the first call always falls
+</span>  <span class='comment'># through to full work + populates the cache.
+</span>  <span class='ivar'>@last_peek_length</span> <span class='op'>=</span> <span class='kw'>nil</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+  
+</div>
+
+  <div id="instance_attr_details" class="attr_details">
+    <h2>Instance Attribute Details</h2>
+    
+      
+      <span id=""></span>
+      <div class="method_details first">
+  <h3 class="signature first" id="boot_set-instance_method">
+  
+    #<strong>boot_set</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>boot_set is exposed as an attr_reader rather than a hand-
+rolled method so RuboCop's Style/TrivialAccessors stays quiet;
+nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+80
+81
+82</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 80</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_boot_set'>boot_set</span>
+  <span class='ivar'>@boot_set</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      
+      <span id=""></span>
+      <div class="method_details ">
+  <h3 class="signature " id="root-instance_method">
+  
+    #<strong>root</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>boot_set is exposed as an attr_reader rather than a hand-
+rolled method so RuboCop's Style/TrivialAccessors stays quiet;
+nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+80
+81
+82</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 80</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
+  <span class='ivar'>@root</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+
+  <div id="instance_method_details" class="method_details_list">
+    <h2>Instance Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="boot_set_digest_snapshot-instance_method">
+  
+    #<strong>boot_set_digest_snapshot</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Hash[relative_path =&gt; sha256_hex] for every file in the boot
+set. Used by the M3.6 caller to compare against the previous
+run's stored <code>Snapshot.boot_set</code> - any inequality is a
+whole-suite invalidator.</p>
+<p>Invariant (enforced by capture_boot_set!): every path in
+<code>@boot_set</code> has a matching <code>@input_cache</code> entry, so the fetch
+never raises. Disabled trackers produce an empty <code>@boot_set</code>,
+so the enumeration naturally returns {} without a guard.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+142
+143
+144
+145
+146</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 142</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span>
+  <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_to_h'>to_h</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_relative_path'>relative_path</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='ivar'>@input_cache</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_digest'>digest</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="boot_set_invalidated?-instance_method">
+  
+    #<strong>boot_set_invalidated?</strong>(previous_snapshot)  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Compare the current boot set's digest snapshot against a
+previously-stored one. <code>nil</code> previous_snapshot (first run, no
+cache) is treated as &quot;not invalidated by this signal&quot; - first
+run is already a cold run for unrelated reasons.</p>
+<p>Disabled tracker never invalidates - M3.6's caller ORs this
+with WholeSuiteInvalidators.invalidated?, so returning false
+keeps the tracker silent when the feature is off.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+156
+157
+158
+159
+160
+161</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 156</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_boot_set_invalidated?'>boot_set_invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span> <span class='op'>!=</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="capture_boot_set!-instance_method">
+  
+    #<strong>capture_boot_set!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Capture the boot set once. Idempotent: subsequent calls return
+the frozen Set captured on the first call. When disabled,
+returns an empty frozen Set without touching ::Coverage.</p>
+<p>Paths whose digest fails (unreadable files) are dropped on the
+floor - they stay absent from @boot_set, @loaded_set, and
+@input_cache, preserving the &quot;every tracked path has an Input&quot;
+invariant. Downstream filtering accepts the slight under-count
+(a truly-unreadable boot file was never going to be a useful
+invalidation signal anyway).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 113</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_capture_boot_set!'>capture_boot_set!</span>
+  <span class='kw'>return</span> <span class='ivar'>@boot_set</span> <span class='kw'>unless</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='kw'>if</span> <span class='ivar'>@enabled</span>
+    <span class='id identifier rubyid_successful_paths'>successful_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_build_inputs'>build_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_filtered_peek_paths'>filtered_peek_paths</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_input'>input</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+      <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span>
+    <span class='kw'>end</span>
+    <span class='comment'># Construct @loaded_set and @boot_set from distinct Set
+</span>    <span class='comment'># instances so freezing one can&#39;t poison the other -
+</span>    <span class='comment'># stop_example must be able to mutate @loaded_set forever
+</span>    <span class='comment'># while @boot_set stays frozen for invalidator comparison.
+</span>    <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='id identifier rubyid_successful_paths'>successful_paths</span>
+    <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_successful_paths'>successful_paths</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+  <span class='kw'>else</span>
+    <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+    <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+  <span class='kw'>end</span>
+  <span class='ivar'>@boot_set</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="enabled?-instance_method">
+  
+    #<strong>enabled?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+99
+100
+101</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 99</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_enabled?'>enabled?</span>
+  <span class='ivar'>@enabled</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="loaded_set-instance_method">
+  
+    #<strong>loaded_set</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Defensive copy for external callers / property specs. Callers
+that want read-only size should use <code>loaded_set_size</code> instead -
+avoids the dup allocation.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+202
+203
+204</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 202</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_loaded_set'>loaded_set</span>
+  <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="loaded_set_inputs-instance_method">
+  
+    #<strong>loaded_set_inputs</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Set<Input> covering the full @loaded_set. Callers merge this
+into an example's Input bucket at start_example time - every
+file loaded up to this point is a transitive dependency.
+Returns a fresh Set per call so mutation stays local.</p>
+<p>Disabled trackers never populate @input_cache (capture_boot_set!
+skips the build_inputs pass), so no explicit enabled guard is
+needed - the enumeration naturally yields Set.new.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+171
+172
+173</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 171</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_inputs'>loaded_set_inputs</span>
+  <span class='ivar'>@input_cache</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="loaded_set_size-instance_method">
+  
+    #<strong>loaded_set_size</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+206
+207
+208</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 206</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_size'>loaded_set_size</span>
+  <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="stop_example-instance_method">
+  
+    #<strong>stop_example</strong>(_example_id)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Diff-and-grow. Called after an example finishes: peeks
+::Coverage, finds paths the tracker hadn't seen yet, digests
+them, adds them to @loaded_set + @input_cache, and returns the
+new-paths-only Input set so the caller can attribute them to
+the just-completed example.</p>
+<p>Paths whose digest fails are dropped from both @loaded_set and
+the returned set - the next stop_example will retry them
+(useful if the failure was transient) and keeps the
+&quot;@loaded_set =&gt; @input_cache has an entry&quot; invariant.</p>
+<p>Steady state (no new files loaded this example) is ~O(|peek|)
+with no digest work.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 188</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_stop_example'>stop_example</span><span class='lparen'>(</span><span class='id identifier rubyid__example_id'>_example_id</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
+
+  <span class='id identifier rubyid_new_paths'>new_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_new_filtered_paths'>new_filtered_paths</span>
+  <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='id identifier rubyid_new_paths'>new_paths</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_new_inputs'>new_inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_build_inputs'>build_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_new_paths'>new_paths</span><span class='rparen'>)</span>
+  <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_new_inputs'>new_inputs</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:path</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_new_inputs'>new_inputs</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Sun May  3 21:06:09 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

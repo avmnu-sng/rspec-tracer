@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: snapshot
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "snapshot";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: snapshot</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='kw'>module</span> <span class='const'>Storage</span>
+    <span class='comment'># Value object returned by `Backend#load_graph` and accepted by
+</span>    <span class='comment'># `Backend#save_graph`. Bundles every collection that 1.x&#39;s
+</span>    <span class='comment'># report_writer persists plus the schema_version + run_id envelope
+</span>    <span class='comment'># so a full cache can be reconstructed in one trip.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># The field layout mirrors 1.x&#39;s on-disk contract (see
+</span>    <span class='comment'># `JsonBackend::FILENAMES`); every field round-trips through
+</span>    <span class='comment'># `to_h` / `from_h` so the backend can serialize without reaching
+</span>    <span class='comment'># into struct internals.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># `examples_coverage` may be `nil` when a caller explicitly loads
+</span>    <span class='comment'># the cheap header only (M3.6 will wire that path). The default
+</span>    <span class='comment'># load is eager - `nil` vs `{}` distinguishes &quot;not yet loaded&quot;
+</span>    <span class='comment'># from &quot;loaded and empty.&quot;
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Methods are defined on the reopened class body (not inside the
+</span>    <span class='comment'># Struct.new block) so mutant can introspect them - same pattern
+</span>    <span class='comment'># as Tracker::Input.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># M3.7 adds `boot_set` - Hash[relative_path =&gt; sha256_hex] of every
+</span>    <span class='comment'># project file loaded before any example runs (spec_helper
+</span>    <span class='comment'># requires, gem boot, eager autoload). Backs the constants-
+</span>    <span class='comment'># blind-spot fix: the M3.6 caller compares this against the
+</span>    <span class='comment'># previous run&#39;s boot_set and ORs any mismatch with
+</span>    <span class='comment'># WholeSuiteInvalidators when computing the whole_suite_invalidated
+</span>    <span class='comment'># bool. Per-example loaded-set attribution folds into `dependency`
+</span>    <span class='comment'># via the existing graph registration path - no separate field.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># M4.3 adds `wsi_snapshot` - Hash[watch_name =&gt; sha256_hex] produced
+</span>    <span class='comment'># by `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm
+</span>    <span class='comment'># run can&#39;t tell whether Gemfile.lock / .ruby-version / .rspec-tracer
+</span>    <span class='comment'># (or the tracer gem identity) changed since the previous run, and
+</span>    <span class='comment'># the engine falls back to &quot;first run = invalidate everything&quot; on
+</span>    <span class='comment'># every warm run. The field is optional in the JSON layout so caches
+</span>    <span class='comment'># saved before M4.3 continue to load (missing wsi.json coerces to
+</span>    <span class='comment'># `{}`, which compares unequal and triggers one cold re-run - safe
+</span>    <span class='comment'># fallback, same cost as any other cache miss).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># M5.2 adds `env_snapshot` - Hash[env_name =&gt; md5_hex] produced by
+</span>    <span class='comment'># `Tracker::EnvSnapshot#digest_snapshot`. Covers env-var values
+</span>    <span class='comment'># declared via the per-example `tracks: { env: ... }` DSL.
+</span>    <span class='comment'># Without it, a warm run can&#39;t tell whether an env-gated example
+</span>    <span class='comment'># needs to re-run when the env changes. Same optional-in-JSON
+</span>    <span class='comment'># treatment as wsi_snapshot: missing file coerces to `{}`, no
+</span>    <span class='comment'># schema_version bump, one cold re-run on upgrade.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># M6.1 adds `env_dependency` - Hash[example_id =&gt; Array&lt;env_name&gt;]
+</span>    <span class='comment'># capturing which env keys each tracked example declared. The
+</span>    <span class='comment'># per-run `env_snapshot` stores the digest of each key; this map
+</span>    <span class='comment'># stores the example-to-key attribution that the reporter layer
+</span>    <span class='comment'># needs to render &quot;which env vars does this example depend on.&quot;
+</span>    <span class='comment'># Without it, reports can&#39;t surface env dependencies - Engine&#39;s
+</span>    <span class='comment'># per-run `@tracks_env` map would otherwise be lost at finalize.
+</span>    <span class='comment'># Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
+</span>    <span class='comment'># missing file coerces to `{}`, no schema_version bump.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># `cache_hit_reason` is a SUITE-LEVEL aggregate. It maps
+</span>    <span class='comment'># `reason_string =&gt; count` (e.g. `{&quot;Files changed&quot; =&gt; 12,
+</span>    <span class='comment'># &quot;No cache&quot; =&gt; 5}`) and surfaces &quot;why did each non-skipped
+</span>    <span class='comment'># example run.&quot; JsonBackend persists it as `cache_hit_reason.json`
+</span>    <span class='comment'># under the per-run dir (same shape as wsi_snapshot / env_snapshot:
+</span>    <span class='comment'># one file per field; missing file coerces to `{}`, no
+</span>    <span class='comment'># schema_version bump). SqliteBackend does not persist it (would
+</span>    <span class='comment'># require a meta-table column / schema bump); SqliteBackend users
+</span>    <span class='comment'># see the field as `{}` on read until a future enhancement
+</span>    <span class='comment'># extends the meta table.
+</span>    <span class='const'>Snapshot</span> <span class='op'>=</span> <span class='const'>Struct</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
+      <span class='symbol'>:schema_version</span><span class='comma'>,</span>
+      <span class='symbol'>:run_id</span><span class='comma'>,</span>
+      <span class='symbol'>:all_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:duplicate_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:interrupted_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:flaky_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:failed_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:pending_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:skipped_examples</span><span class='comma'>,</span>
+      <span class='symbol'>:all_files</span><span class='comma'>,</span>
+      <span class='symbol'>:dependency</span><span class='comma'>,</span>
+      <span class='symbol'>:reverse_dependency</span><span class='comma'>,</span>
+      <span class='symbol'>:examples_coverage</span><span class='comma'>,</span>
+      <span class='symbol'>:boot_set</span><span class='comma'>,</span>
+      <span class='symbol'>:wsi_snapshot</span><span class='comma'>,</span>
+      <span class='symbol'>:env_snapshot</span><span class='comma'>,</span>
+      <span class='symbol'>:env_dependency</span><span class='comma'>,</span>
+      <span class='symbol'>:cache_hit_reason</span><span class='comma'>,</span>
+      <span class='label'>keyword_init:</span> <span class='kw'>true</span>
+    <span class='rparen'>)</span>
+
+    <span class='kw'>class</span> <span class='const'>Snapshot</span>
+      <span class='comment'># Defaults every collection to its 1.x starting shape: Hash for
+</span>      <span class='comment'># keyed collections, Set for example-id lists. Keeps spec
+</span>      <span class='comment'># construction terse and prevents accidental nil-deref when a
+</span>      <span class='comment'># save is composed incrementally.
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_empty'>empty</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='comma'>,</span> <span class='label'>run_id:</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
+          <span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='comma'>,</span>
+          <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span>
+          <span class='label'>all_examples:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>duplicate_examples:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>interrupted_examples:</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='comma'>,</span>
+          <span class='label'>flaky_examples:</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='comma'>,</span>
+          <span class='label'>failed_examples:</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='comma'>,</span>
+          <span class='label'>pending_examples:</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='comma'>,</span>
+          <span class='label'>skipped_examples:</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='comma'>,</span>
+          <span class='label'>all_files:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>dependency:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>reverse_dependency:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>examples_coverage:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>boot_set:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>wsi_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>env_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>env_dependency:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>cache_hit_reason:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Sun May  3 21:06:07 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

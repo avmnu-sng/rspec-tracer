@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: registry
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "registry";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: registry</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='kw'>module</span> <span class='const'>Reporters</span>
+    <span class='comment'># Orchestrates reporter emission at finalize-time. Called from
+</span>    <span class='comment'># `RSpecTracer#run_exit_tasks` once the Engine has persisted its
+</span>    <span class='comment'># Snapshot (architectural decision (a): wire from run_exit_tasks,
+</span>    <span class='comment'># not Engine-internal). Each configured reporter gets an isolated
+</span>    <span class='comment'># rescue; a buggy reporter warns + continues, never propagates a
+</span>    <span class='comment'># non-zero exit into the user&#39;s test suite.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Reporter resolution:
+</span>    <span class='comment'>#   - Configuration#reporters returns `[[name_or_class, opts], ...]`
+</span>    <span class='comment'>#     when the user called `add_reporter`; `nil` otherwise.
+</span>    <span class='comment'>#   - When nil, falls back to `DEFAULTS` (`[:terminal, :json]`).
+</span>    <span class='comment'>#   - Symbol names resolve via `BUILT_INS` to in-tree reporter
+</span>    <span class='comment'>#     classes. Class values pass through as-is (custom reporters
+</span>    <span class='comment'>#     conforming to `Reporters::Base`).
+</span>    <span class='comment'>#   - Unknown symbols raise `ArgumentError` at emit time; the DSL
+</span>    <span class='comment'>#     validates eagerly, so this is the safety net for programmatic
+</span>    <span class='comment'>#     callers.
+</span>    <span class='kw'>class</span> <span class='const'>Registry</span>
+      <span class='comment'># Symbol -&gt; lazy class-name mapping. Strings (not Class constants)
+</span>      <span class='comment'># so the require order doesn&#39;t force load of reporter classes
+</span>      <span class='comment'># when the Registry module itself is loaded - matches how
+</span>      <span class='comment'># `storage_backend`&#39;s Configuration DSL defers backend resolution.
+</span>      <span class='const'>BUILT_INS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+        <span class='label'>terminal:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSpecTracer::Reporters::TerminalReporter</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+        <span class='label'>json:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSpecTracer::Reporters::JsonReporter</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+        <span class='label'>html:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSpecTracer::Reporters::HtmlReporter</span><span class='tstring_end'>&#39;</span></span>
+      <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='const'>DEFAULTS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>terminal</span><span class='words_sep'> </span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>html</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='comma'>,</span> <span class='label'>snapshot:</span><span class='comma'>,</span> <span class='label'>report_dir:</span><span class='comma'>,</span> <span class='label'>run_metadata:</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span>
+          <span class='label'>snapshot:</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>report_dir:</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span> <span class='label'>run_metadata:</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span>
+        <span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='rparen'>)</span>
+        <span class='ivar'>@configuration</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span><span class='label'>snapshot:</span><span class='comma'>,</span> <span class='label'>report_dir:</span><span class='comma'>,</span> <span class='label'>run_metadata:</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_entries'>entries</span> <span class='op'>=</span> <span class='id identifier rubyid_resolve_entries'>resolve_entries</span>
+        <span class='kw'>return</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='kw'>return</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='id identifier rubyid_empty_snapshot?'>empty_snapshot?</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_klass'>klass</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='op'>|</span> <span class='id identifier rubyid_emit_one'>emit_one</span><span class='lparen'>(</span><span class='id identifier rubyid_klass'>klass</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_private'>private</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_resolve_entries'>resolve_entries</span>
+        <span class='id identifier rubyid_declared'>declared</span> <span class='op'>=</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:reporters</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_reporters'>reporters</span> <span class='op'>:</span> <span class='kw'>nil</span>
+        <span class='id identifier rubyid_source'>source</span> <span class='op'>=</span> <span class='id identifier rubyid_declared'>declared</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='id identifier rubyid_declared'>declared</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='op'>?</span> <span class='id identifier rubyid_declared'>declared</span> <span class='op'>:</span> <span class='const'>DEFAULTS</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_name'>name</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_resolve_class'>resolve_class</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_resolve_class'>resolve_class</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_name_or_class'>name_or_class</span> <span class='kw'>if</span> <span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Class</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_const_name'>const_name</span> <span class='op'>=</span> <span class='const'>BUILT_INS</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span> <span class='kw'>do</span>
+          <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown reporter: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
+
+        <span class='const'>Object</span><span class='period'>.</span><span class='id identifier rubyid_const_get'>const_get</span><span class='lparen'>(</span><span class='id identifier rubyid_const_name'>const_name</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_emit_one'>emit_one</span><span class='lparen'>(</span><span class='id identifier rubyid_klass'>klass</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_reporter'>reporter</span> <span class='op'>=</span> <span class='id identifier rubyid_klass'>klass</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
+          <span class='label'>snapshot:</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span>
+          <span class='label'>report_dir:</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span>
+          <span class='label'>run_metadata:</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='comma'>,</span>
+          <span class='label'>logger:</span> <span class='id identifier rubyid_logger'>logger</span><span class='comma'>,</span>
+          <span class='op'>**</span><span class='id identifier rubyid_opts'>opts</span>
+        <span class='rparen'>)</span>
+        <span class='id identifier rubyid_reporter'>reporter</span><span class='period'>.</span><span class='id identifier rubyid_generate'>generate</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+        <span class='id identifier rubyid_warn_continue'>warn_continue</span><span class='lparen'>(</span><span class='id identifier rubyid_klass'>klass</span><span class='comma'>,</span> <span class='id identifier rubyid_e'>e</span><span class='rparen'>)</span>
+        <span class='kw'>nil</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_warn_continue'>warn_continue</span><span class='lparen'>(</span><span class='id identifier rubyid_klass'>klass</span><span class='comma'>,</span> <span class='id identifier rubyid_err'>err</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_logger'>logger</span><span class='op'>&amp;.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: reporter </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_klass'>klass</span><span class='period'>.</span><span class='id identifier rubyid_name'>name</span><span class='embexpr_end'>}</span><span class='tstring_content'> failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_err'>err</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_err'>err</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_logger'>logger</span>
+        <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:logger</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span> <span class='op'>:</span> <span class='kw'>nil</span>
+      <span class='kw'>end</span>
+
+      <span class='kw'>def</span> <span class='id identifier rubyid_empty_snapshot?'>empty_snapshot?</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Sun May  3 21:06:07 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>
