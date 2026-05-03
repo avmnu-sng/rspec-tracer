@@ -1149,6 +1149,22 @@ module RSpecTracer
     # dependency graph. Files matching the filter are not registered
     # as deps, so changes to them don't trigger re-runs.
     #
+    # The filter applies uniformly to both fresh per-example
+    # attributions AND prior-snapshot carry-forward (warm-run path).
+    # Adding a filter between runs immediately drops matching paths
+    # from the next warm run's `@all_files` and dependency graph;
+    # no cold run is required.
+    #
+    # The default filter list (loaded by `lib/rspec_tracer/load_default_config.rb`
+    # before the user's `.rspec-tracer` runs) excludes Ruby toolchain
+    # paths (`/vendor/bundle/`, `/usr/local/bundle/`, rbenv / asdf / rvm)
+    # AND rspec-tracer's own output dirs (`/rspec_tracer_cache/`,
+    # `/rspec_tracer_coverage/`, `/rspec_tracer_report/`,
+    # `rspec_tracer.lock`). Use `filters.clear` in `.rspec-tracer`
+    # before adding your own if you need to start from a blank list,
+    # but be aware you'll then need to re-add the toolchain + tracer-
+    # output exclusions yourself.
+    #
     # @param filter [String, Regexp, Array, RSpecTracer::Filter, nil]
     #   filter spec. Nil + a block also accepted; the block receives
     #   a `source_file` Hash (`:name` / `:file_path`) and returns

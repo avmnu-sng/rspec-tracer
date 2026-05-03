@@ -625,6 +625,14 @@ module RSpecTracer
 
     # prev.all_files is file-name-keyed; the engine's @all_files is
     # abs-path-keyed (path_to_file_name round-trips via the root prefix).
+    #
+    # Re-applies the current filter list at seed time so users who
+    # add a filter mid-development see the carried-over file entries
+    # drop on the next run (instead of waiting for a cold run). The
+    # filter contract should hold for both fresh attributions
+    # (attribute_to_example) and prior-snapshot carry-forward —
+    # otherwise add_filter has split semantics and a freshly-added
+    # filter does not exclude already-cached paths.
     def seed_all_files_from_previous(prev)
       return unless prev.all_files.is_a?(Hash)
 
@@ -634,8 +642,11 @@ module RSpecTracer
         file_path = symbol_or_string(meta, :file_path)
         next if file_path.nil?
 
+        file_name = symbol_or_string(meta, :file_name) || path_to_file_name(file_path)
+        next if filtered_by_current_filters?(file_name)
+
         @all_files[file_path] = {
-          file_name: symbol_or_string(meta, :file_name),
+          file_name: file_name,
           file_path: file_path,
           digest: symbol_or_string(meta, :digest)
         }
@@ -645,14 +656,33 @@ module RSpecTracer
     # prev.dependency keys on example_id, values are Set<file_name>.
     # Register in @graph via absolute paths so the on-disk shape
     # (file_name) converts at save time via dependency_by_name.
+    #
+    # Drops paths matching the current filter list so previously-
+    # cached deps that the new filter excludes do not leak through
+    # the carry-forward seed path. Same rationale as
+    # seed_all_files_from_previous: the filter contract is one
+    # contract, applied uniformly across fresh + carry-forward
+    # attributions.
     def seed_graph_from_previous(prev)
       return unless prev.dependency.is_a?(Hash)
 
       prev.dependency.each do |example_id, file_names|
         paths = Set.new
-        file_names.each { |name| paths << absolute_path(name) }
+        file_names.each do |name|
+          next if filtered_by_current_filters?(name)
+
+          paths << absolute_path(name)
+        end
         @graph.register_example(example_id, paths)
       end
+    end
+
+    # Helper: returns true if the file name matches any currently-
+    # configured filter. Mirrors the check site at
+    # `attribute_to_example` (engine.rb:770) so both fresh + carry-
+    # forward attributions converge on the same filter behavior.
+    def filtered_by_current_filters?(file_name)
+      @configuration.filters.any? { |f| f.match?(file_name: file_name) }
     end
 
     def compute_filter_decisions
