@@ -40,13 +40,45 @@ tasks:
 
   docs:site:build:
     desc: >-
-      Build the unified docs site (YARD HTML + sample HTML report
-      + landing page) under doc/site/ for GitHub Pages publishing.
-      The docs-publish workflow runs the same task on push to main.
+      Build the per-version docs payload (YARD HTML + sample HTML
+      report) under doc/site/ for the docs-publish workflow to
+      stage into a version-keyed subdir on the gh-pages branch.
+      The root landing page (docs/site/index.html) + versions.json
+      are managed separately by the workflow itself; they are NOT
+      part of the per-version payload.
     cmds:
       - rm -rf doc/site
       - mkdir -p doc/site/yard doc/site/demo
       - bundle exec yard doc --output-dir doc/site/yard
       - test -f rspec_tracer_report/index.html || task test:features:rails
       - cp -r rspec_tracer_report/* doc/site/demo/
-      - cp docs/site/index.html doc/site/index.html
+
+  docs:site:preview:
+    desc: >-
+      Build the docs site AND copy the landing page + a
+      placeholder versions.json into doc/preview/ so you can open
+      doc/preview/index.html locally to verify the version-aware
+      layout before pushing. The placeholder versions.json mimics
+      what the docs-publish workflow would generate; the only
+      version listed is "main" (no tags).
+    cmds:
+      - task: docs:site:build
+      - rm -rf doc/preview
+      - mkdir -p doc/preview/main
+      - cp -r doc/site/yard doc/preview/main/
+      - cp -r doc/site/demo doc/preview/main/
+      - cp docs/site/index.html doc/preview/index.html
+      - |
+        cat > doc/preview/versions.json <<'EOF'
+        {
+          "schema_version": 1,
+          "generated_at": "preview",
+          "trigger": "preview",
+          "latest_stable": null,
+          "latest_prerelease": null,
+          "all_versions": []
+        }
+        EOF
+      - echo "Preview ready. Open with a local HTTP server (the landing page fetches versions.json):"
+      - echo "  cd doc/preview && python3 -m http.server 8000"
+      - echo "  open http://localhost:8000/"
