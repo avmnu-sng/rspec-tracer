@@ -40,13 +40,61 @@ tasks:
 
   docs:site:build:
     desc: >-
-      Build the unified docs site (YARD HTML + sample HTML report
-      + landing page) under doc/site/ for GitHub Pages publishing.
-      The docs-publish workflow runs the same task on push to main.
+      Build the per-version docs payload (YARD HTML + sample HTML
+      report) under doc/site/ for the docs-publish workflow to
+      stage into a version-keyed subdir on the gh-pages branch.
+      The root landing page (docs/site/index.html) + versions.json
+      are managed separately by the workflow itself; they are NOT
+      part of the per-version payload.
     cmds:
       - rm -rf doc/site
       - mkdir -p doc/site/yard doc/site/demo
       - bundle exec yard doc --output-dir doc/site/yard
       - test -f rspec_tracer_report/index.html || task test:features:rails
       - cp -r rspec_tracer_report/* doc/site/demo/
-      - cp docs/site/index.html doc/site/index.html
+
+  docs:site:preview:
+    desc: >-
+      Build the docs site AND copy the landing page + a placeholder
+      versions.json into doc/preview/ so you can open
+      doc/preview/index.html DIRECTLY (no HTTP server needed) and
+      verify the version-aware layout before pushing. The version
+      data is inlined into index.html via the BEGIN_VERSIONS_DATA
+      marker so file:// rendering works without fetch().
+    cmds:
+      - task: docs:site:build
+      - rm -rf doc/preview
+      - mkdir -p doc/preview/main
+      - cp -r doc/site/yard doc/preview/main/
+      - cp -r doc/site/demo doc/preview/main/
+      - cp docs/site/index.html doc/preview/index.html
+      - |
+        cat > doc/preview/versions.json <<'EOF'
+        {
+          "schema_version": 1,
+          "generated_at": "preview",
+          "trigger": "preview",
+          "latest_stable": null,
+          "latest_prerelease": null,
+          "all_versions": []
+        }
+        EOF
+      - |
+        python3 - <<'PY'
+        import pathlib, re
+        html_path = pathlib.Path('doc/preview/index.html')
+        json_path = pathlib.Path('doc/preview/versions.json')
+        html = html_path.read_text(encoding='utf-8')
+        data = json_path.read_text(encoding='utf-8').strip()
+        new_html, count = re.subn(
+          r'/\* BEGIN_VERSIONS_DATA \*/.*?/\* END_VERSIONS_DATA \*/',
+          '/* BEGIN_VERSIONS_DATA */ ' + data + ' /* END_VERSIONS_DATA */',
+          html, count=1, flags=re.DOTALL,
+        )
+        if count == 0:
+          raise SystemExit('BEGIN_VERSIONS_DATA marker missing from index.html')
+        html_path.write_text(new_html, encoding='utf-8')
+        print(f'inlined {len(data)} bytes of versions data into index.html')
+        PY
+      - echo "Preview ready. Open directly (no HTTP server needed):"
+      - echo "  open doc/preview/index.html"

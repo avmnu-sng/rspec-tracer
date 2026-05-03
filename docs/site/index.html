@@ -13,6 +13,10 @@
       --accent: #c33;
       --border: #ddd;
       --code-bg: #f6f8fa;
+      --pill-bg: #eef;
+      --pill-fg: #336;
+      --pill-pre-bg: #fee;
+      --pill-pre-fg: #c33;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -22,6 +26,10 @@
         --accent: #f55;
         --border: #444;
         --code-bg: #2a2a2a;
+        --pill-bg: #224;
+        --pill-fg: #aac;
+        --pill-pre-bg: #422;
+        --pill-pre-fg: #f88;
       }
     }
     * { box-sizing: border-box; }
@@ -46,6 +54,14 @@
     .card p { margin: 0 0 0.5rem; color: var(--muted); font-size: 0.95rem; }
     code { background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 3px; font-size: 0.9em; }
     .badges img { margin-right: 0.5rem; vertical-align: middle; }
+    .pill { display: inline-block; padding: 0.1em 0.55em; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--pill-bg); color: var(--pill-fg); margin-left: 0.5rem; vertical-align: middle; }
+    .pill.pre { background: var(--pill-pre-bg); color: var(--pill-pre-fg); }
+    .version-list { list-style: none; padding: 0; margin: 1rem 0; }
+    .version-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+    .version-list li:last-child { border-bottom: none; }
+    .version-list a { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-left: 0.75rem; }
+    .empty { color: var(--muted); font-style: italic; }
     footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
   </style>
 </head>
@@ -54,14 +70,28 @@
     <h1>rspec-tracer</h1>
     <p class="lede">Specs dependency analyzer, flaky-test detector, test accelerator, and coverage reporter for RSpec.</p>
     <p class="badges">
-      <a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml">
-        <img alt="CI status" src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/lint-and-specs.yml/badge.svg">
+      <a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml">
+        <img alt="CI status" src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg">
       </a>
       <a href="https://badge.fury.io/rb/rspec-tracer">
         <img alt="Gem version" src="https://badge.fury.io/rb/rspec-tracer.svg">
       </a>
     </p>
   </header>
+
+  <h2>API reference + live demo</h2>
+  <p>Browse the YARD-generated API reference and the live HTML report
+  demo for the version that matches your <code>bundle install</code>:</p>
+
+  <ul class="version-list" id="version-list">
+    <li class="empty" id="version-list-loading">Loading versions&hellip;</li>
+  </ul>
+
+  <p style="font-size: 0.9rem; color: var(--muted);">
+    <code>main</code> is the rolling HEAD-of-main snapshot — useful
+    for previewing unreleased changes; not what
+    <code>gem 'rspec-tracer'</code> installs.
+  </p>
 
   <h2>Quick links</h2>
   <div class="grid">
@@ -91,17 +121,6 @@
     </article>
   </div>
 
-  <h2>API reference</h2>
-  <p>Full YARD-generated API docs for every public method, the
-  Configuration DSL, and the backend protocols.</p>
-  <p><a href="yard/index.html">→ Browse the YARD API reference</a></p>
-
-  <h2>Live HTML report demo</h2>
-  <p>The HTML reporter rspec-tracer generates after each test run.
-  This sample is generated from the in-repo Rails fixture; your own
-  reports will look the same shape with your suite's data.</p>
-  <p><a href="demo/index.html">→ Open the sample HTML report</a></p>
-
   <h2>Internals (contributor docs)</h2>
   <ul>
     <li><a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/docs/internals/HOW_TRACKS_CASCADES.md">How <code>tracks:</code> cascades</a></li>
@@ -120,7 +139,106 @@
   <footer>
     <p>rspec-tracer is released under the
     <a href="https://github.com/avmnu-sng/rspec-tracer/blob/main/LICENSE">MIT License</a>.
-    Built with <code>task docs:site:build</code>; published via GitHub Actions.</p>
+    Site auto-published via GitHub Actions; per-version YARD docs are
+    preserved indefinitely. <span id="generated-at"></span></p>
   </footer>
+
+  <!--
+    Build-time injected version data. Replaced by `task docs:site:build`
+    (preview path) + the docs-publish.yml workflow (production path)
+    via a `sed` substitution against the BEGIN/END markers below.
+    Keeping the data inline (rather than fetching versions.json at
+    page-load) lets the page render correctly under both `file://`
+    (local preview) and `http://` (production) — `fetch()` refuses
+    file:// for CORS/security reasons.
+
+    The page also tries to fetch versions.json as a secondary path
+    so that if the inline data is stale (e.g. someone opens an old
+    cached page after a new tag shipped), the dynamic fetch wins.
+  -->
+  <script id="versions-data">
+    window.RSPEC_TRACER_VERSIONS = /* BEGIN_VERSIONS_DATA */ null /* END_VERSIONS_DATA */;
+  </script>
+
+  <script>
+    // Render the version list from inline data first; if that's null
+    // (placeholder before any build), try fetching versions.json
+    // (works under HTTP). Falls back to a static "main only" entry
+    // if both fail.
+    (async function renderVersions() {
+      const list = document.getElementById('version-list');
+      const loading = document.getElementById('version-list-loading');
+      const generatedAt = document.getElementById('generated-at');
+
+      let data = window.RSPEC_TRACER_VERSIONS;
+
+      // Secondary fetch — only attempted under http(s) protocol since
+      // file:// rejects fetch() with TypeError.
+      if (!data && (location.protocol === 'http:' || location.protocol === 'https:')) {
+        try {
+          const res = await fetch('versions.json', { cache: 'no-store' });
+          if (res.ok) data = await res.json();
+        } catch (_) { /* swallow — fall through to static fallback */ }
+      }
+
+      if (!data) {
+        loading.textContent =
+          'Version data unavailable — showing rolling main only.';
+        loading.classList.remove('empty');
+        const li = document.createElement('li');
+        li.innerHTML =
+          '<a href="main/yard/index.html">main</a>' +
+          '<span class="pill">rolling</span> ' +
+          '<span class="meta">YARD</span> &middot; ' +
+          '<a href="main/demo/index.html">demo</a>';
+        list.appendChild(li);
+        return;
+      }
+
+      list.innerHTML = '';
+
+      if (data.generated_at) {
+        generatedAt.textContent =
+          'versions.json regenerated ' + data.generated_at + '.';
+      }
+
+      // Always-shown rolling main entry first.
+      const mainLi = document.createElement('li');
+      mainLi.innerHTML =
+        '<a href="main/yard/index.html">main</a>' +
+        '<span class="pill">rolling</span> ' +
+        '<span class="meta">YARD</span> &middot; ' +
+        '<a href="main/demo/index.html">demo</a>';
+      list.appendChild(mainLi);
+
+      // Then every released tag, newest-first.
+      const versions = Array.isArray(data.all_versions) ? data.all_versions : [];
+      if (versions.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'empty';
+        empty.textContent = 'No tagged versions yet.';
+        list.appendChild(empty);
+        return;
+      }
+
+      const stable = data.latest_stable;
+      const prerelease = data.latest_prerelease;
+
+      versions.forEach(function (v) {
+        const li = document.createElement('li');
+        const isPre = /\.(pre|rc|beta|alpha)/.test(v);
+        const pill = v === stable
+          ? '<span class="pill">latest stable</span>'
+          : (v === prerelease ? '<span class="pill pre">latest pre-release</span>'
+                              : (isPre ? '<span class="pill pre">pre-release</span>' : ''));
+        li.innerHTML =
+          '<a href="' + v + '/yard/index.html">' + v + '</a>' +
+          pill + ' ' +
+          '<span class="meta">YARD</span> &middot; ' +
+          '<a href="' + v + '/demo/index.html">demo</a>';
+        list.appendChild(li);
+      });
+    })();
+  </script>
 </body>
 </html>
