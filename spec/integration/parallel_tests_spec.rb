@@ -116,6 +116,27 @@ RSpec.describe 'parallel_tests v2 engine integration' do
       expect(all_examples.keys).not_to be_empty
       expect(all_examples.keys.size).to be >= 3
     end
+
+    # M8.10: pre-fix, every worker emitted reports into per-worker
+    # `parallel_tests_N` dirs and then `purge_worker_dirs!` deleted
+    # them, leaving zero usable output for the user. Now the
+    # last-process merge emits reporters ONCE at the top-level
+    # location BEFORE the purge, so the user sees one HTML report,
+    # one JSON report, and zero leftover per-worker report dirs.
+    # rubocop:disable RSpec/ExampleLength
+    it 'writes a single merged HTML + JSON report at the top-level report dir (M8.10)' do
+      run_parallel
+
+      report_root = ParallelTestsSpecHelpers::REPORT_ROOT
+      expect(File).to(exist(File.join(report_root, 'index.html')),
+                      'expected merged HTML report at rspec_tracer_report/index.html')
+      expect(File).to(exist(File.join(report_root, 'report.json')),
+                      'expected merged JSON report at rspec_tracer_report/report.json')
+
+      stragglers = Dir.glob(File.join(report_root, 'parallel_tests_*'))
+      expect(stragglers).to(be_empty, "leftover per-worker report dirs: #{stragglers.inspect}")
+    end
+    # rubocop:enable RSpec/ExampleLength
   end
 
   describe 'warm parallel run' do

@@ -87,6 +87,14 @@ module RSpecTracer
 
         merge_snapshot!
         merge_coverage! unless RSpecTracer.simplecov?
+        # M8.10: emit terminal/JSON/HTML reporters ONCE at the merged
+        # top-level location BEFORE purge_worker_dirs! removes the
+        # per-worker `parallel_tests_N` dirs. Pre-M8.10 each worker
+        # emitted reports into its `rspec_tracer_report/parallel_tests_N`
+        # dir and the purge then deleted them, leaving the user with
+        # zero usable output. Now reporters consume the just-merged
+        # top-level snapshot.
+        emit_merged_reporters!
         purge_worker_dirs!
         remove_lock_file!
         true
@@ -95,6 +103,54 @@ module RSpecTracer
           "RSpec tracer: parallel_tests finalize failed (#{e.class}: #{e.message})"
         )
         false
+      end
+
+      # M8.10: Emit reporters against the merged top-level snapshot
+      # so the user gets one terminal summary + one JSON report + one
+      # HTML report at the canonical (non-`parallel_tests_N`) path.
+      # Wrapped in its own rescue so a failed reporter never blocks
+      # purge / lock cleanup downstream.
+      def self.emit_merged_reporters!
+        return unless RSpecTracer.storage_backend == :json
+
+        base_dir = ::File.dirname(RSpecTracer.cache_path)
+        merged_snapshot = load_merged_snapshot(base_dir)
+        return if merged_snapshot.nil?
+
+        top_report_dir = ::File.dirname(RSpecTracer.report_path)
+        ::FileUtils.mkdir_p(top_report_dir)
+
+        RSpecTracer::Reporters::Registry.emit_all(
+          configuration: RSpecTracer,
+          snapshot: merged_snapshot,
+          report_dir: top_report_dir,
+          run_metadata: build_merged_run_metadata(base_dir)
+        )
+      rescue StandardError => e
+        RSpecTracer.logger.warn(
+          "RSpec tracer: merged reporter emission failed (#{e.class}: #{e.message})"
+        )
+      end
+
+      def self.load_merged_snapshot(base_dir)
+        backend = RSpecTracer::Storage::JsonBackend.new(
+          cache_path: base_dir,
+          logger: RSpecTracer.logger,
+          retention_local_count: RSpecTracer.cache_retention_local_count,
+          serializer: RSpecTracer.storage_backend_opts[:serializer] || :json
+        )
+        backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      end
+
+      def self.build_merged_run_metadata(base_dir)
+        {
+          pid: Process.pid,
+          run_time: nil,
+          started_at: nil,
+          cache_path: base_dir,
+          parallel_tests: true,
+          rails: RSpecTracer.rails?
+        }
       end
 
       def self.track_test_env_number!

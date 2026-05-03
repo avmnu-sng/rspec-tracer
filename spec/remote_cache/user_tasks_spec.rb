@@ -154,6 +154,48 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
     end
   end
 
+  # M8.10: missing GIT_DEFAULT_BRANCH degrades gracefully (per the
+  # `Never propagate storage errors` contract) - the remote-cache
+  # rake-task surface returns false + logs a clear, actionable
+  # message at warn level, rather than letting the require_env raise
+  # propagate up into `bundle exec rake` as a non-zero exit. The user
+  # sees the env-name in the log line and knows what to fix.
+  describe 'missing GIT_DEFAULT_BRANCH (M8.10)' do
+    let(:config) { build_config(remote_cache_backend_entry: [fake_backend_class, {}]) }
+
+    def warn_messages
+      captured_logs.select { |(level, _)| level == :warn }.map(&:last)
+    end
+
+    it 'returns false + logs a clear warn when #download! is called without GIT_DEFAULT_BRANCH' do
+      runner = described_class.new(configuration: config, env: { 'GIT_BRANCH' => 'feat-1' })
+
+      expect(runner.download!).to be(false)
+      expect(warn_messages).to include(
+        a_string_including('download failed').and(a_string_including('GIT_DEFAULT_BRANCH'))
+      )
+    end
+
+    it 'treats GIT_DEFAULT_BRANCH=empty the same as unset' do
+      runner = described_class.new(
+        configuration: config,
+        env: { 'GIT_DEFAULT_BRANCH' => '', 'GIT_BRANCH' => 'feat-1' }
+      )
+
+      expect(runner.download!).to be(false)
+      expect(warn_messages).to include(a_string_including('GIT_DEFAULT_BRANCH'))
+    end
+
+    it 'returns false + logs a clear warn from #upload! (consistent UX across both rake tasks)' do
+      runner = described_class.new(configuration: config, env: { 'GIT_BRANCH' => 'main' })
+
+      expect(runner.upload!).to be(false)
+      expect(warn_messages).to include(
+        a_string_including('upload failed').and(a_string_including('GIT_DEFAULT_BRANCH'))
+      )
+    end
+  end
+
   describe '.download!' do
     it 'is a class-level convenience that dispatches to an instance' do
       config = build_config(remote_cache_backend_entry: nil)

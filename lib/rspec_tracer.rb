@@ -166,7 +166,16 @@ module RSpecTracer
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
       else
         snapshot = run_finalize
-        emit_reporters(snapshot) if snapshot
+        # M8.10: under parallel_tests, defer reporter emission until
+        # last-process finalize merges per-worker snapshots into the
+        # top-level cache. Each worker still persists its per-worker
+        # snapshot for the merge to consume. Pre-M8.10 every worker
+        # emitted reporters into rspec_tracer_report/parallel_tests_N/
+        # and purge_worker_dirs! removed those dirs - leaving the user
+        # with no usable terminal/JSON/HTML output. Now reporters fire
+        # ONCE at the merged top-level location (3x v1 orphan: M6.2 +
+        # M7.1 + M7.2).
+        emit_reporters(snapshot) if snapshot && !parallel_tests?
       end
 
       emit_coverage_json

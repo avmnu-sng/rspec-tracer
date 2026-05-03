@@ -281,6 +281,7 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       allow(ParallelTests).to receive(:wait_for_other_processes_to_finish)
       allow(described_class).to receive(:merge_snapshot!)
       allow(described_class).to receive(:merge_coverage!)
+      allow(described_class).to receive(:emit_merged_reporters!)
       allow(described_class).to receive(:purge_worker_dirs!)
     end
 
@@ -302,6 +303,7 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(result).to be(true)
       expect(described_class).to have_received(:merge_snapshot!)
       expect(described_class).to have_received(:merge_coverage!)
+      expect(described_class).to have_received(:emit_merged_reporters!)
       expect(described_class).to have_received(:purge_worker_dirs!)
       expect(File.exist?(lock_file)).to be(false)
     end
@@ -314,11 +316,76 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class).not_to have_received(:merge_coverage!)
     end
 
+    # M8.10: emit_merged_reporters! must run BEFORE purge_worker_dirs!
+    # so the reporter Registry consumes the merged top-level snapshot
+    # AND writes its terminal/JSON/HTML output before the per-worker
+    # parallel_tests_N dirs are removed.
+    it 'emits merged reporters before purging the per-worker dirs (M8.10)' do
+      ordering = []
+      allow(described_class).to receive(:emit_merged_reporters!) { ordering << :emit }
+      allow(described_class).to receive(:purge_worker_dirs!) { ordering << :purge }
+
+      described_class.finalize!
+
+      expect(ordering).to eq(%i[emit purge])
+    end
+
     it 'logs and returns false on StandardError — never propagates exit status' do
       allow(described_class).to receive(:merge_snapshot!).and_raise(StandardError, 'disk full')
 
       expect(described_class.finalize!).to be(false)
       expect(logger).to have_received(:warn).with(/parallel_tests finalize failed/)
+    end
+  end
+
+  describe '.emit_merged_reporters! (M8.10)' do
+    let(:base_dir) { File.dirname(cache_path) }
+    let(:top_report_dir) { File.dirname(report_path) }
+    let(:merged_snapshot) { instance_double(RSpecTracer::Storage::Snapshot) }
+
+    before do
+      allow(RSpecTracer).to receive_messages(storage_backend: :json,
+                                             storage_backend_opts: {})
+      allow(RSpecTracer).to receive(:rails?).and_return(false)
+    end
+
+    it 'is a no-op for non-:json storage backends (M3.8 SqliteBackend)' do
+      allow(RSpecTracer).to receive(:storage_backend).and_return(:sqlite)
+      expect(RSpecTracer::Reporters::Registry).not_to receive(:emit_all)
+
+      described_class.emit_merged_reporters!
+    end
+
+    it 'returns early when load_graph yields no merged snapshot' do
+      backend = instance_double(RSpecTracer::Storage::JsonBackend, load_graph: nil)
+      allow(RSpecTracer::Storage::JsonBackend).to receive(:new).and_return(backend)
+      expect(RSpecTracer::Reporters::Registry).not_to receive(:emit_all)
+
+      described_class.emit_merged_reporters!
+    end
+
+    it 'emits the registry against the merged snapshot at the top-level report dir' do
+      backend = instance_double(RSpecTracer::Storage::JsonBackend, load_graph: merged_snapshot)
+      allow(RSpecTracer::Storage::JsonBackend).to receive(:new).and_return(backend)
+      expect(RSpecTracer::Reporters::Registry).to receive(:emit_all).with(
+        hash_including(
+          configuration: RSpecTracer,
+          snapshot: merged_snapshot,
+          report_dir: top_report_dir,
+          run_metadata: hash_including(parallel_tests: true, cache_path: base_dir)
+        )
+      )
+
+      described_class.emit_merged_reporters!
+    end
+
+    it 'logs and continues on StandardError (purge / lock cleanup not blocked)' do
+      backend = instance_double(RSpecTracer::Storage::JsonBackend)
+      allow(backend).to receive(:load_graph).and_raise(StandardError, 'boom')
+      allow(RSpecTracer::Storage::JsonBackend).to receive(:new).and_return(backend)
+
+      expect { described_class.emit_merged_reporters! }.not_to raise_error
+      expect(logger).to have_received(:warn).with(/merged reporter emission failed/)
     end
   end
 
