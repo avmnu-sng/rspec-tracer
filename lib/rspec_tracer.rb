@@ -65,9 +65,33 @@ module RSpecTracer
 
       RSpecTracer.logger.debug "Started RSpec tracer (pid: #{RSpecTracer.pid})"
 
+      warn_on_simplecov_load_order_mistake
+
       @parallel_tests = RSpecTracer::RSpec::ParallelTests.active?
       RSpecTracer::RSpec::ParallelTests.setup! if parallel_tests?
       initial_setup
+    end
+
+    # M8.9: SimpleCov load-order is part of the documented contract -
+    # SimpleCov.start MUST run before RSpecTracer.start when both are
+    # used together (see README §SimpleCov interop). When the user
+    # has SimpleCov loaded but not started, we'd silently call
+    # ::Coverage.start ourselves and SimpleCov's later setup would
+    # bolt onto a Coverage already in flight, with the user's
+    # add_filter calls applied after rspec-tracer started consuming
+    # data. Surface the load-order mistake at start time so the user
+    # gets a one-line warning instead of mysteriously-broken
+    # coverage output.
+    def warn_on_simplecov_load_order_mistake
+      return unless defined?(::SimpleCov)
+      return if ::SimpleCov.respond_to?(:running) && ::SimpleCov.running
+
+      RSpecTracer.logger.warn(
+        'SimpleCov is loaded but not started. ' \
+        'Call SimpleCov.start before RSpecTracer.start so the ' \
+        'tracer respects SimpleCov\'s filter chain. See README ' \
+        'section "Working with SimpleCov".'
+      )
     end
 
     def at_exit_behavior
@@ -168,7 +192,7 @@ module RSpecTracer
       RSpecTracer.logger.debug "RSpec tracer persisted cache (took #{elapsed})"
       snapshot
     rescue StandardError => e
-      # Graceful-degradation contract per docs/revamp/ARCHITECTURE.md
+      # Graceful-degradation contract per ARCHITECTURE.md
       # section Cache corruption recovery: never propagate storage errors
       # into the user's test suite. Read-only cache_path, disk-full
       # mid-write, permission flips between runs - log and skip
