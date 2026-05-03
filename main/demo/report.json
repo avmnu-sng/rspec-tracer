@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "run_id": "2ccf2f14def31a5e44f9f3da69bac2d6",
-  "generated_at": "2026-05-03T21:32:43Z",
+  "generated_at": "2026-05-03T22:23:00Z",
   "summary": {
     "total_examples": 13,
     "passed_examples": 13,
@@ -12,9 +12,9 @@
     "flaky_examples": 0,
     "duplicate_examples": 0,
     "tracked_env_keys": 0,
-    "run_time": 287.7009,
-    "started_at": "2026-05-03T21:27:55Z",
-    "pid": 2375,
+    "run_time": 274.4702,
+    "started_at": "2026-05-03T22:18:26Z",
+    "pid": 2412,
     "parallel_tests": false
   },
   "reports": {
@@ -26,9 +26,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:28:37Z",
-          "finished_at": "2026-05-03T21:28:52Z",
-          "run_time": 14.804668662,
+          "started_at": "2026-05-03T22:19:05Z",
+          "finished_at": "2026-05-03T22:19:20Z",
+          "run_time": 15.046952487,
           "status": "passed"
         }
       },
@@ -39,9 +39,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:28:52Z",
-          "finished_at": "2026-05-03T21:29:14Z",
-          "run_time": 21.746695277,
+          "started_at": "2026-05-03T22:19:20Z",
+          "finished_at": "2026-05-03T22:19:41Z",
+          "run_time": 21.017898934,
           "status": "passed"
         }
       },
@@ -52,9 +52,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:29:14Z",
-          "finished_at": "2026-05-03T21:29:28Z",
-          "run_time": 13.556994984,
+          "started_at": "2026-05-03T22:19:41Z",
+          "finished_at": "2026-05-03T22:19:54Z",
+          "run_time": 13.549964143,
           "status": "passed"
         }
       },
@@ -65,9 +65,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:29:28Z",
-          "finished_at": "2026-05-03T21:29:49Z",
-          "run_time": 21.328223868,
+          "started_at": "2026-05-03T22:19:54Z",
+          "finished_at": "2026-05-03T22:20:15Z",
+          "run_time": 20.61593579,
           "status": "passed"
         }
       },
@@ -78,9 +78,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:29:49Z",
-          "finished_at": "2026-05-03T21:30:11Z",
-          "run_time": 22.379141902,
+          "started_at": "2026-05-03T22:20:15Z",
+          "finished_at": "2026-05-03T22:20:37Z",
+          "run_time": 21.468742709,
           "status": "passed"
         }
       },
@@ -91,9 +91,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:30:11Z",
-          "finished_at": "2026-05-03T21:30:34Z",
-          "run_time": 23.09308465,
+          "started_at": "2026-05-03T22:20:37Z",
+          "finished_at": "2026-05-03T22:20:58Z",
+          "run_time": 21.331780624,
           "status": "passed"
         }
       },
@@ -104,9 +104,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:30:34Z",
-          "finished_at": "2026-05-03T21:30:57Z",
-          "run_time": 22.555580555,
+          "started_at": "2026-05-03T22:20:58Z",
+          "finished_at": "2026-05-03T22:21:19Z",
+          "run_time": 20.858870836,
           "status": "passed"
         }
       },
@@ -117,9 +117,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:30:57Z",
-          "finished_at": "2026-05-03T21:31:19Z",
-          "run_time": 22.039305514,
+          "started_at": "2026-05-03T22:21:19Z",
+          "finished_at": "2026-05-03T22:21:40Z",
+          "run_time": 21.404569857,
           "status": "passed"
         }
       },
@@ -130,9 +130,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:31:19Z",
-          "finished_at": "2026-05-03T21:31:41Z",
-          "run_time": 22.080546216,
+          "started_at": "2026-05-03T22:21:40Z",
+          "finished_at": "2026-05-03T22:22:02Z",
+          "run_time": 21.63267915,
           "status": "passed"
         }
       },
@@ -143,9 +143,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:31:41Z",
-          "finished_at": "2026-05-03T21:32:03Z",
-          "run_time": 22.325059188,
+          "started_at": "2026-05-03T22:22:02Z",
+          "finished_at": "2026-05-03T22:22:23Z",
+          "run_time": 20.710477617,
           "status": "passed"
         }
       },
@@ -156,9 +156,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:32:03Z",
-          "finished_at": "2026-05-03T21:32:18Z",
-          "run_time": 14.078501506,
+          "started_at": "2026-05-03T22:22:23Z",
+          "finished_at": "2026-05-03T22:22:36Z",
+          "run_time": 13.447364632,
           "status": "passed"
         }
       },
@@ -169,9 +169,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:32:18Z",
-          "finished_at": "2026-05-03T21:32:34Z",
-          "run_time": 16.589194446,
+          "started_at": "2026-05-03T22:22:36Z",
+          "finished_at": "2026-05-03T22:22:52Z",
+          "run_time": 15.886436676,
           "status": "passed"
         }
       },
@@ -182,9 +182,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-05-03T21:32:36Z",
-          "finished_at": "2026-05-03T21:32:43Z",
-          "run_time": 6.96218787,
+          "started_at": "2026-05-03T22:22:53Z",
+          "finished_at": "2026-05-03T22:23:00Z",
+          "run_time": 6.694557429,
           "status": "passed"
         }
       }
@@ -196,10 +196,6 @@
         "example_id": "11897c8d013698d5cb56bdb332edaee9",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -211,10 +207,6 @@
         "example_id": "2a29095ad04e08af2a3c5c414677a3c6",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/fixtures/rails_app/spec/fixtures/users.yml",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
@@ -227,7 +219,6 @@
         "example_id": "4180d6426cd65a71b3cacb931176be00",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_coverage/coverage.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -239,10 +230,6 @@
         "example_id": "4339a431d3cd686e029c77aa247c48bf",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -254,10 +241,6 @@
         "example_id": "45db920af8186135162eb30091199be1",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -270,10 +253,6 @@
         "files": [
           "/.rspec-tracer",
           "/spec/fixtures/rails_app/app/views/users/show.html.erb",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -286,10 +265,6 @@
         "files": [
           "/.rspec-tracer",
           "/spec/fixtures/rails_app/config/locales/en.yml",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -301,10 +276,6 @@
         "example_id": "80781404b85c7c32f090a52d9dd2a507",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -316,10 +287,6 @@
         "example_id": "a945ba14e1c9ddafbcbd6037b5ae0fbc",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -331,10 +298,6 @@
         "example_id": "ae077c488efb8acf0050721779375b4e",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -346,10 +309,6 @@
         "example_id": "b5c9c14b704f771e1a21589a0e118553",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -362,10 +321,6 @@
         "files": [
           "/.rspec-tracer",
           "/spec/fixtures/rails_app/app/views/users/show.html.erb",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -377,10 +332,6 @@
         "example_id": "fd4ceb1f395e7ccf322f4b4f797d5f13",
         "files": [
           "/.rspec-tracer",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-          "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
           "/spec/integration/coverage_json_round_trip_spec.rb",
           "/spec/integration/rails_app_spec.rb",
           "/spec/support/fixture_bundle_helper.rb",
@@ -431,34 +382,6 @@
         }
       },
       {
-        "file_name": "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/all_examples.json",
-        "example_count": 12,
-        "spec_files": {
-          "/spec/integration/rails_app_spec.rb": 12
-        }
-      },
-      {
-        "file_name": "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/reverse_dependency.json",
-        "example_count": 12,
-        "spec_files": {
-          "/spec/integration/rails_app_spec.rb": 12
-        }
-      },
-      {
-        "file_name": "/spec/fixtures/rails_app/rspec_tracer_cache/208fc79bfbade931b6f54c9611a87d0b/skipped_examples.json",
-        "example_count": 12,
-        "spec_files": {
-          "/spec/integration/rails_app_spec.rb": 12
-        }
-      },
-      {
-        "file_name": "/spec/fixtures/rails_app/rspec_tracer_cache/last_run.json",
-        "example_count": 12,
-        "spec_files": {
-          "/spec/integration/rails_app_spec.rb": 12
-        }
-      },
-      {
         "file_name": "/spec/fixtures/rails_app/app/views/users/show.html.erb",
         "example_count": 2,
         "spec_files": {
@@ -470,13 +393,6 @@
         "example_count": 1,
         "spec_files": {
           "/spec/integration/rails_app_spec.rb": 1
-        }
-      },
-      {
-        "file_name": "/spec/fixtures/rails_app/rspec_tracer_coverage/coverage.json",
-        "example_count": 1,
-        "spec_files": {
-          "/spec/integration/coverage_json_round_trip_spec.rb": 1
         }
       },
       {

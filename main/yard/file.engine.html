@@ -686,6 +686,14 @@
 
     <span class='comment'># prev.all_files is file-name-keyed; the engine&#39;s @all_files is
 </span>    <span class='comment'># abs-path-keyed (path_to_file_name round-trips via the root prefix).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Re-applies the current filter list at seed time so users who
+</span>    <span class='comment'># add a filter mid-development see the carried-over file entries
+</span>    <span class='comment'># drop on the next run (instead of waiting for a cold run). The
+</span>    <span class='comment'># filter contract should hold for both fresh attributions
+</span>    <span class='comment'># (attribute_to_example) and prior-snapshot carry-forward —
+</span>    <span class='comment'># otherwise add_filter has split semantics and a freshly-added
+</span>    <span class='comment'># filter does not exclude already-cached paths.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_all_files_from_previous'>seed_all_files_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
 
@@ -695,8 +703,11 @@
         <span class='id identifier rubyid_file_path'>file_path</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:file_path</span><span class='rparen'>)</span>
         <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
+        <span class='id identifier rubyid_file_name'>file_name</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:file_name</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+
         <span class='ivar'>@all_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
-          <span class='label'>file_name:</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:file_name</span><span class='rparen'>)</span><span class='comma'>,</span>
+          <span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span>
           <span class='label'>file_path:</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='comma'>,</span>
           <span class='label'>digest:</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:digest</span><span class='rparen'>)</span>
         <span class='rbrace'>}</span>
@@ -706,14 +717,33 @@
     <span class='comment'># prev.dependency keys on example_id, values are Set&lt;file_name&gt;.
 </span>    <span class='comment'># Register in @graph via absolute paths so the on-disk shape
 </span>    <span class='comment'># (file_name) converts at save time via dependency_by_name.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Drops paths matching the current filter list so previously-
+</span>    <span class='comment'># cached deps that the new filter excludes do not leak through
+</span>    <span class='comment'># the carry-forward seed path. Same rationale as
+</span>    <span class='comment'># seed_all_files_from_previous: the filter contract is one
+</span>    <span class='comment'># contract, applied uniformly across fresh + carry-forward
+</span>    <span class='comment'># attributions.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_graph_from_previous'>seed_graph_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_dependency'>dependency</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
 
       <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_dependency'>dependency</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_file_names'>file_names</span><span class='op'>|</span>
         <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
-        <span class='id identifier rubyid_file_names'>file_names</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_name'>name</span><span class='op'>|</span> <span class='id identifier rubyid_paths'>paths</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_file_names'>file_names</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_name'>name</span><span class='op'>|</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
+
+          <span class='id identifier rubyid_paths'>paths</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
         <span class='ivar'>@graph</span><span class='period'>.</span><span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Helper: returns true if the file name matches any currently-
+</span>    <span class='comment'># configured filter. Mirrors the check site at
+</span>    <span class='comment'># `attribute_to_example` (engine.rb:770) so both fresh + carry-
+</span>    <span class='comment'># forward attributions converge on the same filter behavior.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_filters'>filters</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span> <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_match?'>match?</span><span class='lparen'>(</span><span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
     <span class='kw'>end</span>
 
     <span class='kw'>def</span> <span class='id identifier rubyid_compute_filter_decisions'>compute_filter_decisions</span>
@@ -1014,7 +1044,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun May  3 21:27:51 2026 by
+  Generated on Sun May  3 22:18:22 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
