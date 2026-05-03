@@ -68,6 +68,14 @@ group :development do
   # JRuby. Both 1.7.x and 1.8.x install on every Ruby in the matrix.
   gem 'msgpack', ENV.fetch('RSPEC_TRACER_MSGPACK_VERSION', '>= 1.7')
 
+  # erb: pulled transitively via irb -> rdoc -> erb. erb 5.0+ bumped its
+  # required_ruby_version to 3.2+; the matrix supports Ruby 3.1, so
+  # Bundler resolution (and Dependabot, which pretends to resolve under
+  # the lowest matrix Ruby) fails when erb >= 5.0 wins. Pin to the 4.x
+  # line so resolution succeeds on every supported Ruby. Drop this pin
+  # if the Ruby 3.1 floor is ever dropped from the matrix.
+  gem 'erb', ENV.fetch('RSPEC_TRACER_ERB_VERSION', '~> 4.0')
+
   # sqlite3: per-Ruby gate because precompiled-binary ceilings differ
   # between 1.x and 2.x lines and the source-build path needs a C
   # compiler. The default branches keep CI-cache hits maximal:

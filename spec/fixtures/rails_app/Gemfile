@@ -52,6 +52,12 @@ gem "puma", "~> 6.0"
 gem "sprockets-rails"
 gem "bootsnap", require: false
 
+# erb: pulled transitively via irb -> rdoc -> erb. erb 5.0+ bumped its
+# required_ruby_version to 3.2+; this fixture is exercised on Ruby 3.1
+# matrix cells, so pin to the 4.x line so Bundler resolution succeeds
+# on the lowest matrix Ruby (and Dependabot scans stay green).
+gem "erb", "~> 4.0"
+
 # View template engines under test — rspec-tracer's Rails integration
 # needs to observe dependencies via ActionView regardless of engine.
 gem "jbuilder", "~> 2.7"
