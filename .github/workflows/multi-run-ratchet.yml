@@ -183,12 +183,12 @@ jobs:
           bundler-cache: false
 
       # Download every per-run artifact under tmp/multi-run-ratchet/.
-      # actions/download-artifact@v6 with `pattern:` and
+      # actions/download-artifact@v8 with `pattern:` and
       # `merge-multiple: false` preserves the per-run subdirs (e.g.
       # tmp/multi-run-ratchet/multi-run-ratchet-7/ratchet.json) so
       # the aggregator can iterate them.
       - name: Download all per-run artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           path: tmp/multi-run-ratchet
           pattern: multi-run-ratchet-*
