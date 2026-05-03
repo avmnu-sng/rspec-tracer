@@ -142,6 +142,23 @@ the `rspec_tracer_cache/` / `rspec_tracer_coverage/` /
   whose `metadata[:file_path]` doesn't resolve to a readable file
   (gem-generated examples, deleted-between-runs files) now log
   debug + skip dependency registration instead of raising.
+- **Default filter list now excludes rspec-tracer's own output
+  directories** — `rspec_tracer_cache/`, `rspec_tracer_coverage/`,
+  `rspec_tracer_report/`, `rspec_tracer.lock`. Previously, tests
+  that read the tracer's own cache files (e.g. integration specs
+  asserting on cache state after a fixture subprocess run) got
+  those paths attributed as deps. The tracer's output is
+  regenerated every run by design and should never invalidate a
+  test. Both `add_filter` (dep graph) and `add_coverage_filter`
+  (coverage report) lists were updated.
+- **`add_filter` / `add_coverage_filter` now apply uniformly to
+  both fresh attributions AND prior-snapshot carry-forward.**
+  Previously, `Engine#seed_all_files_from_previous` and
+  `Engine#seed_graph_from_previous` seeded paths from the previous
+  run's snapshot WITHOUT re-applying the current filter list — so
+  a filter added between runs would NOT exclude already-cached
+  paths until a cold run wiped them. Filter additions now take
+  effect on the very next warm run.
 
 ### Deprecated
 

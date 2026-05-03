@@ -893,5 +893,84 @@ RSpec.describe RSpecTracer::Engine do
       expect(Coverage).to have_received(:peek_result).exactly(2).times
     end
   end
+
+  # The seed_*_from_previous methods carry forward the prior run's
+  # @all_files entries + dependency-graph edges. Without re-applying
+  # the current filter list, a filter added between runs would NOT
+  # exclude already-cached paths — producing split semantics where
+  # add_filter only affects fresh attributions.
+  describe 'carry-forward filter application (seed_*_from_previous)' do
+    let(:string_filter) { RSpecTracer::Filter.register('/excluded_dir/') }
+    let(:configuration_with_filter) do
+      stub_configuration(filters: [string_filter])
+    end
+
+    let(:previous_snapshot) do
+      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |snap|
+        snap.all_files = {
+          '/lib/keep.rb' => {
+            file_name: '/lib/keep.rb',
+            file_path: File.join(root, 'lib/keep.rb'),
+            digest: 'd1'
+          },
+          '/excluded_dir/old.rb' => {
+            file_name: '/excluded_dir/old.rb',
+            file_path: File.join(root, 'excluded_dir/old.rb'),
+            digest: 'd2'
+          }
+        }
+        snap.dependency = {
+          'ex_keep' => Set.new(['/lib/keep.rb']),
+          'ex_excluded' => Set.new(['/lib/keep.rb', '/excluded_dir/old.rb'])
+        }
+        snap.all_examples = {
+          'ex_keep' => build_example('ex_keep'),
+          'ex_excluded' => build_example('ex_excluded')
+        }
+      end
+    end
+
+    def prime_previous_cache
+      backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
+      backend.save_graph(previous_snapshot, schema_version: 3)
+    end
+
+    it 'drops carried-over @all_files entries that match a currently-configured filter' do
+      prime_previous_cache
+      tracker = build_tracker(configuration_with_filter).tap(&:setup)
+
+      file_names = tracker.all_files.values.map { |v| v[:file_name] }
+      expect(file_names).to include('/lib/keep.rb')
+      expect(file_names).not_to include('/excluded_dir/old.rb')
+    end
+
+    it 'drops carried-over dependency-graph edges that match a currently-configured filter' do
+      prime_previous_cache
+      tracker = build_tracker(configuration_with_filter).tap(&:setup)
+
+      ex_excluded_deps = tracker.graph.dependency_hash['ex_excluded'] || Set.new
+      ex_excluded_relative = ex_excluded_deps.to_a.map do |abs|
+        abs.sub(root, '')
+      end
+      expect(ex_excluded_relative).to include('/lib/keep.rb')
+      expect(ex_excluded_relative).not_to include('/excluded_dir/old.rb')
+    end
+
+    it 'still seeds entries that DO NOT match the filter (no false positives)' do
+      prime_previous_cache
+      tracker = build_tracker(configuration_with_filter).tap(&:setup)
+
+      ex_keep_deps = tracker.graph.dependency_hash['ex_keep'] || Set.new
+      expect(ex_keep_deps.size).to eq(1)
+    end
+
+    it 'preserves carry-forward behavior when configuration.filters is empty (no filtering)' do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup) # default config has filters: []
+
+      file_names = tracker.all_files.values.map { |v| v[:file_name] }
+      expect(file_names).to include('/lib/keep.rb', '/excluded_dir/old.rb')
+    end
+  end
 end
 # rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/MultipleMemoizedHelpers

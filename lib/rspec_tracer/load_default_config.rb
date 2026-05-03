@@ -16,6 +16,10 @@ RSpecTracer.configure do
     /.rbenv/versions/
     /.asdf/installs/ruby/
     /.rvm/
+    /rspec_tracer_cache/
+    /rspec_tracer_coverage/
+    /rspec_tracer_report/
+    rspec_tracer.lock
   ].freeze
 
   coverage_filters.clear
@@ -33,6 +37,10 @@ RSpecTracer.configure do
     /.rbenv/versions/
     /.asdf/installs/ruby/
     /.rvm/
+    /rspec_tracer_cache/
+    /rspec_tracer_coverage/
+    /rspec_tracer_report/
+    rspec_tracer.lock
   ].freeze
 end
 # rubocop:enable Metrics/BlockLength

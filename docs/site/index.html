@@ -54,6 +54,9 @@
     .card p { margin: 0 0 0.5rem; color: var(--muted); font-size: 0.95rem; }
     code { background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 3px; font-size: 0.9em; }
     .badges img { margin-right: 0.5rem; vertical-align: middle; }
+    /* Anchors that only wrap images would otherwise underline their
+       leading/trailing whitespace text nodes with the link color. */
+    .badges a { text-decoration: none; }
     .pill { display: inline-block; padding: 0.1em 0.55em; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--pill-bg); color: var(--pill-fg); margin-left: 0.5rem; vertical-align: middle; }
     .pill.pre { background: var(--pill-pre-bg); color: var(--pill-pre-fg); }
     .version-list { list-style: none; padding: 0; margin: 1rem 0; }
@@ -70,12 +73,12 @@
     <h1>rspec-tracer</h1>
     <p class="lede">Specs dependency analyzer, flaky-test detector, test accelerator, and coverage reporter for RSpec.</p>
     <p class="badges">
-      <a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml">
-        <img alt="CI status" src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg">
-      </a>
-      <a href="https://badge.fury.io/rb/rspec-tracer">
-        <img alt="Gem version" src="https://badge.fury.io/rb/rspec-tracer.svg">
-      </a>
+      <!-- Single-line per anchor: any internal whitespace would become
+           a text-node child of the <a> and render as an underline in
+           the link color. The .badges a { text-decoration: none } rule
+           above is the belt; this is the suspenders. -->
+      <a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg"></a>
+      <a href="https://badge.fury.io/rb/rspec-tracer"><img alt="Gem version" src="https://badge.fury.io/rb/rspec-tracer.svg"></a>
     </p>
   </header>
 
