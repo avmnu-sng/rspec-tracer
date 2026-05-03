@@ -57,6 +57,7 @@ module RSpecTracer
       MAIN_TIER = 'main'
       PR_TIER = 'pr'
       BRANCH_REFS_SUFFIX = 'branch_refs'
+      PR_BRANCHES_SUFFIX = 'pr_branches'
       LAST_RUN_FIELD = 'last_run.json'
       TIMESTAMP_FIELD = '_timestamp'
       ENCODING = 'UTF-8'
@@ -64,10 +65,12 @@ module RSpecTracer
 
       # rubocop:disable Metrics/ParameterLists
       def initialize(prefix:, branch:, default_branch:, cache_path:,
-                     url: nil, redis_client: nil, test_suite_id: nil, logger: nil)
+                     url: nil, redis_client: nil, test_suite_id: nil, logger: nil,
+                     ttl: nil)
         validate_required!(prefix: prefix, branch: branch,
                            default_branch: default_branch, cache_path: cache_path)
         validate_connection_source!(url: url, redis_client: redis_client)
+        validate_ttl!(ttl)
 
         @prefix = trim_trailing_colons(prefix.to_s)
         @branch = branch.to_s.chomp
@@ -75,6 +78,7 @@ module RSpecTracer
         @test_suite_id = normalize_test_suite_id(test_suite_id)
         @cache_path = cache_path.to_s
         @logger = logger
+        @ttl = ttl
         @redis = redis_client || build_client(url)
       end
       # rubocop:enable Metrics/ParameterLists
@@ -111,7 +115,7 @@ module RSpecTracer
 
         fields = build_upload_fields(run_id)
         key = ref_key(own_tier_segment, ref)
-        write_hash(key, fields)
+        write_upload_hash(key, fields)
         log_debug("uploaded cache for #{ref} to #{own_tier_segment} (#{fields.size} fields)")
       end
 
@@ -200,6 +204,18 @@ module RSpecTracer
         raise RedisBackendError, 'url or redis_client is required' if blank?(url)
       end
 
+      # Optional kwarg. nil disables TTL (per-key persistence determined
+      # by the user's Redis eviction policy). Positive integer enables
+      # `EXPIRE <key> <ttl>` inside the upload's MULTI block, atomic
+      # with the SET. Mirrors `cache_retention_count`-style validation.
+      def validate_ttl!(ttl)
+        return if ttl.nil?
+        return if ttl.is_a?(::Integer) && ttl.positive?
+
+        raise RedisBackendError,
+              "ttl must be a positive integer (seconds) or nil, got #{ttl.inspect}"
+      end
+
       def build_client(url)
         require 'redis'
         ::Redis.new(url: url)
@@ -272,15 +288,35 @@ module RSpecTracer
         fields
       end
 
-      # DEL + HSET atomically under MULTI. DEL drops any stale fields
-      # from a prior upload under the same ref before HSET installs
-      # the new field set (prevents partial overlay when a retried
-      # upload has a subset of keys the first attempt had).
-      def write_hash(key, fields)
+      # Upload MULTI: DEL + HSET + optional EXPIRE + optional sidecar
+      # SADD, all atomic under one round-trip.
+      #
+      # DEL flushes any stale fields from a prior upload under the same
+      # ref before HSET installs the new field set (prevents partial
+      # overlay when a retried upload has a subset of keys the first
+      # attempt had). EXPIRE fires only when @ttl is set (per-key TTL
+      # atomic with the SET; nil means no TTL, user controls eviction
+      # via Redis policy + the explicit prune pass). SADD into the
+      # PR-branches sidecar fires only on PR-tier uploads (main-tier
+      # uploads skip; sidecar is operational telemetry for ops
+      # dashboards via SMEMBERS).
+      def write_upload_hash(key, fields)
         @redis.multi do |tx|
           tx.del(key)
           tx.hset(key, fields)
+          tx.expire(key, @ttl) if @ttl
+          tx.sadd(pr_branches_key, @branch) if pr_tier?
         end
+      end
+
+      # Sidecar key tracking which PR branches have ever uploaded to
+      # this prefix. Operational telemetry for ops dashboards
+      # (`SMEMBERS <prefix>:pr_branches`); does not affect download
+      # semantics. Unconditionally namespaced under the configured
+      # prefix; PR-tier uploads SADD into it, main-tier uploads
+      # skip it.
+      def pr_branches_key
+        "#{@prefix}:#{PR_BRANCHES_SUFFIX}"
       end
 
       def try_download_from(tier_segment, ref)

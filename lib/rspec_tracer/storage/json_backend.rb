@@ -88,6 +88,7 @@ module RSpecTracer
         wsi_snapshot.json
         env_snapshot.json
         env_dependency.json
+        cache_hit_reason.json
       ].freeze
 
       LAST_RUN_FILENAME = 'last_run.json'
@@ -116,6 +117,7 @@ module RSpecTracer
         wsi_snapshot
         env_snapshot
         env_dependency
+        cache_hit_reason
       ].freeze
 
       # Binds a backend + run directory so `LazySnapshot` readers
@@ -144,7 +146,7 @@ module RSpecTracer
       ].freeze
       HASH_FIELDS = %w[
         all_examples duplicate_examples all_files examples_coverage
-        boot_set wsi_snapshot env_snapshot env_dependency
+        boot_set wsi_snapshot env_snapshot env_dependency cache_hit_reason
       ].freeze
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
 
@@ -174,7 +176,8 @@ module RSpecTracer
         boot_set: :plain_hash,
         wsi_snapshot: :plain_hash,
         env_snapshot: :plain_hash,
-        env_dependency: :plain_hash
+        env_dependency: :plain_hash,
+        cache_hit_reason: :plain_hash
       }.freeze
 
       attr_reader :cache_path, :serializer, :serializer_name
@@ -377,7 +380,8 @@ module RSpecTracer
             boot_set: state[:boot_set],
             wsi_snapshot: state[:wsi_snapshot],
             env_snapshot: state[:env_snapshot],
-            env_dependency: state[:env_dependency]
+            env_dependency: state[:env_dependency],
+            cache_hit_reason: state[:cache_hit_reason]
           )
         end
 
@@ -396,7 +400,8 @@ module RSpecTracer
             boot_set: {},
             wsi_snapshot: {},
             env_snapshot: {},
-            env_dependency: {}
+            env_dependency: {},
+            cache_hit_reason: Hash.new(0)
           }
         end
 
@@ -425,6 +430,7 @@ module RSpecTracer
           state[:wsi_snapshot].merge!(snapshot.wsi_snapshot || {})
           state[:env_snapshot].merge!(snapshot.env_snapshot || {})
           merge_env_dependency!(state[:env_dependency], snapshot.env_dependency || {})
+          merge_cache_hit_reason!(state[:cache_hit_reason], snapshot.cache_hit_reason || {})
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
@@ -437,6 +443,16 @@ module RSpecTracer
             existing = target[id] || []
             target[id] = (existing | Array(names)).sort
           end
+        end
+
+        # Sum per-worker reason counts. parallel_tests partitions
+        # examples across workers; each worker's filtered_examples
+        # tally is disjoint by example_id, so sum is the right combine
+        # rule (a "Files changed" count from worker A plus the same
+        # reason's count from worker B = total examples that ran for
+        # that reason across the suite).
+        def self.merge_cache_hit_reason!(target, source)
+          source.each { |reason, count| target[reason] += count }
         end
 
         def self.merge_examples_coverage!(target, source)

@@ -46,6 +46,9 @@ module RSpecTracer
       ].freeze
       private_constant :TALLY_FIELDS
 
+      BYTES_PER_MIB = 1_048_576.0
+      private_constant :BYTES_PER_MIB
+
       def generate
         return nil if no_op?
 
@@ -58,7 +61,7 @@ module RSpecTracer
       private
 
       def build_lines
-        [header_line, tally_line, cache_line, report_line].compact
+        [header_line, tally_line, kind_breakdown_line, cache_line, report_line].compact
       end
 
       def header_line
@@ -88,7 +91,86 @@ module RSpecTracer
         path = run_metadata[:cache_path]
         return nil if path.nil? || path.to_s.empty?
 
-        "cache: #{path}"
+        size_part = cache_size_suffix(path.to_s)
+        "cache: #{path}#{size_part}"
+      end
+
+      # Per-reason breakdown of the run examples (e.g. 12 Files
+      # changed · 5 No cache). Sourced from snapshot.cache_hit_reason
+      # which the engine populated via @filtered_examples.values.tally
+      # at finalize. Empty {} (cold run with no engine cache) suppresses
+      # the line entirely. Sorted by count descending so the
+      # most-impactful reason leads.
+      def kind_breakdown_line
+        reasons = snapshot.cache_hit_reason
+        return nil if reasons.nil? || reasons.empty?
+
+        parts = reasons
+          .sort_by { |_reason, count| -count.to_i }
+          .map { |reason, count| "#{count} #{reason}" }
+        paint(:cyan, "by reason: #{parts.join(SEPARATOR)}")
+      end
+
+      # Bytes -> "12.3 MiB" / "456 KiB" / "789 B" depending on order.
+      # Mirrors JsonBackend#format_mib's MiB-and-up presentation but
+      # collapses small caches to KiB so a fixture spec writing 4 KiB
+      # doesn't display as "0.0 MiB."
+      def format_size_bytes(bytes)
+        return "#{bytes} B" if bytes < 1024
+        return "#{(bytes / 1024.0).round(1)} KiB" if bytes < BYTES_PER_MIB
+
+        "#{(bytes / BYTES_PER_MIB).round(1)} MiB"
+      end
+
+      # `(<size>)` or `(<size>; <delta>)` suffix for the cache line.
+      # Walks the current run-id dir for the size; walks the prior
+      # run-id dir (mtime-newest peer) for the delta. Wrapped in
+      # rescue so a transient FS error never blocks the surrounding
+      # cache_line emission.
+      def cache_size_suffix(cache_path)
+        current_id = snapshot.run_id
+        return '' if current_id.nil? || current_id.to_s.empty?
+
+        current_dir = File.join(cache_path, current_id)
+        return '' unless File.directory?(current_dir)
+
+        current_bytes = directory_size_bytes(current_dir)
+        prior_bytes = previous_run_dir_bytes(cache_path, current_id)
+        format_cache_suffix(current_bytes, prior_bytes)
+      rescue StandardError
+        ''
+      end
+
+      def format_cache_suffix(current_bytes, prior_bytes)
+        size = format_size_bytes(current_bytes)
+        return " (#{size})" if prior_bytes.nil?
+
+        delta = current_bytes - prior_bytes
+        sign = if delta.positive?
+                 '+'
+               else
+                 (delta.negative? ? '-' : '')
+               end
+        " (#{size}; #{sign}#{format_size_bytes(delta.abs)} vs prev run)"
+      end
+
+      def directory_size_bytes(dir)
+        Dir[File.join(dir, '**', '*')].sum do |path|
+          File.file?(path) ? File.size(path) : 0
+        end
+      end
+
+      def previous_run_dir_bytes(cache_path, current_id)
+        peer_dirs = Dir.children(cache_path).filter_map do |name|
+          next if name == current_id || name.start_with?('.')
+
+          full = File.join(cache_path, name)
+          File.directory?(full) ? [full, File.mtime(full).to_f] : nil
+        end
+        return nil if peer_dirs.empty?
+
+        newest_peer = peer_dirs.max_by(&:last).first
+        directory_size_bytes(newest_peer)
       end
 
       def report_line
