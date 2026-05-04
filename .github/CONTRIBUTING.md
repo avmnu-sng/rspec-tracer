@@ -66,8 +66,11 @@ Each `task test:*` task sets a unique `COVERAGE_SUITE` env var so
 per-suite resultsets land under distinct `command_name`s in
 `coverage/.resultset.json` (otherwise each subsequent `bundle exec
 rspec` invocation would replace the prior entry — defeating the
-multi-suite merge). The single source of truth is `.simplecov` at
-repo root.
+multi-suite merge). The SimpleCov configuration lives inline in
+`spec/spec_helper.rb` (NOT in a `.simplecov` file at repo root —
+SimpleCov's `.simplecov` auto-loader walks upward from `Dir.pwd` and
+would leak our config into fixture subprocesses that `chdir` into
+`spec/fixtures/rails_app/` or `benchmark/fixtures/ruby_app/`).
 
 Local workflow:
 
@@ -85,9 +88,9 @@ CI (lint-and-specs.yml): each test job uploads its
 and pushes the merged JSON to Codecov + uploads HTML for
 docs-publish.yml to stage at `/<version>/coverage/`.
 
-Skip coverage entirely with `COVERAGE=false` (the `.simplecov` guard
-short-circuits before SimpleCov.start). Mutation runs auto-skip via
-`defined?(::Mutant)`.
+Skip coverage entirely with `COVERAGE=false` (spec_helper guards
+SimpleCov.start on `ENV['COVERAGE'] != 'false'`). Mutation runs
+auto-skip via `defined?(::Mutant)`.
 
 ## YARD comments on public APIs
 

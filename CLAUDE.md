@@ -63,15 +63,19 @@ commit messages are the only materials that survive in the repository.
   `task fixtures:rails:{bundle,migrate,seed,rspec,lint}`,
   `task security:{bundle-audit,trivy}`,
   `task coverage:{merge,clean}`.
-- **Coverage**: `.simplecov` at repo root configures per-suite
-  command_names from the `COVERAGE_SUITE` env (each `task test:*` sets
-  it). Multi-suite resultsets auto-merge into `coverage/.resultset.json`;
-  `task coverage:merge` collates them via `SimpleCov.collate` and
-  produces `coverage/index.html` + `coverage/coverage.json`. CI:
-  `lint-and-specs.yml`'s `coverage` job downloads per-job artifacts +
-  uploads to Codecov + uploads merged HTML for `docs-publish.yml`. Skip
-  with `COVERAGE=false` env (e.g. mutation runs already auto-skip via
-  `defined?(::Mutant)` guard in `.simplecov`).
+- **Coverage**: SimpleCov config lives inline in `spec/spec_helper.rb`
+  (NOT in a `.simplecov` file at repo root — SimpleCov's `.simplecov`
+  auto-loader walks upward from `Dir.pwd` and would leak our config
+  into fixture subprocesses that `chdir` into `spec/fixtures/rails_app/`
+  or `benchmark/fixtures/ruby_app/`, causing 3x benchmark regressions).
+  Per-suite command_names come from the `COVERAGE_SUITE` env (each
+  `task test:*` sets it). Multi-suite resultsets auto-merge into
+  `coverage/.resultset.json`; `task coverage:merge` collates them via
+  `SimpleCov.collate` and produces `coverage/index.html` +
+  `coverage/coverage.json`. CI: `lint-and-specs.yml`'s `coverage` job
+  downloads per-job artifacts + uploads to Codecov + uploads merged
+  HTML for `docs-publish.yml`. Skip with `COVERAGE=false` env;
+  mutation runs auto-skip via `defined?(::Mutant)`.
 - `bundle exec rake` is still wired (legacy cucumber path). Removed in
   the 2.0.0 cleanup.
 
