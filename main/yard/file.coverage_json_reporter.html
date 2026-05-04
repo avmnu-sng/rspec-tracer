@@ -275,11 +275,65 @@
 </span>      <span class='comment'># side). Preserving this shape keeps SimpleCov&#39;s at_exit
 </span>      <span class='comment'># result-merge seeing whatever it was tracking minus rspec-
 </span>      <span class='comment'># tracer&#39;s narrow filters.
+</span>      <span class='comment'># SimpleCov is the consumer here; it expects Coverage.result&#39;s
+</span>      <span class='comment'># full hash shape when branch coverage is enabled (`{ lines: [...],
+</span>      <span class='comment'># branches: {...} }` per file). `peek_unfiltered_full` preserves
+</span>      <span class='comment'># that shape — switching back to `peek_unfiltered` here would
+</span>      <span class='comment'># silently drop branch data from SimpleCov&#39;s report whenever
+</span>      <span class='comment'># rspec-tracer dogfoods itself with branch coverage enabled.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># When the engine has zero skipped examples (the common path —
+</span>      <span class='comment'># any cold run, any warm run with no carried-over skips),
+</span>      <span class='comment'># `accumulate_skipped` is a no-op and we hand SimpleCov the
+</span>      <span class='comment'># peek output verbatim. Skipping the lines-view dup + merge-
+</span>      <span class='comment'># back round-trip on this path matters: long-running benchmark
+</span>      <span class='comment'># scenarios fork per-iter, hit at_exit per-iter, and a per-iter
+</span>      <span class='comment'># dup of every lib file&#39;s line array shows up as a measurable
+</span>      <span class='comment'># regression on cold_rails_v2_warm_iter (3.7x ratchet ratio in
+</span>      <span class='comment'># the first CI run that exposed it). Only pay the dup cost when
+</span>      <span class='comment'># there&#39;s actual skipped-coverage attribution to merge in.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_install_simplecov_interop'>install_simplecov_interop</span>
-        <span class='id identifier rubyid_coverage'>coverage</span> <span class='op'>=</span> <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_coverage_adapter'>coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek_unfiltered'>peek_unfiltered</span>
-        <span class='id identifier rubyid_accumulate_skipped'>accumulate_skipped</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_coverage'>coverage</span> <span class='op'>=</span> <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_coverage_adapter'>coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek_unfiltered_full'>peek_unfiltered_full</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_registry'>registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:skipped</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span>
+          <span class='id identifier rubyid_lines'>lines</span> <span class='op'>=</span> <span class='id identifier rubyid_mutable_lines_view'>mutable_lines_view</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_accumulate_skipped'>accumulate_skipped</span><span class='lparen'>(</span><span class='id identifier rubyid_lines'>lines</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_merge_lines_back'>merge_lines_back</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='comma'>,</span> <span class='id identifier rubyid_lines'>lines</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
         <span class='const'>SimpleCovInterop</span><span class='period'>.</span><span class='id identifier rubyid_install'>install</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='rparen'>)</span>
         <span class='kw'>nil</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Returns a `{ path =&gt; Array&lt;Integer|nil&gt; }` view of the full
+</span>      <span class='comment'># peek (Hash `{lines:, branches:}` per file in hash mode; Array
+</span>      <span class='comment'># already in array mode). dup-on-extract so accumulate_skipped&#39;s
+</span>      <span class='comment'># in-place mutations never reach back into the frozen Coverage
+</span>      <span class='comment'># arrays underlying the hash, and the caller can re-merge the
+</span>      <span class='comment'># final view via `merge_lines_back`.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_mutable_lines_view'>mutable_lines_view</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_coverage'>coverage</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_stats'>stats</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='id identifier rubyid_line_arr'>line_arr</span> <span class='op'>=</span> <span class='id identifier rubyid_stats'>stats</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='id identifier rubyid_stats'>stats</span><span class='lbracket'>[</span><span class='symbol'>:lines</span><span class='rbracket'>]</span> <span class='op'>:</span> <span class='id identifier rubyid_stats'>stats</span>
+          <span class='id identifier rubyid_acc'>acc</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_line_arr'>line_arr</span><span class='op'>&amp;.</span><span class='id identifier rubyid_dup'>dup</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Re-attach the (possibly mutated by accumulate_skipped) line
+</span>      <span class='comment'># arrays back into the full `coverage` hash. Hash-mode entries
+</span>      <span class='comment'># get a fresh `{lines:, branches:}` Hash with the new lines and
+</span>      <span class='comment'># the original branches preserved; array-mode entries get the
+</span>      <span class='comment'># mutated array directly. New entries `accumulate_skipped`
+</span>      <span class='comment'># synthesised for previously-unseen files (line stubs) propagate
+</span>      <span class='comment'># in their array shape — branches are absent because the file
+</span>      <span class='comment'># wasn&#39;t observed by Coverage.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_merge_lines_back'>merge_lines_back</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='comma'>,</span> <span class='id identifier rubyid_lines'>lines</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_lines'>lines</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_line_arr'>line_arr</span><span class='op'>|</span>
+          <span class='id identifier rubyid_existing'>existing</span> <span class='op'>=</span> <span class='id identifier rubyid_coverage'>coverage</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span>
+          <span class='id identifier rubyid_coverage'>coverage</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span>
+            <span class='kw'>if</span> <span class='id identifier rubyid_existing'>existing</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+              <span class='lbrace'>{</span> <span class='label'>lines:</span> <span class='id identifier rubyid_line_arr'>line_arr</span><span class='comma'>,</span> <span class='label'>branches:</span> <span class='id identifier rubyid_existing'>existing</span><span class='lbracket'>[</span><span class='symbol'>:branches</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='rbrace'>}</span>
+            <span class='kw'>else</span>
+              <span class='id identifier rubyid_line_arr'>line_arr</span>
+            <span class='kw'>end</span>
+        <span class='kw'>end</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Inner module preserving 1.x&#39;s RubyCoverage shim contract. When
@@ -308,7 +362,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon May  4 00:12:45 2026 by
+  Generated on Mon May  4 20:46:07 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

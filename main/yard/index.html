@@ -61,7 +61,9 @@
 
       <div id="content"><div id='filecontents'><h1 id="rspec_tracer">rspec-tracer</h1>
 <p><a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml"><img src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-<a href="https://badge.fury.io/rb/rspec-tracer"><img src="https://badge.fury.io/rb/rspec-tracer.svg" alt="Gem Version" /></a></p>
+<a href="https://badge.fury.io/rb/rspec-tracer"><img src="https://badge.fury.io/rb/rspec-tracer.svg" alt="Gem Version" /></a>
+<a href="https://codecov.io/gh/avmnu-sng/rspec-tracer"><img src="https://codecov.io/gh/avmnu-sng/rspec-tracer/branch/main/graph/badge.svg" alt="codecov" /></a>
+<a href="https://avmnu-sng.github.io/rspec-tracer/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs" /></a></p>
 <p><strong>RSpec Tracer</strong> is a specs dependency analyzer, flaky-test detector,
 test accelerator, and coverage reporter for RSpec. It records the
 inputs every example consumes — Ruby files (via <code>Coverage</code>), file
@@ -73,6 +75,7 @@ only the examples whose inputs changed since the last run.</p>
 <li><strong>Failed</strong>, <strong>flaky</strong>, or <strong>pending</strong> examples.</li>
 <li>Examples whose dependent inputs changed (the whole point).</li>
 </ul>
+<p>📚 <strong>Full documentation site</strong>: <a href="https://avmnu-sng.github.io/rspec-tracer/">avmnu-sng.github.io/rspec-tracer</a> — YARD API reference, sample HTML report, cookbook, and per-version coverage report.</p>
 <p>For a complete account of the input taxonomy and how the engine fits
 together, read <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>.</p>
 <h2 id="Table_of_contents">Table of contents</h2>
@@ -88,6 +91,7 @@ together, read <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>.</p>
 <li><a href="#simplecov-interop">SimpleCov interop</a></li>
 <li><a href="#faq--comparison">FAQ + comparison</a></li>
 <li><a href="#reports">Reports</a></li>
+<li><a href="#documentation--coverage">Documentation + coverage</a></li>
 <li><a href="#help-and-community">Help and community</a></li>
 <li><a href="#section-anchor-map-1x--20">Section anchor map (1.x → 2.0)</a></li>
 </ul>
@@ -439,6 +443,24 @@ safer.</li>
 </ul>
 <p>Plus a machine-readable <code>rspec_tracer_report/report.json</code> for CI
 dashboards and the terminal one-liner shown in <a href="#quick-start">Quick start</a>.</p>
+<h2 id="Documentation___coverage">Documentation + coverage</h2>
+<ul>
+<li>
+<p><strong>Docs site</strong>: <a href="https://avmnu-sng.github.io/rspec-tracer/">avmnu-sng.github.io/rspec-tracer</a>
+publishes a YARD API reference, the cookbook, internals deep-dives,
+the sample HTML report, <strong>and the merged coverage report</strong> for every
+rolling main + tagged release. The landing page lets you switch
+versions; per-version subpaths look like
+<code>/main/yard/</code>, <code>/main/coverage/</code>, <code>/v2.0.0.pre.1/yard/</code>, etc.</p>
+</li>
+<li>
+<p><strong>Coverage</strong>: tracked by Codecov (per-PR delta + diff-coverage gate
+≥ 90%) plus the per-version HTML report linked above. Multi-suite
+resultsets (<code>unit</code>, <code>edge-cases</code>, <code>regressions-plain</code>, <code>fuzz</code>) merge
+via SimpleCov.collate in the CI <code>coverage</code> job; the same merger runs
+locally via <code>task coverage:merge</code> after <code>task test:*</code> runs.</p>
+</li>
+</ul>
 <h2 id="Help_and_community">Help and community</h2>
 <ul>
 <li><strong>Bug reports + feature requests</strong> — <a href="https://github.com/avmnu-sng/rspec-tracer/issues">GitHub Issues</a>.
@@ -509,7 +531,7 @@ here's where its content lives now:</p>
 </table></div></div>
 
       <div id="footer">
-  Generated on Mon May  4 00:12:43 2026 by
+  Generated on Mon May  4 20:46:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

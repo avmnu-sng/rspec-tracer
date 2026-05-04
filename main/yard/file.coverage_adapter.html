@@ -124,6 +124,32 @@
         <span class='id identifier rubyid_peek_normalized'>peek_normalized</span> <span class='lbrace'>{</span> <span class='kw'>false</span> <span class='rbrace'>}</span>
       <span class='kw'>end</span>
 
+      <span class='comment'># Same root-prefix scoping as #peek_unfiltered, but preserves
+</span>      <span class='comment'># Coverage&#39;s full per-file shape (Hash `{ lines: [...], branches:
+</span>      <span class='comment'># {...} }` in hash mode; Array&lt;Integer|nil&gt; in array mode) instead
+</span>      <span class='comment'># of reducing hash entries to their `:lines` component.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Lone caller is the SimpleCov interop shim
+</span>      <span class='comment'># (`Reporters::CoverageJsonReporter::SimpleCovInterop`): when
+</span>      <span class='comment'># SimpleCov has `enable_coverage :branch`, Coverage runs in hash
+</span>      <span class='comment'># mode and the prepended `Coverage.result` MUST hand back the
+</span>      <span class='comment'># branches sub-hash so SimpleCov&#39;s branch-coverage report path
+</span>      <span class='comment'># has data to render. The legacy `peek_unfiltered` strips
+</span>      <span class='comment'># branches because the user-facing `coverage.json` shape is
+</span>      <span class='comment'># documented as `Array&lt;Integer|nil&gt;` per file (1.x compatibility);
+</span>      <span class='comment'># do not change `peek_unfiltered` to do otherwise without bumping
+</span>      <span class='comment'># the storage schema.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_peek_unfiltered_full'>peek_unfiltered_full</span>
+        <span class='id identifier rubyid_raw'>raw</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_peek_result'>peek_result</span>
+        <span class='ivar'>@mode</span> <span class='op'>=</span> <span class='id identifier rubyid_detect_mode'>detect_mode</span><span class='lparen'>(</span><span class='id identifier rubyid_raw'>raw</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='ivar'>@mode</span> <span class='op'>==</span> <span class='symbol'>:auto</span>
+
+        <span class='id identifier rubyid_raw'>raw</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_stats'>stats</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+
+          <span class='id identifier rubyid_acc'>acc</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_stats'>stats</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
       <span class='comment'># Pure function: returns Set&lt;Input&gt; for files whose line arrays
 </span>      <span class='comment'># changed between `before` and `after`. Handles nil line entries
 </span>      <span class='comment'># (unexecutable lines) correctly -- nil&lt;-&gt;nil is not a delta, any
@@ -195,7 +221,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon May  4 00:12:45 2026 by
+  Generated on Mon May  4 20:46:08 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -341,6 +341,28 @@ Changing the algorithm is a storage schema_version bump.</p>
 </li>
 
       
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#peek_unfiltered_full-instance_method" title="#peek_unfiltered_full (instance method)">#<strong>peek_unfiltered_full</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Same root-prefix scoping as #peek_unfiltered, but preserves Coverage's full per-file shape (Hash <code>{ lines: [...], branches: {...} }</code> in hash mode; Array&lt;Integer|nil&gt; in array mode) instead of reducing hash entries to their <code>:lines</code> component.</p></div></span>
+  
+</li>
+
+      
     </ul>
     
   
@@ -574,23 +596,23 @@ other transition is.</p>
       <pre class="lines">
 
 
-70
-71
-72
-73
-74
-75
-76
-77
-78
-79
-80
-81
-82
-83</pre>
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/coverage_adapter.rb', line 70</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/coverage_adapter.rb', line 96</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_compute_diff'>compute_diff</span><span class='lparen'>(</span><span class='id identifier rubyid_before'>before</span><span class='comma'>,</span> <span class='id identifier rubyid_after'>after</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_changed'>changed</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -702,12 +724,77 @@ tracker/loaded_files_tracker) instead of adding a fourth.</p>
 </table>
 </div>
     
+      <div class="method_details ">
+  <h3 class="signature " id="peek_unfiltered_full-instance_method">
+  
+    #<strong>peek_unfiltered_full</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Same root-prefix scoping as #peek_unfiltered, but preserves
+Coverage's full per-file shape (Hash <code>{ lines: [...], branches: {...} }</code> in hash mode; Array&lt;Integer|nil&gt; in array mode) instead
+of reducing hash entries to their <code>:lines</code> component.</p>
+<p>Lone caller is the SimpleCov interop shim
+(<code>Reporters::CoverageJsonReporter::SimpleCovInterop</code>): when
+SimpleCov has <code>enable_coverage :branch</code>, Coverage runs in hash
+mode and the prepended <code>Coverage.result</code> MUST hand back the
+branches sub-hash so SimpleCov's branch-coverage report path
+has data to render. The legacy <code>peek_unfiltered</code> strips
+branches because the user-facing <code>coverage.json</code> shape is
+documented as <code>Array&lt;Integer|nil&gt;</code> per file (1.x compatibility);
+do not change <code>peek_unfiltered</code> to do otherwise without bumping
+the storage schema.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/coverage_adapter.rb', line 81</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_peek_unfiltered_full'>peek_unfiltered_full</span>
+  <span class='id identifier rubyid_raw'>raw</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_peek_result'>peek_result</span>
+  <span class='ivar'>@mode</span> <span class='op'>=</span> <span class='id identifier rubyid_detect_mode'>detect_mode</span><span class='lparen'>(</span><span class='id identifier rubyid_raw'>raw</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='ivar'>@mode</span> <span class='op'>==</span> <span class='symbol'>:auto</span>
+
+  <span class='id identifier rubyid_raw'>raw</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_stats'>stats</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+    <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+
+    <span class='id identifier rubyid_acc'>acc</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_stats'>stats</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
   </div>
 
 </div>
 
       <div id="footer">
-  Generated on Mon May  4 00:12:47 2026 by
+  Generated on Mon May  4 20:46:09 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
