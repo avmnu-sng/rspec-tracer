@@ -68,6 +68,9 @@ includes:
   benchmark:
     taskfile: ./taskfiles/benchmark.yml
     flatten: true
+  coverage:
+    taskfile: ./taskfiles/coverage.yml
+    flatten: true
   profile:
     taskfile: ./taskfiles/profile.yml
     flatten: true

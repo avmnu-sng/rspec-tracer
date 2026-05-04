@@ -1,0 +1,30 @@
+version: '3'
+
+# Coverage tasks. Each test:* task in taskfiles/test.yml sets
+# COVERAGE_SUITE so per-suite resultsets can be merged across
+# multiple `bundle exec rspec` invocations + across CI jobs.
+#
+# Local flow:
+#   task test:unit test:integration test:fuzz:smoke   # all run, append to coverage/.resultset.json
+#   task coverage:merge                               # generates merged HTML + JSON
+#   open coverage/index.html
+#
+# CI flow (lint-and-specs.yml):
+#   each test-* job uploads coverage/.resultset.json as artifact
+#   coverage job downloads them under coverage_artifacts/, runs
+#     `task coverage:merge`, uploads merged report + pushes to Codecov
+
+tasks:
+  coverage:merge:
+    desc: >-
+      Merge per-suite SimpleCov resultsets (coverage_artifacts/**/.resultset.json
+      or ARGV) into one report under coverage/. Runs locally against
+      the on-disk resultset (auto-merged across in-process suite runs)
+      OR in CI against per-job artifact downloads.
+    cmds:
+      - bundle exec ruby scripts/merge_coverage.rb {{.CLI_ARGS}}
+
+  coverage:clean:
+    desc: Clean local coverage state. Useful before a fresh multi-suite local run.
+    cmds:
+      - rm -rf coverage coverage_artifacts

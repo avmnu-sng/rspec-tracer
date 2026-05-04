@@ -214,11 +214,58 @@ module RSpecTracer
       # side). Preserving this shape keeps SimpleCov's at_exit
       # result-merge seeing whatever it was tracking minus rspec-
       # tracer's narrow filters.
+      # SimpleCov is the consumer here; it expects Coverage.result's
+      # full hash shape when branch coverage is enabled (`{ lines: [...],
+      # branches: {...} }` per file). `peek_unfiltered_full` preserves
+      # that shape — switching back to `peek_unfiltered` here would
+      # silently drop branch data from SimpleCov's report whenever
+      # rspec-tracer dogfoods itself with branch coverage enabled.
+      #
+      # `accumulate_skipped` operates on the lines-only Array<Integer|nil>
+      # contract (matches 1.x's skipped-coverage attribution path); run
+      # it against a mutable lines view, then sync the (possibly newly-
+      # allocated) line arrays back into the per-path hash so SimpleCov
+      # sees both the skipped-attributed lines AND the original branches.
       def install_simplecov_interop
-        coverage = engine.coverage_adapter.peek_unfiltered
-        accumulate_skipped(coverage)
+        coverage = engine.coverage_adapter.peek_unfiltered_full
+        lines = mutable_lines_view(coverage)
+        accumulate_skipped(lines)
+        merge_lines_back(coverage, lines)
         SimpleCovInterop.install(coverage)
         nil
+      end
+
+      # Returns a `{ path => Array<Integer|nil> }` view of the full
+      # peek (Hash `{lines:, branches:}` per file in hash mode; Array
+      # already in array mode). dup-on-extract so accumulate_skipped's
+      # in-place mutations never reach back into the frozen Coverage
+      # arrays underlying the hash, and the caller can re-merge the
+      # final view via `merge_lines_back`.
+      def mutable_lines_view(coverage)
+        coverage.each_with_object({}) do |(path, stats), acc|
+          line_arr = stats.is_a?(Hash) ? stats[:lines] : stats
+          acc[path] = line_arr&.dup
+        end
+      end
+
+      # Re-attach the (possibly mutated by accumulate_skipped) line
+      # arrays back into the full `coverage` hash. Hash-mode entries
+      # get a fresh `{lines:, branches:}` Hash with the new lines and
+      # the original branches preserved; array-mode entries get the
+      # mutated array directly. New entries `accumulate_skipped`
+      # synthesised for previously-unseen files (line stubs) propagate
+      # in their array shape — branches are absent because the file
+      # wasn't observed by Coverage.
+      def merge_lines_back(coverage, lines)
+        lines.each do |path, line_arr|
+          existing = coverage[path]
+          coverage[path] =
+            if existing.is_a?(Hash)
+              { lines: line_arr, branches: existing[:branches] || {} }
+            else
+              line_arr
+            end
+        end
       end
 
       # Inner module preserving 1.x's RubyCoverage shim contract. When

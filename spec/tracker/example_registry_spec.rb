@@ -241,6 +241,20 @@ RSpec.describe RSpecTracer::Tracker::ExampleRegistry do
       expect(registry.duplicates).to eq({})
     end
 
+    # Exercises the dedup branch on the duplicates bucket: once a
+    # collider is recorded, re-registering it under the same identity
+    # hash must NOT append a second copy into the bucket. Without
+    # this, parallel-tests merge cycles (where the same colliding
+    # example_id gets re-registered from each peer cache) would inflate
+    # the bucket on every cycle.
+    it 'does not append the same colliding id twice into the duplicates bucket' do
+      registry.register('ex1', identity_hash: 'h1')
+      registry.register('ex2', identity_hash: 'h1')
+      registry.register('ex2', identity_hash: 'h1')
+
+      expect(registry.duplicates).to eq('h1' => %w[ex1 ex2])
+    end
+
     it 'ignores identity_hash when omitted' do
       registry.register('ex1')
       registry.register('ex2')

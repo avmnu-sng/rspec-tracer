@@ -84,6 +84,17 @@ jobs:
         run: task test:property
       - name: Test — Dogfood
         run: task test:dogfood
+      # Each task above sets COVERAGE_SUITE in taskfiles/test.yml so
+      # the per-suite resultset entries land under distinct
+      # command_names. Upload the merged in-process resultset for the
+      # `coverage` job below to collate across CI matrix jobs.
+      - name: Upload coverage resultset
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-test-unit
+          path: coverage/.resultset.json
+          if-no-files-found: warn
 
   test-edge-cases:
     name: test-edge-cases
@@ -96,6 +107,13 @@ jobs:
         uses: ./.github/actions/setup
       - name: Test — Edge cases
         run: task test:edge-cases
+      - name: Upload coverage resultset
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-test-edge-cases
+          path: coverage/.resultset.json
+          if-no-files-found: warn
 
   # M9.0: non-Rails regression specs (upstream PR #72 phantom file_path
   # graceful-degradation + rspec-retry / rspec-rerun coexistence smoke).
@@ -116,6 +134,13 @@ jobs:
         uses: ./.github/actions/setup
       - name: Test — Regressions (plain, no Rails fixture)
         run: task test:regressions:plain
+      - name: Upload coverage resultset
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-test-regressions-plain
+          path: coverage/.resultset.json
+          if-no-files-found: warn
 
   test-fuzz:
     name: test-fuzz
@@ -128,6 +153,51 @@ jobs:
         uses: ./.github/actions/setup
       - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
         run: task test:fuzz:full
+      - name: Upload coverage resultset
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-test-fuzz
+          path: coverage/.resultset.json
+          if-no-files-found: warn
+
+  # Aggregator: collate every per-job coverage resultset into one
+  # canonical merged report (HTML + JSON). Pushes to Codecov for
+  # PR delta + diff-coverage gating; uploads the merged report as
+  # an artifact so docs-publish.yml can stage it under
+  # /<version>/coverage/ on gh-pages. `if: always()` so a single
+  # red test job doesn't suppress the merge of the others (we
+  # still want to see coverage delta on partial-fail PRs).
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test-unit, test-edge-cases, test-regressions-plain, test-fuzz]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Download per-job coverage resultsets
+        uses: actions/download-artifact@v8
+        with:
+          path: coverage_artifacts
+          pattern: coverage-test-*
+      - name: Merge resultsets via SimpleCov.collate
+        run: task coverage:merge
+      - name: Upload merged coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-merged
+          path: coverage/
+          if-no-files-found: error
+      - name: Push to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/coverage.json
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   test-mutation-smoke:
     name: test-mutation-smoke

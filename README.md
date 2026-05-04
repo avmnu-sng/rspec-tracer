@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg)](https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/rspec-tracer.svg)](https://badge.fury.io/rb/rspec-tracer)
+[![codecov](https://codecov.io/gh/avmnu-sng/rspec-tracer/branch/main/graph/badge.svg)](https://codecov.io/gh/avmnu-sng/rspec-tracer)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://avmnu-sng.github.io/rspec-tracer/)
 
 **RSpec Tracer** is a specs dependency analyzer, flaky-test detector,
 test accelerator, and coverage reporter for RSpec. It records the
@@ -13,6 +15,8 @@ only the examples whose inputs changed since the last run.
 It never skips:
 - **Failed**, **flaky**, or **pending** examples.
 - Examples whose dependent inputs changed (the whole point).
+
+📚 **Full documentation site**: [avmnu-sng.github.io/rspec-tracer](https://avmnu-sng.github.io/rspec-tracer/) — YARD API reference, sample HTML report, cookbook, and per-version coverage report.
 
 For a complete account of the input taxonomy and how the engine fits
 together, read [`ARCHITECTURE.md`](ARCHITECTURE.md).
@@ -30,6 +34,7 @@ together, read [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - [SimpleCov interop](#simplecov-interop)
 - [FAQ + comparison](#faq--comparison)
 - [Reports](#reports)
+- [Documentation + coverage](#documentation--coverage)
 - [Help and community](#help-and-community)
 - [Section anchor map (1.x → 2.0)](#section-anchor-map-1x--20)
 
@@ -447,6 +452,21 @@ reports:
 
 Plus a machine-readable `rspec_tracer_report/report.json` for CI
 dashboards and the terminal one-liner shown in [Quick start](#quick-start).
+
+## Documentation + coverage
+
+- **Docs site**: [avmnu-sng.github.io/rspec-tracer](https://avmnu-sng.github.io/rspec-tracer/)
+  publishes a YARD API reference, the cookbook, internals deep-dives,
+  the sample HTML report, **and the merged coverage report** for every
+  rolling main + tagged release. The landing page lets you switch
+  versions; per-version subpaths look like
+  `/main/yard/`, `/main/coverage/`, `/v2.0.0.pre.1/yard/`, etc.
+
+- **Coverage**: tracked by Codecov (per-PR delta + diff-coverage gate
+  ≥ 90%) plus the per-version HTML report linked above. Multi-suite
+  resultsets (`unit`, `edge-cases`, `regressions-plain`, `fuzz`) merge
+  via SimpleCov.collate in the CI `coverage` job; the same merger runs
+  locally via `task coverage:merge` after `task test:*` runs.
 
 ## Help and community
 

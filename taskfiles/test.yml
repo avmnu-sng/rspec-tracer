@@ -5,15 +5,25 @@ version: '3'
 # aggregators. test:integration:remote-cache* tasks depend on
 # ci:localstack:ready / ci:redis:ready (in ci.yml) — resolved via
 # flatten: true.
+#
+# COVERAGE_SUITE: each task sets a unique value so per-suite SimpleCov
+# resultsets in `coverage/.resultset.json` carry distinct command_names.
+# Without this, every `bundle exec rspec` invocation REPLACES the prior
+# entry — defeating the multi-suite merge that `task coverage:merge`
+# (and the CI aggregator) depends on.
 
 tasks:
   test:unit:
     desc: Unit tests (fast)
+    env:
+      COVERAGE_SUITE: unit
     cmds:
       - bundle exec rspec --fail-fast
 
   test:contract:
     desc: Contract tests (storage + remote cache backends)
+    env:
+      COVERAGE_SUITE: contract
     cmds:
       - bundle exec rspec spec/contracts
 
@@ -24,6 +34,8 @@ tasks:
       `test:integration:parallel`) because both exceed the fast-feedback budget.
       Files listed explicitly: `.rspec`'s --exclude-pattern does not apply when
       positional paths are passed.
+    env:
+      COVERAGE_SUITE: integration
     cmds:
       - bundle exec rspec spec/integration/dogfood_spec.rb spec/integration/ruby_app_spec.rb spec/integration/constants_regression_spec.rb
 
@@ -35,6 +47,8 @@ tasks:
       unsatisfiable constraint. Excluded from the default rspec
       sweep (.rspec --exclude-pattern) because each `bundle install`
       shell-out takes ~10-30 s.
+    env:
+      COVERAGE_SUITE: integration-check-bundle-drift
     cmds:
       - bundle exec rspec --no-color spec/integration/check_bundle_drift_spec.rb
 
@@ -44,11 +58,15 @@ tasks:
       under `parallel_rspec spec` and asserts the merged top-level cache shape.
       Excluded from the default rspec sweep (via .rspec --exclude-pattern) because
       each example spawns worker subprocesses.
+    env:
+      COVERAGE_SUITE: integration-parallel
     cmds:
       - bundle exec rspec --no-color spec/integration/parallel_tests_spec.rb
 
   test:property:
     desc: Property-based invariant tests
+    env:
+      COVERAGE_SUITE: property
     cmds:
       - bundle exec rspec spec/properties
 
@@ -56,6 +74,8 @@ tasks:
     desc: >-
       Fuzz smoke — 100 iterations against each of the 3 fuzz harnesses
       (json_backend, multi-backend cache_loader, coverage_adapter).
+    env:
+      COVERAGE_SUITE: fuzz-smoke
     cmds:
       - ITERATIONS=100 bundle exec ruby spec/fuzz/json_backend_fuzz.rb
       - ITERATIONS=100 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
@@ -68,6 +88,8 @@ tasks:
       :msgpack / sqlite, coverage_adapter pathological shapes). Runs
       per-PR + per-main via `lint-and-specs.yml`'s `Test - Fuzz (full)`
       step (M3.8 Part C migration from the deleted nightly.yml).
+    env:
+      COVERAGE_SUITE: fuzz-full
     cmds:
       - ITERATIONS=10000 bundle exec ruby spec/fuzz/json_backend_fuzz.rb
       - ITERATIONS=10000 bundle exec ruby spec/fuzz/cache_loader_fuzz.rb
@@ -79,11 +101,15 @@ tasks:
       tests under spec/edge_cases/. Excluded from the default rspec sweep
       via .rspec --exclude-pattern (memory: feedback_rspec_exclude_pattern_positional).
       Runs per-PR via lint-and-specs.yml's `Test - Edge cases` step.
+    env:
+      COVERAGE_SUITE: edge-cases
     cmds:
       - bundle exec rspec --no-color spec/edge_cases
 
   test:dogfood:
     desc: Dogfood — run rspec-tracer against the benchmark ruby_app fixture, cold + warm
+    env:
+      COVERAGE_SUITE: dogfood
     cmds:
       - bundle exec rspec spec/integration/dogfood_spec.rb
 
@@ -108,6 +134,8 @@ tasks:
       with a feature_flags_spec annotated with tracks: { env: ... }, cold/warm
       with the tracked env flipped, asserts only the env-branch examples
       re-run. Excluded from the default rspec sweep (subprocess, ~45s).
+    env:
+      COVERAGE_SUITE: integration-per-example-dsl
     cmds:
       - bundle exec rspec --no-color spec/integration/per_example_dsl_spec.rb
 
@@ -120,6 +148,8 @@ tasks:
       config-level tracked env flips, and that env_snapshot.json carries
       wildcard-expanded concrete keys (no pattern leakage). Excluded
       from the default rspec sweep (subprocess, multiple cold/warm cycles).
+    env:
+      COVERAGE_SUITE: integration-track-env-config
     cmds:
       - bundle exec rspec --no-color spec/integration/track_env_config_spec.rb
 
@@ -130,6 +160,8 @@ tasks:
       the real S3 API surface via awslocal. Excluded from the default
       rspec sweep. Depends on ci:localstack:ready so CI fails fast with
       a clear message if LocalStack is not reachable.
+    env:
+      COVERAGE_SUITE: integration-remote-cache-s3
     deps: [ci:localstack:ready]
     cmds:
       - bundle exec rspec --no-color spec/integration/remote_cache_spec.rb
@@ -140,6 +172,8 @@ tasks:
       End-to-end round-trip (upload + download + branch_refs + retention
       + prune_all) against localhost:6379 (override via REDIS_URL).
       Depends on ci:redis:ready so CI fails fast if Redis is not reachable.
+    env:
+      COVERAGE_SUITE: integration-remote-cache-redis
     deps: [ci:redis:ready]
     cmds:
       - bundle exec rspec --no-color spec/integration/remote_cache_redis_spec.rb
@@ -152,6 +186,8 @@ tasks:
       and SourceFile.file_path) plus the rspec-retry + rspec-rerun
       coexistence smoke specs (subprocess shape, outer-Gemfile bundle
       context, no Rails fixture required). Fast (~2 s total).
+    env:
+      COVERAGE_SUITE: regressions-plain
     cmds:
       - bundle exec rspec --no-color spec/regressions/gem_generated_example_no_source_spec.rb spec/regressions/rspec_retry_coexistence_spec.rb spec/regressions/rspec_rerun_coexistence_spec.rb
 
@@ -164,6 +200,8 @@ tasks:
       as test:features:rails. Wired into the canary cell of
       full-matrix.yml's `rails:` job (matrix.ruby == '3.3' &&
       matrix.rails == '7.1') because the assertion is engine-uniform.
+    env:
+      COVERAGE_SUITE: regressions-rails
     cmds:
       - bundle exec rspec --no-color spec/regressions/template_change_invalidates_dependents_spec.rb
 

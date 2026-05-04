@@ -218,8 +218,8 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       expect(payload['RSpecTracer']['coverage'][tracked_file].first).to eq(1)
     end
 
-    it 'returns nil and installs SimpleCov interop when simplecov? is true' do
-      allow(adapter).to receive(:peek_unfiltered).and_return(tracked_file => [1, 1])
+    it 'returns nil and installs SimpleCov interop when simplecov? is true (array-mode coverage)' do
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(tracked_file => [1, 1])
       allow(RSpecTracer).to receive(:simplecov?).and_return(true)
       allow(described_class::SimpleCovInterop).to receive(:install)
 
@@ -227,6 +227,28 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       expect(File).not_to exist(File.join(coverage_dir, 'coverage.json'))
       expect(described_class::SimpleCovInterop).to have_received(:install)
         .with(hash_including(tracked_file => [1, 1]))
+    end
+
+    # Hash-mode coverage (SimpleCov with `enable_coverage :branch` enabled).
+    # The interop must hand SimpleCov the full {lines:, branches:} shape so
+    # branch coverage survives — `peek_unfiltered` strips :branches by
+    # design, so the install path uses `peek_unfiltered_full` instead. If
+    # branches were lost here, every dogfooded suite would silently report
+    # 0/0 branches even when SimpleCov was configured for branch coverage.
+    it 'preserves the branches sub-hash when interop installs against hash-mode coverage' do
+      branches = { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3 } }
+      hash_mode = { tracked_file => { lines: [1, 1], branches: branches } }
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(hash_mode)
+      allow(RSpecTracer).to receive(:simplecov?).and_return(true)
+      allow(described_class::SimpleCovInterop).to receive(:install)
+
+      build_reporter.generate
+
+      expect(described_class::SimpleCovInterop).to have_received(:install) do |coverage|
+        expect(coverage[tracked_file]).to be_a(Hash)
+        expect(coverage[tracked_file][:lines]).to eq([1, 1])
+        expect(coverage[tracked_file][:branches]).to eq(branches)
+      end
     end
   end
 

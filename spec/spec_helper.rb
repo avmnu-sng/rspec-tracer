@@ -1,17 +1,6 @@
 # frozen_string_literal: true
 
-require 'simplecov'
-require 'simplecov_json_formatter'
-
-SimpleCov.formatters = [
-  SimpleCov::Formatter::HTMLFormatter,
-  SimpleCov::Formatter::JSONFormatter
-].freeze
-
-SimpleCov.start do
-  enable_coverage :branch
-  track_files 'lib/**/*.rb'
-end
+require 'simplecov' # Auto-loads /.simplecov from the project root.
 
 require_relative 'support/tracker_coverage_gate'
 TrackerCoverageGate.install!
