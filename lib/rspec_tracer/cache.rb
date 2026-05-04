@@ -171,9 +171,10 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @all_files = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values do |files|
+      raw = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values do |files|
         files.transform_keys(&:to_sym)
       end
+      @all_files = raw.reject { |fname, _| filtered_by_current_filters?(fname) }
     end
 
     def load_dependency_cache(cache_dir)
@@ -181,7 +182,18 @@ module RSpecTracer
 
       return unless File.file?(file_name)
 
-      @dependency = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values(&:to_set)
+      raw = JSON.parse(File.read(file_name, encoding: 'UTF-8')).transform_values(&:to_set)
+      @dependency = raw.transform_values do |files|
+        files.reject { |fname| filtered_by_current_filters?(fname) }.to_set
+      end
+    end
+
+    # True iff `file_name` matches any currently-configured filter.
+    # Applied at carry-forward seed time so newly-added filters take
+    # effect on the very next warm run instead of waiting for a cold
+    # run.
+    def filtered_by_current_filters?(file_name)
+      RSpecTracer.filters.any? { |f| f.match?(file_name: file_name) }
     end
 
     def load_examples_coverage_cache(cache_dir)

@@ -1,3 +1,28 @@
+## [1.2.2] - 2026-05-04
+
+### Fixed
+
+- **Default filter list now excludes rspec-tracer's own output
+  directories** (`rspec_tracer_cache/`, `rspec_tracer_coverage/`,
+  `rspec_tracer_report/`, and the `rspec_tracer.lock` file). Prior
+  versions did not exclude these paths, so any spec that read a tracer
+  cache file (typical for outer integration specs that assert on cache
+  state after a fixture subprocess run) had those paths attributed as
+  dependencies. The user-visible symptom was reverse-dependency reports
+  showing tracer-self paths as deps of unrelated specs, plus
+  spurious files-changed re-runs whenever the tracer rewrote its own
+  cache. Both `add_filter` and `add_coverage_filter` defaults updated.
+
+- **Carry-forward filter contract** — newly added filters now apply
+  uniformly to both fresh attribution AND prior-snapshot carry-forward.
+  Previously, `Cache#load_all_files_cache` and `load_dependency_cache`
+  read previous-run state without re-applying the current filter list.
+  A user adding a new filter mid-development saw the filter take
+  effect only for fresh attributions on cold runs; previously-cached
+  paths matching the new filter persisted in `all_files` and
+  `dependency` until the next cold run. Filter additions now take
+  effect on the very next warm run.
+
 ## [1.2.1] - 2026-05-01
 
 ### Fixed
