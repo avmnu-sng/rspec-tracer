@@ -94,7 +94,8 @@ jobs:
         with:
           name: coverage-test-unit
           path: coverage/.resultset.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
 
   test-edge-cases:
     name: test-edge-cases
@@ -113,7 +114,8 @@ jobs:
         with:
           name: coverage-test-edge-cases
           path: coverage/.resultset.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
 
   # M9.0: non-Rails regression specs (upstream PR #72 phantom file_path
   # graceful-degradation + rspec-retry / rspec-rerun coexistence smoke).
@@ -140,7 +142,8 @@ jobs:
         with:
           name: coverage-test-regressions-plain
           path: coverage/.resultset.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
 
   test-fuzz:
     name: test-fuzz
@@ -159,7 +162,8 @@ jobs:
         with:
           name: coverage-test-fuzz
           path: coverage/.resultset.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
 
   # Aggregator: collate every per-job coverage resultset into one
   # canonical merged report (HTML + JSON). Pushes to Codecov for
