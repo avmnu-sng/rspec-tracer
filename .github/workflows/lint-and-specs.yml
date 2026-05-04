@@ -156,14 +156,16 @@ jobs:
         uses: ./.github/actions/setup
       - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
         run: task test:fuzz:full
-      - name: Upload coverage resultset
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-test-fuzz
-          path: coverage/.resultset.json
-          if-no-files-found: error
-          include-hidden-files: true
+      # No coverage upload here on purpose: the fuzz harnesses are
+      # `bundle exec ruby spec/fuzz/*_fuzz.rb` standalone invocations,
+      # not RSpec runs, so spec/spec_helper.rb (which loads SimpleCov
+      # via .simplecov) never runs. The same code paths these
+      # harnesses stress are already exercised by the unit suite under
+      # deterministic inputs; fuzz adds adversarial-input signal but
+      # not new coverage. Wiring SimpleCov via RUBYOPT here is
+      # possible but creates a parallel coverage path that would have
+      # to compose with rspec-tracer's `SimpleCovInterop` — out of
+      # scope for this PR.
 
   # Aggregator: collate every per-job coverage resultset into one
   # canonical merged report (HTML + JSON). Pushes to Codecov for
@@ -176,7 +178,7 @@ jobs:
     name: coverage
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [test-unit, test-edge-cases, test-regressions-plain, test-fuzz]
+    needs: [test-unit, test-edge-cases, test-regressions-plain]
     if: always()
     steps:
       - name: Checkout
