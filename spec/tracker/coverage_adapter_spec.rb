@@ -222,4 +222,57 @@ RSpec.describe RSpecTracer::Tracker::CoverageAdapter do
       expect(adapter.peek_unfiltered).to eq(inside_root => [1, 0])
     end
   end
+
+  describe '#peek_unfiltered_full' do
+    let(:inside_root) { write_file('lib/foo.rb', "puts 1\n") }
+    let(:outside_root) { '/elsewhere/lib/foo.rb' }
+    let(:branches_payload) do
+      { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3, [:else, 2, 1, 6, 1, 10] => 0 } }
+    end
+
+    it 'preserves the full hash shape (lines + branches) under hash mode' do
+      stats = { lines: [1, 0], branches: branches_payload }
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => stats)
+      adapter = described_class.new(root: root, mode: :hash)
+
+      expect(adapter.peek_unfiltered_full).to eq(inside_root => stats)
+    end
+
+    it 'returns array-shape entries unchanged under array mode' do
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => [1, 0])
+      adapter = described_class.new(root: root, mode: :array)
+
+      expect(adapter.peek_unfiltered_full).to eq(inside_root => [1, 0])
+    end
+
+    it 'filters by root prefix only (skips the user filters list)' do
+      filter = RSpecTracer::Filter.register(%r{/lib/foo\.rb\z})
+      stats = { lines: [1], branches: {} }
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => stats, outside_root => stats)
+      adapter = described_class.new(root: root, filters: [filter], mode: :hash)
+
+      expect(adapter.peek_unfiltered_full.keys).to eq([inside_root])
+    end
+
+    # Exercises the `@mode == :auto` -> detect_mode branch on the
+    # first peek. Default mode is :auto; the call must self-classify
+    # the first non-empty Coverage payload as either :hash or :array
+    # before deciding what shape to preserve.
+    it 'auto-detects hash mode on first peek when mode: :auto (default)' do
+      stats = { lines: [1, 0], branches: { [:if, 0, 1, 0, 1, 5] => { [:then, 1, 1, 0, 1, 5] => 1 } } }
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => stats)
+      adapter = described_class.new(root: root)
+
+      expect(adapter.peek_unfiltered_full).to eq(inside_root => stats)
+    end
+
+    it 'flips @mode from :auto to :hash on first hash-mode peek' do
+      stats = { lines: [1, 0], branches: {} }
+      allow(Coverage).to receive(:peek_result).and_return(inside_root => stats)
+      adapter = described_class.new(root: root)
+      adapter.peek_unfiltered_full
+
+      expect(adapter.mode).to eq(:hash)
+    end
+  end
 end

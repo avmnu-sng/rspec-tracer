@@ -55,6 +55,43 @@ merge your work quickly.
 
 See `task --list` for the full command catalogue.
 
+## Coverage
+
+Coverage is collected via SimpleCov (line + branch) and exported in
+two places: a per-PR Codecov delta + diff-coverage gate (≥ 90% on
+the patch; no project drop), and a per-version HTML report
+published to gh-pages at `/<version>/coverage/`.
+
+Each `task test:*` task sets a unique `COVERAGE_SUITE` env var so
+per-suite resultsets land under distinct `command_name`s in
+`coverage/.resultset.json` (otherwise each subsequent `bundle exec
+rspec` invocation would replace the prior entry — defeating the
+multi-suite merge). The SimpleCov configuration lives inline in
+`spec/spec_helper.rb` (NOT in a `.simplecov` file at repo root —
+SimpleCov's `.simplecov` auto-loader walks upward from `Dir.pwd` and
+would leak our config into fixture subprocesses that `chdir` into
+`spec/fixtures/rails_app/` or `benchmark/fixtures/ruby_app/`).
+
+Local workflow:
+
+```sh
+task coverage:clean              # wipe previous resultsets
+task test:unit                   # writes coverage entry under "unit"
+task test:edge-cases             # writes entry under "edge-cases"
+task coverage:merge -- coverage/.resultset.json   # collated HTML + JSON
+open coverage/index.html
+```
+
+CI (lint-and-specs.yml): each test job uploads its
+`coverage/.resultset.json` as `coverage-test-<job>` artifact; the
+`coverage` aggregator job downloads them all, runs `task coverage:merge`,
+and pushes the merged JSON to Codecov + uploads HTML for
+docs-publish.yml to stage at `/<version>/coverage/`.
+
+Skip coverage entirely with `COVERAGE=false` (spec_helper guards
+SimpleCov.start on `ENV['COVERAGE'] != 'false'`). Mutation runs
+auto-skip via `defined?(::Mutant)`.
+
 ## YARD comments on public APIs
 
 Add YARD comments to any new public entry point (`RSpecTracer.start`

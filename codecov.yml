@@ -1,0 +1,62 @@
+# Codecov configuration. PR gates run as commit-status checks; the
+# Codecov bot also drops a comment with the per-PR delta + diff
+# coverage summary. Documentation: https://docs.codecov.com/docs/codecovyml-reference
+#
+# The line + branch baseline lives in `benchmark/ratchet.json`-adjacent
+# spirit: SimpleCov collates resultsets uploaded by every per-suite
+# CI job (lint-and-specs.yml `coverage` aggregator); Codecov computes
+# the project + patch ratios server-side from the resulting
+# `coverage/coverage.json`.
+
+codecov:
+  require_ci_to_pass: false
+  notify:
+    # Wait for every test-* + the `coverage` aggregator to upload
+    # before posting the PR comment, so the delta math is computed
+    # over the full collated payload, not whichever shard reported
+    # first.
+    after_n_builds: 1
+
+coverage:
+  precision: 2
+  round: nearest
+  range: "85...100"
+  status:
+    project:
+      default:
+        # No coverage drop on main. Threshold 0% allows fluctuation
+        # within rounding precision but anything that meaningfully
+        # lowers project coverage trips the status check.
+        target: auto
+        threshold: 0%
+        if_ci_failed: error
+        only_pulls: false
+    patch:
+      default:
+        # Per-PR diff coverage gate: 90% of the patch's added /
+        # modified lines must be covered. Picks up genuine test debt
+        # accumulating in PRs without forcing the project baseline
+        # to climb.
+        target: 90%
+        threshold: 0%
+        if_ci_failed: error
+
+# PR comment shape. `condensed` keeps the Files section compact
+# (one row per file with delta) so review focus stays on changed
+# code, not the full 200-file surface.
+comment:
+  layout: "header, diff, flags, components, files, footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Excluded paths must mirror .simplecov + scripts/merge_coverage.rb
+# so the server-side report converges with the local one.
+ignore:
+  - "spec/"
+  - "benchmark/"
+  - "vendor/"
+  - "tmp/"
+  - "coverage/"
+  - "lib/rspec_tracer/reporters/html/"
