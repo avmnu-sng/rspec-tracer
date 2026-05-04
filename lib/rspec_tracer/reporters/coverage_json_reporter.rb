@@ -221,16 +221,23 @@ module RSpecTracer
       # silently drop branch data from SimpleCov's report whenever
       # rspec-tracer dogfoods itself with branch coverage enabled.
       #
-      # `accumulate_skipped` operates on the lines-only Array<Integer|nil>
-      # contract (matches 1.x's skipped-coverage attribution path); run
-      # it against a mutable lines view, then sync the (possibly newly-
-      # allocated) line arrays back into the per-path hash so SimpleCov
-      # sees both the skipped-attributed lines AND the original branches.
+      # When the engine has zero skipped examples (the common path —
+      # any cold run, any warm run with no carried-over skips),
+      # `accumulate_skipped` is a no-op and we hand SimpleCov the
+      # peek output verbatim. Skipping the lines-view dup + merge-
+      # back round-trip on this path matters: long-running benchmark
+      # scenarios fork per-iter, hit at_exit per-iter, and a per-iter
+      # dup of every lib file's line array shows up as a measurable
+      # regression on cold_rails_v2_warm_iter (3.7x ratchet ratio in
+      # the first CI run that exposed it). Only pay the dup cost when
+      # there's actual skipped-coverage attribution to merge in.
       def install_simplecov_interop
         coverage = engine.coverage_adapter.peek_unfiltered_full
-        lines = mutable_lines_view(coverage)
-        accumulate_skipped(lines)
-        merge_lines_back(coverage, lines)
+        if engine.registry.ids_with_status(:skipped).any?
+          lines = mutable_lines_view(coverage)
+          accumulate_skipped(lines)
+          merge_lines_back(coverage, lines)
+        end
         SimpleCovInterop.install(coverage)
         nil
       end

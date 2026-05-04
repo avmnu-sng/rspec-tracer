@@ -250,6 +250,55 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
         expect(coverage[tracked_file][:branches]).to eq(branches)
       end
     end
+
+    # Array-mode skipped-coverage attribution path: when peek returns
+    # `Array<Integer|nil>` per file (default mode, no `enable_coverage
+    # :branch`), the merge_lines_back `else` arm rewrites the per-path
+    # entry as the mutated line array directly (no `{lines:, branches:}`
+    # wrapping needed because there are no branches to preserve).
+    it 'merges skipped-coverage attribution into the lines view (array-mode)' do
+      array_mode = { tracked_file => [1, 0, nil] }
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(array_mode)
+      allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
+      allow(engine).to receive(:merge_skipped_coverage).with(['ex_skipped']).and_return(
+        tracked_file => { 1 => 5 }
+      )
+      allow(RSpecTracer).to receive(:simplecov?).and_return(true)
+      allow(described_class::SimpleCovInterop).to receive(:install)
+
+      build_reporter.generate
+
+      expect(described_class::SimpleCovInterop).to have_received(:install)
+        .with(hash_including(tracked_file => [1, 5, nil]))
+    end
+
+    # Skipped-coverage attribution path: when the engine has skipped
+    # examples, accumulate_skipped writes their per-line strengths
+    # into a dup'd lines view; merge_lines_back syncs the (now-mutated)
+    # arrays back into the full hash so SimpleCov sees both the
+    # accumulated skipped lines AND the original branches. The early-
+    # return on empty skipped (the common path) is exercised by the
+    # two tests above; this one exercises the dup + merge round-trip.
+    it 'merges skipped-coverage attribution into the lines view (hash-mode)' do
+      branches = { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3 } }
+      hash_mode = { tracked_file => { lines: [1, 0, nil], branches: branches } }
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(hash_mode)
+      allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
+      allow(engine).to receive(:merge_skipped_coverage).with(['ex_skipped']).and_return(
+        tracked_file => { 1 => 5, 2 => 7 }
+      )
+      allow(RSpecTracer).to receive(:simplecov?).and_return(true)
+      allow(described_class::SimpleCovInterop).to receive(:install)
+
+      build_reporter.generate
+
+      expect(described_class::SimpleCovInterop).to have_received(:install) do |coverage|
+        # Lines mutated: index 1 = 0 + 5 = 5; index 2 = nil treated as 0 + 7 = 7
+        expect(coverage[tracked_file][:lines]).to eq([1, 5, 7])
+        # Branches preserved verbatim
+        expect(coverage[tracked_file][:branches]).to eq(branches)
+      end
+    end
   end
 
   describe '.merge_parallel' do
