@@ -1,3 +1,34 @@
+## [1.0.3] - 2026-05-04
+
+### Fixed
+
+- **Carry-forward filter contract** — newly-added filters now apply
+  uniformly to both fresh attribution AND prior-snapshot carry-forward.
+  Previously, `Cache#load_all_files_cache` and `load_dependency_cache`
+  read previous-run state without re-applying the current filter list.
+  A user adding a new filter mid-development saw the filter take
+  effect only for fresh attributions on cold runs; previously-cached
+  paths matching the new filter persisted in `all_files` and
+  `dependency` until the next cold run. Filter additions now take
+  effect on the very next warm run. (from upstream
+  [PR #161](https://github.com/avmnu-sng/rspec-tracer/pull/161))
+
+### Note on exclusions
+
+The companion default-filter expansion shipped in upstream PR #161
+(adds `rspec_tracer_cache/`, `rspec_tracer_coverage/`,
+`rspec_tracer_report/`, `rspec_tracer.lock` to the default
+`add_filter` / `add_coverage_filter` lists) is intentionally NOT
+backported to this 1.0.x line, for the same reason the broader
+1.1.0 default-filter expansion was excluded from 1.0.1: changing
+the default filter set shifts the files present in `all_files.json`
+for users who track tracer-self paths, which would invalidate their
+existing caches on upgrade. Users on 1.0.x who want this default
+hygiene can either upgrade to 1.2.x / 2.0.x OR add the four paths
+to their own `.rspec-tracer` config explicitly. The carry-forward
+filter check shipped here MAKES that user-side `add_filter` take
+effect on the next warm run.
+
 ## [1.0.2] - 2026-05-01
 
 ### Fixed
