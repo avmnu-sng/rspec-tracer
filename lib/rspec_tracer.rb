@@ -30,6 +30,17 @@ require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
 
 module RSpecTracer
+  # Filesystem barrier markers, layered on top of parallel_tests's
+  # pid-file wait to defend against the GHA-observed race where the
+  # gem's `wait_for_other_processes_to_finish` returns while a sibling
+  # worker hasn't fully flushed its `parallel_tests_N/` dir yet. Each
+  # worker writes BOOT at setup-time and DONE as the first step of its
+  # at_exit tasks; the elected worker waits for every booted peer's
+  # DONE marker (deadline-bounded) before proceeding to merge + purge.
+  PARALLEL_TESTS_BOOT_MARKER_FILENAME = '.rspec_tracer_boot'
+  PARALLEL_TESTS_DONE_MARKER_FILENAME = '.rspec_tracer_done'
+  PARALLEL_TESTS_PEER_DONE_DEADLINE_SECONDS = 5
+
   class << self
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
 
@@ -186,6 +197,29 @@ module RSpecTracer
       RSpecTracer.logger.error "Failed to load parallel tests (Error: #{e.message})"
     ensure
       track_parallel_tests_test_env_number
+      parallel_tests_touch_boot!
+    end
+
+    # Per-worker boot marker. Source-of-truth for "this worker booted
+    # past `RSpecTracer.start`", consumed by the elected worker's
+    # finalize-time peer enumeration. Idempotent; failures are warned
+    # and absorbed (boot-marker write must never block test execution).
+    def parallel_tests_touch_boot!
+      return unless parallel_tests?
+
+      FileUtils.mkdir_p(RSpecTracer.cache_path)
+      File.write(
+        File.join(RSpecTracer.cache_path, PARALLEL_TESTS_BOOT_MARKER_FILENAME),
+        JSON.generate(
+          pid: Process.pid,
+          test_env_number: ENV.fetch('TEST_ENV_NUMBER', ''),
+          started_at: Time.now.utc.iso8601
+        )
+      )
+    rescue StandardError => e
+      RSpecTracer.logger.warn(
+        "RSpec tracer: failed to write boot marker (#{e.class}: #{e.message})"
+      )
     end
 
     def track_parallel_tests_test_env_number
@@ -315,6 +349,15 @@ module RSpecTracer
     end
 
     def run_parallel_tests_exit_tasks
+      # Every worker — elected or not — drops its `.done` marker as the
+      # first thing in finalize so the elected worker's
+      # `parallel_tests_wait_for_peer_done_markers!` can observe it.
+      # Non-elected workers stop here; the elected worker proceeds to
+      # the merge + purge sequence (gated by `parallel_tests_executed?`,
+      # which now layers the peer-done barrier on top of the existing
+      # pid-file wait).
+      parallel_tests_touch_done!
+
       return unless parallel_tests_executed?
 
       merge_parallel_tests_reports
@@ -322,6 +365,26 @@ module RSpecTracer
       merge_parallel_tests_coverage_reports
       write_parallel_tests_coverage_report
       purge_parallel_tests_reports
+    end
+
+    # Per-worker done marker. Written by every worker (elected or not)
+    # as the first step of `run_parallel_tests_exit_tasks`. Pairs with
+    # the boot marker for the elected worker's peer-done barrier:
+    # presence of `.done` means "this worker has signalled completion
+    # of its own writes"; absence (with `.boot` present) means "still
+    # mid-flush or crashed". Idempotent; failures are warned + absorbed.
+    def parallel_tests_touch_done!
+      return unless parallel_tests?
+
+      FileUtils.mkdir_p(RSpecTracer.cache_path)
+      File.write(
+        File.join(RSpecTracer.cache_path, PARALLEL_TESTS_DONE_MARKER_FILENAME),
+        Time.now.utc.iso8601
+      )
+    rescue StandardError => e
+      RSpecTracer.logger.warn(
+        "RSpec tracer: failed to write done marker (#{e.class}: #{e.message})"
+      )
     end
 
     def merge_parallel_tests_reports
@@ -423,7 +486,62 @@ module RSpecTracer
 
       ParallelTests.wait_for_other_processes_to_finish
 
+      # Belt-and-suspenders barrier: pid-file said everyone's done, but
+      # the gem's `wait_for_other_processes_to_finish` has been observed
+      # on GHA Linux x86_64 to return while a sibling's `parallel_tests_N/`
+      # is still mid-flush. Cross-check via the `.boot`/`.done` filesystem
+      # markers before declaring the peer set stable. Idempotent: once
+      # all peers have flushed, subsequent calls just glob, find nothing
+      # missing, and return.
+      parallel_tests_wait_for_peer_done_markers!
+
       true
+    end
+
+    # Block until every peer that wrote `.boot` has also written `.done`,
+    # or the deadline elapses. Polled at 50ms — fine enough to close the
+    # typical "barrier returned a tick early" case within a poll or two,
+    # coarse enough not to dominate CPU.
+    #
+    # On timeout we log a warn and proceed: a peer that never wrote
+    # `.done` either crashed (then its dir is orphan content; the
+    # subsequent purge cleans it) or is genuinely hung (the elected
+    # can't fix that — we choose merge correctness over indefinite wait).
+    def parallel_tests_wait_for_peer_done_markers!
+      base_dir = File.dirname(RSpecTracer.cache_path)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + PARALLEL_TESTS_PEER_DONE_DEADLINE_SECONDS
+
+      loop do
+        missing = parallel_tests_peer_dirs_missing_done(base_dir)
+        return if missing.empty?
+
+        if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          RSpecTracer.logger.warn(
+            'RSpec tracer: peers booted without finishing within ' \
+            "#{PARALLEL_TESTS_PEER_DONE_DEADLINE_SECONDS}s: #{missing.inspect}; " \
+            'proceeding (peer dirs will be purged regardless of completion state)'
+          )
+          return
+        end
+
+        sleep 0.05
+      end
+    end
+
+    # Set difference of `.boot`-bearing peer dirs and `.done`-bearing
+    # peer dirs under `base_dir`. A returned entry means "this peer
+    # registered but has not signalled completion yet" — either still
+    # mid-flush or crashed.
+    def parallel_tests_peer_dirs_missing_done(base_dir)
+      boot_dirs = parallel_tests_peer_dirs_with_marker(base_dir, PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+      done_dirs = parallel_tests_peer_dirs_with_marker(base_dir, PARALLEL_TESTS_DONE_MARKER_FILENAME)
+      boot_dirs - done_dirs
+    end
+
+    def parallel_tests_peer_dirs_with_marker(base_dir, marker_filename)
+      Dir.glob(File.join(base_dir, 'parallel_tests_*', marker_filename)).map do |path|
+        File.dirname(path)
+      end
     end
 
     # Elects the worker that performs the per-run merge. Delegates to

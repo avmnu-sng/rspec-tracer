@@ -1,3 +1,28 @@
+## [1.2.3] - 2026-05-06
+
+### Fixed
+
+- **Parallel-tests purge race when a sibling worker is still mid-flush**
+  — the elected worker trusted only `parallel_tests`'s pid-file barrier
+  (`ParallelTests.wait_for_other_processes_to_finish`), which under
+  specific scheduling/I/O timing on GHA Linux x86_64 can return while a
+  sibling's `parallel_tests_N/` dir hasn't fully flushed. The elected
+  then merged + purged, racing the in-progress sibling. Symptoms:
+  intermittent leftover `parallel_tests_N/` dir post-purge AND/OR
+  silently dropped peer caches in the merge.
+
+  Backport of upstream PR
+  [#168](https://github.com/avmnu-sng/rspec-tracer/pull/168). Adds a
+  filesystem barrier layered on top of the pid-file wait. Each worker
+  writes a `.rspec_tracer_boot` marker at `RSpecTracer.start` time and
+  a `.rspec_tracer_done` marker as the first step of its at_exit tasks;
+  the elected worker waits for every booted peer's `.done` to
+  materialize before proceeding to merge + purge. Two independent
+  signals (pid file + filesystem) must agree before the elected worker
+  declares the peer set stable. Bounded at 5 s with a graceful warn for
+  crashed peers — their dirs are purged regardless of completion state,
+  and the merge accepts whatever's on disk.
+
 ## [1.2.2] - 2026-05-04
 
 ### Fixed
