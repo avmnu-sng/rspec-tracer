@@ -161,6 +161,95 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class.setup!).to be(false)
       expect(logger).to have_received(:error).with(/Failed to load parallel_tests/)
     end
+
+    it 'drops a .rspec_tracer_boot breadcrumb in this worker\'s cache dir' do
+      described_class.setup!
+
+      boot_path = File.join(cache_path, described_class::BOOT_MARKER_FILENAME)
+      expect(File).to exist(boot_path)
+      payload = JSON.parse(File.read(boot_path))
+      expect(payload).to include('pid' => Process.pid, 'test_env_number' => '3')
+      expect(payload['started_at']).to match(/\A\d{4}-\d{2}-\d{2}T/)
+    end
+
+    it 'logs and continues when the boot-marker write raises (graceful degradation)' do
+      allow(File).to receive(:write).and_raise(StandardError, 'disk full')
+
+      expect(described_class.setup!).to be(true)
+      expect(logger).to have_received(:warn).with(/failed to write boot marker/)
+    end
+  end
+
+  describe '.touch_done!' do
+    it 'writes the .rspec_tracer_done marker into the worker cache dir' do
+      described_class.touch_done!
+
+      done_path = File.join(cache_path, described_class::DONE_MARKER_FILENAME)
+      expect(File).to exist(done_path)
+      expect(File.read(done_path)).to match(/\A\d{4}-\d{2}-\d{2}T/)
+    end
+
+    it 'creates the cache dir when it does not yet exist (no-examples / early-exit path)' do
+      FileUtils.rm_rf(File.dirname(cache_path))
+
+      described_class.touch_done!
+
+      expect(File.directory?(cache_path)).to be(true)
+    end
+
+    it 'logs and returns nil on StandardError — never propagates exit status' do
+      allow(File).to receive(:write).and_raise(StandardError, 'disk full')
+
+      expect { described_class.touch_done! }.not_to raise_error
+      expect(logger).to have_received(:warn).with(/failed to write done marker/)
+    end
+  end
+
+  describe '.wait_for_peer_done_markers!' do
+    let(:base_dir) { File.dirname(cache_path) }
+
+    def write_marker(worker, name)
+      dir = File.join(base_dir, "parallel_tests_#{worker}")
+      FileUtils.mkdir_p(dir)
+      File.write(File.join(dir, name), 'x')
+    end
+
+    it 'returns immediately when every booted peer has a .done marker' do
+      write_marker(1, described_class::BOOT_MARKER_FILENAME)
+      write_marker(1, described_class::DONE_MARKER_FILENAME)
+      write_marker(2, described_class::BOOT_MARKER_FILENAME)
+      write_marker(2, described_class::DONE_MARKER_FILENAME)
+
+      expect { described_class.wait_for_peer_done_markers! }.not_to raise_error
+      expect(logger).not_to have_received(:warn)
+    end
+
+    it 'returns immediately when no peer ever wrote .boot (single-process / inactive)' do
+      expect { described_class.wait_for_peer_done_markers! }.not_to raise_error
+    end
+
+    it 'logs the missing-peer warning and proceeds once the deadline elapses' do
+      write_marker(2, described_class::BOOT_MARKER_FILENAME)
+      stub_const("#{described_class}::PEER_DONE_DEADLINE_SECONDS", 0)
+      allow(described_class).to receive(:sleep)
+
+      expect { described_class.wait_for_peer_done_markers! }.not_to raise_error
+      expect(logger).to have_received(:warn)
+        .with(/peers booted without finishing within 0s.*parallel_tests_2/)
+    end
+
+    it 'returns once a previously-missing .done marker appears mid-poll' do
+      write_marker(2, described_class::BOOT_MARKER_FILENAME)
+      polls = 0
+      allow(described_class).to receive(:sleep) do
+        polls += 1
+        write_marker(2, described_class::DONE_MARKER_FILENAME) if polls == 1
+      end
+
+      expect { described_class.wait_for_peer_done_markers! }.not_to raise_error
+      expect(polls).to eq(1)
+      expect(logger).not_to have_received(:warn)
+    end
   end
 
   describe '.last_process?' do
@@ -279,6 +368,7 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       File.write(lock_file, "2\n")
       require 'parallel_tests'
       allow(ParallelTests).to receive(:wait_for_other_processes_to_finish)
+      allow(described_class).to receive(:wait_for_peer_done_markers!)
       allow(described_class).to receive(:merge_snapshot!)
       allow(described_class).to receive(:merge_coverage!)
       allow(described_class).to receive(:emit_merged_reporters!)
@@ -297,10 +387,27 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class).not_to have_received(:merge_snapshot!)
     end
 
+    # Every worker — elected or not — drops a .done marker as the
+    # first thing in finalize. The elected worker's
+    # wait_for_peer_done_markers! reads exactly these markers; if
+    # touch_done! were gated on last_process?, non-elected workers
+    # would never signal completion and the elected would always
+    # time out.
+    it 'writes the .done marker even on non-elected workers' do
+      ENV['TEST_ENV_NUMBER'] = '2'
+      described_class.finalize!
+
+      # `RSpecTracer.cache_path` is stubbed to a fixed path in this
+      # spec (parallel_tests_1 in the helper); the non-elected
+      # branch still routes through that stub, so .done lands there.
+      expect(File).to exist(File.join(cache_path, described_class::DONE_MARKER_FILENAME))
+    end
+
     it 'runs the merge + cleanup sequence on the first (elected) worker' do
       result = described_class.finalize!
 
       expect(result).to be(true)
+      expect(described_class).to have_received(:wait_for_peer_done_markers!)
       expect(described_class).to have_received(:merge_snapshot!)
       expect(described_class).to have_received(:merge_coverage!)
       expect(described_class).to have_received(:emit_merged_reporters!)
@@ -314,6 +421,21 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       described_class.finalize!
 
       expect(described_class).not_to have_received(:merge_coverage!)
+    end
+
+    # The peer-done barrier MUST run after the pid wait + before the
+    # merge. The pid wait alone is the weak signal that motivated
+    # this barrier; running merge before peer-done verification would
+    # let a slow peer's snapshot land mid-merge and miss the union.
+    it 'runs wait_for_peer_done_markers! between pid-wait and merge_snapshot!' do
+      ordering = []
+      allow(ParallelTests).to receive(:wait_for_other_processes_to_finish) { ordering << :pid_wait }
+      allow(described_class).to receive(:wait_for_peer_done_markers!) { ordering << :peer_wait }
+      allow(described_class).to receive(:merge_snapshot!) { ordering << :merge }
+
+      described_class.finalize!
+
+      expect(ordering).to eq(%i[pid_wait peer_wait merge])
     end
 
     # M8.10: emit_merged_reporters! must run BEFORE purge_worker_dirs!
