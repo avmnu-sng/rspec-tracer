@@ -457,16 +457,16 @@ dashboards and the terminal one-liner shown in [Quick start](#quick-start).
 
 - **Docs site**: [avmnu-sng.github.io/rspec-tracer](https://avmnu-sng.github.io/rspec-tracer/)
   publishes a YARD API reference, the cookbook, internals deep-dives,
-  the sample HTML report, **and the merged coverage report** for every
-  rolling main + tagged release. The landing page lets you switch
-  versions; per-version subpaths look like
-  `/main/yard/`, `/main/coverage/`, `/v2.0.0.pre.1/yard/`, etc.
+  and the sample HTML report for every rolling main + tagged release.
+  The landing page lets you switch versions; per-version subpaths look
+  like `/main/yard/`, `/main/demo/`, `/v2.0.0.pre.1/yard/`, etc.
 
-- **Coverage**: tracked by Codecov (per-PR delta + diff-coverage gate
-  ≥ 90%) plus the per-version HTML report linked above. Multi-suite
-  resultsets (`unit`, `edge-cases`, `regressions-plain`, `fuzz`) merge
-  via SimpleCov.collate in the CI `coverage` job; the same merger runs
-  locally via `task coverage:merge` after `task test:*` runs.
+- **Coverage**: tracked by [Codecov](https://codecov.io/gh/avmnu-sng/rspec-tracer)
+  (per-PR delta + diff-coverage gate ≥ 90%; project history). Multi-
+  suite resultsets (`unit`, `edge-cases`, `regressions-plain`, `fuzz`)
+  merge via SimpleCov.collate in the CI `coverage` job; the same
+  merger runs locally via `task coverage:merge` after `task test:*`
+  runs (open `coverage/index.html` for the local HTML report).
 
 ## Help and community
 

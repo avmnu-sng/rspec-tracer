@@ -168,12 +168,13 @@ jobs:
       # scope for this PR.
 
   # Aggregator: collate every per-job coverage resultset into one
-  # canonical merged report (HTML + JSON). Pushes to Codecov for
-  # PR delta + diff-coverage gating; uploads the merged report as
-  # an artifact so docs-publish.yml can stage it under
-  # /<version>/coverage/ on gh-pages. `if: always()` so a single
-  # red test job doesn't suppress the merge of the others (we
-  # still want to see coverage delta on partial-fail PRs).
+  # canonical merged report (HTML + JSON) and push to Codecov for
+  # PR delta + diff-coverage gating + project history. Codecov is
+  # the only consumer; the merged report is read from the runner
+  # workspace directly and not re-uploaded as a CI artifact.
+  # `if: always()` so a single red test job doesn't suppress the
+  # merge of the others (we still want to see coverage delta on
+  # partial-fail PRs).
   coverage:
     name: coverage
     runs-on: ubuntu-latest
@@ -192,12 +193,6 @@ jobs:
           pattern: coverage-test-*
       - name: Merge resultsets via SimpleCov.collate
         run: task coverage:merge
-      - name: Upload merged coverage report
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-merged
-          path: coverage/
-          if-no-files-found: error
       - name: Push to Codecov
         uses: codecov/codecov-action@v5
         with:

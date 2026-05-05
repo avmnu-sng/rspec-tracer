@@ -73,9 +73,11 @@ commit messages are the only materials that survive in the repository.
   `coverage/.resultset.json`; `task coverage:merge` collates them via
   `SimpleCov.collate` and produces `coverage/index.html` +
   `coverage/coverage.json`. CI: `lint-and-specs.yml`'s `coverage` job
-  downloads per-job artifacts + uploads to Codecov + uploads merged
-  HTML for `docs-publish.yml`. Skip with `COVERAGE=false` env;
-  mutation runs auto-skip via `defined?(::Mutant)`.
+  downloads per-job artifacts + pushes the merged JSON to Codecov
+  (sole public consumer; the gh-pages `/coverage/` page used to mirror
+  this and was removed since Codecov is the canonical surface). Skip
+  with `COVERAGE=false` env; mutation runs auto-skip via
+  `defined?(::Mutant)`.
 - `bundle exec rake` is still wired (legacy cucumber path). Removed in
   the 2.0.0 cleanup.
 
