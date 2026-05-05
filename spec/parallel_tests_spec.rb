@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'json'
 require 'tmpdir'
 
 # Regression coverage for v1.0.2's fix to the parallel_tests merge +
@@ -121,6 +122,154 @@ RSpec.describe RSpecTracer do
       described_class.send(:purge_parallel_tests_reports)
 
       expect(File.directory?(File.join(base, 'parallel_tests_1'))).to be(true)
+    end
+  end
+
+  # Regression coverage for the GHA-observed parallel_tests purge race:
+  # ParallelTests.wait_for_other_processes_to_finish (pid-file based)
+  # could return while a sibling worker hadn't fully flushed its
+  # parallel_tests_N/ dir yet. The boot/done filesystem markers cross-
+  # check the pid signal so the elected worker waits for every booted
+  # peer's `.done` to materialize before merge + purge.
+  describe 'parallel_tests boot/done barrier' do
+    let(:tmp_root) { Dir.mktmpdir }
+    let(:cache_path) { File.join(tmp_root, 'rspec_tracer_cache', 'parallel_tests_1') }
+    let(:base_dir) { File.dirname(cache_path) }
+
+    before do
+      allow(described_class).to receive(:cache_path).and_return(cache_path)
+      FileUtils.mkdir_p(cache_path)
+    end
+
+    after { FileUtils.rm_rf(tmp_root) }
+
+    def write_marker(worker_index, marker_filename, contents = 'x')
+      dir = File.join(base_dir, "parallel_tests_#{worker_index}")
+      FileUtils.mkdir_p(dir)
+      File.write(File.join(dir, marker_filename), contents)
+    end
+
+    describe '.parallel_tests_touch_boot!' do
+      it 'is a no-op when parallel_tests is inactive' do
+        allow(described_class).to receive(:parallel_tests?).and_return(false)
+
+        described_class.send(:parallel_tests_touch_boot!)
+
+        expect(File).not_to exist(File.join(cache_path, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME))
+      end
+
+      it 'writes a JSON-encoded boot marker with pid + test_env_number' do
+        allow(described_class).to receive(:parallel_tests?).and_return(true)
+        ENV['TEST_ENV_NUMBER'] = '3'
+
+        described_class.send(:parallel_tests_touch_boot!)
+
+        marker = File.join(cache_path, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        payload = JSON.parse(File.read(marker))
+        expect(payload).to include('pid' => Process.pid, 'test_env_number' => '3')
+      ensure
+        ENV.delete('TEST_ENV_NUMBER')
+      end
+
+      it 'absorbs filesystem failure with a stdout warning (graceful degradation)' do
+        allow(described_class).to receive(:parallel_tests?).and_return(true)
+        allow(File).to receive(:write).and_raise(Errno::EACCES, 'no perms')
+
+        expect { described_class.send(:parallel_tests_touch_boot!) }
+          .to output(/failed to write boot marker/).to_stdout
+      end
+    end
+
+    describe '.parallel_tests_touch_done!' do
+      it 'is a no-op when parallel_tests is inactive' do
+        allow(described_class).to receive(:parallel_tests?).and_return(false)
+
+        described_class.send(:parallel_tests_touch_done!)
+
+        expect(File).not_to exist(File.join(cache_path, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME))
+      end
+
+      it 'writes the done marker with an iso8601 timestamp' do
+        allow(described_class).to receive(:parallel_tests?).and_return(true)
+
+        described_class.send(:parallel_tests_touch_done!)
+
+        marker = File.join(cache_path, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+        expect(File.read(marker)).to match(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+      end
+
+      it 'absorbs filesystem failure with a stdout warning (graceful degradation)' do
+        allow(described_class).to receive(:parallel_tests?).and_return(true)
+        allow(File).to receive(:write).and_raise(Errno::EACCES, 'no perms')
+
+        expect { described_class.send(:parallel_tests_touch_done!) }
+          .to output(/failed to write done marker/).to_stdout
+      end
+    end
+
+    describe '.parallel_tests_peer_dirs_missing_done' do
+      it 'returns peers with .boot but no .done' do
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+        write_marker(2, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        # peer 2 has no .done
+
+        missing = described_class.send(:parallel_tests_peer_dirs_missing_done, base_dir)
+
+        expect(missing).to contain_exactly(File.join(base_dir, 'parallel_tests_2'))
+      end
+
+      it 'returns [] when every booted peer has finished' do
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+
+        expect(described_class.send(:parallel_tests_peer_dirs_missing_done, base_dir)).to eq([])
+      end
+
+      it 'returns [] when no peers have booted' do
+        expect(described_class.send(:parallel_tests_peer_dirs_missing_done, base_dir)).to eq([])
+      end
+    end
+
+    describe '.parallel_tests_wait_for_peer_done_markers!' do
+      it 'returns immediately when every booted peer has its done marker' do
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+        write_marker(2, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(2, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+
+        expect { described_class.send(:parallel_tests_wait_for_peer_done_markers!) }.not_to raise_error
+      end
+
+      it 'returns immediately when no peers have booted' do
+        expect { described_class.send(:parallel_tests_wait_for_peer_done_markers!) }.not_to raise_error
+      end
+
+      it 'logs a warning and proceeds at the deadline when a peer never signals done' do
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+        write_marker(2, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        # peer 2 never writes .done — deadline elapses
+        stub_const("#{described_class}::PARALLEL_TESTS_PEER_DONE_DEADLINE_SECONDS", 0)
+        allow(described_class).to receive(:sleep)
+
+        expect { described_class.send(:parallel_tests_wait_for_peer_done_markers!) }
+          .to output(/peers booted without finishing within/).to_stdout
+      end
+
+      it 'recovers within the deadline when a slow peer eventually flushes' do
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+        write_marker(1, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME)
+        write_marker(2, RSpecTracer::PARALLEL_TESTS_BOOT_MARKER_FILENAME)
+
+        polls = 0
+        allow(described_class).to receive(:sleep) do
+          polls += 1
+          write_marker(2, RSpecTracer::PARALLEL_TESTS_DONE_MARKER_FILENAME) if polls == 1
+        end
+
+        expect { described_class.send(:parallel_tests_wait_for_peer_done_markers!) }.not_to raise_error
+      end
     end
   end
 end
