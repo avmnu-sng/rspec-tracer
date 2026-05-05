@@ -251,12 +251,12 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       end
     end
 
-    # Array-mode skipped-coverage attribution path: when peek returns
-    # `Array<Integer|nil>` per file (default mode, no `enable_coverage
-    # :branch`), the merge_lines_back `else` arm rewrites the per-path
-    # entry as the mutated line array directly (no `{lines:, branches:}`
-    # wrapping needed because there are no branches to preserve).
-    it 'merges skipped-coverage attribution into the lines view (array-mode)' do
+    # Array-mode skipped-coverage path: when peek returns
+    # `Array<Integer|nil>` per file (no `enable_coverage :branch`),
+    # accumulate_skipped writes mutated counts back as a plain Array
+    # (no `{lines:, branches:}` wrapping — there are no branches to
+    # preserve).
+    it 'merges skipped-coverage attribution against array-mode coverage (mutable line array)' do
       array_mode = { tracked_file => [1, 0, nil] }
       allow(adapter).to receive(:peek_unfiltered_full).and_return(array_mode)
       allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
@@ -272,14 +272,14 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
         .with(hash_including(tracked_file => [1, 5, nil]))
     end
 
-    # Skipped-coverage attribution path: when the engine has skipped
-    # examples, accumulate_skipped writes their per-line strengths
-    # into a dup'd lines view; merge_lines_back syncs the (now-mutated)
-    # arrays back into the full hash so SimpleCov sees both the
-    # accumulated skipped lines AND the original branches. The early-
-    # return on empty skipped (the common path) is exercised by the
-    # two tests above; this one exercises the dup + merge round-trip.
-    it 'merges skipped-coverage attribution into the lines view (hash-mode)' do
+    # Hash-mode skipped-coverage path: existing entry's `:lines` is
+    # already mutable (rare in practice — `Coverage.peek_result`
+    # returns frozen arrays on Ruby 3.2+, but a previous in-process
+    # mutation could leave a mutable copy). ensure_mutable_lines
+    # returns the existing array directly + accumulate_skipped
+    # mutates it in place; the entry's hash wrapper is untouched and
+    # `:branches` rides along.
+    it 'merges skipped-coverage into a mutable hash-mode entry without rewrapping' do
       branches = { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3 } }
       hash_mode = { tracked_file => { lines: [1, 0, nil], branches: branches } }
       allow(adapter).to receive(:peek_unfiltered_full).and_return(hash_mode)
@@ -293,9 +293,61 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       build_reporter.generate
 
       expect(described_class::SimpleCovInterop).to have_received(:install) do |coverage|
-        # Lines mutated: index 1 = 0 + 5 = 5; index 2 = nil treated as 0 + 7 = 7
+        # Lines mutated: index 1 = 0 + 5 = 5; index 2 = nil treated as 0 + 7 = 7.
         expect(coverage[tracked_file][:lines]).to eq([1, 5, 7])
-        # Branches preserved verbatim
+        # Branches preserved verbatim.
+        expect(coverage[tracked_file][:branches]).to eq(branches)
+      end
+    end
+
+    # Hash-mode skipped-coverage path: the entry's `:lines` array is
+    # FROZEN (the Ruby 3.2+ Coverage.peek_result default). The
+    # ensure_mutable_lines helper must dup the lines array AND replace
+    # the hash entry with a fresh `{lines:, branches:}` wrapper
+    # carrying the dup'd lines + the original (untouched) branches.
+    # Original frozen array must NOT be mutated.
+    it 'dup-on-writes a frozen hash-mode :lines + preserves branches verbatim' do
+      branches = { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3 } }
+      frozen_lines = [1, 0, nil].freeze
+      hash_mode = { tracked_file => { lines: frozen_lines, branches: branches } }
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(hash_mode)
+      allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
+      allow(engine).to receive(:merge_skipped_coverage).with(['ex_skipped']).and_return(
+        tracked_file => { 1 => 5 }
+      )
+      allow(RSpecTracer).to receive(:simplecov?).and_return(true)
+      allow(described_class::SimpleCovInterop).to receive(:install)
+
+      expect { build_reporter.generate }.not_to raise_error
+
+      expect(described_class::SimpleCovInterop).to have_received(:install) do |coverage|
+        expect(coverage[tracked_file][:lines]).to eq([1, 5, nil])
+        expect(coverage[tracked_file][:branches]).to eq(branches)
+      end
+      # Frozen original must be untouched (dup-on-write contract).
+      expect(frozen_lines).to eq([1, 0, nil])
+    end
+
+    # Hash-mode skipped-coverage path with `:lines` absent (nil). The
+    # file appeared in the hash-mode peek output (so we have a
+    # `:branches` sub-hash to preserve) but Coverage didn't observe
+    # any executable lines — install a `line_stub`-shaped Array as
+    # the new `:lines` and rewrap with the original branches.
+    it 'creates a line_stub for hash-mode entries with nil :lines + preserves branches' do
+      branches = { [:if, 0, 1, 0, 1, 10] => { [:then, 1, 1, 0, 1, 5] => 3 } }
+      hash_mode = { tracked_file => { lines: nil, branches: branches } }
+      allow(adapter).to receive(:peek_unfiltered_full).and_return(hash_mode)
+      allow(registry).to receive(:ids_with_status).with(:skipped).and_return(['ex_skipped'])
+      allow(engine).to receive(:merge_skipped_coverage).with(['ex_skipped']).and_return(
+        tracked_file => { 0 => 1 }
+      )
+      allow(RSpecTracer).to receive(:simplecov?).and_return(true)
+      allow(described_class::SimpleCovInterop).to receive(:install)
+
+      build_reporter.generate
+
+      expect(described_class::SimpleCovInterop).to have_received(:install) do |coverage|
+        expect(coverage[tracked_file][:lines].first).to eq(1)
         expect(coverage[tracked_file][:branches]).to eq(branches)
       end
     end
