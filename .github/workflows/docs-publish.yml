@@ -12,27 +12,18 @@
 #   /v<version>/demo/
 #
 # Triggers:
-#   - workflow_run on ci.yml completion (continuous deployment of
-#     /main/, chained behind a successful main-push CI run so the
-#     `coverage-merged` artifact is guaranteed to exist when this
-#     workflow queries for it; see "Coverage chain" below)
+#   - push to main (continuous deployment of /main/)
 #   - tag push v* (deployment of /v<version>/ + landing-page refresh)
 #   - workflow_dispatch (manual re-run, e.g. after a registry repair)
 #
-# Coverage chain: the multi-suite SimpleCov merge runs in ci.yml's
-# `coverage` aggregator job (~10-15 min after a main push). docs-
-# publish needs that artifact to stage `/<version>/coverage/`. An
-# earlier shape ran on the same push event in parallel with ci.yml
-# and lost the race (~5 min docs-publish vs ~10-15 min ci.yml ⇒
-# artifact didn't exist yet when dawidd6 queried, so /main/coverage/
-# 404'd silently). Chaining via `workflow_run` makes the ci.yml run
-# a guaranteed ancestor: the artifact is reachable by run-id and the
-# race is gone. Cost: main-push docs deploys are now ci.yml duration
-# + ~5 min instead of ~5 min standalone; deemed acceptable since
-# docs deploys aren't user-facing critical-path. Tag-push docs
-# deploys are unaffected — ci.yml doesn't trigger on tags, so tag
-# pushes still go straight to this workflow and look up coverage
-# via the earlier main-push run on the same SHA.
+# Coverage browsing is owned by Codecov (see README badge → codecov.io
+# /gh/avmnu-sng/rspec-tracer): PR-delta comments, project history, and
+# public read-without-auth UI live there. This workflow used to also
+# stage SimpleCov HTML at /<version>/coverage/ via a workflow_run
+# chain on ci.yml, but the page was strictly redundant with Codecov
+# and the chain added cross-workflow coupling + cache-of-cache bugs
+# (PR #167's dawidd6 input-conflict, PR #169's split fix). Removed
+# in favor of trusting Codecov for the coverage surface.
 #
 # Required GitHub Pages setup (one-time, repo owner):
 #   1. Settings -> Pages -> Source: "Deploy from a branch"
@@ -49,11 +40,8 @@
 name: docs-publish
 
 on:
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
-    branches: [main]
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -69,32 +57,10 @@ jobs:
   build-and-publish:
     name: Build + publish docs site
     runs-on: ubuntu-latest
-    # When triggered by workflow_run, only proceed if the upstream
-    # ci.yml run succeeded AND was triggered by a push (not a PR or
-    # workflow_dispatch). PR runs don't deploy docs; ci.yml dispatches
-    # on a non-main ref shouldn't either. The `branches: [main]`
-    # filter on the workflow_run trigger above already restricts to
-    # ci.yml's main-push runs, but the explicit event check is
-    # belt-and-suspenders. Tag pushes / workflow_dispatch (other
-    # event_name values) bypass this gate entirely.
-    if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0   # full history so we can list tags
-          # On the workflow_run path, pin checkout to the SHA that
-          # ci.yml ran on. Without this, github.ref defaults to the
-          # default branch HEAD — which may have advanced past the
-          # ci.yml head_sha if a second main push landed during
-          # ci.yml's run, in which case we'd build docs from a
-          # newer commit but stage coverage from the older run's
-          # artifact (mismatch). Tag pushes / workflow_dispatch fall
-          # through to the default github.sha (= the tag SHA / the
-          # dispatch-ref HEAD), which is correct.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -140,65 +106,12 @@ jobs:
       - name: Build the docs site
         run: task docs:site:build
 
-      # Pull the merged SimpleCov report uploaded by the `coverage`
-      # job in lint-and-specs.yml's run on this same commit. Tolerates
-      # absence (falls back to no /coverage/ subdir for that version)
-      # so docs-publish never blocks on a CI flake. Step uses
-      # dawidd6/action-download-artifact (not the first-party
-      # actions/download-artifact) because we want to look up by
-      # commit SHA on the tag-push path; the first-party action
-      # requires an explicit run-id which we don't have for tags.
-      #
-      # Two sibling steps (gated on event_name) instead of one with
-      # both `run_id` and `commit` set: dawidd6@v9 explicitly errors
-      # on `pr, commit, branch, run_id` together with
-      # "The following inputs cannot be used together" - so the
-      # workflow_run path must pass ONLY run_id, and the tag/dispatch
-      # path must pass ONLY commit. PR #167's single-step shape
-      # tripped that check (silently caught by continue-on-error,
-      # surfacing as a "No coverage artifact" skip and a 404 on
-      # /<version>/coverage/).
-      - name: Download merged coverage from CI run (workflow_run path)
-        if: github.event_name == 'workflow_run'
-        uses: dawidd6/action-download-artifact@v9
-        continue-on-error: true
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          run_id: ${{ github.event.workflow_run.id }}
-          name: coverage-merged
-          path: doc/coverage-merged
-          if_no_artifact_found: warn
-
-      - name: Download merged coverage from CI run (tag/dispatch path)
-        if: github.event_name != 'workflow_run'
-        uses: dawidd6/action-download-artifact@v9
-        continue-on-error: true
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ci.yml
-          commit: ${{ github.sha }}
-          name: coverage-merged
-          path: doc/coverage-merged
-          if_no_artifact_found: warn
-
       - name: Stage the per-version subdir
         run: |
           rm -rf doc/staged
           mkdir -p doc/staged/${{ steps.target.outputs.target_dir }}
           cp -r doc/site/yard doc/staged/${{ steps.target.outputs.target_dir }}/
           cp -r doc/site/demo doc/staged/${{ steps.target.outputs.target_dir }}/
-
-          # Stage SimpleCov merged HTML + JSON under
-          # /<version>/coverage/ when the CI artifact was downloaded
-          # successfully. The artifact root is the SimpleCov-output
-          # `coverage/` dir (HTML index.html + JSON coverage.json +
-          # assets/), so a recursive copy is enough.
-          if [ -d doc/coverage-merged ] && [ -n "$(ls -A doc/coverage-merged 2>/dev/null)" ]; then
-            cp -r doc/coverage-merged doc/staged/${{ steps.target.outputs.target_dir }}/coverage
-            echo "Coverage staged at /${{ steps.target.outputs.target_dir }}/coverage/"
-          else
-            echo "No coverage artifact for this SHA; skipping /${{ steps.target.outputs.target_dir }}/coverage/"
-          fi
 
       # First publish: write the version-keyed subdir. peaceiris with
       # destination_dir REPLACES that subdir's contents entirely while
@@ -211,13 +124,10 @@ jobs:
           publish_dir: doc/staged/${{ steps.target.outputs.target_dir }}
           destination_dir: ${{ steps.target.outputs.target_dir }}
           # Custom commit message so the gh-pages branch history reads
-          # like a docs deploy log. Cite the SHA actually deployed
-          # (= ci.yml's head_sha on the workflow_run path) rather
-          # than github.sha, which on workflow_run is the default-
-          # branch HEAD and may have advanced past the deployed SHA.
+          # like a docs deploy log.
           commit_message: >-
             docs: publish ${{ steps.target.outputs.version }}
-            (${{ github.event.workflow_run.head_sha || github.sha }})
+            (${{ github.sha }})
 
       - name: Generate root landing page + versions.json
         run: |

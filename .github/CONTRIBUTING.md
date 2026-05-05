@@ -57,10 +57,10 @@ See `task --list` for the full command catalogue.
 
 ## Coverage
 
-Coverage is collected via SimpleCov (line + branch) and exported in
-two places: a per-PR Codecov delta + diff-coverage gate (≥ 90% on
-the patch; no project drop), and a per-version HTML report
-published to gh-pages at `/<version>/coverage/`.
+Coverage is collected via SimpleCov (line + branch) and uploaded to
+Codecov for PR delta + diff-coverage gating (≥ 90% on the patch; no
+project drop) and project history. The Codecov UI is the canonical
+public surface — see the badge in the README.
 
 Each `task test:*` task sets a unique `COVERAGE_SUITE` env var so
 per-suite resultsets land under distinct `command_name`s in
@@ -85,8 +85,7 @@ open coverage/index.html
 CI (lint-and-specs.yml): each test job uploads its
 `coverage/.resultset.json` as `coverage-test-<job>` artifact; the
 `coverage` aggregator job downloads them all, runs `task coverage:merge`,
-and pushes the merged JSON to Codecov + uploads HTML for
-docs-publish.yml to stage at `/<version>/coverage/`.
+and pushes the merged JSON to Codecov.
 
 Skip coverage entirely with `COVERAGE=false` (spec_helper guards
 SimpleCov.start on `ENV['COVERAGE'] != 'false'`). Mutation runs
