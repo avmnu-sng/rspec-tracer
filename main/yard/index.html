@@ -448,17 +448,17 @@ dashboards and the terminal one-liner shown in <a href="#quick-start">Quick star
 <li>
 <p><strong>Docs site</strong>: <a href="https://avmnu-sng.github.io/rspec-tracer/">avmnu-sng.github.io/rspec-tracer</a>
 publishes a YARD API reference, the cookbook, internals deep-dives,
-the sample HTML report, <strong>and the merged coverage report</strong> for every
-rolling main + tagged release. The landing page lets you switch
-versions; per-version subpaths look like
-<code>/main/yard/</code>, <code>/main/coverage/</code>, <code>/v2.0.0.pre.1/yard/</code>, etc.</p>
+and the sample HTML report for every rolling main + tagged release.
+The landing page lets you switch versions; per-version subpaths look
+like <code>/main/yard/</code>, <code>/main/demo/</code>, <code>/v2.0.0.pre.1/yard/</code>, etc.</p>
 </li>
 <li>
-<p><strong>Coverage</strong>: tracked by Codecov (per-PR delta + diff-coverage gate
-≥ 90%) plus the per-version HTML report linked above. Multi-suite
-resultsets (<code>unit</code>, <code>edge-cases</code>, <code>regressions-plain</code>, <code>fuzz</code>) merge
-via SimpleCov.collate in the CI <code>coverage</code> job; the same merger runs
-locally via <code>task coverage:merge</code> after <code>task test:*</code> runs.</p>
+<p><strong>Coverage</strong>: tracked by <a href="https://codecov.io/gh/avmnu-sng/rspec-tracer">Codecov</a>
+(per-PR delta + diff-coverage gate ≥ 90%; project history). Multi-
+suite resultsets (<code>unit</code>, <code>edge-cases</code>, <code>regressions-plain</code>, <code>fuzz</code>)
+merge via SimpleCov.collate in the CI <code>coverage</code> job; the same
+merger runs locally via <code>task coverage:merge</code> after <code>task test:*</code>
+runs (open <code>coverage/index.html</code> for the local HTML report).</p>
 </li>
 </ul>
 <h2 id="Help_and_community">Help and community</h2>
@@ -531,7 +531,7 @@ here's where its content lives now:</p>
 </table></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 16:20:42 2026 by
+  Generated on Tue May  5 20:25:51 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
