@@ -149,24 +149,34 @@ jobs:
       # commit SHA on the tag-push path; the first-party action
       # requires an explicit run-id which we don't have for tags.
       #
-      # On the workflow_run path: pass run_id directly. dawidd6 uses
-      # run_id when set (commit/workflow ignored); the upstream
-      # ci.yml run is a guaranteed ancestor of this docs-publish
-      # run, so the artifact is reachable.
-      #
-      # On tag-push / workflow_dispatch: run_id resolves empty
-      # (NaN), dawidd6 falls back to the workflow + commit lookup
-      # and finds the earlier main-push ci.yml run on the tag SHA
-      # (within actions/upload-artifact's 90-day retention).
-      - name: Download merged coverage from CI run on this SHA
-        id: download_coverage
+      # Two sibling steps (gated on event_name) instead of one with
+      # both `run_id` and `commit` set: dawidd6@v9 explicitly errors
+      # on `pr, commit, branch, run_id` together with
+      # "The following inputs cannot be used together" - so the
+      # workflow_run path must pass ONLY run_id, and the tag/dispatch
+      # path must pass ONLY commit. PR #167's single-step shape
+      # tripped that check (silently caught by continue-on-error,
+      # surfacing as a "No coverage artifact" skip and a 404 on
+      # /<version>/coverage/).
+      - name: Download merged coverage from CI run (workflow_run path)
+        if: github.event_name == 'workflow_run'
+        uses: dawidd6/action-download-artifact@v9
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: coverage-merged
+          path: doc/coverage-merged
+          if_no_artifact_found: warn
+
+      - name: Download merged coverage from CI run (tag/dispatch path)
+        if: github.event_name != 'workflow_run'
         uses: dawidd6/action-download-artifact@v9
         continue-on-error: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ci.yml
-          run_id: ${{ github.event.workflow_run.id }}
-          commit: ${{ github.event.workflow_run.head_sha || github.sha }}
+          commit: ${{ github.sha }}
           name: coverage-merged
           path: doc/coverage-merged
           if_no_artifact_found: warn
