@@ -26,6 +26,15 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
     path
   end
 
+  # An Object that explicitly reports it cannot stringify — exercises
+  # `_record`'s `path.is_a?(String) || path.respond_to?(:to_s)` guard's
+  # then-branch (early-return because both checks fail).
+  def build_not_stringable
+    Object.new.tap do |obj|
+      obj.define_singleton_method(:respond_to?) { |method, *| method != :to_s }
+    end
+  end
+
   describe '.install' do
     it 'marks the coordinator installed' do
       expect(described_class.installed?).to be(true)
@@ -208,7 +217,20 @@ RSpec.describe RSpecTracer::Tracker::IOHooks do
     end
 
     it 'is a no-op when no bucket is set' do
+      # The outer rspec-tracer ReporterHook installs a bucket on every
+      # example; clear it explicitly so _record's `bucket.nil?` guard
+      # actually fires (the early-return :then branch).
+      described_class.clear_bucket
+
       expect { described_class.record(write_fixture('a.yml')) }.not_to raise_error
+    end
+
+    it 'is a no-op when path is neither a String nor responds to to_s' do
+      bucket = {}
+      not_stringable = build_not_stringable
+      described_class.with_bucket(bucket) { described_class.record(not_stringable) }
+
+      expect(bucket).to be_empty
     end
 
     it 'is a no-op for paths outside root' do

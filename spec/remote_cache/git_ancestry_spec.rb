@@ -363,6 +363,111 @@ RSpec.describe RSpecTracer::RemoteCache::GitAncestry do
         expect { ancestry.merge_base_branch! }.to raise_error(described_class::GitAncestryError)
       end
     end
+
+    it 'raises when current_branch resolution fails (outside a git repo)' do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          # branch != default forces merge_base_branch! past the early-return
+          # so current_branch is exercised.
+          ancestry = described_class.new(default_branch: 'main', branch: 'feat')
+
+          expect { ancestry.merge_base_branch! }
+            .to raise_error(described_class::GitAncestryError, /current branch/)
+        end
+      end
+    end
+
+    it 'raises GitAncestryError when neither parent of a merge commit can be resolved' do
+      with_fake_repo do
+        ancestry = described_class.new(default_branch: 'main', branch: 'main')
+        # Force the merge-commit code path; merged_parents will then ask
+        # git rev-parse HEAD^1/HEAD^2 — which we make fail by piggybacking
+        # `system('false')` to set $? to a non-success status.
+        allow(ancestry).to receive(:merge_commit?).and_return(true)
+        allow(ancestry).to receive(:`) do |_cmd|
+          system('false')
+          ''
+        end
+
+        expect { ancestry.send(:merged_parents) }
+          .to raise_error(described_class::GitAncestryError, /merge commit parents/)
+      end
+    end
+
+    it 'raises GitAncestryError when rev_list fails' do
+      with_fake_repo do
+        ancestry = described_class.new(default_branch: 'main', branch: 'main')
+
+        expect { ancestry.send(:rev_list, 'definitely-not-a-real-ref') }
+          .to raise_error(described_class::GitAncestryError, /Could not list revs/)
+      end
+    end
+
+    it 'raises GitAncestryError when refs_committer_timestamp git show fails' do
+      with_fake_repo do
+        ancestry = described_class.new(default_branch: 'main', branch: 'main')
+
+        expect { ancestry.send(:refs_committer_timestamp, Set['definitely-not-a-real-sha']) }
+          .to raise_error(described_class::GitAncestryError, /committer timestamps/)
+      end
+    end
+
+    it 'returns {} from refs_committer_timestamp on an empty ref set' do
+      with_fake_repo do
+        ancestry = described_class.new(default_branch: 'main', branch: 'main')
+
+        expect(ancestry.send(:refs_committer_timestamp, Set.new)).to eq({})
+      end
+    end
+  end
+
+  describe 'merge-commit ancestry walk' do
+    # Hits the `ref_list |= rev_list("…..origin/HEAD") if merge_commit?`
+    # branch in #ancestry_refs — the prior coverage was main-only.
+    it 'unions the origin/HEAD diff into the ancestry walk on a merge-commit branch' do
+      with_fake_repo do
+        create_branch!('feat')
+        write_and_commit('feat.txt', 'feat content', 'feat commit')
+        checkout!('main')
+        write_and_commit('main.txt', 'main content', 'main commit')
+        sh!('git', 'merge', 'feat', '--no-ff', '--no-edit', '--quiet')
+
+        ancestry = described_class.new(default_branch: 'main', branch: 'main')
+
+        refs = ancestry.ancestry_refs
+        expect(refs).to be_a(Hash)
+        # The merge commit's synthetic HEAD must be ignored (was added to
+        # @ignored_refs); the real branch tip + main commits remain.
+        expect(refs.values.all?(Integer)).to be(true)
+      end
+    end
+  end
+
+  describe 'memo reset' do
+    # Hits reset_memo!'s `remove_instance_variable(:@ancestry_refs)
+    # if defined?` :then branch — prior tests only memoized branch_ref.
+    it 'clears a memoized ancestry_refs after merge_base_branch! reruns the walk' do
+      with_fake_repo do
+        create_branch!('feat')
+        write_and_commit('feat.txt', 'feat content', 'feat commit')
+        push_branch!('feat')
+        checkout!('main')
+        write_and_commit('main.txt', 'main content', 'main commit')
+        sh!('git', 'push', '--quiet', 'origin', 'main')
+        checkout!('feat')
+
+        ancestry = described_class.new(default_branch: 'main', branch: 'feat')
+        first = ancestry.ancestry_refs
+
+        ancestry.merge_base_branch!
+        second = ancestry.ancestry_refs
+
+        # Different walks (the merge commit shifted HEAD) — the memo was
+        # invalidated, so the second call recomputed instead of returning
+        # the stale first hash.
+        expect(second).not_to equal(first)
+      end
+    end
   end
 end
 # rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations

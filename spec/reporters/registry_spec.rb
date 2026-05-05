@@ -117,6 +117,17 @@ RSpec.describe RSpecTracer::Reporters::Registry do
 
       expect(result).to eq([])
     end
+
+    it 'returns [] without inspecting snapshot when entries resolve empty (defensive guard)' do
+      stub_const('RSpecTracer::Reporters::Registry::DEFAULTS', [].freeze)
+      config = fake_config(reporters: nil)
+
+      result = described_class.new(configuration: config).emit_all(
+        snapshot: snapshot, report_dir: report_dir, run_metadata: run_metadata
+      )
+
+      expect(result).to eq([])
+    end
   end
 
   describe 'explicit reporter resolution' do

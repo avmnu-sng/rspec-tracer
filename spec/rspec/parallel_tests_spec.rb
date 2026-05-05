@@ -458,6 +458,19 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(described_class.finalize!).to be(false)
       expect(logger).to have_received(:warn).with(/parallel_tests finalize failed/)
     end
+
+    it 'skips ParallelTests.wait_for_other_processes_to_finish when the gem constant is not defined' do
+      # last_process? itself short-circuits on `defined?(::ParallelTests)`
+      # before line 148 is reached, so stub it to true to isolate the
+      # line 148 defensive guard branch.
+      allow(described_class).to receive(:last_process?).and_return(true)
+      hide_const('ParallelTests')
+
+      expect(described_class.finalize!).to be(true)
+      # Both barriers (gem-internal pid wait + our peer-done filesystem
+      # check) are independent; the .done-marker barrier still runs.
+      expect(described_class).to have_received(:wait_for_peer_done_markers!)
+    end
   end
 
   describe '.emit_merged_reporters! (M8.10)' do
@@ -560,6 +573,15 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
 
       expect(logger).not_to have_received(:debug)
     end
+
+    it 'is a no-op when storage_backend is not :json (sqlite has no JSON merge surface)' do
+      allow(RSpecTracer).to receive(:storage_backend).and_return(:sqlite)
+      allow(RSpecTracer::Storage::JsonBackend).to receive(:new)
+
+      described_class.merge_snapshot!
+
+      expect(RSpecTracer::Storage::JsonBackend).not_to have_received(:new)
+    end
   end
 
   describe '.merge_coverage!' do
@@ -592,6 +614,18 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
         logger: logger
       )
       expect(logger).to have_received(:debug).with(/merged parallel tests coverage/)
+    end
+
+    it 'suppresses the debug rollup line when log_rollups? is false (non-narrator quiet path)' do
+      allow(RSpecTracer::Reporters::CoverageJsonReporter).to receive(:merge_parallel)
+      allow(described_class).to receive(:log_rollups?).and_return(false)
+      logger = spy('Logger')
+      allow(RSpecTracer).to receive(:logger).and_return(logger)
+
+      described_class.merge_coverage!
+
+      expect(RSpecTracer::Reporters::CoverageJsonReporter).to have_received(:merge_parallel)
+      expect(logger).not_to have_received(:debug)
     end
   end
 

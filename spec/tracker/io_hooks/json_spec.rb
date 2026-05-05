@@ -38,5 +38,11 @@ RSpec.describe RSpecTracer::Tracker::IOHooks::JSONReads do
     it 'returns the parsed JSON via super' do
       expect(parsed).to eq('a' => 1)
     end
+
+    it 'forwards to super without recording when no bucket is active' do
+      RSpecTracer::Tracker::IOHooks.clear_bucket
+
+      expect(JSON.load_file(fixture)).to eq('a' => 1)
+    end
   end
 end

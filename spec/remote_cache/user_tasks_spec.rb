@@ -302,6 +302,21 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       expect(backend.opts[:local]).to be(true)
     end
 
+    it 'rejects a legacy reports_s3_path with a non-s3 scheme (returns nil → unconfigured)' do
+      config = build_config(
+        remote_cache_backend_entry: nil,
+        reports_s3_path: 'http://example.com/cache'
+      )
+      stub_ancestry
+
+      result = described_class.new(configuration: config, env: build_env).download!
+
+      expect(result).to be(false)
+      expect(captured_logs.any? do |lvl, msg|
+        lvl == :warn && msg.include?('no remote_cache_backend configured')
+      end).to be(true)
+    end
+
     it 'raises when GIT_BRANCH env is missing (caught and logged)' do
       config = build_config(remote_cache_backend_entry: backend_entry)
       stub_ancestry
@@ -396,6 +411,78 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       expect(backend.calls[:prune!]).to be_empty
     end
 
+    it 'skips prune entirely when the backend does not implement prune!' do
+      backend_class_without_prune = Class.new do
+        attr_reader :calls
+
+        def initialize(**)
+          @calls = Hash.new { |h, k| h[k] = [] }
+        end
+
+        def upload(_ref, **) = nil
+        def branch_refs(_name) = {}
+        def write_branch_refs(_name, _refs) = nil
+      end
+
+      config = build_config(
+        remote_cache_backend_entry: [backend_class_without_prune, {}],
+        cache_retention_count: 100
+      )
+      stub_ancestry(branch: 'main', default_branch: 'main')
+
+      expect do
+        described_class.new(configuration: config, env: build_env).upload!
+      end.not_to raise_error
+    end
+
+    it 'logs the pruned-refs count when prune! returns a positive integer' do
+      config = build_config(
+        remote_cache_backend_entry: backend_entry,
+        cache_retention_count: 100
+      )
+      stub_ancestry(branch: 'main', default_branch: 'main')
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        original.call(**opts).stub_prune(7)
+      end
+
+      described_class.new(configuration: config, env: build_env).upload!
+
+      expect(captured_logs.any? { |lvl, msg| lvl == :debug && msg.include?('pruned 7 refs') }).to be(true)
+    end
+
+    it 'prunes with duration_seconds knob and skips the unbounded warning on main tier' do
+      config = build_config(
+        remote_cache_backend_entry: backend_entry,
+        cache_retention_duration_seconds: 7 * 86_400
+      )
+      stub_ancestry(branch: 'main', default_branch: 'main')
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        instance = original.call(**opts)
+        def instance.unbounded_warning(**_) = 'too many refs'
+        instance
+      end
+
+      described_class.new(configuration: config, env: build_env).upload!
+
+      backend = fake_backend_class.all_instances.last
+      expect(backend.calls[:prune!].first).to include(duration_seconds: 7 * 86_400)
+      expect(captured_logs).not_to include([:warn, 'too many refs'])
+    end
+
+    it 'skips logger.warn when the backend reports no unbounded_warning (nil reply)' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'main', default_branch: 'main')
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        instance = original.call(**opts)
+        def instance.unbounded_warning(**_) = nil
+        instance
+      end
+
+      described_class.new(configuration: config, env: build_env).upload!
+
+      expect(captured_logs.none? { |lvl, _msg| lvl == :warn }).to be(true)
+    end
+
     it 'emits unbounded_warning when no retention is configured and the backend reports one' do
       config = build_config(remote_cache_backend_entry: backend_entry)
       stub_ancestry(branch: 'main', default_branch: 'main')
@@ -448,6 +535,28 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
     it 'returns nil when the git binary raises (StandardError rescue)' do
       allow(tasks).to receive(:`).and_raise(Errno::ENOENT, 'No such file or directory')
 
+      expect(tasks.send(:head_tree_sha)).to be_nil
+    end
+
+    it 'returns nil when $CHILD_STATUS is nil (no subprocess yet on this thread)' do
+      # `$CHILD_STATUS` is thread-local; a fresh Ruby thread that has not
+      # yet spawned a subprocess sees `$?` as nil. Combined with a stubbed
+      # backtick that bypasses the subprocess fork entirely, this exercises
+      # the safe-nav else branch in `$CHILD_STATUS&.success?`.
+      result = Thread.new do
+        allow(tasks).to receive(:`).and_return('tree-sha-output')
+        tasks.send(:head_tree_sha)
+      end.value
+
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when git rev-parse succeeds but emits empty output' do
+      allow(tasks).to receive(:`).and_return("\n")
+
+      # A successful subprocess elsewhere in this thread set `$?` to a
+      # success status; chomp("\n") -> "" -> output.empty? branch fires.
+      `true`
       expect(tasks.send(:head_tree_sha)).to be_nil
     end
   end
