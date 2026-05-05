@@ -658,5 +658,93 @@ RSpec.describe RSpecTracer::RemoteCache::RedisBackend do
       expect(backend.unbounded_warning(warn_threshold: 0)).to be_nil
     end
   end
+
+  describe 'private branch coverage' do
+    let(:logger) do
+      logger = instance_double(RSpecTracer::Logger)
+      allow(logger).to receive(:debug)
+      allow(logger).to receive(:warn)
+      logger
+    end
+
+    it 'normalizes an empty test_suite_id to nil' do
+      backend = new_backend(test_suite_id: '')
+
+      expect(backend.instance_variable_get(:@test_suite_id)).to be_nil
+    end
+
+    it 'pr_branch_ttl=nil on PR tier skips the dead-PR check (safe-nav else branch)' do
+      pr = new_backend(branch: 'feat', default_branch: 'main')
+      @fake.hset('rspec-tracer:pr:feat:live-sha', { '_timestamp' => Time.now.to_i.to_s })
+
+      expect(pr.prune!(pr_branch_ttl_seconds: nil)).to eq(0)
+    end
+
+    it 'returns nil from read_local_run_id when last_run.json holds non-Hash JSON' do
+      File.write(File.join(@cache_path, 'last_run.json'), JSON.dump([1, 2, 3]))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
+    end
+
+    it 'returns nil from read_local_run_id when last_run.json holds a blank run_id' do
+      File.write(File.join(@cache_path, 'last_run.json'),
+                 JSON.dump('schema_version' => current_schema, 'run_id' => ''))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
+    end
+
+    it 'returns nil from fetch_timestamp when the hash field is absent' do
+      backend = new_backend
+      # Key with no _timestamp field; hget returns nil → fetch_timestamp early-returns nil.
+      @fake.hset('rspec-tracer:main:no-ts', 'last_run.json' => '{}')
+
+      expect(backend.send(:fetch_timestamp, 'rspec-tracer:main:no-ts')).to be_nil
+    end
+
+    it 'returns 0 from delete_keys on an empty key list (prune-by-duration with no stale)' do
+      backend = new_backend
+      @fake.hset('rspec-tracer:main:recent', { '_timestamp' => Time.now.to_i.to_s })
+
+      expect(backend.prune!(duration_seconds: 7 * 86_400)).to eq(0)
+    end
+
+    it 'returns 0 from prune_dead_pr_branch! when own tier has no refs (orphan branch_refs key)' do
+      pr = new_backend(branch: 'orphan', default_branch: 'main')
+      # branch_refs key exists, but no actual cache refs — list_refs filters
+      # branch_refs out so entries is empty.
+      @fake.set('rspec-tracer:pr:orphan:branch_refs', '{}')
+
+      expect(pr.prune!(pr_branch_ttl_seconds: 14 * 86_400)).to eq(0)
+    end
+
+    it 'skips DEL when delete_branch_prefix has no matching keys (orphan branch_refs)' do
+      admin = described_class.new(prefix: 'rspec-tracer', branch: 'main', default_branch: 'main',
+                                  cache_path: @cache_path, redis_client: @fake, logger: logger)
+      # An orphan branch_refs key without any backing refs — the keys list
+      # for the deletion is empty, so the bulk DEL is skipped.
+      admin.send(:delete_branch_prefix, 'orphan-branch', 0)
+
+      expect(@fake.calls[:del]).to be_empty
+      expect(logger).to have_received(:debug).with(/pruned dead PR branch/)
+    end
+
+    it 'returns 0 from maybe_prune_branch when the branch has no refs' do
+      admin = new_backend
+      # No keys at all under pr:empty
+      expect(admin.send(:maybe_prune_branch, 'empty', Time.now.to_i)).to eq(0)
+    end
+
+    it 'logs the per-key prune messages when a logger is configured (log_debug then-branch)' do
+      backend = described_class.new(
+        prefix: 'rspec-tracer', branch: 'main', default_branch: 'main',
+        cache_path: @cache_path, redis_client: @fake, logger: logger
+      )
+      @fake.hset('rspec-tracer:main:old-sha', { '_timestamp' => (Time.now.to_i - (30 * 86_400)).to_s })
+
+      backend.prune!(duration_seconds: 7 * 86_400)
+
+      expect(logger).to have_received(:debug).with(/pruned key/).at_least(:once)
+    end
+  end
 end
 # rubocop:enable RSpec/InstanceVariable, RSpec/ExampleLength, RSpec/MultipleExpectations

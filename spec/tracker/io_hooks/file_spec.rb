@@ -53,6 +53,15 @@ RSpec.describe RSpecTracer::Tracker::IOHooks::FileReads do
 
       expect(bucket).to have_key('data:fixture.yml')
     end
+
+    it 'forwards to super without recording when no bucket is active' do
+      # Outer rspec-tracer ReporterHook may have installed a bucket on
+      # this example; clear it explicitly so the readlines hot-path
+      # else-branch (Thread.current[BUCKET_KEY] == nil) actually fires.
+      RSpecTracer::Tracker::IOHooks.clear_bucket
+
+      expect(File.readlines(fixture)).to eq(["a: 1\n"])
+    end
   end
 
   describe '#open' do

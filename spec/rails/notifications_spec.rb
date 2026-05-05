@@ -440,6 +440,13 @@ RSpec.describe RSpecTracer::Rails::Notifications do
       expect(described_class.instance_variable_get(:@ar_schema_inputs)).to be_empty
     end
 
+    it 'drops ar_schema_paths entries whose digest compute returns nil (e.g. racey delete)' do
+      allow(RSpecTracer::Tracker::FileDigest).to receive(:compute).and_return(nil)
+
+      expect { described_class.install(root: tmpdir, ar_schema_paths: [schema_rb]) }.not_to raise_error
+      expect(described_class.instance_variable_get(:@ar_schema_inputs)).to be_empty
+    end
+
     it 'swallows errors inside record_ar_schema' do
       described_class.install(root: tmpdir, ar_schema_paths: [schema_rb])
       bucket = {}

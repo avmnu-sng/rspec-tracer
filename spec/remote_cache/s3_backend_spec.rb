@@ -856,6 +856,161 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
       expect(backend.unbounded_warning(warn_threshold: 3)).to match(/5 refs/)
     end
   end
+
+  describe 'private branch coverage' do
+    let(:logger) do
+      logger = instance_double(RSpecTracer::Logger)
+      allow(logger).to receive(:debug)
+      allow(logger).to receive(:warn)
+      logger
+    end
+
+    def new_backend_with_logger(**opts)
+      described_class.new(
+        bucket: 'my-bucket', prefix: 'rspec-tracer',
+        branch: 'main', default_branch: 'main',
+        cache_path: @cache_path, logger: logger, **opts
+      )
+    end
+
+    it 'pr_branch_ttl=nil on PR tier skips the dead-PR check (safe-nav else branch)' do
+      pr_backend = new_backend(branch: 'feat', default_branch: 'main')
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => []), '', status_ok])
+
+      expect(pr_backend.prune!(pr_branch_ttl_seconds: nil)).to eq(0)
+    end
+
+    it 'returns nil from read_local_run_id when last_run.json holds non-Hash JSON' do
+      File.write(File.join(@cache_path, 'last_run.json'), JSON.dump([1, 2, 3]))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
+    end
+
+    it 'returns nil from read_local_run_id when last_run.json holds a blank run_id' do
+      File.write(File.join(@cache_path, 'last_run.json'),
+                 JSON.dump('schema_version' => current_schema, 'run_id' => ''))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
+    end
+
+    it 'cleans up the tmp archive in try_download_from even when the path was never assigned' do
+      backend = new_backend
+      # Force the archive_path local to never get assigned by making the
+      # tmp_archive_path call raise before its return value lands.
+      allow(SecureRandom).to receive(:hex).and_raise(RuntimeError, 'rng down')
+
+      expect { backend.send(:try_download_from, 'main', 'sha1') }.to raise_error(RuntimeError)
+      # Implicit: the ensure block evaluated `defined?(archive_path) && archive_path`
+      # in :else mode (defined? returned nil), so no rm_f call was attempted on a nil path.
+    end
+
+    it 'cleans up the tmp pointer in upload_tree_pointer even when the path was never assigned' do
+      backend = new_backend
+      allow(SecureRandom).to receive(:hex).and_raise(RuntimeError, 'rng down')
+
+      expect { backend.send(:upload_tree_pointer, 'sha-ref', 'tree-sha-1') }.to raise_error(RuntimeError)
+    end
+
+    it 'list_refs_in_tier skips entries that are not the cache archive (e.g. tree pointers)' do
+      backend = new_backend
+      now = Time.now.to_i
+      contents = [
+        { 'Key' => 'rspec-tracer/main/sha1/cache.tar.gz', 'LastModified' => Time.at(now).utc.iso8601 },
+        { 'Key' => 'rspec-tracer/main/by_tree/tree-sha-1', 'LastModified' => Time.at(now).utc.iso8601 }
+      ]
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => contents), '', status_ok])
+
+      refs = backend.send(:list_refs_in_tier, 'main')
+      expect(refs.map(&:first)).to eq(['sha1'])
+    end
+
+    it 'list_refs_in_tier skips keys whose extract_ref_from_archive_key returns nil' do
+      backend = new_backend
+      now = Time.now.to_i
+      contents = [
+        # Less than 2 segments after tier_head (no ref dir): "main/cache.tar.gz" with no ref segment.
+        { 'Key' => 'rspec-tracer/main/cache.tar.gz', 'LastModified' => Time.at(now).utc.iso8601 },
+        { 'Key' => 'rspec-tracer/main/sha1/cache.tar.gz', 'LastModified' => Time.at(now).utc.iso8601 }
+      ]
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => contents), '', status_ok])
+
+      refs = backend.send(:list_refs_in_tier, 'main')
+      expect(refs.map(&:first)).to eq(['sha1'])
+    end
+
+    it 'list_refs_in_tier dedups duplicate keys to the newest LastModified' do
+      backend = new_backend
+      newer = Time.now.to_i
+      older = newer - 3600
+      contents = [
+        { 'Key' => 'rspec-tracer/main/sha1/cache.tar.gz', 'LastModified' => Time.at(newer).utc.iso8601 },
+        { 'Key' => 'rspec-tracer/main/sha1/suite-2/cache.tar.gz', 'LastModified' => Time.at(older).utc.iso8601 }
+      ]
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => contents), '', status_ok])
+
+      refs = backend.send(:list_refs_in_tier, 'main')
+      expect(refs).to eq([['sha1', newer]])
+    end
+
+    it 'extract_ref_from_archive_key returns nil for a key outside the tier head' do
+      backend = new_backend
+      result = backend.send(:extract_ref_from_archive_key, 'other-prefix/main/sha1/cache.tar.gz', 'main')
+
+      expect(result).to be_nil
+    end
+
+    it 'extract_ref_from_archive_key returns nil for a key with fewer than 2 segments after the tier head' do
+      backend = new_backend
+      result = backend.send(:extract_ref_from_archive_key, 'rspec-tracer/main/cache.tar.gz', 'main')
+
+      expect(result).to be_nil
+    end
+
+    it 'discover_pr_branches skips an empty-name branch from CommonPrefixes' do
+      backend = new_backend
+      # An entry like `rspec-tracer/pr/` (no branch suffix) decodes to
+      # an empty branch name and gets dropped.
+      common = [{ 'Prefix' => 'rspec-tracer/pr/' }, { 'Prefix' => 'rspec-tracer/pr/feat/' }]
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('CommonPrefixes' => common), '', status_ok])
+
+      expect(backend.send(:discover_pr_branches)).to eq(['feat'])
+    end
+
+    it 'list_common_prefixes returns [] on an empty stdout' do
+      backend = new_backend
+      allow(Open3).to receive(:capture3).and_return(['  ', '', status_ok])
+
+      expect(backend.send(:list_common_prefixes, 'rspec-tracer/pr/')).to eq([])
+    end
+
+    it 'list_objects returns [] on an empty stdout' do
+      backend = new_backend
+      allow(Open3).to receive(:capture3).and_return(['  ', '', status_ok])
+
+      expect(backend.send(:list_objects, 'rspec-tracer/main')).to eq([])
+    end
+
+    it 'maybe_prune_branch returns 0 when the branch has no refs in S3' do
+      backend = new_backend
+      allow(Open3).to receive(:capture3).and_return([JSON.generate('Contents' => []), '', status_ok])
+
+      expect(backend.send(:maybe_prune_branch, 'empty-branch', Time.now.to_i)).to eq(0)
+    end
+
+    it 'log_debug forwards through to a configured logger (then-branch)' do
+      backend = new_backend_with_logger
+      backend.send(:log_debug, 'hello debug')
+
+      expect(logger).to have_received(:debug).with(/hello debug/)
+    end
+
+    it 'log_warn forwards through to a configured logger (then-branch)' do
+      backend = new_backend_with_logger
+      backend.send(:log_warn, 'hello warn')
+
+      expect(logger).to have_received(:warn).with(/hello warn/)
+    end
+  end
 end
 # rubocop:enable RSpec/InstanceVariable, RSpec/ExampleLength, RSpec/MultipleExpectations
 # rubocop:enable RSpec/ContextWording

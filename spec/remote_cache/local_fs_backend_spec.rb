@@ -345,6 +345,44 @@ RSpec.describe RSpecTracer::RemoteCache::LocalFsBackend do
       expect(backend.prune!(pr_branch_ttl_seconds: 1)).to eq(0)
     end
 
+    it 'pr_branch_ttl=nil on PR tier skips the dead-PR check (safe-nav else branch)' do
+      pr = new_backend(branch: 'feat', default_branch: 'main')
+      write_local_cache(run_id: 'run-live')
+      pr.upload('sha1')
+
+      expect(pr.prune!(pr_branch_ttl_seconds: nil)).to eq(0)
+      expect(Dir.exist?(File.join(@root, 'pr', 'feat'))).to be(true)
+    end
+
+    it 'returns 0 when count exceeds existing ref count (no-op short-circuit)' do
+      backend = new_backend
+      write_local_cache(run_id: 'run-1')
+      backend.upload('sha1')
+
+      expect(backend.prune!(count: 50)).to eq(0)
+      expect(Dir.exist?(File.join(@root, 'main', 'sha1'))).to be(true)
+    end
+
+    it 'returns 0 on a PR tier whose archive directory exists but holds no refs (orphan dir)' do
+      pr = new_backend(branch: 'orphan', default_branch: 'main')
+      FileUtils.mkdir_p(File.join(@root, 'pr', 'orphan'))
+
+      expect(pr.prune!(pr_branch_ttl_seconds: 14 * 86_400)).to eq(0)
+    end
+
+    it 'silently swallows per-ref delete failures when no logger is configured (log_warn nil-logger path)' do
+      backend = described_class.new(root: @root, branch: 'main', default_branch: 'main',
+                                    cache_path: @cache_path)
+      write_local_cache(run_id: 'run-x')
+      backend.upload('sha1')
+      sleep 0.05
+      write_local_cache(run_id: 'run-y')
+      backend.upload('sha2')
+      allow(FileUtils).to receive(:rm_rf).and_raise(Errno::EACCES)
+
+      expect { backend.prune!(count: 1) }.not_to raise_error
+    end
+
     it 'continues on per-ref delete failures and logs' do
       logger = instance_double(RSpecTracer::Logger)
       allow(logger).to receive(:debug)
@@ -362,6 +400,34 @@ RSpec.describe RSpecTracer::RemoteCache::LocalFsBackend do
 
       expect { backend.prune!(count: 1) }.not_to raise_error
       expect(logger).to have_received(:warn).at_least(:once)
+    end
+  end
+
+  describe 'list_refs_in_tier (private) skips non-archive entries' do
+    it 'ignores tier subdirs that have no cache.tar.gz archive' do
+      # write a half-uploaded ref dir without the archive file
+      FileUtils.mkdir_p(File.join(@root, 'main', 'partial-ref'))
+
+      backend = new_backend
+      write_local_cache(run_id: 'run-real')
+      backend.upload('real-sha')
+
+      expect(backend.send(:list_refs_in_tier, 'main').map(&:first)).to eq(['real-sha'])
+    end
+  end
+
+  describe 'read_local_run_id (private) graceful nil paths' do
+    it 'returns nil when last_run.json holds non-Hash JSON' do
+      File.write(File.join(@cache_path, 'last_run.json'), JSON.dump([1, 2, 3]))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
+    end
+
+    it 'returns nil when last_run.json holds a Hash with a blank run_id' do
+      File.write(File.join(@cache_path, 'last_run.json'),
+                 JSON.dump('schema_version' => current_schema, 'run_id' => ''))
+
+      expect(new_backend.send(:read_local_run_id)).to be_nil
     end
   end
 
@@ -403,6 +469,12 @@ RSpec.describe RSpecTracer::RemoteCache::LocalFsBackend do
   end
 
   describe '#unbounded_warning' do
+    it 'returns nil before any uploads (main tier dir does not yet exist)' do
+      # Hits list_refs_in_tier's `return [] unless File.directory?(dir)`
+      # short-circuit on a fresh backend.
+      expect(new_backend.unbounded_warning).to be_nil
+    end
+
     it 'returns nil when ref count at or below threshold' do
       backend = new_backend
       write_local_cache(run_id: 'run-1')

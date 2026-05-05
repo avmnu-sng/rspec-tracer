@@ -259,6 +259,44 @@ RSpec.describe RSpecTracer::Reporters::TerminalReporter do
 
       expect(size_reporter.send(:cache_size_suffix, cache_root)).to eq('')
     end
+
+    it 'returns empty suffix when the snapshot run_id is nil' do
+      blank_id_reporter = described_class.new(
+        snapshot: build_populated_snapshot(run_id: nil), report_dir: report_dir,
+        run_metadata: metadata_with_cache, logger: nil, io: io
+      )
+
+      expect(blank_id_reporter.send(:cache_size_suffix, cache_root)).to eq('')
+    end
+
+    it 'returns empty suffix when the snapshot run_id is an empty string' do
+      blank_id_reporter = described_class.new(
+        snapshot: build_populated_snapshot(run_id: ''), report_dir: report_dir,
+        run_metadata: metadata_with_cache, logger: nil, io: io
+      )
+
+      expect(blank_id_reporter.send(:cache_size_suffix, cache_root)).to eq('')
+    end
+
+    it 'omits the sign character when delta is zero (no growth or shrink)' do
+      File.utime(Time.now - 60, Time.now - 60, write_run_dir('rid-prev', 2048))
+      write_run_dir('rid', 2048)
+      size_reporter.generate
+
+      # delta == 0 hits the inner ternary's else branch, so the sign char
+      # is empty: "(<size>; 0 B vs prev run)".
+      expect(cache_line_in_output).to match(/\(2\.0 KiB; 0 B vs prev run\)/)
+    end
+
+    it 'sums only file entries when the run dir contains nested subdirectories' do
+      run_dir = write_run_dir('rid', 4096)
+      # Adding an empty subdir surfaces a Dir glob entry that fails File.file?
+      # — exercises directory_size_bytes' :else branch (skip-with-zero).
+      FileUtils.mkdir_p(File.join(run_dir, 'nested'))
+      size_reporter.generate
+
+      expect(cache_line_in_output).to include('4.0 KiB')
+    end
   end
 
   describe 'color policy' do

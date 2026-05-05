@@ -150,6 +150,23 @@ RSpec.describe RSpecTracer::Reporters::CoverageJsonReporter do
       expect(payload['RSpecTracer']['coverage'].keys).to eq([tracked_file])
     end
 
+    it 'leaves an out-of-root file path untouched when filtering (file_name_for early-return)' do
+      # Paths outside RSpecTracer.root (e.g. an absolute gem path
+      # surfacing through Coverage.peek_result) skip the prefix-strip.
+      # The filter-match should see the path verbatim.
+      external_file = '/opt/gems/foreign/lib/foo.rb'
+      allow(adapter).to receive(:peek_unfiltered).and_return(
+        tracked_file => [1, 1], external_file => [1]
+      )
+      filter = RSpecTracer::Filter.register(%r{\A/opt/gems/})
+      allow(RSpecTracer).to receive(:coverage_filters).and_return([filter])
+
+      build_reporter.generate
+
+      payload = JSON.parse(File.read(File.join(coverage_dir, 'coverage.json'), encoding: 'UTF-8'))
+      expect(payload['RSpecTracer']['coverage'].keys).to eq([tracked_file])
+    end
+
     it 'logs covered/total LOC + percent through the provided logger' do
       allow(adapter).to receive(:peek_unfiltered).and_return(tracked_file => [1, nil])
       logger = instance_double(RSpecTracer::Logger, info: nil)

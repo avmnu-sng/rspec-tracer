@@ -38,6 +38,12 @@ RSpec.describe RSpecTracer::Tracker::IOHooks::YAMLReads do
     it 'returns the parsed YAML via super' do
       expect(parsed).to eq('a' => 1, 'b' => 2)
     end
+
+    it 'forwards to super without recording when no bucket is active' do
+      RSpecTracer::Tracker::IOHooks.clear_bucket
+
+      expect(YAML.load_file(fixture)).to eq('a' => 1, 'b' => 2)
+    end
   end
 
   describe '#safe_load_file' do
@@ -46,6 +52,12 @@ RSpec.describe RSpecTracer::Tracker::IOHooks::YAMLReads do
 
       expect(bucket).to have_key('data:config.yml')
     end
+
+    it 'forwards to super without recording when no bucket is active' do
+      RSpecTracer::Tracker::IOHooks.clear_bucket
+
+      expect(YAML.safe_load_file(fixture)).to eq('a' => 1, 'b' => 2)
+    end
   end
 
   describe '#unsafe_load_file' do
@@ -53,6 +65,12 @@ RSpec.describe RSpecTracer::Tracker::IOHooks::YAMLReads do
       RSpecTracer::Tracker::IOHooks.with_bucket(bucket) { YAML.unsafe_load_file(fixture) }
 
       expect(bucket).to have_key('data:config.yml')
+    end
+
+    it 'forwards to super without recording when no bucket is active' do
+      RSpecTracer::Tracker::IOHooks.clear_bucket
+
+      expect(YAML.unsafe_load_file(fixture)).to eq('a' => 1, 'b' => 2)
     end
   end
 end

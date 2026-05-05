@@ -194,6 +194,28 @@ RSpec.describe RSpecTracer::RemoteCache::Archive do
     end
   end
 
+  describe '.safe_entry_name' do
+    it 'returns nil on a nil entry name' do
+      expect(described_class.safe_entry_name(nil)).to be_nil
+    end
+
+    it 'returns nil on an empty entry name' do
+      expect(described_class.safe_entry_name('')).to be_nil
+    end
+
+    it 'returns nil on an absolute path' do
+      expect(described_class.safe_entry_name('/etc/passwd')).to be_nil
+    end
+
+    it 'returns nil on a path containing parent traversal' do
+      expect(described_class.safe_entry_name('foo/../etc/passwd')).to be_nil
+    end
+
+    it 'returns the name unchanged on a well-formed relative entry' do
+      expect(described_class.safe_entry_name('run_id/file.json')).to eq('run_id/file.json')
+    end
+  end
+
   describe 'compression ratio' do
     it 'compresses redundant JSON meaningfully (~3-6x typical)' do
       # Compression is opportunistic, not guaranteed; the assertion is
