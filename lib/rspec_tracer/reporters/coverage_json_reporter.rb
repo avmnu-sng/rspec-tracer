@@ -108,30 +108,75 @@ module RSpecTracer
         finalize_coverage_files(coverage)
       end
 
+      # Shape-agnostic skipped-coverage accumulator. The `coverage`
+      # hash carries one of two per-file shapes interchangeably:
+      #
+      #   - `Array<Integer|nil>`        (lines-only — peek_unfiltered;
+      #                                  the user-facing `coverage.json`
+      #                                  contract)
+      #   - `{ lines: Array, branches: Hash }`
+      #                                 (hash-mode — peek_unfiltered_full;
+      #                                  what SimpleCov needs when branch
+      #                                  coverage is enabled)
+      #
+      # Both callers (`build_coverage` writing coverage.json,
+      # `install_simplecov_interop` feeding SimpleCov.result) share
+      # this one accumulator; the per-shape mechanics are isolated in
+      # `ensure_mutable_lines`. Hash-mode entries keep their
+      # `:branches` sub-hash unchanged (this method only touches
+      # lines); array-mode entries are mutated in place. New entries
+      # synthesised for files Coverage didn't observe go in as Array
+      # (line stubs have no branches to preserve).
       def accumulate_skipped(coverage)
         skipped_ids = engine.registry.ids_with_status(:skipped)
         return coverage if skipped_ids.empty?
 
         engine.merge_skipped_coverage(skipped_ids).each do |file_path, line_map|
-          existing = coverage[file_path]
-          # `Coverage.peek_result` returns frozen line-count arrays on
-          # Ruby 3.2+. Mutating those raises `FrozenError`. dup-on-write
-          # so we own a mutable copy before the merge loop, but only on
-          # the first hit per file_path (subsequent hits write into our
-          # already-mutable copy).
-          if existing.nil?
-            existing = line_stub(file_path)
-            coverage[file_path] = existing
-          elsif existing.frozen?
-            existing = existing.dup
-            coverage[file_path] = existing
-          end
+          line_arr = ensure_mutable_lines(coverage, file_path)
           line_map.each do |line_number, strength|
             idx = line_number.to_i
-            existing[idx] = (existing[idx] || 0) + strength
+            line_arr[idx] = (line_arr[idx] || 0) + strength
           end
         end
         coverage
+      end
+
+      # Returns the mutable `Array<Integer|nil>` view for
+      # `coverage[file_path]` we can write per-line strengths into,
+      # rewriting `coverage[file_path]` in-place when a dup or stub
+      # was needed. `Coverage.peek_result` returns frozen line arrays
+      # on Ruby 3.2+; dup-on-write so subsequent writes share the
+      # mutable copy.
+      #
+      #   nil           → install line_stub (Array shape; new entry
+      #                    has no branches to preserve).
+      #   Hash{lines:,} → if `:lines` is frozen / nil, replace the
+      #                    Hash entry with one carrying a fresh /
+      #                    dup'd lines array + the original branches.
+      #   Array         → if frozen, dup + replace; else mutate in
+      #                    place.
+      def ensure_mutable_lines(coverage, file_path)
+        existing = coverage[file_path]
+
+        case existing
+        when nil
+          stub = line_stub(file_path)
+          coverage[file_path] = stub
+          stub
+        when ::Hash
+          line_arr = existing[:lines]
+          return line_arr if line_arr && !line_arr.frozen?
+
+          line_arr = line_arr ? line_arr.dup : line_stub(file_path)
+          coverage[file_path] = { lines: line_arr, branches: existing[:branches] || {} }
+          line_arr
+        else
+          return existing unless existing.frozen?
+
+          dup = existing.dup
+          coverage[file_path] = dup
+          dup
+        end
       end
 
       # Apply `coverage_filters` + `coverage_tracked_files` glob; sort
@@ -214,65 +259,28 @@ module RSpecTracer
       # side). Preserving this shape keeps SimpleCov's at_exit
       # result-merge seeing whatever it was tracking minus rspec-
       # tracer's narrow filters.
-      # SimpleCov is the consumer here; it expects Coverage.result's
-      # full hash shape when branch coverage is enabled (`{ lines: [...],
-      # branches: {...} }` per file). `peek_unfiltered_full` preserves
-      # that shape — switching back to `peek_unfiltered` here would
-      # silently drop branch data from SimpleCov's report whenever
-      # rspec-tracer dogfoods itself with branch coverage enabled.
       #
-      # When the engine has zero skipped examples (the common path —
-      # any cold run, any warm run with no carried-over skips),
-      # `accumulate_skipped` is a no-op and we hand SimpleCov the
-      # peek output verbatim. Skipping the lines-view dup + merge-
-      # back round-trip on this path matters: long-running benchmark
-      # scenarios fork per-iter, hit at_exit per-iter, and a per-iter
-      # dup of every lib file's line array shows up as a measurable
-      # regression on cold_rails_v2_warm_iter (3.7x ratchet ratio in
-      # the first CI run that exposed it). Only pay the dup cost when
-      # there's actual skipped-coverage attribution to merge in.
+      # `peek_unfiltered_full` preserves Coverage's full
+      # `{lines:, branches:}` hash shape verbatim (vs `peek_unfiltered`
+      # which reduces hash-mode entries to `:lines` only for the
+      # user-facing `coverage.json` Array<Integer|nil> contract).
+      # SimpleCov's branch report needs the branches sub-hash;
+      # silently stripping them here was the pre-PR-#165 bug that
+      # made every dogfooded suite report `Branch Coverage: 0/0`
+      # under `enable_coverage :branch`.
+      #
+      # `accumulate_skipped` is shape-agnostic (handles both
+      # hash-mode and array-mode entries; preserves `:branches`
+      # untouched on hash-mode dup-on-write), so we hand it the full
+      # peek directly without any view-extraction round-trip. Empty
+      # skipped registry → it early-returns + nothing reallocates;
+      # non-empty → only the per-skipped-file line arrays get dup'd.
+      # Either way, no per-call O(N files) allocation.
       def install_simplecov_interop
         coverage = engine.coverage_adapter.peek_unfiltered_full
-        if engine.registry.ids_with_status(:skipped).any?
-          lines = mutable_lines_view(coverage)
-          accumulate_skipped(lines)
-          merge_lines_back(coverage, lines)
-        end
+        accumulate_skipped(coverage)
         SimpleCovInterop.install(coverage)
         nil
-      end
-
-      # Returns a `{ path => Array<Integer|nil> }` view of the full
-      # peek (Hash `{lines:, branches:}` per file in hash mode; Array
-      # already in array mode). dup-on-extract so accumulate_skipped's
-      # in-place mutations never reach back into the frozen Coverage
-      # arrays underlying the hash, and the caller can re-merge the
-      # final view via `merge_lines_back`.
-      def mutable_lines_view(coverage)
-        coverage.each_with_object({}) do |(path, stats), acc|
-          line_arr = stats.is_a?(Hash) ? stats[:lines] : stats
-          acc[path] = line_arr&.dup
-        end
-      end
-
-      # Re-attach the (possibly mutated by accumulate_skipped) line
-      # arrays back into the full `coverage` hash. Hash-mode entries
-      # get a fresh `{lines:, branches:}` Hash with the new lines and
-      # the original branches preserved; array-mode entries get the
-      # mutated array directly. New entries `accumulate_skipped`
-      # synthesised for previously-unseen files (line stubs) propagate
-      # in their array shape — branches are absent because the file
-      # wasn't observed by Coverage.
-      def merge_lines_back(coverage, lines)
-        lines.each do |path, line_arr|
-          existing = coverage[path]
-          coverage[path] =
-            if existing.is_a?(Hash)
-              { lines: line_arr, branches: existing[:branches] || {} }
-            else
-              line_arr
-            end
-        end
       end
 
       # Inner module preserving 1.x's RubyCoverage shim contract. When
