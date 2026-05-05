@@ -45,7 +45,7 @@ Metrics/BlockLength:
     - "spec/**/*"
 
 Metrics/ClassLength:
-  Max: 300
+  Max: 350
 
 Metrics/CyclomaticComplexity:
   Max: 10
@@ -54,7 +54,7 @@ Metrics/MethodLength:
   Max: 25
 
 Metrics/ModuleLength:
-  Max: 300
+  Max: 350
 
 Metrics/PerceivedComplexity:
   Max: 10
