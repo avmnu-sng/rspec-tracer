@@ -1,22 +1,4 @@
-## [2.0.0.pre.1] - TBD
-
-### Fixed
-
-- **Branch coverage now flows through SimpleCov interop** —
-  `Tracker::CoverageAdapter#peek_unfiltered` reduces hash-mode
-  Coverage entries to `:lines` only by design (the user-facing
-  `coverage.json` shape is documented as `Array<Integer|nil>` per
-  file), but that same path was being used by
-  `Reporters::CoverageJsonReporter::SimpleCovInterop` to feed
-  `Coverage.result` to SimpleCov when rspec-tracer dogfoods itself
-  with `enable_coverage :branch` enabled. Result: SimpleCov reported
-  branch coverage as `0/0` regardless of how many branches the suite
-  actually exercised. Added `peek_unfiltered_full` (preserves the
-  `{lines:, branches:}` shape verbatim) and routed the SimpleCov
-  interop through it; coverage.json emission still uses
-  `peek_unfiltered` so the on-disk shape is byte-identical to 1.x.
-  Users with `enable_coverage :branch` now see real branch coverage
-  numbers in their SimpleCov reports.
+## [2.0.0.pre.1] - 2026-05-06
 
 The first pre-release of the 2.0 line. Architecture rewrite around
 the input-taxonomy mental model documented in
