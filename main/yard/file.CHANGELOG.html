@@ -59,25 +59,7 @@
         <div class="clear"></div>
       </div>
 
-      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_1____TBD">[2.0.0.pre.1] - TBD</h2>
-<h3 id="Fixed">Fixed</h3>
-<ul>
-<li><strong>Branch coverage now flows through SimpleCov interop</strong> —
-<code>Tracker::CoverageAdapter#peek_unfiltered</code> reduces hash-mode
-Coverage entries to <code>:lines</code> only by design (the user-facing
-<code>coverage.json</code> shape is documented as <code>Array&lt;Integer|nil&gt;</code> per
-file), but that same path was being used by
-<code>Reporters::CoverageJsonReporter::SimpleCovInterop</code> to feed
-<code>Coverage.result</code> to SimpleCov when rspec-tracer dogfoods itself
-with <code>enable_coverage :branch</code> enabled. Result: SimpleCov reported
-branch coverage as <code>0/0</code> regardless of how many branches the suite
-actually exercised. Added <code>peek_unfiltered_full</code> (preserves the
-<code>{lines:, branches:}</code> shape verbatim) and routed the SimpleCov
-interop through it; coverage.json emission still uses
-<code>peek_unfiltered</code> so the on-disk shape is byte-identical to 1.x.
-Users with <code>enable_coverage :branch</code> now see real branch coverage
-numbers in their SimpleCov reports.</li>
-</ul>
+      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_1____2026_05_06">[2.0.0.pre.1] - 2026-05-06</h2>
 <p>The first pre-release of the 2.0 line. Architecture rewrite around
 the input-taxonomy mental model documented in
 <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>: every test is a pure function
@@ -493,7 +475,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 09:24:17 2026 by
+  Generated on Wed May  6 09:48:01 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
