@@ -61,6 +61,9 @@ unless ENV['RSPEC_TRACER_DISABLE'] == '1' || ENV['COVERAGE'] == 'false' || defin
     add_filter '/tmp/'
     add_filter '/coverage/'
     add_filter %r{/lib/rspec_tracer/reporters/html/}
+    # Metadata-only file (single VERSION constant). Mirrors the
+    # codecov.yml + scripts/merge_coverage.rb ignore lists.
+    add_filter %r{/lib/rspec_tracer/version\.rb\z}
   end
 end
 
