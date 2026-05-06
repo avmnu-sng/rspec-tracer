@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Class: RSpecTracer::Storage::JsonBackend
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::Storage::JsonBackend";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (J)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span>
+     &raquo; 
+    <span class="title">JsonBackend</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Class: RSpecTracer::Storage::JsonBackend
+  
+  
+  <span class="private note title">Private</span>
+</h1>
+<div class="box_info">
+  
+  <dl>
+    <dt>Inherits:</dt>
+    <dd>
+      <span class="inheritName">Object</span>
+      
+        <ul class="fullTree">
+          <li>Object</li>
+          
+            <li class="next">RSpecTracer::Storage::JsonBackend</li>
+          
+        </ul>
+        <a href="#" class="inheritanceTree">show all</a>
+      
+    </dd>
+  </dl>
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/storage/json_backend.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>JSON-on-disk storage backend. 1.x shipped this layout without a
+formal contract; 2.0 treats the FILENAMES list below as the
+authoritative user-facing surface.</p>
+<p>External tooling (CI cache keys, debug scripts, report
+renderers) may reference these exact filenames, so additions or
+removals are breaking changes. The shared-examples contract in
+<code>spec/contracts/storage_backend.rb</code> enforces the list.</p>
+<p>Commit point: <code>last_run.json</code> is written last via tmp + rename.
+If any of the 11 per-run files fails to write, <code>last_run.json</code>
+stays pointed at the previous successful run and the partially-
+written run-id directory is orphaned (harmless; <code>clear!</code> reaps
+it). Readers that see <code>last_run.json</code> therefore see a complete
+snapshot.</p>
+<p>Concurrency: an exclusive flock on a sentinel file
+(<code>.rspec_tracer.lock</code> under cache_path) serializes writers.
+Readers do not take the lock - <code>last_run.json</code>'s atomic rename
+is their consistency model.</p>
+<p>Corruption policy: <code>load_graph</code> never raises. Missing files,
+malformed JSON, wrong schema, binary-garbage input all yield
+<code>nil</code> + an info log. This is the invariant the fuzz spec
+asserts across 1000 iterations.</p>
+<p>Encoding: every read and write passes <code>encoding: 'UTF-8'</code>.
+Fixes the <code>Encoding::InvalidByteSequenceError</code> that bit the
+dogfood path when an example title contained a non-ASCII byte on
+a US-ASCII-defaulted filesystem.
+rubocop:disable Metrics/ClassLength</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><h2>Defined Under Namespace</h2>
+<p class="children">
+  
+    
+      <strong class="modules">Modules:</strong> <span class='object_link'><a href="JsonBackend/Merger.html" title="RSpecTracer::Storage::JsonBackend::Merger (module)">Merger</a></span>
+    
+  
+    
+      <strong class="classes">Classes:</strong> <span class='object_link'><a href="JsonBackend/FieldReader.html" title="RSpecTracer::Storage::JsonBackend::FieldReader (class)">FieldReader</a></span>
+    
+  
+</p>
+
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="FILENAMES-constant" class="">FILENAMES =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>On-disk filenames under the default <code>:json</code> serializer. This
+is the user-facing surface documented in
+USER_FACING_SURFACE.md section 6 - external tooling that walks
+<code>rspec_tracer_cache/</code> relies on exactly these names.
+The <code>:msgpack</code> serializer substitutes <code>.msgpack.gz</code> for the
+<code>.json</code> suffix (one file per field on disk); the file stems
+and per-field semantics do not change.
+boot_set.json lands at the end of the list - additive w.r.t.
+1.x and v2 readers that walked this enumeration. It carries
+the project's transitive boot-load set (schema_version 3).
+wsi_snapshot.json persists the WholeSuiteInvalidators
+digest_snapshot so warm runs can tell whether Gemfile.lock /
+.ruby-version / .rspec-tracer / tracer-gem identity changed
+since the previous run. Without it, warm runs always saw a
+nil previous and treated every run as a cold first run.
+Missing file deserializes to <code>{}</code> so older caches still load -
+the fallback path fires one full re-run (safe).
+env_snapshot.json persists the <code>Tracker::EnvSnapshot</code> digest
+map for env-var values the per-example <code>tracks: { env: ... }</code>
+DSL declares. Same missing-coerces-to-<code>{}</code> fallback as
+wsi_snapshot - no schema bump.
+env_dependency.json persists the per-example tracked-env
+attribution map that reporters need for the Examples Dependency
+report. Missing file coerces to <code>{}</code>; older caches load
+without a cold re-run.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>all_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>duplicate_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>interrupted_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>flaky_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>failed_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>pending_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>skipped_examples.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>all_files.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>dependency.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>reverse_dependency.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>examples_coverage.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>boot_set.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>wsi_snapshot.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>env_snapshot.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>env_dependency.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>cache_hit_reason.json</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="LAST_RUN_FILENAME-constant" class="">LAST_RUN_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="LOCK_FILENAME-constant" class="">LOCK_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>.rspec_tracer.lock</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="ENCODING-constant" class="">ENCODING =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="FIELD_NAMES-constant" class="">FIELD_NAMES =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Known snapshot field symbols. Derived directly from FIELD_KINDS
+below (the write-side and read-side shape tables both enumerate
+the same set, so a divergence would already blow up write
+paths). Kept as an Array of Symbol so <code>#read_field</code> can dispatch
+without constructing a per-serializer filename table; the
+filename is computed as &quot;#field.#RSpecTracer::Storage::JsonBackend.@serializer@serializer.extension&quot;.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>all_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>interrupted_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>flaky_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>failed_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>pending_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>skipped_examples</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>all_files</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>dependency</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>reverse_dependency</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>boot_set</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>wsi_snapshot</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>env_dependency</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="ID_SET_FIELDS-constant" class="">ID_SET_FIELDS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Write-side field groups. Each group dispatches to one
+serializer (Hash pass-through, Set-&gt;sorted Array, or the
+Hash[id =&gt; Set<path>] -&gt; Hash[id =&gt; Array<path>] flavor
+shared by dependency + reverse_dependency). Kept data-driven
+so a schema_version bump adds one entry instead of a new
+branch. Read-side uses FIELD_KINDS below.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>interrupted_examples</span><span class='words_sep'> </span><span class='tstring_content'>flaky_examples</span><span class='words_sep'> </span><span class='tstring_content'>failed_examples</span><span class='words_sep'> </span><span class='tstring_content'>pending_examples</span><span class='words_sep'> </span><span class='tstring_content'>skipped_examples</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="HASH_FIELDS-constant" class="">HASH_FIELDS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>all_examples</span><span class='words_sep'> </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'> </span><span class='tstring_content'>all_files</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>boot_set</span><span class='words_sep'> </span><span class='tstring_content'>wsi_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="DEPENDENCY_FIELDS-constant" class="">DEPENDENCY_FIELDS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='tstring_content'>dependency</span><span class='words_sep'> </span><span class='tstring_content'>reverse_dependency</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="FIELD_KINDS-constant" class="">FIELD_KINDS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read-side field -&gt; deserializer-kind map. Drives
+<code>decode_field</code> so the lazy reader looks up one shape
+per field instead of spelling out a case/when that
+has to stay in sync with FILENAMES. <code>:symbolized</code> =
+Hash whose inner Hash values get symbolized keys
+(1.x's all_examples / all_files convention);
+<code>:dupe_examples</code> = same but Array-of-inner-Hash;
+<code>:id_set</code> = Array on disk -&gt; Set in memory;
+<code>:dependency</code> = Hash[id =&gt; Array] -&gt; Hash[id =&gt; Set];
+<code>:plain_hash</code> = pass-through (examples_coverage, the
+digest maps, env_dependency).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='lbrace'>{</span>
+  <span class='label'>all_examples:</span> <span class='symbol'>:symbolized</span><span class='comma'>,</span>
+  <span class='label'>all_files:</span> <span class='symbol'>:symbolized</span><span class='comma'>,</span>
+  <span class='label'>duplicate_examples:</span> <span class='symbol'>:dupe_examples</span><span class='comma'>,</span>
+  <span class='label'>interrupted_examples:</span> <span class='symbol'>:id_set</span><span class='comma'>,</span>
+  <span class='label'>flaky_examples:</span> <span class='symbol'>:id_set</span><span class='comma'>,</span>
+  <span class='label'>failed_examples:</span> <span class='symbol'>:id_set</span><span class='comma'>,</span>
+  <span class='label'>pending_examples:</span> <span class='symbol'>:id_set</span><span class='comma'>,</span>
+  <span class='label'>skipped_examples:</span> <span class='symbol'>:id_set</span><span class='comma'>,</span>
+  <span class='label'>dependency:</span> <span class='symbol'>:dependency</span><span class='comma'>,</span>
+  <span class='label'>reverse_dependency:</span> <span class='symbol'>:dependency</span><span class='comma'>,</span>
+  <span class='label'>examples_coverage:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>boot_set:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>wsi_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>env_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>env_dependency:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>cache_hit_reason:</span> <span class='symbol'>:plain_hash</span>
+<span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+  <h2>Instance Attribute Summary <small><a href="#" class="summary_toggle">collapse</a></small></h2>
+  <ul class="summary">
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#cache_path-instance_method" title="#cache_path (instance method)">#<strong>cache_path</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+      <span class="note title readonly">readonly</span>
+    
+    
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
+  
+</li>
+
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#serializer-instance_method" title="#serializer (instance method)">#<strong>serializer</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+      <span class="note title readonly">readonly</span>
+    
+    
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
+  
+</li>
+
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#serializer_name-instance_method" title="#serializer_name (instance method)">#<strong>serializer_name</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+      <span class="note title readonly">readonly</span>
+    
+    
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
+  
+</li>
+
+    
+  </ul>
+
+
+
+
+  
+    <h2>
+      Instance Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#clear!-instance_method" title="#clear! (instance method)">#<strong>clear!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#field_filename-instance_method" title="#field_filename (instance method)">#<strong>field_filename</strong>(field)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Per-serializer on-disk filename for a snapshot field.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#initialize-instance_method" title="#initialize (instance method)">#<strong>initialize</strong>(cache_path:, logger: nil, retention_local_count: nil, warn_per_file_mb: nil, warn_total_mb: nil, serializer: :json)  &#x21d2; JsonBackend </a>
+    
+
+    
+  </span>
+  
+  
+    <span class="note title constructor">constructor</span>
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>rubocop:disable Metrics/ParameterLists.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#last_run_id-instance_method" title="#last_run_id (instance method)">#<strong>last_run_id</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#load_graph-instance_method" title="#load_graph (instance method)">#<strong>load_graph</strong>(schema_version:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#merge_from_peers-instance_method" title="#merge_from_peers (instance method)">#<strong>merge_from_peers</strong>(peer_cache_paths, schema_version:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Merge per-worker snapshots (written to <code>peer_cache_paths</code>) into this backend's top-level cache and persist via <code>save_graph</code>.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#prune_run_dirs!-instance_method" title="#prune_run_dirs! (instance method)">#<strong>prune_run_dirs!</strong>(keep:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Retain the <code>keep</code> most-recently-modified run-id directories under cache_path and delete older ones.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#read_field-instance_method" title="#read_field (instance method)">#<strong>read_field</strong>(dir, field)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Read and deserialize one per-run field.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#save_graph-instance_method" title="#save_graph (instance method)">#<strong>save_graph</strong>(snapshot, schema_version:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#transactional_save-instance_method" title="#transactional_save (instance method)">#<strong>transactional_save</strong>(&amp;block)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+<div id="constructor_details" class="method_details_list">
+  <h2>Constructor Details</h2>
+  
+    <div class="method_details first">
+  <h3 class="signature first" id="initialize-instance_method">
+  
+    #<strong>initialize</strong>(cache_path:, logger: nil, retention_local_count: nil, warn_per_file_mb: nil, warn_total_mb: nil, serializer: :json)  &#x21d2; <tt><span class='object_link'><a href="" title="RSpecTracer::Storage::JsonBackend (class)">JsonBackend</a></span></tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Metrics/ParameterLists</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 204</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>retention_local_count:</span> <span class='kw'>nil</span><span class='comma'>,</span>
+               <span class='label'>warn_per_file_mb:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>warn_total_mb:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>serializer:</span> <span class='symbol'>:json</span><span class='rparen'>)</span>
+  <span class='comment'># rubocop:enable Metrics/ParameterLists
+</span>  <span class='ivar'>@cache_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='ivar'>@logger</span> <span class='op'>=</span> <span class='id identifier rubyid_logger'>logger</span>
+  <span class='ivar'>@retention_local_count</span> <span class='op'>=</span> <span class='id identifier rubyid_retention_local_count'>retention_local_count</span>
+  <span class='ivar'>@warn_per_file_mb</span> <span class='op'>=</span> <span class='id identifier rubyid_warn_per_file_mb'>warn_per_file_mb</span>
+  <span class='ivar'>@warn_total_mb</span> <span class='op'>=</span> <span class='id identifier rubyid_warn_total_mb'>warn_total_mb</span>
+  <span class='ivar'>@serializer</span> <span class='op'>=</span> <span class='id identifier rubyid_resolve_serializer'>resolve_serializer</span><span class='lparen'>(</span><span class='id identifier rubyid_serializer'>serializer</span><span class='rparen'>)</span>
+  <span class='ivar'>@serializer_name</span> <span class='op'>=</span> <span class='id identifier rubyid_serializer'>serializer</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+  
+</div>
+
+  <div id="instance_attr_details" class="attr_details">
+    <h2>Instance Attribute Details</h2>
+    
+      
+      <span id=""></span>
+      <div class="method_details first">
+  <h3 class="signature first" id="cache_path-instance_method">
+  
+    #<strong>cache_path</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+201
+202
+203</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_cache_path'>cache_path</span>
+  <span class='ivar'>@cache_path</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      
+      <span id=""></span>
+      <div class="method_details ">
+  <h3 class="signature " id="serializer-instance_method">
+  
+    #<strong>serializer</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+201
+202
+203</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_serializer'>serializer</span>
+  <span class='ivar'>@serializer</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      
+      <span id=""></span>
+      <div class="method_details ">
+  <h3 class="signature " id="serializer_name-instance_method">
+  
+    #<strong>serializer_name</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+201
+202
+203</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_serializer_name'>serializer_name</span>
+  <span class='ivar'>@serializer_name</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+
+  <div id="instance_method_details" class="method_details_list">
+    <h2>Instance Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="clear!-instance_method">
+  
+    #<strong>clear!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+349
+350
+351
+352
+353</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 349</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span>
+  <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_rf'>rm_rf</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="field_filename-instance_method">
+  
+    #<strong>field_filename</strong>(field)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Per-serializer on-disk filename for a snapshot field.
+<code>:json</code> -&gt; <code>all_examples.json</code>; <code>:msgpack</code> -&gt;
+<code>all_examples.msgpack.gz</code>. Public so integration specs /
+reporters can resolve the expected path without reaching
+into @serializer.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+279
+280
+281</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 279</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_field_filename'>field_filename</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
+  <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='embexpr_end'>}</span><span class='tstring_content'>.</span><span class='embexpr_beg'>#{</span><span class='ivar'>@serializer</span><span class='period'>.</span><span class='id identifier rubyid_extension'>extension</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="last_run_id-instance_method">
+  
+    #<strong>last_run_id</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+218
+219
+220
+221
+222
+223
+224
+225
+226</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 218</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
+  <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='id identifier rubyid_read_last_run_manifest'>read_last_run_manifest</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>run_id</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_run_id'>run_id</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="load_graph-instance_method">
+  
+    #<strong>load_graph</strong>(schema_version:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 230</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='id identifier rubyid_read_last_run_manifest'>read_last_run_manifest</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_stored'>stored</span> <span class='op'>=</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>schema_version</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+  <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='period'>.</span><span class='id identifier rubyid_supported?'><span class='object_link'><a href="Schema.html#supported%3F-class_method" title="RSpecTracer::Storage::Schema.supported? (method)">supported?</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_stored'>stored</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_stored'>stored</span> <span class='op'>==</span> <span class='id identifier rubyid_schema_version'>schema_version</span>
+    <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>schema_version mismatch (stored=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stored'>stored</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>, expected=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='embexpr_end'>}</span><span class='tstring_content'>); cold run</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+    <span class='kw'>return</span> <span class='kw'>nil</span>
+  <span class='kw'>end</span>
+
+  <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>run_id</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_dir'>dir</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='rparen'>)</span>
+
+  <span class='const'>LazySnapshot</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
+    <span class='label'>schema_version:</span> <span class='id identifier rubyid_stored'>stored</span><span class='comma'>,</span> <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span>
+    <span class='label'>reader:</span> <span class='const'><span class='object_link'><a href="JsonBackend/FieldReader.html" title="RSpecTracer::Storage::JsonBackend::FieldReader (class)">FieldReader</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="JsonBackend/FieldReader.html#initialize-instance_method" title="RSpecTracer::Storage::JsonBackend::FieldReader#initialize (method)">new</a></span></span><span class='lparen'>(</span><span class='label'>backend:</span> <span class='kw'>self</span><span class='comma'>,</span> <span class='label'>dir:</span> <span class='id identifier rubyid_dir'>dir</span><span class='rparen'>)</span>
+  <span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>failed to load cache: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>; cold run</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='kw'>nil</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="merge_from_peers-instance_method">
+  
+    #<strong>merge_from_peers</strong>(peer_cache_paths, schema_version:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Merge per-worker snapshots (written to <code>peer_cache_paths</code>) into
+this backend's top-level cache and persist via <code>save_graph</code>.
+Read each peer via <code>load_graph</code> so schema + corruption policy
+(missing files yield nil, malformed JSON logs + returns nil)
+flows through the same path as a normal load.</p>
+<p>No peers / every peer nil -&gt; no-op returns nil. Partial peers
+merge what's available; graceful degradation is the entire
+point of running this at at_exit time.</p>
+<p><code>schema_version</code> is passed through so peers saved under a
+different schema version are rejected without side effects
+(same semantics as a warm run under a mismatched cache).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 368</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_merge_from_peers'>merge_from_peers</span><span class='lparen'>(</span><span class='id identifier rubyid_peer_cache_paths'>peer_cache_paths</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_peer_snapshots'>peer_snapshots</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_cache_paths'>peer_cache_paths</span><span class='period'>.</span><span class='id identifier rubyid_filter_map'>filter_map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+    <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='ivar'>@logger</span><span class='comma'>,</span> <span class='label'>serializer:</span> <span class='ivar'>@serializer_name</span><span class='rparen'>)</span>
+      <span class='period'>.</span><span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_peer_snapshots'>peer_snapshots</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_merged'>merged</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="JsonBackend/Merger.html" title="RSpecTracer::Storage::JsonBackend::Merger (module)">Merger</a></span></span><span class='period'>.</span><span class='id identifier rubyid_call'><span class='object_link'><a href="JsonBackend/Merger.html#call-class_method" title="RSpecTracer::Storage::JsonBackend::Merger.call (method)">call</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_peer_snapshots'>peer_snapshots</span><span class='comma'>,</span> <span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_merged'>merged</span><span class='comma'>,</span> <span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_merged'>merged</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="prune_run_dirs!-instance_method">
+  
+    #<strong>prune_run_dirs!</strong>(keep:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Retain the <code>keep</code> most-recently-modified run-id directories
+under cache_path and delete older ones. Always preserves the
+run-id that <code>last_run.json</code> points at (deleting it would make
+the next reader cold-run). Returns the count removed. Never
+raises - a prune failure is logged at warn level and treated
+as best-effort cleanup, same graceful-degradation contract
+the remote cache backends use.</p>
+<p><code>keep</code> nil / non-positive -&gt; no-op. Called automatically from
+<code>save_graph</code> when the backend was constructed with
+<code>retention_local_count:</code>; also exposed via <code>rake rspec_tracer:cache:gc</code> for one-off cleanup.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 319</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_prune_run_dirs!'>prune_run_dirs!</span><span class='lparen'>(</span><span class='label'>keep:</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>if</span> <span class='id identifier rubyid_keep'>keep</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_keep'>keep</span> <span class='op'>&lt;=</span> <span class='int'>0</span>
+  <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_current'>current</span> <span class='op'>=</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
+  <span class='id identifier rubyid_candidates'>candidates</span> <span class='op'>=</span> <span class='id identifier rubyid_collect_run_dirs'>collect_run_dirs</span>
+  <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>if</span> <span class='id identifier rubyid_candidates'>candidates</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid__keep'>_keep</span><span class='comma'>,</span> <span class='id identifier rubyid_pruned'>pruned</span> <span class='op'>=</span> <span class='id identifier rubyid_partition_dirs_to_prune'>partition_dirs_to_prune</span><span class='lparen'>(</span><span class='id identifier rubyid_candidates'>candidates</span><span class='comma'>,</span> <span class='label'>keep:</span> <span class='id identifier rubyid_keep'>keep</span><span class='comma'>,</span> <span class='label'>current:</span> <span class='id identifier rubyid_current'>current</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_pruned'>pruned</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span> <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_rf'>rm_rf</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+  <span class='id identifier rubyid_pruned'>pruned</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='ivar'>@logger</span><span class='op'>&amp;.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer cache gc: prune failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='int'>0</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="read_field-instance_method">
+  
+    #<strong>read_field</strong>(dir, field)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read and deserialize one per-run field. Public so
+<code>FieldReader</code> (constructed by <code>load_graph</code>) can dispatch.
+Missing file -&gt; same default value the eager read previously
+produced (Set.new for ID-set fields, {} for hashes) -
+preserves the &quot;malformed cache loads gracefully&quot; contract.</p>
+<p><code>deep_intern</code> runs before the decode so String dedup
+happens once per on-disk path / example_id regardless of
+how many times the value appears in the parsed tree.
+RAM win on large caches is the whole point of this method;
+see json_backend_spec.rb &quot;string interning&quot; for the
+measurable assertion.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>ArgumentError</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+267
+268
+269
+270
+271
+272</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 267</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='comma'>,</span> <span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown snapshot field: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="#FIELD_KINDS-constant" title="RSpecTracer::Storage::JsonBackend::FIELD_KINDS (constant)">FIELD_KINDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_raw'>raw</span> <span class='op'>=</span> <span class='id identifier rubyid_read_run_file'>read_run_file</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='comma'>,</span> <span class='id identifier rubyid_field_filename'>field_filename</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_decode_field'>decode_field</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='comma'>,</span> <span class='id identifier rubyid_deep_intern'>deep_intern</span><span class='lparen'>(</span><span class='id identifier rubyid_raw'>raw</span><span class='rparen'>)</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="save_graph-instance_method">
+  
+    #<strong>save_graph</strong>(snapshot, schema_version:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>ArgumentError</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 285</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot must not be nil</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='period'>.</span><span class='id identifier rubyid_supported?'><span class='object_link'><a href="Schema.html#supported%3F-class_method" title="RSpecTracer::Storage::Schema.supported? (method)">supported?</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unsupported schema_version: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+  <span class='kw'>end</span>
+
+  <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_run_id'>run_id</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot.run_id must be a non-empty string</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_transactional_save'>transactional_save</span> <span class='kw'>do</span>
+    <span class='id identifier rubyid_dir'>dir</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
+    <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_write_run_files'>write_run_files</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_write_last_run_atomic'>write_last_run_atomic</span><span class='lparen'>(</span><span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='comma'>,</span> <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+
+  <span class='id identifier rubyid_maybe_prune_after_save'>maybe_prune_after_save</span>
+  <span class='id identifier rubyid_maybe_warn_size_budget'>maybe_warn_size_budget</span><span class='lparen'>(</span><span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_snapshot'>snapshot</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="transactional_save-instance_method">
+  
+    #<strong>transactional_save</strong>(&amp;block)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>ArgumentError</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+337
+338
+339
+340
+341
+342
+343
+344
+345</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 337</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_block'>block</span>
+
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+  <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='id identifier rubyid_lock_path'>lock_path</span><span class='comma'>,</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>RDWR</span> <span class='op'>|</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>CREAT</span><span class='comma'>,</span> <span class='int'>0o644</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_lock'>lock</span><span class='op'>|</span>
+    <span class='id identifier rubyid_lock'>lock</span><span class='period'>.</span><span class='id identifier rubyid_flock'>flock</span><span class='lparen'>(</span><span class='const'>File</span><span class='op'>::</span><span class='const'>LOCK_EX</span><span class='rparen'>)</span>
+    <span class='kw'>yield</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:49 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

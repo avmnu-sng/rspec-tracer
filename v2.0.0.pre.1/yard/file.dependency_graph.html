@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: dependency_graph
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "dependency_graph";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: dependency_graph</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
+    <span class='comment'># Directed bipartite graph over (example_id, file path). The
+</span>    <span class='comment'># forward map answers &quot;which files does this example depend on?&quot;;
+</span>    <span class='comment'># the memoized inverse answers &quot;which examples depend on this
+</span>    <span class='comment'># file?&quot; in O(1) per lookup.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># The graph is append-only during a run. `register_example` is
+</span>    <span class='comment'># called once per example at example-finished time with the Input
+</span>    <span class='comment'># set that CoverageAdapter + IOHooks + DeclaredGlobs collected.
+</span>    <span class='comment'># The inverse is invalidated on every register_example and lazily
+</span>    <span class='comment'># rebuilt on the next `examples_depending_on` call.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Keyed by file path, not Input identity
+</span>    <span class='comment'># -------------------------------------
+</span>    <span class='comment'># An earlier design framed the inverse as &quot;input_identity -&gt; Set&lt;example_id&gt;&quot;,
+</span>    <span class='comment'># which embeds the Input#kind (e.g. &quot;ruby:lib/foo.rb&quot; vs
+</span>    <span class='comment'># &quot;declared:lib/foo.rb&quot;). In practice the change-set that drives
+</span>    <span class='comment'># filtering comes from diffing Snapshot.all_files digests, which
+</span>    <span class='comment'># is keyed by path only - the kind that observed the file is not
+</span>    <span class='comment'># recoverable from a digest mismatch. Keying the graph by path
+</span>    <span class='comment'># eliminates that recovery burden and matches 1.x&#39;s
+</span>    <span class='comment'># dependency.json shape exactly (Hash[example_id =&gt; Set&lt;path&gt;]),
+</span>    <span class='comment'># keeping the Snapshot byte-compatible. Kind-aware filtering, if
+</span>    <span class='comment'># ever needed, can layer on top without changing the graph shape.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># API accepts Set&lt;Input&gt;, Set&lt;String&gt;, or any mix - anything that
+</span>    <span class='comment'># responds to :path is treated as an Input; otherwise `.to_s`.
+</span>    <span class='comment'># This keeps observer call sites terse (pass the Input set
+</span>    <span class='comment'># directly) without forcing Snapshot-load sites to reconstruct
+</span>    <span class='comment'># Input objects from paths.
+</span>    <span class='kw'>class</span> <span class='const'>DependencyGraph</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span>
+        <span class='ivar'>@forward</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='ivar'>@inverse_index</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
+        <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
+        <span class='ivar'>@inverse_index</span> <span class='op'>=</span> <span class='kw'>nil</span>
+        <span class='kw'>self</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_paths_for'>paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+        <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_ids'>example_ids</span>
+        <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># O(|change_set| x avg-examples-per-file). `change_set` can be
+</span>      <span class='comment'># a Set&lt;Input&gt;, Set&lt;String&gt;, or any mix - coerced the same way
+</span>      <span class='comment'># `register_example` coerces its inputs arg.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_examples_depending_on'>examples_depending_on</span><span class='lparen'>(</span><span class='id identifier rubyid_change_set'>change_set</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_change_set'>change_set</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_affected'>affected</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+        <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+          <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='id identifier rubyid_inverse_index'>inverse_index</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span>
+          <span class='id identifier rubyid_affected'>affected</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_ids'>ids</span>
+        <span class='kw'>end</span>
+        <span class='id identifier rubyid_affected'>affected</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Snapshot projection. `dependency_hash` feeds
+</span>      <span class='comment'># Snapshot.dependency; `reverse_dependency_hash` feeds
+</span>      <span class='comment'># Snapshot.reverse_dependency. Both return fresh Sets per value
+</span>      <span class='comment'># so downstream mutation can&#39;t leak into the graph&#39;s state.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_dependency_hash'>dependency_hash</span>
+        <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency_hash'>reverse_dependency_hash</span>
+        <span class='id identifier rubyid_inverse_index'>inverse_index</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_private'>private</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_collection'>collection</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='id identifier rubyid_collection'>collection</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_collection'>collection</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_entry'>entry</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:path</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='id identifier rubyid_entry'>entry</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span> <span class='op'>:</span> <span class='id identifier rubyid_entry'>entry</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_inverse_index'>inverse_index</span>
+        <span class='ivar'>@inverse_index</span> <span class='op'>||=</span> <span class='id identifier rubyid_build_inverse_index'>build_inverse_index</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_inverse_index'>build_inverse_index</span>
+        <span class='id identifier rubyid_map'>map</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='op'>|</span>
+          <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+            <span class='lparen'>(</span><span class='id identifier rubyid_map'>map</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_example_id'>example_id</span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
+        <span class='id identifier rubyid_map'>map</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:48 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: README
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "README";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: README</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h1 id="rspec_tracer">rspec-tracer</h1>
+<p><a href="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml"><img src="https://github.com/avmnu-sng/rspec-tracer/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+<a href="https://badge.fury.io/rb/rspec-tracer"><img src="https://badge.fury.io/rb/rspec-tracer.svg" alt="Gem Version" /></a>
+<a href="https://codecov.io/gh/avmnu-sng/rspec-tracer"><img src="https://codecov.io/gh/avmnu-sng/rspec-tracer/branch/main/graph/badge.svg" alt="codecov" /></a>
+<a href="https://avmnu-sng.github.io/rspec-tracer/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs" /></a></p>
+<p><strong>RSpec Tracer</strong> is a specs dependency analyzer, flaky-test detector,
+test accelerator, and coverage reporter for RSpec. It records the
+inputs every example consumes — Ruby files (via <code>Coverage</code>), file
+I/O (via prepended <code>File</code> / <code>IO</code> / <code>YAML</code> / <code>JSON</code> hooks), Rails
+template + AR notifications, and user-declared globs — then re-runs
+only the examples whose inputs changed since the last run.</p>
+<p>It never skips:</p>
+<ul>
+<li><strong>Failed</strong>, <strong>flaky</strong>, or <strong>pending</strong> examples.</li>
+<li>Examples whose dependent inputs changed (the whole point).</li>
+</ul>
+<p>📚 <strong>Full documentation site</strong>: <a href="https://avmnu-sng.github.io/rspec-tracer/">avmnu-sng.github.io/rspec-tracer</a> — YARD API reference, sample HTML report, cookbook, and per-version coverage report.</p>
+<p>For a complete account of the input taxonomy and how the engine fits
+together, read <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>.</p>
+<h2 id="Table_of_contents">Table of contents</h2>
+<ul>
+<li><a href="#quick-start">Quick start</a></li>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#per-example-tracks-dsl">Per-example <code>tracks:</code> DSL</a></li>
+<li><a href="#rails-quick-start">Rails quick start</a></li>
+<li><a href="#configuring-ci">Configuring CI</a></li>
+<li><a href="#remote-cache-backends">Remote cache backends</a></li>
+<li><a href="#pluggable-storage">Pluggable storage</a></li>
+<li><a href="#command-line-tools">Command-line tools</a></li>
+<li><a href="#simplecov-interop">SimpleCov interop</a></li>
+<li><a href="#faq--comparison">FAQ + comparison</a></li>
+<li><a href="#reports">Reports</a></li>
+<li><a href="#documentation--coverage">Documentation + coverage</a></li>
+<li><a href="#help-and-community">Help and community</a></li>
+<li><a href="#section-anchor-map-1x--20">Section anchor map (1.x → 2.0)</a></li>
+</ul>
+<h2 id="Quick_start">Quick start</h2>
+<p>Requires Ruby 3.1+ and rspec-core 3.12+. Rails 7.0+ when using Rails;
+Rails 8.0 needs Ruby 3.2+. JRuby 9.4 is supported.</p>
+<ol>
+<li>
+<p>Add the gem:</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># 2.0 is in pre-release. Pin to the pre-release version explicitly;
+</span><span class='comment'># switch to &#39;~&gt; 2.0&#39; once 2.0.0 final ships.
+</span><span class='id identifier rubyid_gem'>gem</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>= 2.0.0.pre.1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>group:</span> <span class='symbol'>:test</span><span class='comma'>,</span> <span class='label'>require:</span> <span class='kw'>false</span>
+</code></pre>
+<p><code>bundle install</code> will resolve the pre-release version. You can
+also install ad-hoc with <code>gem install rspec-tracer --pre</code>.</p>
+</li>
+<li>
+<p>Add the canonical directories to your <code>.gitignore</code>:</p>
+<pre class="code ruby"><code class="ruby">rspec_tracer.lock
+rspec_tracer_cache/
+rspec_tracer_coverage/
+rspec_tracer_report/
+</code></pre>
+</li>
+<li>
+<p>Load and start at the very top of <code>spec_helper.rb</code> /
+<code>rails_helper.rb</code>, <strong>before any application code:</strong></p>
+<pre class="code ruby"><code class="ruby"><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
+</code></pre>
+<p>With SimpleCov, start SimpleCov first (load order is part of the
+contract):</p>
+<pre class="code ruby"><code class="ruby"><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>simplecov</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
+</code></pre>
+</li>
+<li>
+<p>Run your suite. After the run, open
+<code>rspec_tracer_report/index.html</code> for the HTML report, and
+<code>rspec_tracer_report/report.json</code> for machine-readable output.</p>
+<p>The terminal prints a one-line summary with cache size and the
+reasons examples re-ran:</p>
+<pre class="code ruby"><code class="ruby">rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
+by reason: 38 Files changed · 4 Failed previously
+cache: rspec_tracer_cache (14.4 MiB; +6.7 KiB vs prev run)
+</code></pre>
+</li>
+</ol>
+<h2 id="How_it_works">How it works</h2>
+<p>Every test is a pure function of its inputs; the tracker's job is to
+identify every input and hash it. Inputs come from six buckets:</p>
+<ol>
+<li><strong>Ruby-executed source</strong> — observed via Ruby's <code>Coverage</code> module.</li>
+<li><strong>File I/O</strong> (<code>File.read</code>, <code>YAML.load_file</code>, etc.) — observed via
+<code>Module#prepend</code> hooks.</li>
+<li><strong>Framework events</strong> — Rails template renders + (opt-in) AR
+schema-touching queries via <code>ActiveSupport::Notifications</code>.</li>
+<li><strong>Declared globs</strong> — what you tell the tracker to track via
+<code>track_files</code> / <code>tracks:</code> / <code>track_rails_defaults</code>.</li>
+<li><strong>Whole-suite invalidators</strong> — <code>Gemfile.lock</code>, <code>.ruby-version</code>,
+<code>.rspec-tracer</code>, the rspec-tracer gem version itself.</li>
+<li><strong>Truly unobservable inputs</strong> — env-var branches, refinements
+in unexecuted files. Use <code>track_env</code> / <code>tracks: { env: ... }</code>
+to declare them; the tracker can't auto-detect them.</li>
+</ol>
+<p>A digest of every observed input is stored per-example. The next run
+loads the cached digest set, recomputes per-input digests, and skips
+examples whose inputs are unchanged.</p>
+<p>Read <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a> for the full layer
+structure (Tracker / Storage / RemoteCache / Reporters), data flows,
+and extension protocols.</p>
+<h3 id="Per_example_precision_under_Rails__config_eager_load_">Per-example precision under Rails <code>config.eager_load</code></h3>
+<p>A precision tradeoff worth knowing before you run a suite that uses
+Rails:</p>
+<ul>
+<li><strong><code>config.eager_load = false</code></strong> in test env — per-example precision
+works as designed. Files autoloaded during an example land in
+per-example deps; editing one re-runs only the examples that
+touched it.</li>
+<li><strong><code>config.eager_load = true</code></strong> (Rails default for CI tests to
+mirror prod) — all <code>app/</code> files load at boot and land in the
+whole-suite invalidator set. Editing any <code>app/</code> file re-runs
+every example. <strong>Safe</strong> (never misses a dep) but <strong>coarser</strong> than
+per-example attribution.</li>
+</ul>
+<p>If your CI suite runs with <code>eager_load = true</code> and your <code>app/</code>-edit
+cycle is bottlenecked by whole-suite re-runs, set `config.eager_load</p>
+<h1 id="false__in_test_env_to_recover_per_example_precision__A_future_2_1">false` in test env to recover per-example precision. A future 2.1</h1>
+<p>enhancement (working name: <code>track_class_attribution</code>) will install
+class-dispatch tracking to trim the invalidator scope under
+eager-loaded test environments — see
+<a href="CHANGELOG.md"><code>CHANGELOG.md</code></a> &quot;Deferred to 2.1&quot; for the planned
+contract.</p>
+<h2 id="Per_example__tracks___DSL">Per-example <code>tracks:</code> DSL</h2>
+<p>Annotate any describe / context / example with extra inputs the
+tracker can't auto-observe — config files baked at boot, env-var
+branches, non-Ruby deps:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_describe'>describe</span> <span class='const'>AdminController</span><span class='comma'>,</span>
+               <span class='label'>tracks:</span> <span class='lbrace'>{</span> <span class='label'>files:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>app/policies/**/*.rb</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+                         <span class='label'>env:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ROLE_CONFIG</span><span class='tstring_end'>&#39;</span></span> <span class='rbrace'>}</span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_it'>it</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>gates on the feature flag</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>do</span>
+    <span class='comment'># ...
+</span>  <span class='kw'>end</span>
+<span class='kw'>end</span>
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value shape</th>
+<th>Semantics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:files</code></td>
+<td>String glob OR Array of strings</td>
+<td>Each matched file is attached as a <code>:declared</code>-kind dep on the example.</td>
+</tr>
+<tr>
+<td><code>:env</code></td>
+<td>String name OR Array OR wildcard</td>
+<td>Each named env var is digested at finalize. Missing env reads as empty.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Wildcards</strong> (<code>'RAILS_*'</code>, <code>'*_TOKEN'</code>, <code>'*'</code>) expand against the
+live ENV at register time; the persisted snapshot only carries
+concrete keys.</p>
+<p><strong>Cascade.</strong> Nested groups contribute additively. A parent's
+<code>tracks: { files: 'a/*' }</code> and a child's <code>tracks: { env: 'B' }</code> both
+attach to the child's examples; the child does not clobber the parent
+on any shared key.</p>
+<p><strong>Use <code>track_files</code> / <code>track_env</code> for the global case.</strong> Files /
+env vars <strong>every</strong> test depends on (<code>Gemfile.lock</code>, <code>AUTH_TOKEN</code>,
+<code>RAILS_ENV</code>) belong in <code>.rspec-tracer</code>:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_track_files'>track_files</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>config/locales/**/*.yml</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>db/schema.rb</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Gemfile.lock</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_track_env'>track_env</span>   <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>AUTH_TOKEN</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>DATABASE_URL</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RAILS_*</span><span class='tstring_end'>&#39;</span></span>
+<span class='kw'>end</span>
+</code></pre>
+<h2 id="Rails_quick_start">Rails quick start</h2>
+<pre class="code ruby"><code class="ruby"><span class='comment'># spec/rails_helper.rb
+</span><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>simplecov</span><span class='tstring_end'>&#39;</span></span>      <span class='comment'># if used; load BEFORE rspec_tracer
+</span><span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>../config/environment</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid___dir__'>__dir__</span><span class='rparen'>)</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec/rails</span><span class='tstring_end'>&#39;</span></span>
+</code></pre>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
+</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_track_rails_defaults'>track_rails_defaults</span>
+<span class='kw'>end</span>
+</code></pre>
+<p><code>track_rails_defaults</code> attaches the common Rails-side declared globs:
+views, locales, fixtures, factories, helpers, config. Drop a
+specific glob to hand attribution off to the per-example subscribers
+instead:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='comment'># Templates → render_template.action_view subscriber attributes
+</span>  <span class='comment'># them per-example. Schema → opt-in sql.active_record observer
+</span>  <span class='comment'># attributes db/schema.rb + db/structure.sql per AR-touching
+</span>  <span class='comment'># example (read the Narrow AR-schema attribution section before
+</span>  <span class='comment'># enabling).
+</span>  <span class='id identifier rubyid_track_rails_defaults'>track_rails_defaults</span> <span class='label'>except:</span> <span class='lbracket'>[</span><span class='symbol'>:views</span><span class='comma'>,</span> <span class='symbol'>:schema</span><span class='rbracket'>]</span>
+  <span class='id identifier rubyid_track_ar_schema_notifications'>track_ar_schema_notifications</span>
+<span class='kw'>end</span>
+</code></pre>
+<p>Supported Rails matrix: 7.0 / 7.1 / 7.2 / 8.0 (8.0 requires Ruby
+3.2+). On JRuby use <code>JRUBY_OPTS=&quot;--debug -X+O&quot;</code> and the JDBC
+adapter (<code>gem 'activerecord-jdbcsqlite3-adapter', '~&gt; 71.0', platforms: :jruby</code> for Rails 7.1; track the major to your Rails
+line).</p>
+<h3 id="Narrow_AR_schema_attribution">Narrow AR-schema attribution</h3>
+<p><code>track_ar_schema_notifications</code> promises per-example attribution of
+<code>db/schema.rb</code> via the <code>sql.active_record</code> subscriber. <strong>The narrow
+promise only holds when no per-example AR cleanup mechanism fires
+queries inside the per-example bucket.</strong> Common Rails setups trip
+this:</p>
+<ul>
+<li><code>use_transactional_fixtures = true</code> (Rails default) — per-example
+BEGIN/COMMIT fires <code>sql.active_record</code>.</li>
+<li>DatabaseCleaner <code>:truncation</code> / <code>:deletion</code> / <code>:transaction</code> in
+<code>around</code> hooks — cleanup queries fire inside the bucket.</li>
+</ul>
+<p>Either case attributes <code>db/schema.rb</code> to every AR-touching example
+(safe, but widens invalidation). A boot-time warn fires when the
+precondition is unmet so you don't discover this from a confused
+cache-hit-rate chart later.</p>
+<p>For genuinely narrow attribution: set <code>use_transactional_fixtures = false</code> and use sequence-based factories (or another non-AR cleanup
+mechanism that doesn't fire <code>sql.active_record</code> inside the example
+window).</p>
+<h3 id="Working_with_parallel_tests">Working with parallel_tests</h3>
+<p>Supported out of the box. The tracker writes to per-worker
+directories and merges at finalize on the elected last worker. If you
+interrupt a run mid-flight, delete the lock file:</p>
+<pre class="code sh"><code class="sh">rm -f rspec_tracer.lock &amp;&amp; bundle exec parallel_rspec
+</code></pre>
+<h2 id="Configuring_CI">Configuring CI</h2>
+<p>The 1.x flow is preserved bit-for-bit. In your project's <code>Rakefile</code>:</p>
+<pre class="code ruby"><code class="ruby"><span class='id identifier rubyid_spec'>spec</span> <span class='op'>=</span> <span class='const'>Gem</span><span class='op'>::</span><span class='const'>Specification</span><span class='period'>.</span><span class='id identifier rubyid_find_by_name'>find_by_name</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+<span class='id identifier rubyid_load'>load</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_spec'>spec</span><span class='period'>.</span><span class='id identifier rubyid_gem_dir'>gem_dir</span><span class='embexpr_end'>}</span><span class='tstring_content'>/lib/rspec_tracer/remote_cache/Rakefile</span><span class='tstring_end'>&quot;</span></span>
+</code></pre>
+<p>Then in your CI pipeline:</p>
+<pre class="code sh"><code class="sh">bundle exec rake rspec_tracer:remote_cache:download
+bundle exec rspec
+bundle exec rake rspec_tracer:remote_cache:upload
+</code></pre>
+<p>With these env vars:</p>
+<ul>
+<li><strong><code>GIT_DEFAULT_BRANCH</code></strong> — your repo's default branch (<code>main</code> /
+<code>master</code>).</li>
+<li><strong><code>GIT_BRANCH</code></strong> — the branch the build is on.</li>
+<li><strong><code>TEST_SUITES</code></strong> — total number of suite shards (when sharding).</li>
+<li><strong><code>TEST_SUITE_ID</code></strong> — current shard identifier.</li>
+<li><strong><code>RSPEC_TRACER_REMOTE_CACHE_URI</code></strong> — the remote-cache URI
+(<code>s3://bucket/prefix</code>, <code>file:///tmp/cache</code>, <code>redis://host</code>).</li>
+</ul>
+<h3 id="Caching_rspec_tracer_in_CI">Caching rspec-tracer in CI</h3>
+<p>If you don't have S3 — or only need cache between runs of a single
+workflow — GitHub Actions' built-in cache is a drop-in storage
+substrate. Restore <code>rspec_tracer_cache/</code> before specs, run the
+suite, let the post-step save it back. A reference workflow lives at
+<a href=".github/workflows/example-tracer-cache.yml"><code>.github/workflows/example-tracer-cache.yml</code></a>.
+The cache step:</p>
+<pre class="code yaml"><code class="yaml">- name: Restore rspec-tracer cache
+  uses: actions/cache@v5
+  with:
+    path: rspec_tracer_cache
+    key: &gt;-
+      ${{ runner.os
+      }}-${{ hashFiles(&#39;.ruby-version&#39;)
+      }}-${{ hashFiles(&#39;Gemfile.lock&#39;)
+      }}-rspec-tracer-cache
+    restore-keys: |
+      ${{ runner.os }}-${{ hashFiles(&#39;.ruby-version&#39;) }}-
+      ${{ runner.os }}-
+</code></pre>
+<p>The 4-component cache key (<code>runner.os</code> + Ruby version + the
+rspec-tracer gem's own version + your project's Gemfile lock)
+invalidates when something would make the previous run's decisions
+incorrect: native gem binaries differ across runner OSes, Ruby ABI
+changes invalidate native extensions, a tracer upgrade can change the
+cache schema, and gem-set drift is the most common cache-staleness
+trigger.</p>
+<p><strong>The pattern translates 1:1 to CircleCI, GitLab CI, Buildkite, and
+Heroku CI</strong>; only the YAML envelope is GHA-specific. See
+<a href="docs/CI_RECIPES.md"><code>docs/CI_RECIPES.md</code></a> for per-provider recipes.</p>
+<h2 id="Remote_cache_backends">Remote cache backends</h2>
+<p>Three backends ship in 2.0. Pick one in <code>.rspec-tracer</code>:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='comment'># S3 (preserves 1.x layout; supports awslocal / LocalStack).
+</span>  <span class='id identifier rubyid_remote_cache_backend'>remote_cache_backend</span> <span class='symbol'>:s3</span><span class='comma'>,</span> <span class='label'>local:</span> <span class='kw'>false</span>
+
+  <span class='comment'># Filesystem-backed (no S3 needed).
+</span>  <span class='comment'># remote_cache_backend :local_fs, root: &#39;/tmp/rspec-tracer-cache&#39;
+</span>
+  <span class='comment'># Redis (with optional per-key TTL + PR-branch tracking sidecar).
+</span>  <span class='comment'># remote_cache_backend :redis, url: ENV[&#39;REDIS_URL&#39;], ttl: 7 * 86_400
+</span><span class='kw'>end</span>
+</code></pre>
+<p>The <code>rake rspec_tracer:remote_cache:*</code> task surface is unchanged —
+backend selection happens in config; the rake tasks dispatch
+identically.</p>
+<h2 id="Pluggable_storage">Pluggable storage</h2>
+<p>Two on-disk storage formats:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='comment'># JSON (default) — preserves the 1.x 10-file layout per run.
+</span>  <span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='symbol'>:json</span>
+
+  <span class='comment'># SQLite — single-file database. Faster cold reads above ~5,000
+</span>  <span class='comment'># examples. JRuby auto-falls-back to :json with a one-time warn.
+</span>  <span class='comment'># storage_backend :sqlite
+</span><span class='kw'>end</span>
+</code></pre>
+<p>Or override per-run via env: <code>RSPEC_TRACER_STORAGE=sqlite</code>.</p>
+<h2 id="Command_line_tools">Command-line tools</h2>
+<p><code>bin/rspec-tracer</code> exposes five sub-commands:</p>
+<pre class="code sh"><code class="sh">bin/rspec-tracer doctor         # diagnose config + environment
+bin/rspec-tracer cache:info     # size, last run, invalidation stats
+bin/rspec-tracer cache:clear    # rm cache dirs
+bin/rspec-tracer report:open    # open the HTML report
+bin/rspec-tracer explain &lt;id&gt;   # why is &lt;example_id&gt; scheduled to (re-)run?
+</code></pre>
+<p>The CLI is opt-in for local-dev convenience. The
+<code>rake rspec_tracer:remote_cache:*</code> tasks remain first-class for CI
+integration — nothing in the CLI replaces them.</p>
+<h2 id="SimpleCov_interop">SimpleCov interop</h2>
+<p><strong>Load order is part of the contract.</strong> SimpleCov first, then
+rspec-tracer:</p>
+<pre class="code ruby"><code class="ruby"><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>simplecov</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
+</code></pre>
+<p>If you call <code>require 'simplecov'</code> but skip <code>SimpleCov.start</code> before
+<code>RSpecTracer.start</code>, a boot-time warn fires pointing this out
+(silent-degradation breaks coverage output).</p>
+<p><strong>Branch coverage works alongside rspec-tracer in 2.0.</strong> The 1.x
+caveat (&quot;SimpleCov would not report branch coverage results even
+when enabled&quot;) is no longer applicable — the coverage emission
+decoupled from SimpleCov's branch-tracking. Re-enable
+<code>enable_coverage :branch</code> in your <code>SimpleCov.start</code> block and you get
+both.</p>
+<p>Filter chains compose: SimpleCov's <code>add_filter</code> / <code>coverage_filters</code>
+control SimpleCov's HTML output; rspec-tracer's <code>add_filter</code> /
+<code>add_coverage_filter</code> control which files contribute to the
+dependency graph.</p>
+<h2 id="FAQ___comparison">FAQ + comparison</h2>
+<p><strong>Why not just SimpleCov filtering?</strong> SimpleCov tells you which
+<em>files</em> are covered. rspec-tracer tells you which <em>examples</em> depend
+on which inputs, so it can skip the ones whose inputs didn't change.
+The two solve adjacent problems; you typically want both.</p>
+<p><strong>Knapsack / Knapsack Pro / Test Boosters?</strong> Those are test-splitting
+tools — they shard your suite across CI workers. rspec-tracer is
+orthogonal: it skips already-passing examples on a single worker.
+Compose them: shard with Knapsack, then skip with rspec-tracer.
+A composition smoke spec (<code>spec/regressions/knapsack_coexistence_spec.rb</code>)
+proves they coexist.</p>
+<p><strong><code>RSpec::Retry</code> / <code>RSpec::Rerun</code>?</strong> Retries flaky failures.
+rspec-tracer detects flaky examples (same inputs, different outcomes)
+and refuses to skip them on the next run. Compose: retry to make a
+flaky suite green, let rspec-tracer flag the flakes for you to
+actually fix.</p>
+<p><strong>Monorepo with N apps?</strong> Set per-app <code>cache_dir</code> in each app's
+<code>.rspec-tracer</code> (the default <code>rspec_tracer_cache/</code> would otherwise
+collide across apps).</p>
+<p><strong><code>tracks:</code> vs <code>track_rails_defaults</code> overlap?</strong> When both attribute
+the same file to an example, the declared-glob attribution wins.
+Deterministic; see <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a> &quot;Input
+taxonomy&quot; for the rule.</p>
+<h2 id="Reports">Reports</h2>
+<p>After the run, <code>rspec_tracer_report/index.html</code> opens five HTML
+reports:</p>
+<ul>
+<li><strong>All Examples</strong> — basic test info (id, status, duration, the inputs
+the example consumed).</li>
+<li><strong>Duplicate Examples</strong> — pairs RSpec couldn't uniquely identify
+(file:line collisions; only appears when duplicates are present).</li>
+<li><strong>Flaky Examples</strong> — examples that passed after previously failing
+without any dependency change. The tracker refuses to skip these
+on subsequent runs.</li>
+<li><strong>Examples Dependency</strong> — per-example file dependency lists; the
+&quot;what does this test depend on?&quot; view.</li>
+<li><strong>Files Dependency</strong> — the inverse: &quot;what tests run if I change
+this file?&quot; The unique-to-rspec-tracer report that makes refactors
+safer.</li>
+</ul>
+<p>Plus a machine-readable <code>rspec_tracer_report/report.json</code> for CI
+dashboards and the terminal one-liner shown in <a href="#quick-start">Quick start</a>.</p>
+<h2 id="Documentation___coverage">Documentation + coverage</h2>
+<ul>
+<li>
+<p><strong>Docs site</strong>: <a href="https://avmnu-sng.github.io/rspec-tracer/">avmnu-sng.github.io/rspec-tracer</a>
+publishes a YARD API reference, the cookbook, internals deep-dives,
+and the sample HTML report for every rolling main + tagged release.
+The landing page lets you switch versions; per-version subpaths look
+like <code>/main/yard/</code>, <code>/main/demo/</code>, <code>/v2.0.0.pre.1/yard/</code>, etc.</p>
+</li>
+<li>
+<p><strong>Coverage</strong>: tracked by <a href="https://codecov.io/gh/avmnu-sng/rspec-tracer">Codecov</a>
+(per-PR delta + diff-coverage gate ≥ 90%; project history). Multi-
+suite resultsets (<code>unit</code>, <code>edge-cases</code>, <code>regressions-plain</code>, <code>fuzz</code>)
+merge via SimpleCov.collate in the CI <code>coverage</code> job; the same
+merger runs locally via <code>task coverage:merge</code> after <code>task test:*</code>
+runs (open <code>coverage/index.html</code> for the local HTML report).</p>
+</li>
+</ul>
+<h2 id="Help_and_community">Help and community</h2>
+<ul>
+<li><strong>Bug reports + feature requests</strong> — <a href="https://github.com/avmnu-sng/rspec-tracer/issues">GitHub Issues</a>.
+Include Ruby / Rails / RSpec / SimpleCov versions and your
+<code>.rspec-tracer</code> config.</li>
+<li><strong>Usage questions, design discussion, &quot;how do I X?&quot;</strong> — <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>.</li>
+<li><strong>Roadmap</strong> — <a href="ROADMAP.md"><code>ROADMAP.md</code></a> at repo root + the live
+<a href="https://github.com/users/avmnu-sng/projects">project board</a>.</li>
+<li><strong>Architecture deep-dive</strong> — <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>.</li>
+<li><strong>Upgrading from 1.x</strong> — <a href="UPGRADING.md"><code>UPGRADING.md</code></a>.</li>
+<li><strong>Contributing</strong> — <a href=".github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a>.</li>
+</ul>
+<p>Released under the <a href="LICENSE">MIT License</a>. Everyone interacting in
+the project is expected to follow the
+<a href=".github/CODE_OF_CONDUCT.md">Code of Conduct</a>.</p>
+<h2 id="Section_anchor_map__1_x___2_0_">Section anchor map (1.x → 2.0)</h2>
+<p>The README was restructured in 2.0. If you bookmarked a 1.x section,
+here's where its content lives now:</p>
+<table>
+<thead>
+<tr>
+<th>1.x anchor</th>
+<th>2.0 anchor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#getting-started</code></td>
+<td><a href="#quick-start">Quick start</a></td>
+</tr>
+<tr>
+<td><code>#working-with-jruby</code></td>
+<td><a href="#quick-start">Quick start</a> (JRuby noted under floors in <a href="UPGRADING.md"><code>UPGRADING.md</code></a>)</td>
+</tr>
+<tr>
+<td><code>#working-with-parallel-tests</code></td>
+<td><a href="#working-with-parallel_tests">Working with parallel_tests</a> under Rails quick start</td>
+</tr>
+<tr>
+<td><code>#configuring-ci</code></td>
+<td><a href="#configuring-ci">Configuring CI</a></td>
+</tr>
+<tr>
+<td><code>#caching-rspec-tracer-in-ci</code></td>
+<td><a href="#caching-rspec-tracer-in-ci">Caching rspec-tracer in CI</a></td>
+</tr>
+<tr>
+<td><code>#advanced-configuration</code></td>
+<td>Split between <a href="#per-example-tracks-dsl">Per-example <code>tracks:</code> DSL</a>, <a href="#pluggable-storage">Pluggable storage</a>, and <a href="UPGRADING.md"><code>UPGRADING.md</code></a></td>
+</tr>
+<tr>
+<td><code>#available-settings</code></td>
+<td>Inline across the new sections; see also <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a></td>
+</tr>
+<tr>
+<td><code>#filters</code></td>
+<td>Inline under <a href="#simplecov-interop">SimpleCov interop</a> and the configuration DSL examples</td>
+</tr>
+<tr>
+<td><code>#duplicate-examples</code></td>
+<td><a href="#reports">Reports</a> under &quot;Duplicate Examples&quot;</td>
+</tr>
+<tr>
+<td><code>#demo</code></td>
+<td><a href="#reports">Reports</a></td>
+</tr>
+</tbody>
+</table></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:45 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

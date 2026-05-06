@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: ROADMAP
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "ROADMAP";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: ROADMAP</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h1 id="Roadmap">Roadmap</h1>
+<p>This is the public roadmap for rspec-tracer. The <strong>live status</strong> of
+specific work items lives on the project board:
+<a href="https://github.com/users/avmnu-sng/projects">github.com/users/avmnu-sng/projects</a>.</p>
+<p>This file summarizes phases at a high level — what shipped, what's
+next, what's being considered. Detail per item lives in
+<a href="CHANGELOG.md"><code>CHANGELOG.md</code></a>, the project board, and the linked
+issues / PRs.</p>
+<hr />
+<h2 id="2_0___shipped">2.0 — shipped</h2>
+<p>The 2.0 line is a ground-up architecture rewrite around the
+input-taxonomy mental model: every test is a pure function of its
+inputs; tracking is input identification; cache invalidation is
+input-digest mismatch. The full feature list is in
+<a href="CHANGELOG.md"><code>CHANGELOG.md</code></a>. The headline themes:</p>
+<ul>
+<li><strong>Pluggable storage</strong> — JSON (default; preserves 1.x layout) or
+SQLite (single-file).</li>
+<li><strong>Pluggable remote cache</strong> — S3 (preserves 1.x layout), filesystem,
+Redis (with optional TTL + PR-branch tracking sidecar).</li>
+<li><strong>Per-example <code>tracks:</code> DSL</strong> — annotate any example with extra
+inputs the tracker can't auto-observe (config files, env-var
+branches, non-Ruby deps).</li>
+<li><strong>Rails preset + auto-detection</strong> — <code>track_rails_defaults</code>
+attaches the common Rails-side declared globs in one DSL call;
+the engine attaches view + AR notification subscribers
+automatically when Rails is detected.</li>
+<li><strong><code>bin/rspec-tracer</code> CLI</strong> — opt-in for local-dev convenience
+(<code>doctor</code> / <code>cache:info</code> / <code>cache:clear</code> / <code>report:open</code> /
+<code>explain &lt;id&gt;</code>).</li>
+<li><strong>Boot-time warns</strong> for two common user-trust traps (SimpleCov
+load order; <code>track_ar_schema_notifications</code> precondition).</li>
+<li><strong>Ruby 3.1+ / Rails 7.0+ floors</strong>, Rails 8.0 CI-gated, JRuby 9.4
+supported, RSpec 3.12 / 3.13 supported.</li>
+</ul>
+<hr />
+<h2 id="2_1___planned">2.1 — planned</h2>
+<p>A focused minor release adding one capability and any community-
+surfaced polish. The scope below is the committed set; the project
+board carries the live list.</p>
+<ul>
+<li>
+<p><strong>Per-example precision under Rails <code>config.eager_load = true</code>.</strong>
+When <code>eager_load = true</code> (the Rails CI default), all <code>app/</code> files
+load at boot and trigger the whole-suite invalidator on any
+<code>app/</code> edit. Safe but coarser than per-example attribution. The
+2.1 enhancement (working name: <code>track_class_attribution</code>) will
+install class-dispatch tracking via <code>TracePoint(:class)</code> at boot</p>
+<ul>
+<li><code>TracePoint(:call)</code> per example to trim invalidator scope to
+examples that actually touched the changed class. Opt-in by
+default (the <code>TracePoint(:call)</code> overhead is real); designed
+from scratch on the user-shape problem.</li>
+</ul>
+</li>
+<li>
+<p><strong>Polish + ergonomics gathered from 2.0 feedback</strong> — items
+surfaced via <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>
+and issue triage during the 2.0 series. The project board's
+&quot;Planned (2.1)&quot; column carries the live list.</p>
+</li>
+</ul>
+<hr />
+<h2 id="Considering___3_0_and_beyond">Considering — 3.0 and beyond</h2>
+<p>Forward-looking themes; nothing committed. Items move from
+&quot;considering&quot; to &quot;planned&quot; when there's a concrete design + a
+maintainer commitment to ship. Open a Discussion if any of these
+matter to your workflow — community signal directly informs which
+move forward.</p>
+<ul>
+<li><strong>Minitest adapter.</strong> The architecture is RSpec-first today; a
+Minitest adapter is feasible as a separate gem reusing the
+Tracker / Storage / RemoteCache layers.</li>
+<li><strong>Per-example &quot;explain why this re-ran&quot; UX</strong> beyond the CLI.
+A language-server protocol or VS Code extension surface so the
+reason shows up in the editor next to the failing assertion.</li>
+<li><strong>Monorepo per-app cache discovery.</strong> <code>track_rails_defaults</code>
+with auto-detection of multiple Rails apps under one git root.</li>
+</ul>
+<hr />
+<h2 id="Won_t_do">Won't do</h2>
+<p>Out of scope for the rspec-tracer line; better solved by adjacent
+tools.</p>
+<ul>
+<li><strong>Multi-language support</strong> (Python, JS, Go). The tracker is
+Ruby-<code>Coverage</code>-bound and the framework hooks are RSpec-bound.</li>
+<li><strong>Distributed test scheduling.</strong> That's <a href="https://docs.knapsackpro.com/">knapsack_pro</a> /
+<a href="https://github.com/Shopify/ci-queue">ci-queue</a> /
+<a href="https://buildkite.com/docs/test-splitting">buildkite-test-splitter</a>.
+rspec-tracer composes with them (the digest-partition primitive
+is exposed) but doesn't schedule.</li>
+<li><strong>General-purpose build tool.</strong> rspec-tracer is test-scoped;
+build / asset / deployment tracking is out of scope.</li>
+</ul>
+<hr />
+<h2 id="How_to_influence_the_roadmap">How to influence the roadmap</h2>
+<ul>
+<li><strong>Bug reports + concrete feature requests</strong> → <a href="https://github.com/avmnu-sng/rspec-tracer/issues">GitHub Issues</a>.</li>
+<li><strong>&quot;Is X possible?&quot; / &quot;should rspec-tracer do Y?&quot;</strong> → <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>.</li>
+<li><strong>&quot;I want to contribute&quot;</strong> → <a href=".github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a>.</li>
+</ul></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:47 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

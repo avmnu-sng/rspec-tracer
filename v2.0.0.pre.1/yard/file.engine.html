@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: engine
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "engine";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: engine</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>digest</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/coverage_adapter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/declared_globs</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/dependency_graph</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/env_matcher</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/env_snapshot</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/example_registry</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/file_digest</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/filter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/input</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/io_hooks</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/loaded_files_tracker</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/new_file_detector</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracker/whole_suite_invalidators</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>storage/json_backend</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>storage/schema</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>storage/snapshot</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>storage/sqlite_backend</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Top-level coordinator for the v2 core engine. Wires
+</span>  <span class='comment'># CoverageAdapter + IOHooks + DeclaredGlobs + NewFileDetector +
+</span>  <span class='comment'># WholeSuiteInvalidators + LoadedFilesTracker + ExampleRegistry +
+</span>  <span class='comment'># DependencyGraph + Storage into a single pipeline.
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Named `Engine` rather than `Tracker` because the `Tracker`
+</span>  <span class='comment'># namespace is already taken by the sub-module that houses the
+</span>  <span class='comment'># leaf observers (`Tracker::CoverageAdapter`, `Tracker::IOHooks`,
+</span>  <span class='comment'># etc.). `RSpecTracer.engine` is the public accessor the RSpec
+</span>  <span class='comment'># hooks dispatch through during a run.
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Lifecycle (driven by RSpec hooks in `lib/rspec_tracer.rb`):
+</span>  <span class='comment'>#
+</span>  <span class='comment'>#   engine = Engine.new(configuration: RSpecTracer)
+</span>  <span class='comment'>#   engine.setup                       # install hooks, load cache,
+</span>  <span class='comment'>#                                      # compute filter decisions
+</span>  <span class='comment'>#   engine.run_example?(id)            # per-example filter (from cache)
+</span>  <span class='comment'>#   engine.register_example(example)   # record metadata + duplicates
+</span>  <span class='comment'>#   engine.example_started             # peek baseline + open bucket
+</span>  <span class='comment'>#     # ... example body runs, IOHooks record into bucket ...
+</span>  <span class='comment'>#   engine.example_finished(id)        # diff coverage, attribute, close
+</span>  <span class='comment'>#   engine.on_example_{passed,failed,pending,skipped}(id, result)
+</span>  <span class='comment'>#   engine.finalize                    # persist snapshot + coverage
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Per-example coverage delta map: peek baseline at example_started,
+</span>  <span class='comment'># peek again at example_finished, store the per-line strength delta
+</span>  <span class='comment'># under `@examples_coverage[id][file_path][line]`. Reporters::
+</span>  <span class='comment'># CoverageJsonReporter consumes the cumulative coverage at finalize
+</span>  <span class='comment'># via Tracker::CoverageAdapter#peek_unfiltered + the engine&#39;s
+</span>  <span class='comment'># `merge_skipped_coverage` algorithm.
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Cache parity: `finalize` builds a Snapshot with file-name-keyed
+</span>  <span class='comment'># dependency / reverse_dependency / all_files maps (matching the
+</span>  <span class='comment'># 1.x on-disk convention - root-stripped file names with a leading
+</span>  <span class='comment'># &quot;/&quot;) and hands it to Storage::JsonBackend. The 2.0 schema bump
+</span>  <span class='comment'># adds `boot_set`; everything else mirrors the 1.x cache layout
+</span>  <span class='comment'># byte-for-byte.
+</span>  <span class='comment'># rubocop:disable Metrics/ClassLength
+</span>  <span class='kw'>class</span> <span class='const'>Engine</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>EXAMPLE_RUN_REASON</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+      <span class='label'>explicit_run:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Explicit run</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>no_cache:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>No cache</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>interrupted:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Interrupted previously</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>flaky_example:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Flaky example</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>failed_example:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Failed previously</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>pending_example:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Pending previously</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>files_changed:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Files changed</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>whole_suite_invalidator:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Whole-suite invalidator changed</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+      <span class='label'>env_changed:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Environment changed</span><span class='tstring_end'>&#39;</span></span>
+    <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+    <span class='comment'># Map from Filter#select reasons to the legacy-shaped strings
+</span>    <span class='comment'># users see in test output (&quot;foo (Files changed)&quot;). Keeps the
+</span>    <span class='comment'># user surface unchanged under v2.
+</span>    <span class='const'>FILTER_REASON_STRINGS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+      <span class='label'>whole_suite_invalidator:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:whole_suite_invalidator</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>interrupted:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:interrupted</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>flaky_example:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:flaky_example</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>failed_example:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:failed_example</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>pending_example:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:pending_example</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>no_cache:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:no_cache</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>files_changed:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:files_changed</span><span class='rbracket'>]</span><span class='comma'>,</span>
+      <span class='label'>env_changed:</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:env_changed</span><span class='rbracket'>]</span>
+    <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+    <span class='comment'># Internal attribute.
+</span>    <span class='comment'># @api private
+</span>    <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:registry</span><span class='comma'>,</span> <span class='symbol'>:graph</span><span class='comma'>,</span> <span class='symbol'>:loaded_files_tracker</span><span class='comma'>,</span> <span class='symbol'>:coverage_adapter</span><span class='comma'>,</span>
+                <span class='symbol'>:declared_globs</span><span class='comma'>,</span> <span class='symbol'>:whole_suite_invalidators</span><span class='comma'>,</span> <span class='symbol'>:new_file_detector</span><span class='comma'>,</span>
+                <span class='symbol'>:env_snapshot</span><span class='comma'>,</span> <span class='symbol'>:storage_backend</span><span class='comma'>,</span> <span class='symbol'>:all_examples</span><span class='comma'>,</span> <span class='symbol'>:duplicate_examples</span><span class='comma'>,</span>
+                <span class='symbol'>:examples_coverage</span><span class='comma'>,</span> <span class='symbol'>:all_files</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='rparen'>)</span>
+      <span class='ivar'>@configuration</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span>
+      <span class='ivar'>@filtered_examples</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@all_examples</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@duplicate_examples</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@examples_coverage</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@all_files</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@tracks_files</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span> <span class='comment'># id =&gt; Set&lt;abs_path&gt;
+</span>      <span class='ivar'>@tracks_env</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span>   <span class='comment'># id =&gt; Set&lt;env_name&gt;
+</span>      <span class='ivar'>@tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='ivar'>@config_tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='comment'># config-level subset (post-expansion)
+</span>      <span class='ivar'>@previous_snapshot</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='ivar'>@run_id</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='kw'>nil</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_setup'>setup</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_freeze_declared_globs!'>freeze_declared_globs!</span>
+
+      <span class='id identifier rubyid_build_observers'>build_observers</span>
+      <span class='id identifier rubyid_install_io_hooks'>install_io_hooks</span>
+      <span class='id identifier rubyid_install_rails_observers'>install_rails_observers</span>
+      <span class='id identifier rubyid_ensure_coverage_started'>ensure_coverage_started</span>
+
+      <span class='ivar'>@loaded_files_tracker</span><span class='period'>.</span><span class='id identifier rubyid_capture_boot_set!'>capture_boot_set!</span>
+      <span class='ivar'>@declared_globs</span><span class='period'>.</span><span class='id identifier rubyid_walk'>walk</span>
+
+      <span class='ivar'>@previous_snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_load_previous_snapshot'>load_previous_snapshot</span>
+      <span class='id identifier rubyid_seed_state_from_previous'>seed_state_from_previous</span><span class='lparen'>(</span><span class='ivar'>@previous_snapshot</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='ivar'>@previous_snapshot</span>
+      <span class='id identifier rubyid_register_config_tracked_env_names'>register_config_tracked_env_names</span>
+      <span class='id identifier rubyid_compute_filter_decisions'>compute_filter_decisions</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># --- filter-phase surface (mirrors legacy Runner) --------------
+</span>
+    <span class='kw'>def</span> <span class='id identifier rubyid_run_example?'>run_example?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>true</span> <span class='kw'>if</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_run_all_examples'>run_all_examples</span>
+
+      <span class='id identifier rubyid_previously_seen'>previously_seen</span> <span class='op'>=</span> <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='op'>&amp;.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='op'>!</span><span class='id identifier rubyid_previously_seen'>previously_seen</span> <span class='op'>||</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_example_reason'>run_example_reason</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:explicit_run</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_run_all_examples'>run_all_examples</span>
+
+      <span class='ivar'>@filtered_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:no_cache</span><span class='rbracket'>]</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_example_id'>example_id</span> <span class='op'>=</span> <span class='id identifier rubyid_example'>example</span><span class='lbracket'>[</span><span class='symbol'>:example_id</span><span class='rbracket'>]</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_register'>register</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='label'>metadata:</span> <span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='label'>identity_hash:</span> <span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_example'>example</span>
+      <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
+      <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_example'>example</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Per-example tracking DSL hook. Called from RunnerHook with the
+</span>    <span class='comment'># normalized `{files: Set&lt;String&gt;, env: Set&lt;String&gt;}` that
+</span>    <span class='comment'># `RSpec::Metadata.tracks_for(example)` produced. Resolves the
+</span>    <span class='comment'># file globs against the project root once per distinct glob
+</span>    <span class='comment'># string (memoized) and unions the matching Inputs into this
+</span>    <span class='comment'># example&#39;s dependency set. Env names are accumulated into
+</span>    <span class='comment'># `@tracked_env_names` so the finalize snapshot covers every key
+</span>    <span class='comment'># the run cared about.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Per-example env entries may carry wildcard patterns (`tracks:
+</span>    <span class='comment'># { env: &#39;RAILS_*&#39; }`). `EnvMatcher.expand` is the single funnel
+</span>    <span class='comment'># - literals pass through, wildcards expand against the live ENV,
+</span>    <span class='comment'># and unsupported syntax raises ArgumentError at this point
+</span>    <span class='comment'># (RunnerHook Pass 1, before any example body runs).
+</span>    <span class='comment'># rubocop:disable Metrics/PerceivedComplexity
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_register_tracks'>register_tracks</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='symbol'>:files</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>files</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='id identifier rubyid_envs'>envs</span> <span class='op'>=</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='symbol'>:env</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>env</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+
+      <span class='id identifier rubyid_files'>files</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_glob'>glob</span><span class='op'>|</span> <span class='ivar'>@tracks_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_resolved_glob_inputs'>resolved_glob_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='rparen'>)</span><span class='rparen'>)</span> <span class='rbrace'>}</span> <span class='kw'>unless</span> <span class='id identifier rubyid_files'>files</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+      <span class='kw'>return</span> <span class='kw'>self</span> <span class='kw'>if</span> <span class='id identifier rubyid_envs'>envs</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='id identifier rubyid_expanded'>expanded</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/EnvMatcher.html" title="RSpecTracer::Tracker::EnvMatcher (module)">EnvMatcher</a></span></span><span class='period'>.</span><span class='id identifier rubyid_expand'><span class='object_link'><a href="RSpecTracer/Tracker/EnvMatcher.html#expand-class_method" title="RSpecTracer::Tracker::EnvMatcher.expand (method)">expand</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_envs'>envs</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:to_s</span><span class='rparen'>)</span><span class='rparen'>)</span>
+      <span class='ivar'>@tracks_env</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_expanded'>expanded</span><span class='rparen'>)</span>
+      <span class='ivar'>@tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_expanded'>expanded</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+    <span class='comment'># rubocop:enable Metrics/PerceivedComplexity
+</span>
+    <span class='comment'># Called from RunnerHook AFTER the filter-decision pre-walk has
+</span>    <span class='comment'># populated `@tracks_env` / `@tracked_env_names` for every
+</span>    <span class='comment'># example. Compares each declared env key against the previous
+</span>    <span class='comment'># snapshot&#39;s `env_snapshot` via Tracker::EnvSnapshot; marks any
+</span>    <span class='comment'># example whose tracked-env set intersects the invalidated set
+</span>    <span class='comment'># as re-runnable. Strictly additive vs other filter reasons - if
+</span>    <span class='comment'># the example was already in `@filtered_examples` for a stronger
+</span>    <span class='comment'># reason (files_changed / whole_suite_invalidator /
+</span>    <span class='comment'># failed_example / ...), env_changed does NOT overwrite.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Config-level path: when an invalidated key intersects
+</span>    <span class='comment'># `@config_tracked_env_names` (the post-expansion config-level
+</span>    <span class='comment'># set), every previously-seen example re-runs - mirrors the
+</span>    <span class='comment'># `track_files` &quot;declared globs attach to every example&quot;
+</span>    <span class='comment'># semantics. New examples (not in @previous_snapshot.all_examples)
+</span>    <span class='comment'># already run via the no_cache path; no special-casing needed.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_apply_env_filter_decisions'>apply_env_filter_decisions</span>
+      <span class='kw'>return</span> <span class='kw'>self</span> <span class='kw'>if</span> <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+      <span class='kw'>return</span> <span class='kw'>self</span> <span class='kw'>if</span> <span class='ivar'>@tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='id identifier rubyid_invalidated'>invalidated</span> <span class='op'>=</span> <span class='ivar'>@env_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_invalidated_keys'>invalidated_keys</span><span class='lparen'>(</span>
+        <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_env_snapshot'>env_snapshot</span><span class='comma'>,</span> <span class='ivar'>@tracked_env_names</span>
+      <span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>self</span> <span class='kw'>if</span> <span class='id identifier rubyid_invalidated'>invalidated</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='id identifier rubyid_reason'>reason</span> <span class='op'>=</span> <span class='const'>FILTER_REASON_STRINGS</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='symbol'>:env_changed</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_mark_all_prev_examples'>mark_all_prev_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_invalidated'>invalidated</span><span class='period'>.</span><span class='id identifier rubyid_intersect?'>intersect?</span><span class='lparen'>(</span><span class='ivar'>@config_tracked_env_names</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_mark_per_example_intersections'>mark_per_example_intersections</span><span class='lparen'>(</span><span class='id identifier rubyid_invalidated'>invalidated</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_deregister_duplicate_examples'>deregister_duplicate_examples</span>
+      <span class='ivar'>@duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_select!'>select!</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_entries'>entries</span><span class='op'>|</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_count'>count</span> <span class='op'>&gt;</span> <span class='int'>1</span> <span class='rbrace'>}</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='ivar'>@all_examples</span><span class='period'>.</span><span class='id identifier rubyid_reject!'>reject!</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid__'>_</span><span class='op'>|</span> <span class='ivar'>@duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># --- per-example surface --------------------------------------
+</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_example_started'>example_started</span>
+      <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='ivar'>@coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek'>peek</span>
+      <span class='ivar'>@current_bucket</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@current_rails_bucket</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_set_bucket'>set_bucket</span><span class='lparen'>(</span><span class='ivar'>@current_bucket</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_set_rails_bucket'>set_rails_bucket</span><span class='lparen'>(</span><span class='ivar'>@current_rails_bucket</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_example_finished'>example_finished</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_after_peek'>after_peek</span> <span class='op'>=</span> <span class='ivar'>@coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek'>peek</span>
+      <span class='id identifier rubyid_record_coverage_delta'>record_coverage_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='ivar'>@before_peek</span><span class='comma'>,</span> <span class='id identifier rubyid_after_peek'>after_peek</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_io_inputs'>io_inputs</span> <span class='op'>=</span> <span class='ivar'>@current_bucket</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span>
+      <span class='id identifier rubyid_rails_inputs'>rails_inputs</span> <span class='op'>=</span> <span class='ivar'>@current_rails_bucket</span> <span class='op'>?</span> <span class='ivar'>@current_rails_bucket</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span> <span class='op'>:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_clear_bucket'>clear_bucket</span>
+      <span class='id identifier rubyid_clear_rails_bucket'>clear_rails_bucket</span>
+
+      <span class='id identifier rubyid_transitive_inputs'>transitive_inputs</span> <span class='op'>=</span> <span class='ivar'>@loaded_files_tracker</span><span class='period'>.</span><span class='id identifier rubyid_loaded_set_inputs'>loaded_set_inputs</span> <span class='op'>|</span>
+        <span class='ivar'>@loaded_files_tracker</span><span class='period'>.</span><span class='id identifier rubyid_stop_example'>stop_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_coverage_inputs'>coverage_inputs</span> <span class='op'>=</span> <span class='ivar'>@coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_compute_diff'>compute_diff</span><span class='lparen'>(</span><span class='ivar'>@before_peek</span><span class='comma'>,</span> <span class='id identifier rubyid_after_peek'>after_peek</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_declared_inputs'>declared_inputs</span> <span class='op'>=</span> <span class='ivar'>@declared_globs</span><span class='period'>.</span><span class='id identifier rubyid_walk'>walk</span>
+      <span class='id identifier rubyid_tracks_inputs'>tracks_inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_per_example_tracks_inputs'>per_example_tracks_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_attribute_to_example'>attribute_to_example</span><span class='lparen'>(</span>
+        <span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span>
+        <span class='id identifier rubyid_coverage_inputs'>coverage_inputs</span> <span class='op'>|</span> <span class='id identifier rubyid_transitive_inputs'>transitive_inputs</span> <span class='op'>|</span> <span class='id identifier rubyid_io_inputs'>io_inputs</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span> <span class='op'>|</span>
+          <span class='id identifier rubyid_rails_inputs'>rails_inputs</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span> <span class='op'>|</span> <span class='id identifier rubyid_declared_inputs'>declared_inputs</span> <span class='op'>|</span> <span class='id identifier rubyid_tracks_inputs'>tracks_inputs</span>
+      <span class='rparen'>)</span>
+
+      <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='ivar'>@current_bucket</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='ivar'>@current_rails_bucket</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_skipped'>on_example_skipped</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_register'>register</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_registered?'>registered?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:skipped</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_passed'>on_example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
+
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:passed</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_failed'>on_example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
+
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:failed</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_pending'>on_example_pending</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
+
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:pending</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>self</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># --- finalize ------------------------------------------------
+</span>
+    <span class='kw'>def</span> <span class='id identifier rubyid_finalize'>finalize</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_all_example_ids'>all_example_ids</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_status_of'>status_of</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+
+        <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='symbol'>:interrupted</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_build_snapshot'>build_snapshot</span>
+      <span class='ivar'>@storage_backend</span><span class='period'>.</span><span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_uninstall_rails_observers'>uninstall_rails_observers</span>
+      <span class='id identifier rubyid_snapshot'>snapshot</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># For every previously-skipped example id, accumulate per-line
+</span>    <span class='comment'># coverage strengths from the previous run&#39;s per-example coverage
+</span>    <span class='comment'># map into the missed_coverage return value. Deleted files /
+</span>    <span class='comment'># missing entries are skipped silently. Consumed by
+</span>    <span class='comment'># Reporters::CoverageJsonReporter at finalize time so coverage.json
+</span>    <span class='comment'># carries forward the contribution of skipped examples.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Returns Hash[file_path =&gt; Hash[line_number =&gt; cumulative_strength]].
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_merge_skipped_coverage'>merge_skipped_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_skipped_ids'>skipped_ids</span><span class='comma'>,</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_source'>source</span> <span class='op'>=</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>||</span> <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_examples_coverage'>examples_coverage</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='id identifier rubyid_missed'>missed</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_f'>f</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_f'>f</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='int'>0</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+
+      <span class='id identifier rubyid_skipped_ids'>skipped_ids</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='op'>|</span>
+        <span class='id identifier rubyid_example_coverage'>example_coverage</span> <span class='op'>=</span> <span class='id identifier rubyid_source'>source</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_example_coverage'>example_coverage</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_example_coverage'>example_coverage</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_file_path'>file_path</span><span class='comma'>,</span> <span class='id identifier rubyid_line_coverage'>line_coverage</span><span class='op'>|</span>
+          <span class='id identifier rubyid_accumulate_line_coverage'>accumulate_line_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_missed'>missed</span><span class='lbracket'>[</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_line_coverage'>line_coverage</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_missed'>missed</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># --- accessors used by specs ---------------------------------
+</span>
+    <span class='kw'>def</span> <span class='id identifier rubyid_filtered_example_ids'>filtered_example_ids</span>
+      <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_previous_snapshot_loaded?'>previous_snapshot_loaded?</span>
+      <span class='op'>!</span><span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+    <span class='kw'>end</span>
+
+    <span class='id identifier rubyid_private'>private</span>
+
+    <span class='comment'># Read the config-level `track_env(*names)` accumulator,
+</span>    <span class='comment'># expand any wildcard patterns against the live ENV via
+</span>    <span class='comment'># EnvMatcher.expand (which raises ArgumentError on unsupported
+</span>    <span class='comment'># syntax - intentionally surfaces config errors at run start),
+</span>    <span class='comment'># and seed both `@config_tracked_env_names` (for the global
+</span>    <span class='comment'># mark-every-example branch in apply_env_filter_decisions) and
+</span>    <span class='comment'># `@tracked_env_names` (so the finalize snapshot includes every
+</span>    <span class='comment'># config-level key alongside per-example keys).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_register_config_tracked_env_names'>register_config_tracked_env_names</span>
+      <span class='id identifier rubyid_patterns'>patterns</span> <span class='op'>=</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_tracked_env_names'>tracked_env_names</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_patterns'>patterns</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_patterns'>patterns</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='id identifier rubyid_expanded'>expanded</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/EnvMatcher.html" title="RSpecTracer::Tracker::EnvMatcher (module)">EnvMatcher</a></span></span><span class='period'>.</span><span class='id identifier rubyid_expand'><span class='object_link'><a href="RSpecTracer/Tracker/EnvMatcher.html#expand-class_method" title="RSpecTracer::Tracker::EnvMatcher.expand (method)">expand</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_patterns'>patterns</span><span class='rparen'>)</span>
+      <span class='ivar'>@config_tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_expanded'>expanded</span><span class='rparen'>)</span>
+      <span class='ivar'>@tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_expanded'>expanded</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Mark every previously-seen example for re-run. Called
+</span>    <span class='comment'># when a config-level env key flips between runs.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_mark_all_prev_examples'>mark_all_prev_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
+      <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_each_key'>each_key</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+
+        <span class='ivar'>@filtered_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_reason'>reason</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Per-example env-changed mark. Walks @tracks_env,
+</span>    <span class='comment'># marks examples whose declared env set intersects invalidated.
+</span>    <span class='comment'># Additive vs other filter reasons (won&#39;t overwrite).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_mark_per_example_intersections'>mark_per_example_intersections</span><span class='lparen'>(</span><span class='id identifier rubyid_invalidated'>invalidated</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
+      <span class='ivar'>@tracks_env</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_envs'>envs</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_envs'>envs</span><span class='period'>.</span><span class='id identifier rubyid_intersect?'>intersect?</span><span class='lparen'>(</span><span class='id identifier rubyid_invalidated'>invalidated</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+
+        <span class='ivar'>@filtered_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_reason'>reason</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_observers'>build_observers</span>
+      <span class='ivar'>@registry</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/ExampleRegistry.html" title="RSpecTracer::Tracker::ExampleRegistry (class)">ExampleRegistry</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/ExampleRegistry.html#initialize-instance_method" title="RSpecTracer::Tracker::ExampleRegistry#initialize (method)">new</a></span></span>
+      <span class='ivar'>@graph</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/DependencyGraph.html" title="RSpecTracer::Tracker::DependencyGraph (class)">DependencyGraph</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/DependencyGraph.html#initialize-instance_method" title="RSpecTracer::Tracker::DependencyGraph#initialize (method)">new</a></span></span>
+      <span class='ivar'>@coverage_adapter</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/CoverageAdapter.html" title="RSpecTracer::Tracker::CoverageAdapter (class)">CoverageAdapter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/CoverageAdapter.html#initialize-instance_method" title="RSpecTracer::Tracker::CoverageAdapter#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>filters:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_filters'>filters</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@declared_globs</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/DeclaredGlobs.html" title="RSpecTracer::Tracker::DeclaredGlobs (class)">DeclaredGlobs</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/DeclaredGlobs.html#initialize-instance_method" title="RSpecTracer::Tracker::DeclaredGlobs#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>globs:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_declared_globs'>declared_globs</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@whole_suite_invalidators</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/WholeSuiteInvalidators.html" title="RSpecTracer::Tracker::WholeSuiteInvalidators (class)">WholeSuiteInvalidators</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/WholeSuiteInvalidators.html#initialize-instance_method" title="RSpecTracer::Tracker::WholeSuiteInvalidators#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@env_snapshot</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/EnvSnapshot.html" title="RSpecTracer::Tracker::EnvSnapshot (class)">EnvSnapshot</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/EnvSnapshot.html#initialize-instance_method" title="RSpecTracer::Tracker::EnvSnapshot#initialize (method)">new</a></span></span>
+      <span class='ivar'>@new_file_detector</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/NewFileDetector.html" title="RSpecTracer::Tracker::NewFileDetector (class)">NewFileDetector</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/NewFileDetector.html#initialize-instance_method" title="RSpecTracer::Tracker::NewFileDetector#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>declared_globs:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_declared_globs'>declared_globs</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@loaded_files_tracker</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/LoadedFilesTracker.html" title="RSpecTracer::Tracker::LoadedFilesTracker (class)">LoadedFilesTracker</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/LoadedFilesTracker.html#initialize-instance_method" title="RSpecTracer::Tracker::LoadedFilesTracker#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>enabled:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_transitive_load_tracking'>transitive_load_tracking</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@storage_backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_storage_backend'>build_storage_backend</span><span class='lparen'>(</span><span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Resolve the configured storage backend to a concrete instance.
+</span>    <span class='comment'># JsonBackend threads the retention / size-budget knobs and the
+</span>    <span class='comment'># serializer opt; SqliteBackend ignores them (single-file,
+</span>    <span class='comment'># latest-run only). A missing sqlite3 gem or JRuby / MRI &lt; 3.2
+</span>    <span class='comment'># host raises SqliteBackendError; we warn and fall back to the
+</span>    <span class='comment'># default :json backend so the user&#39;s suite still runs - same
+</span>    <span class='comment'># graceful-degradation contract as the remote cache backends.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_storage_backend'>build_storage_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='kw'>case</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_storage_backend'>storage_backend</span>
+      <span class='kw'>when</span> <span class='symbol'>:sqlite</span>
+        <span class='id identifier rubyid_build_sqlite_backend'>build_sqlite_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='kw'>else</span>
+        <span class='id identifier rubyid_build_json_backend'>build_json_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_json_backend'>build_json_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/JsonBackend.html" title="RSpecTracer::Storage::JsonBackend (class)">JsonBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Storage/JsonBackend.html#initialize-instance_method" title="RSpecTracer::Storage::JsonBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span>
+        <span class='label'>logger:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='comma'>,</span>
+        <span class='label'>retention_local_count:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_retention_local_count'>cache_retention_local_count</span><span class='comma'>,</span>
+        <span class='label'>warn_per_file_mb:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_per_file_mb'>cache_size_warn_per_file_mb</span><span class='comma'>,</span>
+        <span class='label'>warn_total_mb:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_total_mb'>cache_size_warn_total_mb</span><span class='comma'>,</span>
+        <span class='label'>serializer:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_storage_backend_opts'>storage_backend_opts</span><span class='lbracket'>[</span><span class='symbol'>:serializer</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='symbol'>:json</span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_sqlite_backend'>build_sqlite_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/SqliteBackend.html" title="RSpecTracer::Storage::SqliteBackend (class)">SqliteBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Storage/SqliteBackend.html#initialize-instance_method" title="RSpecTracer::Storage::SqliteBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
+      <span class='rparen'>)</span>
+    <span class='kw'>rescue</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/SqliteBackend.html" title="RSpecTracer::Storage::SqliteBackend (class)">SqliteBackend</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/SqliteBackend/SqliteBackendError.html" title="RSpecTracer::Storage::SqliteBackend::SqliteBackendError (class)">SqliteBackendError</a></span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: sqlite backend unavailable (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>); falling back to :json</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+      <span class='id identifier rubyid_build_json_backend'>build_json_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_install_io_hooks'>install_io_hooks</span>
+      <span class='id identifier rubyid_declared'>declared</span> <span class='op'>=</span> <span class='ivar'>@declared_globs</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_install'>install</span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span>
+        <span class='label'>filter:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='op'>!</span><span class='id identifier rubyid_declared'>declared</span><span class='period'>.</span><span class='id identifier rubyid_covers?'>covers?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Install the Rails-observer family (ActionView notifications +
+</span>    <span class='comment'># I18n backend prepend) when Rails is detected in the process.
+</span>    <span class='comment'># Runs at setup time so the subscribers are attached before the
+</span>    <span class='comment'># first example fires. Errors here never propagate - the tracer
+</span>    <span class='comment'># gracefully degrades to IOHooks-only behavior.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_install_rails_observers'>install_rails_observers</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_rails?'>rails?</span>
+
+      <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rails/notifications</span><span class='tstring_end'>&#39;</span></span>
+      <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rails/i18n_tracking</span><span class='tstring_end'>&#39;</span></span>
+
+      <span class='id identifier rubyid_declared'>declared</span> <span class='op'>=</span> <span class='ivar'>@declared_globs</span>
+      <span class='id identifier rubyid_filter'>filter</span> <span class='op'>=</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='op'>!</span><span class='id identifier rubyid_declared'>declared</span><span class='period'>.</span><span class='id identifier rubyid_covers?'>covers?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='id identifier rubyid_ar_paths'>ar_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span> <span class='op'>?</span> <span class='id identifier rubyid_ar_schema_path_probes'>ar_schema_path_probes</span> <span class='op'>:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html" title="RSpecTracer::Rails::Notifications (class)">Notifications</a></span></span><span class='period'>.</span><span class='id identifier rubyid_install'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html#install-class_method" title="RSpecTracer::Rails::Notifications.install (method)">install</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>filter:</span> <span class='id identifier rubyid_filter'>filter</span><span class='comma'>,</span> <span class='label'>ar_schema_paths:</span> <span class='id identifier rubyid_ar_paths'>ar_paths</span>
+      <span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/I18nTracking.html" title="RSpecTracer::Rails::I18nTracking (class)">I18nTracking</a></span></span><span class='period'>.</span><span class='id identifier rubyid_install'><span class='object_link'><a href="RSpecTracer/Rails/I18nTracking.html#install-class_method" title="RSpecTracer::Rails::I18nTracking.install (method)">install</a></span></span><span class='lparen'>(</span>
+        <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>filter:</span> <span class='id identifier rubyid_filter'>filter</span>
+      <span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_arm_ar_schema_setup_warn'>arm_ar_schema_setup_warn</span> <span class='kw'>if</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span>
+
+      <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>true</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: Rails observer install failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>false</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># `track_ar_schema_notifications` promises per-example attribution
+</span>    <span class='comment'># of `db/schema.rb` via the `sql.active_record` subscriber. That
+</span>    <span class='comment'># narrow promise only holds when no per-example AR cleanup
+</span>    <span class='comment'># mechanism fires queries inside the rspec-tracer per-example
+</span>    <span class='comment'># bucket window. Common Rails setups trip this:
+</span>    <span class='comment'>#
+</span>    <span class='comment'>#   - `use_transactional_fixtures = true` (Rails default): per-
+</span>    <span class='comment'>#     example BEGIN/COMMIT fires sql.active_record -&gt; every
+</span>    <span class='comment'>#     example gets schema attributed -&gt; any schema mutation re-
+</span>    <span class='comment'>#     runs every example (safe but wide).
+</span>    <span class='comment'>#   - DatabaseCleaner :truncation / :deletion / :transaction in
+</span>    <span class='comment'>#     around hooks: same outcome.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Defer the check to before(:suite): at engine.setup the user has
+</span>    <span class='comment'># not run their RSpec.configure block yet, so
+</span>    <span class='comment'># `use_transactional_fixtures` is unset.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_arm_ar_schema_setup_warn'>arm_ar_schema_setup_warn</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>RSpec</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:configure</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_logger'>logger</span> <span class='op'>=</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
+      <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configure'>configure</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_config'>config</span><span class='op'>|</span>
+        <span class='id identifier rubyid_config'>config</span><span class='period'>.</span><span class='id identifier rubyid_before'>before</span><span class='lparen'>(</span><span class='symbol'>:suite</span><span class='rparen'>)</span> <span class='kw'>do</span>
+          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:use_transactional_fixtures</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_use_transactional_fixtures'>use_transactional_fixtures</span> <span class='op'>==</span> <span class='kw'>false</span>
+
+          <span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer: track_ar_schema_notifications is enabled but </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures defaults to true; per-example </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>BEGIN/COMMIT fires sql.active_record so db/schema.rb gets </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>attributed to every AR-touching example (safe, but widens </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>invalidation). For narrow attribution, set </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures = false and use sequence-based </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>factories (or another non-AR cleanup mechanism). See </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>README section &quot;Narrow AR-schema attribution&quot;.</span><span class='tstring_end'>&#39;</span></span>
+          <span class='rparen'>)</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: ar-schema warn install failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_uninstall_rails_observers'>uninstall_rails_observers</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html" title="RSpecTracer::Rails::Notifications (class)">Notifications</a></span></span><span class='period'>.</span><span class='id identifier rubyid_uninstall'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html#uninstall-class_method" title="RSpecTracer::Rails::Notifications.uninstall (method)">uninstall</a></span></span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/I18nTracking.html" title="RSpecTracer::Rails::I18nTracking (class)">I18nTracking</a></span></span><span class='period'>.</span><span class='id identifier rubyid_uninstall'><span class='object_link'><a href="RSpecTracer/Rails/I18nTracking.html#uninstall-class_method" title="RSpecTracer::Rails::I18nTracking.uninstall (method)">uninstall</a></span></span>
+      <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>false</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span>
+      <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>false</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+      <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@rails_observers_installed</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@rails_observers_installed</span> <span class='op'>==</span> <span class='kw'>true</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># rubocop:disable Naming/AccessorMethodName
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_set_rails_bucket'>set_rails_bucket</span><span class='lparen'>(</span><span class='id identifier rubyid_bucket'>bucket</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html" title="RSpecTracer::Rails::Notifications (class)">Notifications</a></span></span><span class='period'>.</span><span class='id identifier rubyid_set_bucket'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html#set_bucket-class_method" title="RSpecTracer::Rails::Notifications.set_bucket (method)">set_bucket</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_bucket'>bucket</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+    <span class='comment'># rubocop:enable Naming/AccessorMethodName
+</span>
+    <span class='kw'>def</span> <span class='id identifier rubyid_clear_rails_bucket'>clear_rails_bucket</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails.html" title="RSpecTracer::Rails (module)">Rails</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html" title="RSpecTracer::Rails::Notifications (class)">Notifications</a></span></span><span class='period'>.</span><span class='id identifier rubyid_clear_bucket'><span class='object_link'><a href="RSpecTracer/Rails/Notifications.html#clear_bucket-class_method" title="RSpecTracer::Rails::Notifications.clear_bucket (method)">clear_bucket</a></span></span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span>
+      <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:track_ar_schema_notifications?</span><span class='rparen'>)</span>
+
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_track_ar_schema_notifications?'>track_ar_schema_notifications?</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_ar_schema_path_probes'>ar_schema_path_probes</span>
+      <span class='qwords_beg'>%w[</span><span class='tstring_content'>db/schema.rb</span><span class='words_sep'> </span><span class='tstring_content'>db/structure.sql</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_rel'>rel</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+        <span class='id identifier rubyid_abs'>abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_rel'>rel</span><span class='comma'>,</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_abs'>abs</span> <span class='kw'>if</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Delegate to the legacy ::Coverage bootstrap if SimpleCov isn&#39;t
+</span>    <span class='comment'># already running. Matches RSpecTracer.setup_coverage behavior so
+</span>    <span class='comment'># v2 and legacy agree on when to call ::Coverage.start.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_ensure_coverage_started'>ensure_coverage_started</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='const'>SimpleCov</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_running'>running</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:running?</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_running?'>running?</span>
+
+      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+    <span class='kw'>rescue</span> <span class='const'>RuntimeError</span>
+      <span class='comment'># ::Coverage.start raises if already started on some Rubies
+</span>      <span class='comment'># without a running? predicate; safe to ignore.
+</span>      <span class='kw'>nil</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Under parallel_tests, each worker writes to its own per-worker
+</span>    <span class='comment'># cache dir (`rspec_tracer_cache/parallel_tests_N/`) but warm-run
+</span>    <span class='comment'># reads come from the MERGED top-level cache (`rspec_tracer_cache/`,
+</span>    <span class='comment'># one level up). Last-process finalize at exit purges the per-worker
+</span>    <span class='comment'># dirs, so only the merged snapshot survives between runs. Match
+</span>    <span class='comment'># 1.x Cache#load_cache_for_run&#39;s `File.dirname(cache_path) if
+</span>    <span class='comment'># parallel_tests?` behavior so warm runs under parallel_tests
+</span>    <span class='comment'># actually skip examples.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_load_previous_snapshot'>load_previous_snapshot</span>
+      <span class='id identifier rubyid_read_backend'>read_backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_read_backend'>build_read_backend</span>
+      <span class='id identifier rubyid_read_backend'>read_backend</span><span class='period'>.</span><span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_read_backend'>build_read_backend</span>
+      <span class='kw'>return</span> <span class='ivar'>@storage_backend</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_parallel_tests?'><span class='object_link'><a href="RSpecTracer.html#parallel_tests%3F-class_method" title="RSpecTracer.parallel_tests? (method)">parallel_tests?</a></span></span>
+
+      <span class='id identifier rubyid_parent_cache_path'>parent_cache_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_build_storage_backend'>build_storage_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_parent_cache_path'>parent_cache_path</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># On warm runs, skipped examples don&#39;t re-populate @all_examples,
+</span>    <span class='comment'># @all_files, or @graph - only newly-run examples do. Without
+</span>    <span class='comment'># seeding, the next save would drop the skipped examples&#39;
+</span>    <span class='comment'># metadata + deps, and the following warm run would see them as
+</span>    <span class='comment'># &quot;not previously seen&quot; and force a cold re-run of the entire
+</span>    <span class='comment'># suite. Seed the three state buckets from the previous snapshot
+</span>    <span class='comment'># so newly-run examples overwrite and skipped examples carry
+</span>    <span class='comment'># forward.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># examples_coverage is NOT seeded here. A populated cache can
+</span>    <span class='comment'># carry a large examples_coverage map; eagerly materializing it
+</span>    <span class='comment'># at setup defeats LazySnapshot&#39;s whole point for the SQLite
+</span>    <span class='comment'># backend. The merge happens at build_snapshot time via
+</span>    <span class='comment'># merge_examples_coverage_with_previous instead.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_state_from_previous'>seed_state_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_seed_all_examples_from_previous'>seed_all_examples_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_seed_all_files_from_previous'>seed_all_files_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_seed_graph_from_previous'>seed_graph_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_all_examples_from_previous'>seed_all_examples_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_meta'>meta</span><span class='op'>|</span>
+        <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_meta'>meta</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># prev.all_files is file-name-keyed; the engine&#39;s @all_files is
+</span>    <span class='comment'># abs-path-keyed (path_to_file_name round-trips via the root prefix).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Re-applies the current filter list at seed time so users who
+</span>    <span class='comment'># add a filter mid-development see the carried-over file entries
+</span>    <span class='comment'># drop on the next run (instead of waiting for a cold run). The
+</span>    <span class='comment'># filter contract should hold for both fresh attributions
+</span>    <span class='comment'># (attribute_to_example) and prior-snapshot carry-forward —
+</span>    <span class='comment'># otherwise add_filter has split semantics and a freshly-added
+</span>    <span class='comment'># filter does not exclude already-cached paths.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_all_files_from_previous'>seed_all_files_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span><span class='period'>.</span><span class='id identifier rubyid_each_value'>each_value</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_meta'>meta</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta'>meta</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_file_path'>file_path</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:file_path</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_file_name'>file_name</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:file_name</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+
+        <span class='ivar'>@all_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+          <span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span>
+          <span class='label'>file_path:</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='comma'>,</span>
+          <span class='label'>digest:</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='comma'>,</span> <span class='symbol'>:digest</span><span class='rparen'>)</span>
+        <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># prev.dependency keys on example_id, values are Set&lt;file_name&gt;.
+</span>    <span class='comment'># Register in @graph via absolute paths so the on-disk shape
+</span>    <span class='comment'># (file_name) converts at save time via dependency_by_name.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Drops paths matching the current filter list so previously-
+</span>    <span class='comment'># cached deps that the new filter excludes do not leak through
+</span>    <span class='comment'># the carry-forward seed path. Same rationale as
+</span>    <span class='comment'># seed_all_files_from_previous: the filter contract is one
+</span>    <span class='comment'># contract, applied uniformly across fresh + carry-forward
+</span>    <span class='comment'># attributions.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_graph_from_previous'>seed_graph_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_dependency'>dependency</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_dependency'>dependency</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_file_names'>file_names</span><span class='op'>|</span>
+        <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+        <span class='id identifier rubyid_file_names'>file_names</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_name'>name</span><span class='op'>|</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
+
+          <span class='id identifier rubyid_paths'>paths</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+        <span class='ivar'>@graph</span><span class='period'>.</span><span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Helper: returns true if the file name matches any currently-
+</span>    <span class='comment'># configured filter. Mirrors the check site at
+</span>    <span class='comment'># `attribute_to_example` (engine.rb:770) so both fresh + carry-
+</span>    <span class='comment'># forward attributions converge on the same filter behavior.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_filtered_by_current_filters?'>filtered_by_current_filters?</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_filters'>filters</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span> <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_match?'>match?</span><span class='lparen'>(</span><span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_compute_filter_decisions'>compute_filter_decisions</span>
+      <span class='id identifier rubyid_prev'>prev</span> <span class='op'>=</span> <span class='ivar'>@previous_snapshot</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+      <span class='id identifier rubyid_seed_registry_from_previous'>seed_registry_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_change_set'>change_set</span> <span class='op'>=</span> <span class='id identifier rubyid_compute_change_set'>compute_change_set</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_whole_suite'>whole_suite</span> <span class='op'>=</span> <span class='id identifier rubyid_whole_suite_changed?'>whole_suite_changed?</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_result'>result</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/Filter.html" title="RSpecTracer::Tracker::Filter (module)">Filter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_select'><span class='object_link'><a href="RSpecTracer/Tracker/Filter.html#select-class_method" title="RSpecTracer::Tracker::Filter.select (method)">select</a></span></span><span class='lparen'>(</span>
+        <span class='label'>graph:</span> <span class='id identifier rubyid_graph_from_previous'>graph_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>change_set:</span> <span class='id identifier rubyid_change_set'>change_set</span><span class='comma'>,</span>
+        <span class='label'>registry:</span> <span class='ivar'>@registry</span><span class='comma'>,</span>
+        <span class='label'>whole_suite_invalidated:</span> <span class='id identifier rubyid_whole_suite'>whole_suite</span><span class='comma'>,</span>
+        <span class='label'>all_example_ids:</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
+      <span class='rparen'>)</span>
+      <span class='ivar'>@filtered_examples</span> <span class='op'>=</span> <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_reason'>reason</span><span class='op'>|</span> <span class='const'>FILTER_REASON_STRINGS</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>SEED_STATUS_ORDER</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>interrupted</span><span class='words_sep'> </span><span class='tstring_content'>flaky</span><span class='words_sep'> </span><span class='tstring_content'>failed</span><span class='words_sep'> </span><span class='tstring_content'>pending</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+    <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:SEED_STATUS_ORDER</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_registry_from_previous'>seed_registry_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='const'>SEED_STATUS_ORDER</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_status'>status</span><span class='op'>|</span>
+        <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:&quot;#{</span><span class='id identifier rubyid_status'>status</span><span class='embexpr_end'>}</span><span class='tstring_content'>_examples</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_seed_registry_entry'>seed_registry_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='comma'>,</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_seed_registry_entry'>seed_registry_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='comma'>,</span> <span class='id identifier rubyid_metadata'>metadata</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_registered?'>registered?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_register'>register</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='label'>metadata:</span> <span class='id identifier rubyid_metadata'>metadata</span><span class='rparen'>)</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Rebuild a DependencyGraph from the previous Snapshot so Filter
+</span>    <span class='comment'># can intersect its cached dependency sets with the change_set.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_graph_from_previous'>graph_from_previous</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_graph'>graph</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/DependencyGraph.html" title="RSpecTracer::Tracker::DependencyGraph (class)">DependencyGraph</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Tracker/DependencyGraph.html#initialize-instance_method" title="RSpecTracer::Tracker::DependencyGraph#initialize (method)">new</a></span></span>
+      <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_dependency'>dependency</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='op'>|</span> <span class='id identifier rubyid_graph'>graph</span><span class='period'>.</span><span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='id identifier rubyid_graph'>graph</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_compute_change_set'>compute_change_set</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_changed'>changed</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span><span class='period'>.</span><span class='id identifier rubyid_each_value'>each_value</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_file_meta'>file_meta</span><span class='op'>|</span>
+        <span class='id identifier rubyid_file_name'>file_name</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_file_meta'>file_meta</span><span class='comma'>,</span> <span class='symbol'>:file_name</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_cached_digest'>cached_digest</span> <span class='op'>=</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_file_meta'>file_meta</span><span class='comma'>,</span> <span class='symbol'>:digest</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_cached_digest'>cached_digest</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_current_digest'>current_digest</span> <span class='op'>=</span> <span class='id identifier rubyid_current_file_digest'>current_file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_changed'>changed</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_file_name'>file_name</span> <span class='kw'>if</span> <span class='id identifier rubyid_current_digest'>current_digest</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_current_digest'>current_digest</span> <span class='op'>!=</span> <span class='id identifier rubyid_cached_digest'>cached_digest</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_new_files'>new_files</span> <span class='op'>=</span> <span class='ivar'>@new_file_detector</span><span class='period'>.</span><span class='id identifier rubyid_new_files'>new_files</span><span class='lparen'>(</span>
+        <span class='label'>known_paths:</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_k'>k</span><span class='op'>|</span> <span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_k'>k</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='rparen'>)</span>
+      <span class='id identifier rubyid_new_files'>new_files</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_input'>input</span><span class='op'>|</span> <span class='id identifier rubyid_changed'>changed</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='id identifier rubyid_changed'>changed</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_whole_suite_changed?'>whole_suite_changed?</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_wsi_prev'>wsi_prev</span> <span class='op'>=</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_wsi_snapshot'>wsi_snapshot</span> <span class='kw'>if</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:wsi_snapshot</span><span class='rparen'>)</span>
+      <span class='ivar'>@whole_suite_invalidators</span><span class='period'>.</span><span class='id identifier rubyid_invalidated?'>invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_wsi_prev'>wsi_prev</span><span class='rparen'>)</span> <span class='op'>||</span>
+        <span class='ivar'>@loaded_files_tracker</span><span class='period'>.</span><span class='id identifier rubyid_boot_set_invalidated?'>boot_set_invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_boot_set'>boot_set</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_current_file_digest'>current_file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/FileDigest.html" title="RSpecTracer::Tracker::FileDigest (module)">FileDigest</a></span></span><span class='period'>.</span><span class='id identifier rubyid_compute'><span class='object_link'><a href="RSpecTracer/Tracker/FileDigest.html#compute-class_method" title="RSpecTracer::Tracker::FileDigest.compute (method)">compute</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_record_coverage_delta'>record_coverage_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_before'>before</span><span class='comma'>,</span> <span class='id identifier rubyid_after'>after</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_entry'>entry</span> <span class='op'>=</span> <span class='ivar'>@examples_coverage</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+
+      <span class='lparen'>(</span><span class='id identifier rubyid_before'>before</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='op'>|</span> <span class='id identifier rubyid_after'>after</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+        <span class='id identifier rubyid_b_lines'>b_lines</span> <span class='op'>=</span> <span class='id identifier rubyid_before'>before</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_a_lines'>a_lines</span> <span class='op'>=</span> <span class='id identifier rubyid_after'>after</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_b_lines'>b_lines</span> <span class='op'>==</span> <span class='id identifier rubyid_a_lines'>a_lines</span>
+
+        <span class='id identifier rubyid_file_entry'>file_entry</span> <span class='op'>=</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='id identifier rubyid_accumulate_delta'>accumulate_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_file_entry'>file_entry</span><span class='comma'>,</span> <span class='id identifier rubyid_b_lines'>b_lines</span><span class='comma'>,</span> <span class='id identifier rubyid_a_lines'>a_lines</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_accumulate_delta'>accumulate_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_file_entry'>file_entry</span><span class='comma'>,</span> <span class='id identifier rubyid_before_lines'>before_lines</span><span class='comma'>,</span> <span class='id identifier rubyid_after_lines'>after_lines</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_length'>length</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_after_lines'>after_lines</span> <span class='op'>||</span> <span class='id identifier rubyid_before_lines'>before_lines</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span>
+      <span class='id identifier rubyid_length'>length</span><span class='period'>.</span><span class='id identifier rubyid_times'>times</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_i'>i</span><span class='op'>|</span>
+        <span class='id identifier rubyid_delta'>delta</span> <span class='op'>=</span> <span class='id identifier rubyid_line_delta'>line_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_before_lines'>before_lines</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_before_lines'>before_lines</span><span class='lbracket'>[</span><span class='id identifier rubyid_i'>i</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_after_lines'>after_lines</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_after_lines'>after_lines</span><span class='lbracket'>[</span><span class='id identifier rubyid_i'>i</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_file_entry'>file_entry</span><span class='lbracket'>[</span><span class='id identifier rubyid_i'>i</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_delta'>delta</span> <span class='kw'>if</span> <span class='id identifier rubyid_delta'>delta</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Returns the positive coverage delta for one line, or nil if the
+</span>    <span class='comment'># line isn&#39;t a delta worth recording (non-executable, identical,
+</span>    <span class='comment'># or a stale-going-backward entry).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_line_delta'>line_delta</span><span class='lparen'>(</span><span class='id identifier rubyid_before'>before</span><span class='comma'>,</span> <span class='id identifier rubyid_after'>after</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_after'>after</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_before'>before</span> <span class='op'>==</span> <span class='id identifier rubyid_after'>after</span>
+
+      <span class='id identifier rubyid_delta'>delta</span> <span class='op'>=</span> <span class='id identifier rubyid_after'>after</span> <span class='op'>-</span> <span class='lparen'>(</span><span class='id identifier rubyid_before'>before</span> <span class='op'>||</span> <span class='int'>0</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_delta'>delta</span><span class='period'>.</span><span class='id identifier rubyid_positive?'>positive?</span> <span class='op'>?</span> <span class='id identifier rubyid_delta'>delta</span> <span class='op'>:</span> <span class='kw'>nil</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_accumulate_line_coverage'>accumulate_line_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_accumulator'>accumulator</span><span class='comma'>,</span> <span class='id identifier rubyid_line_coverage'>line_coverage</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_line_coverage'>line_coverage</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_line_key'>line_key</span><span class='comma'>,</span> <span class='id identifier rubyid_strength'>strength</span><span class='op'>|</span>
+        <span class='id identifier rubyid_index'>index</span> <span class='op'>=</span> <span class='id identifier rubyid_line_key'>line_key</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span>
+        <span class='id identifier rubyid_accumulator'>accumulator</span><span class='lbracket'>[</span><span class='id identifier rubyid_index'>index</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='id identifier rubyid_strength'>strength</span> <span class='op'>||</span> <span class='int'>0</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_attribute_to_example'>attribute_to_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='id identifier rubyid_inputs'>inputs</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_input'>input</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_filters'>filters</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span> <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_match?'>match?</span><span class='lparen'>(</span><span class='label'>file_name:</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+
+        <span class='id identifier rubyid_paths'>paths</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span>
+        <span class='ivar'>@all_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+          <span class='label'>file_name:</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='comma'>,</span>
+          <span class='label'>file_path:</span> <span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span>
+          <span class='label'>digest:</span> <span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_digest'>digest</span>
+        <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+      <span class='ivar'>@graph</span><span class='period'>.</span><span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='ivar'>@all_examples</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+
+      <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:execution_result</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_formatted_execution_result'>formatted_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_formatted_execution_result'>formatted_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
+      <span class='lbrace'>{</span>
+        <span class='label'>started_at:</span> <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_started_at'>started_at</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='comma'>,</span>
+        <span class='label'>finished_at:</span> <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_finished_at'>finished_at</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='comma'>,</span>
+        <span class='label'>run_time:</span> <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_run_time'>run_time</span><span class='comma'>,</span>
+        <span class='label'>status:</span> <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_status'>status</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
+      <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_snapshot'>build_snapshot</span>
+      <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='ivar'>@all_examples</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
+      <span class='ivar'>@run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_run_id'>run_id</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">Snapshot</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
+        <span class='label'>schema_version:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span><span class='comma'>,</span>
+        <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span>
+        <span class='label'>all_examples:</span> <span class='ivar'>@all_examples</span><span class='comma'>,</span>
+        <span class='label'>duplicate_examples:</span> <span class='id identifier rubyid_duplicates_for_snapshot'>duplicates_for_snapshot</span><span class='comma'>,</span>
+        <span class='label'>interrupted_examples:</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:interrupted</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>flaky_examples:</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:flaky</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>failed_examples:</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:failed</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>pending_examples:</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:pending</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>skipped_examples:</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_ids_with_status'>ids_with_status</span><span class='lparen'>(</span><span class='symbol'>:skipped</span><span class='rparen'>)</span><span class='comma'>,</span>
+        <span class='label'>all_files:</span> <span class='id identifier rubyid_all_files_by_name'>all_files_by_name</span><span class='comma'>,</span>
+        <span class='label'>dependency:</span> <span class='id identifier rubyid_dependency_by_name'>dependency_by_name</span><span class='comma'>,</span>
+        <span class='label'>reverse_dependency:</span> <span class='id identifier rubyid_reverse_dependency_by_name'>reverse_dependency_by_name</span><span class='comma'>,</span>
+        <span class='label'>examples_coverage:</span> <span class='id identifier rubyid_merge_examples_coverage_with_previous'>merge_examples_coverage_with_previous</span><span class='comma'>,</span>
+        <span class='label'>boot_set:</span> <span class='ivar'>@loaded_files_tracker</span><span class='period'>.</span><span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span><span class='comma'>,</span>
+        <span class='label'>wsi_snapshot:</span> <span class='ivar'>@whole_suite_invalidators</span><span class='period'>.</span><span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span><span class='comma'>,</span>
+        <span class='label'>env_snapshot:</span> <span class='id identifier rubyid_env_snapshot_for_persistence'>env_snapshot_for_persistence</span><span class='comma'>,</span>
+        <span class='label'>env_dependency:</span> <span class='id identifier rubyid_env_dependency_for_persistence'>env_dependency_for_persistence</span><span class='comma'>,</span>
+        <span class='label'>cache_hit_reason:</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_tally'>tally</span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Merge the current run&#39;s per-example coverage with the previous
+</span>    <span class='comment'># run&#39;s. Re-run examples contribute their freshly-computed map
+</span>    <span class='comment'># (record_coverage_delta overwrote per-line strengths, so
+</span>    <span class='comment'># @examples_coverage[id] is the authoritative new coverage).
+</span>    <span class='comment'># Skipped examples don&#39;t appear in @examples_coverage, so the
+</span>    <span class='comment'># prev map carries them forward unchanged. Previously in
+</span>    <span class='comment'># seed_state_from_previous; moved here so large caches don&#39;t
+</span>    <span class='comment'># pay the full examples_coverage materialization cost at setup
+</span>    <span class='comment'># time. Preserves 1.x semantics: the saved map is the union of
+</span>    <span class='comment'># (prev minus this-run&#39;s keys) + this-run&#39;s entries.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_merge_examples_coverage_with_previous'>merge_examples_coverage_with_previous</span>
+      <span class='id identifier rubyid_merged'>merged</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='kw'>if</span> <span class='ivar'>@previous_snapshot</span>
+        <span class='id identifier rubyid_prev'>prev</span> <span class='op'>=</span> <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_examples_coverage'>examples_coverage</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_prev'>prev</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_cov'>cov</span><span class='op'>|</span> <span class='id identifier rubyid_merged'>merged</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_cov'>cov</span> <span class='kw'>unless</span> <span class='ivar'>@examples_coverage</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+      <span class='ivar'>@examples_coverage</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_cov'>cov</span><span class='op'>|</span> <span class='id identifier rubyid_merged'>merged</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_cov'>cov</span> <span class='rbrace'>}</span>
+      <span class='id identifier rubyid_merged'>merged</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Snapshot only the env keys THIS run tracked - persisting keys
+</span>    <span class='comment'># that stopped being tracked (user removed `tracks: env: ...`
+</span>    <span class='comment'># between runs) would pin stale digests in the cache. Missing
+</span>    <span class='comment'># keys on the next load just trigger a one-time re-run for any
+</span>    <span class='comment'># example that reintroduces them, which is the correct behavior.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_env_snapshot_for_persistence'>env_snapshot_for_persistence</span>
+      <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='ivar'>@env_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='ivar'>@tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+      <span class='ivar'>@env_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span><span class='lparen'>(</span><span class='ivar'>@tracked_env_names</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Project the per-example `@tracks_env` map (Set&lt;env_name&gt; per
+</span>    <span class='comment'># example_id) into a JSON-friendly Hash[id =&gt; sorted Array] for
+</span>    <span class='comment'># persistence. Reporters consume this to render the env-
+</span>    <span class='comment'># dependency view on the Examples Dependency report. Empty sets
+</span>    <span class='comment'># drop out so the on-disk map stays narrow. Sort keeps the output
+</span>    <span class='comment'># deterministic for downstream diffs and golden tests.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_env_dependency_for_persistence'>env_dependency_for_persistence</span>
+      <span class='id identifier rubyid_result'>result</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@tracks_env</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_names'>names</span><span class='op'>|</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_names'>names</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_names'>names</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_names'>names</span><span class='period'>.</span><span class='id identifier rubyid_to_a'>to_a</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span>
+      <span class='kw'>end</span>
+      <span class='id identifier rubyid_result'>result</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Resolve one glob against the project root into a Set of
+</span>    <span class='comment'># `:declared`-kind Inputs. Walks via Dir.glob
+</span>    <span class='comment'># (FNM_PATHNAME+FNM_EXTGLOB like DeclaredGlobs so user muscle
+</span>    <span class='comment'># memory works identically) and digests each hit with SHA256.
+</span>    <span class='comment'># Unreadable files are skipped silently - graceful degradation.
+</span>    <span class='comment'># Memoized per distinct glob string so N examples declaring the
+</span>    <span class='comment'># same glob pay the filesystem walk cost exactly once.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_resolved_glob_inputs'>resolved_glob_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='rparen'>)</span>
+      <span class='ivar'>@resolved_glob_cache</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+      <span class='ivar'>@resolved_glob_cache</span><span class='lbracket'>[</span><span class='id identifier rubyid_glob'>glob</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_walk_one_glob'>walk_one_glob</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_walk_one_glob'>walk_one_glob</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_inputs'>inputs</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='id identifier rubyid_root'>root</span> <span class='op'>=</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span>
+      <span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_glob'>glob</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='comma'>,</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>FNM_PATHNAME</span> <span class='op'>|</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>FNM_EXTGLOB</span><span class='comma'>,</span> <span class='label'>base:</span> <span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_rel'>rel</span><span class='op'>|</span>
+        <span class='id identifier rubyid_abs'>abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_rel'>rel</span><span class='comma'>,</span> <span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_abs'>abs</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_root'>root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_digest'>digest</span> <span class='op'>=</span> <span class='id identifier rubyid_tracks_file_digest'>tracks_file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span>
+        <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_digest'>digest</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_inputs'>inputs</span> <span class='op'>&lt;&lt;</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/Input.html" title="RSpecTracer::Tracker::Input (class)">Input</a></span></span><span class='period'>.</span><span class='id identifier rubyid_for_file'><span class='object_link'><a href="RSpecTracer/Tracker/Input.html#for_file-class_method" title="RSpecTracer::Tracker::Input.for_file (method)">for_file</a></span></span><span class='lparen'>(</span>
+          <span class='label'>path:</span> <span class='id identifier rubyid_abs'>abs</span><span class='comma'>,</span> <span class='label'>kind:</span> <span class='symbol'>:declared</span><span class='comma'>,</span> <span class='label'>digest:</span> <span class='id identifier rubyid_digest'>digest</span><span class='comma'>,</span> <span class='label'>root:</span> <span class='id identifier rubyid_root'>root</span>
+        <span class='rparen'>)</span>
+      <span class='kw'>end</span>
+      <span class='id identifier rubyid_inputs'>inputs</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_tracks_file_digest'>tracks_file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker.html" title="RSpecTracer::Tracker (module)">Tracker</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Tracker/FileDigest.html" title="RSpecTracer::Tracker::FileDigest (module)">FileDigest</a></span></span><span class='period'>.</span><span class='id identifier rubyid_compute'><span class='object_link'><a href="RSpecTracer/Tracker/FileDigest.html#compute-class_method" title="RSpecTracer::Tracker::FileDigest.compute (method)">compute</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Materialize the per-example tracks-file Input set. Returns an
+</span>    <span class='comment'># empty Set when the example has no `tracks: files:` metadata,
+</span>    <span class='comment'># keeping the downstream union cheap for the 99% case.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_per_example_tracks_inputs'>per_example_tracks_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_set'>set</span> <span class='op'>=</span> <span class='ivar'>@tracks_files</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span>
+      <span class='id identifier rubyid_set'>set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_set'>set</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='op'>?</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='op'>:</span> <span class='id identifier rubyid_set'>set</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_duplicates_for_snapshot'>duplicates_for_snapshot</span>
+      <span class='ivar'>@duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_entries'>entries</span><span class='op'>|</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_count'>count</span> <span class='op'>&gt;</span> <span class='int'>1</span> <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_all_files_by_name'>all_files_by_name</span>
+      <span class='ivar'>@all_files</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_meta'>meta</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+        <span class='id identifier rubyid_acc'>acc</span><span class='lbracket'>[</span><span class='id identifier rubyid_meta'>meta</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_meta'>meta</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_dependency_by_name'>dependency_by_name</span>
+      <span class='ivar'>@graph</span><span class='period'>.</span><span class='id identifier rubyid_dependency_hash'>dependency_hash</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_paths'>paths</span><span class='op'>|</span>
+        <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_p'>p</span><span class='op'>|</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_p'>p</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency_by_name'>reverse_dependency_by_name</span>
+      <span class='ivar'>@graph</span><span class='period'>.</span><span class='id identifier rubyid_reverse_dependency_hash'>reverse_dependency_hash</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+        <span class='id identifier rubyid_acc'>acc</span><span class='lbracket'>[</span><span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_absolute_path'>absolute_path</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span>
+      <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>%r{</span><span class='tstring_content'>^/</span><span class='regexp_end'>}</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_path_to_file_name'>path_to_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_abs_path'>abs_path</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_root_prefix'>root_prefix</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>return</span> <span class='id identifier rubyid_abs_path'>abs_path</span> <span class='kw'>unless</span> <span class='id identifier rubyid_abs_path'>abs_path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='id identifier rubyid_root_prefix'>root_prefix</span><span class='rparen'>)</span>
+
+      <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_abs_path'>abs_path</span><span class='lbracket'>[</span><span class='id identifier rubyid_root_prefix'>root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span><span class='op'>..</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_symbol_or_string'>symbol_or_string</span><span class='lparen'>(</span><span class='id identifier rubyid_hash'>hash</span><span class='comma'>,</span> <span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='id identifier rubyid_hash'>hash</span><span class='lbracket'>[</span><span class='id identifier rubyid_key'>key</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='id identifier rubyid_hash'>hash</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_hash'>hash</span><span class='lbracket'>[</span><span class='id identifier rubyid_key'>key</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='rbracket'>]</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+  <span class='comment'># rubocop:enable Metrics/ClassLength
+</span><span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:47 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

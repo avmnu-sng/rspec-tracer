@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: doctor
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "doctor";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: doctor</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal CLI — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>CLI</span>
+    <span class='comment'># `rspec-tracer doctor` — diagnose config + environment.
+</span>    <span class='comment'># Reports Ruby + rspec-tracer versions, project root resolution,
+</span>    <span class='comment'># cache / coverage / report directory state, and SimpleCov / Rails
+</span>    <span class='comment'># presence. Exits 0 on healthy diagnosis, 1 if any check fails.
+</span>    <span class='kw'>module</span> <span class='const'>Doctor</span>
+      <span class='comment'># @param args [Array&lt;String&gt;] sub-command args (`-h` / `--help`).
+</span>      <span class='comment'># @param stdout [IO]
+</span>      <span class='comment'># @param stderr [IO]
+</span>      <span class='comment'># @return [Integer] exit status (0 = healthy, 1 = any check
+</span>      <span class='comment'>#   FAILed; warnings keep status 0).
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-h</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--help</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/load_config</span><span class='tstring_end'>&#39;</span></span>
+
+        <span class='id identifier rubyid_checks'>checks</span> <span class='op'>=</span> <span class='lbracket'>[</span>
+          <span class='id identifier rubyid_ruby_version_check'>ruby_version_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_tracer_version_check'>tracer_version_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_project_root_check'>project_root_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_cache_path_check'>cache_path_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_coverage_path_check'>coverage_path_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_report_path_check'>report_path_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_git_check'>git_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_simplecov_check'>simplecov_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_rails_check'>rails_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_cache_schema_version_check'>cache_schema_version_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_remote_cache_check'>remote_cache_check</span><span class='comma'>,</span>
+          <span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span>
+        <span class='rbracket'>]</span>
+        <span class='id identifier rubyid_checks'>checks</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_line'>line</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_ok'>ok</span> <span class='op'>=</span> <span class='id identifier rubyid_checks'>checks</span><span class='period'>.</span><span class='id identifier rubyid_none?'>none?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span> <span class='id identifier rubyid_line'>line</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>FAIL</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_ok'>ok</span> <span class='op'>?</span> <span class='int'>0</span> <span class='op'>:</span> <span class='int'>1</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>doctor: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
+<span class='tstring_content'>          Usage: rspec-tracer doctor
+</span><span class='tstring_content'>
+</span><span class='tstring_content'>          Diagnose rspec-tracer config and environment. Prints a checklist
+</span><span class='tstring_content'>          of versions, paths, and integrations; exits 0 if all checks pass.
+</span><span class='heredoc_end'>        HELP
+</span>        <span class='int'>0</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ruby_version_check'>ruby_version_check</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   ruby:        </span><span class='embexpr_beg'>#{</span><span class='const'>RUBY_DESCRIPTION</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_tracer_version_check'>tracer_version_check</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   rspec-tracer: </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_project_root_check'>project_root_check</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   root:        </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_cache_path_check'>cache_path_check</span>
+        <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_coverage_path_check'>coverage_path_check</span>
+        <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage_path'>coverage_path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_report_path_check'>report_path_check</span>
+        <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>report_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='id identifier rubyid_label'>label</span><span class='comma'>,</span> <span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>FAIL </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_content'> &lt;missing&gt;</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>FAIL </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> (does not exist)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>FAIL </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> (not writable)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_writable?'>writable?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_git_check'>git_check</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>git</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rev-parse</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>HEAD</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>OK   git:         HEAD reachable (remote_cache will work)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>WARN git:         not in a git repo (remote_cache will degrade gracefully)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_simplecov_check'>simplecov_check</span>
+        <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>SimpleCov</span><span class='rparen'>)</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>OK   SimpleCov:   loaded (interop active)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO SimpleCov:   not loaded (this is fine; SimpleCov is optional)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_rails_check'>rails_check</span>
+        <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   Rails:       </span><span class='embexpr_beg'>#{</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='op'>::</span><span class='const'>STRING</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO Rails:       not loaded (this is fine for non-Rails projects)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs
+</span>      <span class='comment'># rspec and watches everything re-run mysteriously. Reads the
+</span>      <span class='comment'># cached `last_run.json` (if any) and compares its
+</span>      <span class='comment'># `schema_version` against the gem&#39;s `Schema::CURRENT`. Three
+</span>      <span class='comment'># outcomes: no cache yet (INFO), match (OK), or mismatch (WARN
+</span>      <span class='comment'># with the cold-run note). Never FAIL - schema mismatches are
+</span>      <span class='comment'># the documented cold-run path, not a hard error.
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_cache_schema_version_check'>cache_schema_version_check</span>
+        <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/schema</span><span class='tstring_end'>&#39;</span></span>
+        <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
+
+        <span class='id identifier rubyid_cache_path'>cache_path</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span>
+        <span class='id identifier rubyid_last_run_path'>last_run_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+        <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_last_run_path'>last_run_path</span><span class='rparen'>)</span>
+          <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO schema:      no cache yet (next rspec run is cold; expected on first install)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+
+        <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_last_run_path'>last_run_path</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_stored'>stored</span> <span class='op'>=</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>schema_version</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_current'>current</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_stored'>stored</span> <span class='op'>==</span> <span class='id identifier rubyid_current'>current</span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   schema:      v</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_current'>current</span><span class='embexpr_end'>}</span><span class='tstring_content'> (matches gem)</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN schema:      stored v</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stored'>stored</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'> != gem v</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_current'>current</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='tstring_end'>&quot;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>(next rspec run is a cold run; expected on 1.x-&gt;2.0 upgrade)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN schema:      could not read cache manifest: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># When remote_cache is configured, verify the backend is
+</span>      <span class='comment'># reachable from doctor&#39;s vantage point so the user catches
+</span>      <span class='comment'># misconfig (typo&#39;d S3 path / unreachable Redis URL / unwritable
+</span>      <span class='comment'># local-fs dir) BEFORE the next CI run fails. Best-effort: never
+</span>      <span class='comment'># FAIL the gate, just surface a WARN/INFO line.
+</span>      <span class='const'>REMOTE_CACHE_PROBES</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+        <span class='label'>s3:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='id identifier rubyid_remote_cache_s3_check'>remote_cache_s3_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+        <span class='label'>local_fs:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='id identifier rubyid_remote_cache_local_fs_check'>remote_cache_local_fs_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+        <span class='label'>redis:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='id identifier rubyid_remote_cache_redis_check'>remote_cache_redis_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_check'>remote_cache_check</span>
+        <span class='id identifier rubyid_entry'>entry</span> <span class='op'>=</span> <span class='id identifier rubyid_remote_cache_entry'>remote_cache_entry</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO remote_cache: not configured (skip)</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_entry'>entry</span>
+
+        <span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span> <span class='op'>=</span> <span class='id identifier rubyid_entry'>entry</span>
+        <span class='id identifier rubyid_probe'>probe</span> <span class='op'>=</span> <span class='const'>REMOTE_CACHE_PROBES</span><span class='lbracket'>[</span><span class='id identifier rubyid_backend'>backend</span><span class='rbracket'>]</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>INFO remote_cache: custom backend </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'> (skipping reachability probe)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_probe'>probe</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_instance_exec'>instance_exec</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_probe'>probe</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_entry'>remote_cache_entry</span>
+        <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:remote_cache_backend_entry</span><span class='rparen'>)</span>
+
+        <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_backend_entry'>remote_cache_backend_entry</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_s3_check'>remote_cache_s3_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_bucket'>bucket</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:bucket</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>bucket</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>WARN remote_cache: :s3 configured without :bucket</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_bucket'>bucket</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_bucket'>bucket</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   remote_cache: :s3 bucket=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_bucket'>bucket</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='tstring_end'>&quot;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>(reachability not probed locally; verified end-to-end on next CI run)</span><span class='tstring_end'>&#39;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_local_fs_check'>remote_cache_local_fs_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:path</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>path</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>WARN remote_cache: :local_fs configured without :path</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN remote_cache: :local_fs path </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> does not exist</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN remote_cache: :local_fs path </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_content'> not writable</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_writable?'>writable?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   remote_cache: :local_fs path=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_redis_check'>remote_cache_redis_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_url'>url</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:url</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>url</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_REMOTE_CACHE_URI</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>WARN remote_cache: :redis configured without :url</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_url'>url</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_url'>url</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   remote_cache: :redis url=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_url'>url</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='tstring_end'>&quot;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>(reachability not probed locally; verified end-to-end on next CI run)</span><span class='tstring_end'>&#39;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Surface the narrow-attribution precondition at diagnostic time.
+</span>      <span class='comment'># When `track_ar_schema_notifications` is enabled AND Rails is
+</span>      <span class='comment'># loaded AND the rspec-rails default `use_transactional_fixtures
+</span>      <span class='comment'># = true` is in effect, per-example BEGIN/COMMIT fires
+</span>      <span class='comment'># `sql.active_record` inside the rspec-tracer bucket and
+</span>      <span class='comment'># attribution silently widens. Same shape as the boot-time warn
+</span>      <span class='comment'># in RSpecTracer.start, surfaced here so users running
+</span>      <span class='comment'># `rspec-tracer doctor` see the issue without having to boot a
+</span>      <span class='comment'># full rspec run first.
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO AR schema:   track_ar_schema_notifications not enabled</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_ar_schema_enabled?'>ar_schema_enabled?</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO AR schema:   Rails not loaded</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_loaded?'>rails_loaded?</span>
+
+        <span class='kw'>if</span> <span class='id identifier rubyid_transactional_fixtures_default?'>transactional_fixtures_default?</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>WARN AR schema:   track_ar_schema_notifications + use_transactional_fixtures=true </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>silently widens to whole-suite-on-schema-change. See README </span><span class='tstring_end'>&#39;</span></span> \
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>section &quot;Narrow AR schema attribution&quot;.</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>OK   AR schema:   narrow attribution preconditions look good</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ar_schema_enabled?'>ar_schema_enabled?</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:track_ar_schema_notifications?</span><span class='rparen'>)</span>
+
+        <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_track_ar_schema_notifications?'>track_ar_schema_notifications?</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_rails_loaded?'>rails_loaded?</span>
+        <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_transactional_fixtures_default?'>transactional_fixtures_default?</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>RSpec</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:configuration</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_cfg'>cfg</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_cfg'>cfg</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:use_transactional_fixtures</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_cfg'>cfg</span><span class='period'>.</span><span class='id identifier rubyid_use_transactional_fixtures'>use_transactional_fixtures</span> <span class='op'>!=</span> <span class='kw'>false</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span>
+        <span class='kw'>false</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:47 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

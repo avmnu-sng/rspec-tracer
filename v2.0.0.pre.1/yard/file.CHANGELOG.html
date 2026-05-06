@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: CHANGELOG
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "CHANGELOG";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: CHANGELOG</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_1____2026_05_06">[2.0.0.pre.1] - 2026-05-06</h2>
+<p>The first pre-release of the 2.0 line. Architecture rewrite around
+the input-taxonomy mental model documented in
+<a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>: every test is a pure function
+of its inputs; tracking is input identification; cache invalidation
+is input-digest mismatch.</p>
+<p>The 1.x cache is not readable by 2.0 — first run on the new version
+is cold, then warm caches resume. Existing CI integration (<code>rake rspec_tracer:remote_cache:download</code> / <code>:upload</code>, the env vars,
+the <code>rspec_tracer_cache/</code> / <code>rspec_tracer_coverage/</code> /
+<code>rspec_tracer_report/</code> directory contracts) is preserved bit-for-bit.</p>
+<h3 id="Added">Added</h3>
+<ul>
+<li>
+<strong>Pluggable storage backends.</strong> <code>storage_backend :json</code> (default,
+preserves 1.x JSON layout) or <code>storage_backend :sqlite</code> (single-
+file SQLite database; MRI only — JRuby falls back to <code>:json</code> with
+a one-time warn). The 10-file per-run JSON layout (<code>last_run.json</code>
+<ul>
+<li><code>&lt;run_id&gt;/{all_examples,duplicate_examples,interrupted_examples, flaky_examples,failed_examples,pending_examples,skipped_examples, all_files,dependency,examples_coverage}.json</code>) is unchanged.</li>
+</ul>
+</li>
+<li><strong>Pluggable remote-cache backends.</strong> <code>remote_cache_backend :s3</code>
+(preserves the 1.x S3 layout including <code>awslocal</code> / LocalStack
+support), <code>:local_fs</code> (filesystem-backed; no S3 needed), or
+<code>:redis</code> (with optional per-key TTL + <code>&lt;prefix&gt;:pr_branches</code>
+sidecar SADD on PR-tier uploads for ops dashboards).</li>
+<li><strong>Per-example <code>tracks:</code> DSL.</strong> Annotate any describe / context /
+example with <code>tracks: { files: 'app/policies/**/*.rb', env: 'ROLE_CONFIG' }</code> to declare extra inputs the tracker can't auto-
+observe — config files baked at boot, env-var branches, and
+similar. <code>:files</code> accepts a string glob or array; <code>:env</code> accepts a
+literal name, array, or single-wildcard pattern (<code>'RAILS_*'</code>,
+<code>'*_TOKEN'</code>, <code>'*'</code>). Cascade unions parent + child without
+clobbering.</li>
+<li><strong><code>track_env(*names)</code> config-level DSL</strong> for env vars every test
+depends on (<code>AUTH_TOKEN</code>, <code>DATABASE_URL</code>, <code>RAILS_ENV</code>). Same
+wildcard syntax as the per-example <code>tracks: { env: ... }</code>.
+Persists as <code>env_snapshot.json</code> (concrete keys only, no pattern
+leakage).</li>
+<li><strong><code>track_files(*globs)</code> config-level DSL</strong> for files every test
+depends on (<code>Gemfile.lock</code>, schema, locale catalogs).</li>
+<li><strong>Rails preset</strong> via <code>track_rails_defaults</code> — auto-attaches the
+common Rails-side declared globs (views, locales, fixtures,
+factories, helpers, config). <code>track_rails_defaults except: [:views, :schema]</code> opts specific globs out so framework-event
+subscribers (<code>render_template.action_view</code> for views; the opt-in
+<code>sql.active_record</code> observer enabled by
+<code>track_ar_schema_notifications</code> for <code>db/schema.rb</code>) attribute
+them per-example instead.</li>
+<li><strong>Auto-detection of Rails</strong> at start time; the engine attaches
+<code>ActionView</code> template + <code>ActiveRecord</code> schema (when opted in)
+notification observers automatically when <code>::Rails::VERSION</code> is
+defined.</li>
+<li><strong><code>bin/rspec-tracer</code> CLI</strong> with five sub-commands:
+<code>doctor</code> (config + environment diagnosis, schema-version + remote-
+cache reachability + AR-schema-narrow checks), <code>cache:info</code>
+(size, last run, invalidation stats), <code>cache:clear</code> (rm cache
+dirs), <code>report:open</code> (open the HTML report in the default
+browser), <code>explain &lt;example_id&gt;</code> (show why a given example is
+scheduled to run or skip). The CLI is opt-in for local-dev
+convenience; the <code>rake rspec_tracer:remote_cache:*</code> tasks remain
+first-class for CI integration.</li>
+<li>
+<strong>Boot-time warns</strong> for two common user-trust traps:
+<ul>
+<li>SimpleCov loaded but not started before <code>RSpecTracer.start</code>
+(load-order is part of the documented contract; the warn
+surfaces it instead of silently bolting onto a Coverage already
+in flight).</li>
+<li><code>track_ar_schema_notifications</code> enabled with
+<code>use_transactional_fixtures</code> defaulting to true (per-example
+BEGIN/COMMIT fires <code>sql.active_record</code> and attributes
+<code>db/schema.rb</code> to every AR-touching example; the warn points
+at the README &quot;Narrow AR-schema attribution&quot; guidance).</li>
+</ul>
+</li>
+<li><strong><code>.rspec-tracer</code> DSL typo <code>did you mean?</code> suggestions</strong> at config
+load — typos like <code>track_filez</code> raise <code>InvalidUsageError</code> with a
+pointer at <code>track_files</code>.</li>
+<li><strong>Rails 8.0 CI-gated support</strong> (Ruby 3.2+ required; Rails 8.0
+dropped Ruby 3.1 support upstream). <code>jruby-9.4 × Rails 8.0</code> is
+unsupported (no <code>activerecord-jdbcsqlite3-adapter ~&gt; 80.0</code>
+upstream).</li>
+<li><strong>Schema-version field</strong> in <code>last_run.json</code> for explicit
+cross-version cache validation. Cache-shape changes bump the
+field; mismatched caches refuse-to-load with an info-level &quot;cold
+run&quot; log line.</li>
+<li><strong><code>docs/CI_RECIPES.md</code></strong> translating the
+<a href=".github/workflows/example-tracer-cache.yml"><code>.github/workflows/example-tracer-cache.yml</code></a>
+GitHub Actions cache pattern to CircleCI / GitLab CI / Buildkite
+/ Heroku CI. The 4-component cache key (<code>runner.os</code> +
+<code>.ruby-version</code> + <code>lib/rspec_tracer/version.rb</code> + Gemfile-hash)
+translates 1:1 across providers; only the YAML envelope is
+GHA-specific.</li>
+<li><strong>Coexistence smokes</strong> for <code>rspec-retry</code>, <code>rspec-rerun</code>, and
+<code>knapsack</code>. All three compose with rspec-tracer's <code>Module#prepend</code>
+chain on <code>RSpec::Core::Runner</code> / <code>Reporter</code> without override.</li>
+<li><strong><code>bin/rspec-tracer doctor</code> reachability checks</strong> for the
+configured remote-cache backend (S3 / Local-FS / Redis) — surfaces
+misconfigured credentials / missing buckets / unreachable Redis
+hosts at first invocation instead of mid-CI-run.</li>
+<li><strong>HTML reporter</strong> (committed build output, no <code>assets:precompile</code>
+step on user installs) and <strong>JSON reporter</strong> (machine-readable,
+for CI dashboards) alongside the existing terminal output. The
+terminal line now includes a <code>by reason:</code> breakdown
+(<code>12 Files changed · 3 Whole-suite invalidator changed · ...</code>)
+and a cache size + delta suffix (<code>14.4 MiB; +6.7 KiB vs prev run</code>).</li>
+</ul>
+<h3 id="Changed">Changed</h3>
+<ul>
+<li><strong>Ruby ≥ 3.1</strong> is the floor (1.x supported Ruby 2.5+). 3.2, 3.3,
+3.4, 4.0 + JRuby 9.4 are CI-gated. Rails 7.0 / 7.1 / 7.2 / 8.0 +
+RSpec 3.12 / 3.13 are CI-gated.</li>
+<li><strong>SimpleCov branch coverage now works alongside rspec-tracer.</strong>
+The 1.x caveat (&quot;SimpleCov would not report branch coverage
+results even when enabled&quot;) is <strong>no longer applicable</strong> — the
+coverage-stack rewrite decoupled rspec-tracer's line-only
+emission from SimpleCov's branch-tracking. Users who turned
+<code>enable_coverage :branch</code> off when adopting rspec-tracer 1.x can
+re-enable in 2.0.</li>
+<li><strong>Cache schema bump.</strong> First run on 2.0 is cold; subsequent runs
+return to warm.</li>
+<li><strong>Coverage adapter</strong> consolidated: a single
+<code>Reporters::CoverageJsonReporter</code> owns <code>coverage.json</code> emission
+(replacing the 1.x <code>CoverageReporter</code> + <code>CoverageWriter</code> pair).
+Output shape preserved.</li>
+<li><strong>Parallel-tests reporter behavior:</strong> terminal / JSON / HTML
+reports now emit ONCE at the merged top-level location after
+<code>merge_snapshot!</code> runs, instead of per-worker (where
+<code>purge_worker_dirs!</code> then removed them and left users with no
+usable output). Per-worker emission was a pre-2.0 behavior bug.</li>
+</ul>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>ERB template tracking via <code>render_template.action_view</code></strong> (closes
+the issue behind upstream
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/66">#66</a>). The
+Rails subscriber attributes rendered ERB partials to the example
+that triggered the render.</li>
+<li><strong>Phantom <code>metadata[:file_path]</code> graceful skip</strong> (closes the issue
+behind upstream
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/72">#72</a>). Specs
+whose <code>metadata[:file_path]</code> doesn't resolve to a readable file
+(gem-generated examples, deleted-between-runs files) now log
+debug + skip dependency registration instead of raising.</li>
+<li><strong>Default filter list now excludes rspec-tracer's own output
+directories</strong> — <code>rspec_tracer_cache/</code>, <code>rspec_tracer_coverage/</code>,
+<code>rspec_tracer_report/</code>, <code>rspec_tracer.lock</code>. Previously, tests
+that read the tracer's own cache files (e.g. integration specs
+asserting on cache state after a fixture subprocess run) got
+those paths attributed as deps. The tracer's output is
+regenerated every run by design and should never invalidate a
+test. Both <code>add_filter</code> (dep graph) and <code>add_coverage_filter</code>
+(coverage report) lists were updated.</li>
+<li><strong><code>add_filter</code> / <code>add_coverage_filter</code> now apply uniformly to
+both fresh attributions AND prior-snapshot carry-forward.</strong>
+Previously, <code>Engine#seed_all_files_from_previous</code> and
+<code>Engine#seed_graph_from_previous</code> seeded paths from the previous
+run's snapshot WITHOUT re-applying the current filter list — so
+a filter added between runs would NOT exclude already-cached
+paths until a cold run wiped them. Filter additions now take
+effect on the very next warm run.</li>
+</ul>
+<h3 id="Deprecated">Deprecated</h3>
+<p>The 1.x configuration surface keeps working; each deprecated entry
+fires one <code>logger.warn</code> at first use pointing at the replacement.
+The deprecated values still resolve semantically. All four are slated
+for removal in 3.0.</p>
+<ul>
+<li><strong><code>reports_s3_path(uri)</code></strong> → use <strong><code>remote_cache_uri(uri)</code></strong>.</li>
+<li><strong><code>use_local_aws(bool)</code></strong> → use <strong><code>remote_cache_backend :s3, local: true</code></strong>.</li>
+<li><strong><code>RSPEC_TRACER_REPORTS_S3_PATH</code></strong> → use
+<strong><code>RSPEC_TRACER_REMOTE_CACHE_URI</code></strong>.</li>
+<li><strong><code>RSPEC_TRACER_USE_LOCAL_AWS</code></strong> → fold into
+<code>remote_cache_backend</code> params.</li>
+</ul>
+<h3 id="Removed">Removed</h3>
+<ul>
+<li><strong>Cucumber feature-file integration suite.</strong> Contributor-facing
+only; users see no change. Replaced by RSpec subprocess
+integration specs under <code>spec/integration/</code>. The <code>bundle exec rake</code> legacy entry point is removed; <code>task</code> (Taskfile) is the
+canonical dev loop.</li>
+<li><strong>Ruby ≤ 3.0 and Rails ≤ 6.x support</strong> (already dropped in 1.1.0;
+re-stated here for clarity at the major boundary).</li>
+<li><strong>Windows support</strong> (no CI gate; never actively maintained).</li>
+</ul>
+<h3 id="Deferred_to_2_1">Deferred to 2.1</h3>
+<ul>
+<li><strong>Per-example dependency attribution under Rails
+<code>config.eager_load = true</code>.</strong> When <code>eager_load = true</code> (Rails
+default for CI tests to mirror prod), all <code>app/</code> files load at
+boot and land in the boot-set; the whole-suite invalidator fires
+on any <code>app/</code> edit, re-running every example. This is SAFE (never
+misses a dep) but coarser than per-example attribution. The 2.1
+enhancement will install a class-attribution mechanism (working
+name: <code>track_class_attribution</code>) using <code>TracePoint(:class)</code> at
+boot + <code>TracePoint(:call)</code> per example to trim the invalidator
+scope to only examples that touched the changed file's class /
+method surface. Opt-in by default; designed from scratch on the
+user-shape problem (not a resurrection of any 1.x DSL name).
+Today's escape hatches: set <code>config.eager_load = false</code> in test
+env for full per-example precision, or use <code>tracks: { files: '...' }</code> for per-example narrowing on specific groups.</li>
+</ul>
+<h2 id="_1_2_0____2026_04_24">[1.2.0] - 2026-04-24</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li><strong><code>USE_TEST_SUITE_ID_CACHE</code> env flag</strong> for per-suite remote-cache
+validation. When set to the exact string <code>&quot;true&quot;</code>, the validator
+accepts the current <code>TEST_SUITE_ID</code>'s cache independently of peer
+suites' state — so an aborted suite on one CI run no longer forces
+a cold run across every suite on the next. Default unset preserves
+1.1.x behaviour byte-for-byte. Ports
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/70">upstream PR #70</a>
+(kirpalsangha), with credit to the interviewstreet fork
+(<a href="https://github.com/interviewstreet/rspec-tracer/pull/1">PR #1</a>)
+where the same fix was shipped to HackerRank's production CI in 2024.</li>
+</ul>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong><code>SourceFile#file_path</code> silently dropped dependencies on external
+absolute paths</strong> (closes the issue behind upstream PRs
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/37">#37</a> and
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/67">#67</a>). When a
+spec's <code>metadata[:file_path]</code> resolved to an absolute path <strong>outside</strong>
+<code>RSpecTracer.root</code> — typical for shared examples from vendored gems
+(<code>/opt/bundle/gems/rspec-rails-X/lib/shared_examples/...</code>) or for
+monorepo spec files adjacent to the project tree — the method stripped
+the leading <code>/</code> and expanded against <code>RSpecTracer.root</code>, producing a
+non-existent path like <code>&lt;root&gt;/opt/bundle/...</code>. <code>File.file?</code> returned
+false, <code>from_path</code> returned nil, and the tracer <strong>silently skipped
+dependency registration</strong> for that file. Cache-staleness silent-
+correctness bug: shared examples from external gems never appeared as
+dependencies, so changes to them never invalidated the cache. The fix
+returns the input unchanged only when it's an absolute path to an
+existing file outside <code>RSpecTracer.root</code>; all other inputs (relative
+paths, stripped-root forms, in-root absolute paths) continue through
+the existing project-relative expansion, preserving byte-for-byte
+behaviour for 1.1.x configurations.</li>
+<li><strong><code>ValidationError</code> constant now defined.</strong> <code>remote_cache/validator.rb</code>
+previously referenced <code>ValidationError</code> in its XOR-guard <code>raise</code> but
+the constant was never declared anywhere. Tripping the guard
+(setting exactly one of <code>TEST_SUITE_ID</code> / <code>TEST_SUITES</code>) raised
+<code>NameError: uninitialized constant</code> instead of the intended
+error class. Added <code>class ValidationError &lt; StandardError</code> inside
+<code>Validator</code>, mirroring <code>Aws::AwsError</code>.</li>
+<li><strong>Typo in the XOR-guard error message</strong> — <code>&quot;enviornment&quot;</code> →
+<code>&quot;environment&quot;</code>.</li>
+<li><strong>Single-suite <code>@cached_files_regex</code> now anchored</strong> — <code>$</code> appended
+so the pattern no longer matches extraneous-extension files like
+<code>/ref/hash/foo.json.backup</code>. Multi-suite regex was already anchored
+in 1.1.x.</li>
+<li><strong><code>remote_cache/aws.rb#upload_dir</code> error message</strong> — reported
+<code>&quot;Failed to download files from …&quot;</code> when the upload failed. Closes
+upstream <a href="https://github.com/avmnu-sng/rspec-tracer/pull/64">PR #64</a>
+(C3).</li>
+</ul>
+<h2 id="_1_1_2____2026_04_24">[1.1.2] - 2026-04-24</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>Encoding crash on locale-unset shells</strong> — legacy cache, report, and
+coverage paths called <code>File.read</code> / <code>File.write</code> without an explicit
+encoding. Ruby fell back to <code>Encoding.default_external</code>, which
+resolves to <code>US-ASCII</code> on shells launched without <code>LANG</code> set (the
+default for macOS GUI terminals and many LaunchAgent contexts). Any
+spec description containing a non-ASCII byte (e.g. <code>§</code>, typographic
+quotes) wrote UTF-8 into <code>all_examples.json</code>; the next warm run
+crashed at <code>Cache#load_*_cache</code> with
+<code>Encoding::InvalidByteSequenceError: &quot;\xC2&quot; on US-ASCII</code>, taking
+<code>spec_helper</code> down before any example ran. Every legacy JSON / ERB /
+Ruby-source read and write now pins <code>encoding: 'UTF-8'</code>;
+<code>SourceFile.from_path</code> switches to <code>File.binread</code> so the MD5 digest
+hashes raw bytes regardless of process locale.</li>
+</ul>
+<h2 id="_1_1_1____2026_04_23">[1.1.1] - 2026-04-23</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>parallel_tests at-exit deadlock</strong> — <code>parallel_tests_last_process?</code>
+relied on a lock file written during <code>RSpecTracer.start</code> to identify
+the last worker. If a fast worker reached <code>at_exit</code> before a slower
+peer had loaded <code>spec_helper</code> and registered its <code>TEST_ENV_NUMBER</code>,
+both workers could self-elect as the last process, both entered
+<code>::ParallelTests.wait_for_other_processes_to_finish</code>, and deadlocked
+on each other's pid. The elector now delegates to
+<code>::ParallelTests.first_process?</code>, which reads immutable env vars set
+by the parent at worker spawn. Exactly one worker is elected per run,
+regardless of boot-time ordering or runner CPU count. No public-API
+change — the <code>rspec_tracer.lock</code> file is still written and cleaned
+up, just no longer consulted.</li>
+</ul>
+<h2 id="_1_1_0____2026_04_20">[1.1.0] - 2026-04-20</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li>Ruby 3.1, 3.2, 3.3, 3.4, 4.0 are now CI-gated.</li>
+<li>Rails 7.0, 7.1, 7.2 are CI-gated via a reference sample app.</li>
+<li>Regression specs for four crash bugs (B1–B4) under
+<code>spec/lib/rspec_tracer/</code>.</li>
+</ul>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>B1</strong> — <code>Cache#cached_examples_coverage</code> returns <code>{}</code> (not <code>nil</code>)
+when <code>last_run.json</code> is present but <code>examples_coverage.json</code> is
+missing; previously this leaked nil into the missed-coverage merge.</li>
+<li><strong>B2</strong> — <code>Runner#generate_missed_coverage</code> tolerates a nil cached
+coverage map and nil line-strength entries; both are treated as
+empty / zero.</li>
+<li><strong>B3</strong> — <code>Runner#register_{file,example_file}_dependency</code> skips
+(logs debug, returns false) when <code>SourceFile.from_path</code> /
+<code>.from_name</code> cannot resolve the file (e.g. gem-generated examples
+or files deleted between runs).</li>
+<li><strong>B4</strong> — <code>CoverageReporter#merge_coverage</code> treats nil existing
+line coverage as 0 when summing skipped-test contributions.</li>
+<li>Custom filter and coverage-filter blocks now reach
+<code>RSpecTracer::Filter.register</code> — the DSL wrappers were dropping
+the block, causing <code>add_filter { |sf| … }</code> to raise
+<code>ArgumentError</code>.</li>
+<li><code>load_global_config.rb</code> wraps <code>Dir.home</code> / <code>Etc.getpwuid.dir</code> /
+<code>File.expand_path(&quot;~user&quot;)</code> in <code>rescue ArgumentError</code> so gem
+load never crashes in minimal containers where HOME is unset and
+the passwd database has no matching entry.</li>
+</ul>
+<h3 id="Changed">Changed</h3>
+<ul>
+<li><strong>Behavior change (default filters)</strong> — the default dependency
+and coverage filter lists now exclude Ruby installation /
+toolchain paths: <code>/lib/rspec_tracer/</code>, <code>/lib/rspec_tracer.rb</code>,
+<code>/usr/local/lib/ruby/</code>, <code>/usr/local/bundle/</code>,
+<code>/opt/hostedtoolcache/</code>, <code>/.rbenv/versions/</code>,
+<code>/.asdf/installs/ruby/</code>, <code>/.rvm/</code>. Previously only
+<code>/vendor/bundle/</code> was filtered. A test that previously recorded
+a dependency on a gem file or Ruby stdlib file (because of a
+custom install path like rbenv or asdf) will no longer record
+that dependency — those paths are handled by <code>Gemfile.lock</code> /
+the Ruby version file, not by coverage tracking. If you relied
+on the old narrow default, add your own <code>add_filter</code> /
+<code>add_coverage_filter</code> to clear the extras.</li>
+</ul>
+<h3 id="Removed">Removed</h3>
+<ul>
+<li>Support for Ruby ≤ 3.0 and Rails ≤ 6.x (EOL).</li>
+</ul>
+<h2 id="_1_0_0____2021_10_21">[1.0.0] - 2021-10-21</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li><a href="https://github.com/jruby/jruby">JRuby</a> support</li>
+<li><a href="https://github.com/grosser/parallel_tests">Parallel Tests</a> support</li>
+</ul>
+<h3 id="Breaking_Changes">Breaking Changes</h3>
+<p>The first run on this version will not use any cache on the CI because the number
+of files changed from eight to eleven, so there will be no appropriate cache to use.</p>
+<h2 id="_0_9_3____2021_10_03">[0.9.3] - 2021-10-03</h2>
+<p>Generate reports ignoring duplicate examples (#42)</p>
+<h2 id="_0_9_2____2021_09_30">[0.9.2] - 2021-09-30</h2>
+<h3 id="Fixed">Fixed</h3>
+<p>Caches getting corrupted on interrupts (#39)</p>
+<h2 id="_0_9_1____2021_09_23">[0.9.1] - 2021-09-23</h2>
+<h3 id="Fixed">Fixed</h3>
+<p>Flaky and failed examples dependency check (#38)</p>
+<h2 id="_0_9_0____2021_09_15">[0.9.0] - 2021-09-15</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li>Handling all examples filtered by RSpec (#34)</li>
+<li>Warn on incorrect analysis to stop using RSpec Tracer (#35)</li>
+<li>Run <code>SimpleCov.at_exit</code> hook (#36)</li>
+</ul>
+<h2 id="_0_8_0____2021_09_13">[0.8.0] - 2021-09-13</h2>
+<h3 id="Fixed">Fixed</h3>
+<p>Unable to find cache in case of history rewrites (#33)</p>
+<h2 id="_0_7_0____2021_09_10">[0.7.0] - 2021-09-10</h2>
+<h3 id="Fixed">Fixed</h3>
+<p>Missing spec files for the gem</p>
+<h2 id="_0_6_2____2021_09_07">[0.6.2] - 2021-09-07</h2>
+<h3 id="Added">Added</h3>
+<p>Improvements towards reducing dependency and coverage processing time (#26)</p>
+<h2 id="_0_6_1____2021_09_06">[0.6.1] - 2021-09-06</h2>
+<h3 id="Fixed">Fixed</h3>
+<p>Bug in time formatter (#24)</p>
+<h3 id="Added">Added</h3>
+<p>Environment variable to control verbose output (#25)</p>
+<h2 id="_0_6_0____2021_09_05">[0.6.0] - 2021-09-05</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li>Improved dependency change detection (#18)</li>
+<li>Flaky tests detection (#19)</li>
+<li>Exclude vendor files from analysis (#21)</li>
+<li>Report elapsed time at various stages (#23)</li>
+</ul>
+<h3 id="Note">Note</h3>
+<p>The first run on this version will not use any cache on the CI because the number
+of files changed from eight to nine, so there will be no appropriate cache to use.</p>
+<h2 id="_0_5_0____2021_09_03">[0.5.0] - 2021-09-03</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li>Limit number of cached files download (#16)</li>
+</ul>
+<h2 id="_0_4_0____2021_09_03">[0.4.0] - 2021-09-03</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li>Support for CI</li>
+</ul>
+<h2 id="_0_3_0____2021_08_30">[0.3.0] - 2021-08-30</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><code>docile</code> version compatability with <code>simplecov</code></li>
+</ul>
+<h2 id="_0_2_0____2021_08_28">[0.2.0] - 2021-08-28</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li>Failures when RSpec required files are outside of project</li>
+</ul>
+<h2 id="_0_1_0____2021_08_27">[0.1.0] - 2021-08-27</h2>
+<p><strong>Initial Release</strong></p>
+<h3 id="Added">Added</h3>
+<ul>
+<li>Ability to run RSpec Tracer with SimpleCov and without SimpleCov</li>
+<li>Support for HTML reports</li>
+</ul></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:47 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

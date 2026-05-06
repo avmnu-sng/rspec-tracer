@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: rspec_tracer
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "rspec_tracer";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: rspec_tracer</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>English</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>digest/md5</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>docile</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>fileutils</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>forwardable</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pathname</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/defaults</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/engine</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/example</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'># Reporters must load before load_config so the Configuration DSL&#39;s
+</span><span class='comment'># `add_reporter` can validate symbol names against
+</span><span class='comment'># `Reporters::Registry::BUILT_INS` when a user `.rspec-tracer` calls
+</span><span class='comment'># it at configure time.
+</span><span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/base</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/payload_builder</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/coverage_json_reporter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/json_reporter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/terminal_reporter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/html_reporter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/registry</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/load_config</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'># RemoteCache is loaded lazily from its Rakefile shim (user-driven),
+</span><span class='comment'># not at gem-load time. The user-facing tasks `rspec_tracer:remote_cache:*`
+</span><span class='comment'># pull in `lib/rspec_tracer/remote_cache.rb` when the user&#39;s Rakefile
+</span><span class='comment'># loads the shim. Test-suite runs that never invoke a cache task pay
+</span><span class='comment'># zero load cost for aws/git subshell code.
+</span><span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/rspec/installation</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/rspec/parallel_tests</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/source_file</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/time_formatter</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/version</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='comment'># Top-level entry point. Drives the lifecycle:
+</span><span class='comment'>#
+</span><span class='comment'>#   RSpecTracer.start
+</span><span class='comment'>#     -&gt; RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
+</span><span class='comment'>#     -&gt; setup_coverage                (::Coverage.start unless SimpleCov owns it)
+</span><span class='comment'>#     -&gt; setup_rails                   (detect ::Rails::VERSION)
+</span><span class='comment'>#     -&gt; Engine.new.setup              (observers + cache load + filter decisions)
+</span><span class='comment'>#
+</span><span class='comment'>#   at_exit_behavior (installed via `at_exit` elsewhere in the boot
+</span><span class='comment'>#   flow) runs the finalize stack: Engine#finalize writes the 13-file
+</span><span class='comment'>#   snapshot via Storage::JsonBackend, Reporters::CoverageJsonReporter
+</span><span class='comment'>#   writes coverage.json (single owner, replacing the 1.x
+</span><span class='comment'>#   CoverageReporter + CoverageWriter pair retired in 2.0),
+</span><span class='comment'>#   ParallelTests#finalize! merges per-worker caches on the last worker.
+</span><span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
+    <span class='comment'># Internal attribute.
+</span>    <span class='comment'># @api private
+</span>    <span class='id identifier rubyid_attr_accessor'>attr_accessor</span> <span class='symbol'>:running</span><span class='comma'>,</span> <span class='symbol'>:pid</span><span class='comma'>,</span> <span class='symbol'>:no_examples</span><span class='comma'>,</span> <span class='symbol'>:duplicate_examples</span>
+
+    <span class='comment'># Boot the tracer. Idempotent — safe to call multiple times in a
+</span>    <span class='comment'># single process (subsequent calls return without re-installing
+</span>    <span class='comment'># hooks). Drives the lifecycle:
+</span>    <span class='comment'>#
+</span>    <span class='comment'>#   * Installs the RSpec runner / reporter prepend chain.
+</span>    <span class='comment'>#   * Starts `::Coverage` unless SimpleCov already owns it.
+</span>    <span class='comment'>#   * Detects Rails (memoized in `RSpecTracer.rails?`).
+</span>    <span class='comment'>#   * Builds the {RSpecTracer::Engine} and installs observers.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Must be called BEFORE any application code loads so the boot
+</span>    <span class='comment'># set captured by `Coverage.peek_result` is empty. With SimpleCov,
+</span>    <span class='comment'># call `SimpleCov.start` first; rspec-tracer warns at boot when
+</span>    <span class='comment'># SimpleCov is loaded but not started.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [void]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_start'>start</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@started</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@started</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span> <span class='op'>=</span> <span class='kw'>false</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span>
+      <span class='ivar'>@run_started_at</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span>
+      <span class='ivar'>@run_monotonic_start</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+      <span class='ivar'>@started</span> <span class='op'>=</span> <span class='kw'>true</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'><span class='object_link'><a href="RSpecTracer/Logger.html#debug-instance_method" title="RSpecTracer::Logger#debug (method)">debug</a></span></span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Started RSpec tracer (pid: </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+
+      <span class='id identifier rubyid_warn_on_simplecov_load_order_mistake'>warn_on_simplecov_load_order_mistake</span>
+
+      <span class='ivar'>@parallel_tests</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_active?'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#active%3F-class_method" title="RSpecTracer::RSpec::ParallelTests.active? (method)">active?</a></span></span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_setup!'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#setup!-class_method" title="RSpecTracer::RSpec::ParallelTests.setup! (method)">setup!</a></span></span> <span class='kw'>if</span> <span class='id identifier rubyid_parallel_tests?'>parallel_tests?</span>
+      <span class='id identifier rubyid_initial_setup'>initial_setup</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># SimpleCov load-order is part of the documented contract -
+</span>    <span class='comment'># SimpleCov.start MUST run before RSpecTracer.start when both are
+</span>    <span class='comment'># used together (see README §SimpleCov interop). When the user
+</span>    <span class='comment'># has SimpleCov loaded but not started, we&#39;d silently call
+</span>    <span class='comment'># ::Coverage.start ourselves and SimpleCov&#39;s later setup would
+</span>    <span class='comment'># bolt onto a Coverage already in flight, with the user&#39;s
+</span>    <span class='comment'># add_filter calls applied after rspec-tracer started consuming
+</span>    <span class='comment'># data. Surface the load-order mistake at start time so the user
+</span>    <span class='comment'># gets a one-line warning instead of mysteriously-broken
+</span>    <span class='comment'># coverage output.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_warn_on_simplecov_load_order_mistake'>warn_on_simplecov_load_order_mistake</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>SimpleCov</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:running</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_running'>running</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="RSpecTracer/Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>SimpleCov is loaded but not started. </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Call SimpleCov.start before RSpecTracer.start so the </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracer respects SimpleCov\&#39;s filter chain. See README </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>section &quot;Working with SimpleCov&quot;.</span><span class='tstring_end'>&#39;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_at_exit_behavior'>at_exit_behavior</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span> <span class='op'>==</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span> <span class='op'>&amp;&amp;</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span>
+
+      <span class='op'>::</span><span class='const'>Kernel</span><span class='period'>.</span><span class='id identifier rubyid_exit'>exit</span><span class='lparen'>(</span><span class='int'>1</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_duplicate_examples'>duplicate_examples</span>
+
+      <span class='id identifier rubyid_run_exit_tasks'>run_exit_tasks</span>
+    <span class='kw'>ensure</span>
+      <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_active?'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#active%3F-class_method" title="RSpecTracer::RSpec::ParallelTests.active? (method)">active?</a></span></span> <span class='op'>&amp;&amp;</span>
+          <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_last_process?'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#last_process%3F-class_method" title="RSpecTracer::RSpec::ParallelTests.last_process? (method)">last_process?</a></span></span>
+        <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_remove_lock_file!'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#remove_lock_file!-class_method" title="RSpecTracer::RSpec::ParallelTests.remove_lock_file! (method)">remove_lock_file!</a></span></span>
+      <span class='kw'>end</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span> <span class='op'>=</span> <span class='kw'>false</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># The current {RSpecTracer::Engine} instance, or nil if
+</span>    <span class='comment'># {.start} hasn&#39;t been called yet.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [RSpecTracer::Engine, nil]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_engine'>engine</span>
+      <span class='ivar'>@engine</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@engine</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># True if SimpleCov was loaded AND running at the time
+</span>    <span class='comment'># {.start} was invoked. Determines whether rspec-tracer
+</span>    <span class='comment'># owns `::Coverage.start` itself (false) or defers to
+</span>    <span class='comment'># SimpleCov&#39;s coverage lifecycle (true).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [Boolean]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_simplecov?'>simplecov?</span>
+      <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@simplecov</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@simplecov</span> <span class='op'>==</span> <span class='kw'>true</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># True if `parallel_tests` is in use (detected via
+</span>    <span class='comment'># `ParallelTests.active?` at {.start} time). Affects
+</span>    <span class='comment'># cache + report directory scoping (per-worker dirs)
+</span>    <span class='comment'># and finalize-time merging.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [Boolean]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_parallel_tests?'>parallel_tests?</span>
+      <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@parallel_tests</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@parallel_tests</span> <span class='op'>==</span> <span class='kw'>true</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># True if Rails is loaded in this process (detected via
+</span>    <span class='comment'># `defined?(::Rails::VERSION)` at {.start} time). Memoized;
+</span>    <span class='comment'># subsequent Rails activations within the same run are not
+</span>    <span class='comment'># re-detected. Drives the auto-installation of Rails-side
+</span>    <span class='comment'># observers (template + AR notification subscribers).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [Boolean]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_rails?'>rails?</span>
+      <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@rails</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@rails</span> <span class='op'>==</span> <span class='kw'>true</span>
+    <span class='kw'>end</span>
+
+    <span class='id identifier rubyid_private'>private</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_initial_setup'>initial_setup</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/Installation.html" title="RSpecTracer::RSpec::Installation (module)">Installation</a></span></span><span class='period'>.</span><span class='id identifier rubyid_install!'><span class='object_link'><a href="RSpecTracer/RSpec/Installation.html#install!-class_method" title="RSpecTracer::RSpec::Installation.install! (method)">install!</a></span></span>
+
+      <span class='id identifier rubyid_setup_coverage'>setup_coverage</span>
+      <span class='id identifier rubyid_setup_rails'>setup_rails</span>
+
+      <span class='ivar'>@engine</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Engine.html" title="RSpecTracer::Engine (class)">Engine</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Engine.html#initialize-instance_method" title="RSpecTracer::Engine#initialize (method)">new</a></span></span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='rparen'>)</span>
+      <span class='ivar'>@engine</span><span class='period'>.</span><span class='id identifier rubyid_setup'>setup</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_setup_coverage'>setup_coverage</span>
+      <span class='ivar'>@simplecov</span> <span class='op'>=</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='const'>SimpleCov</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_running'>running</span>
+
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_simplecov?'>simplecov?</span>
+
+      <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage</span><span class='tstring_end'>&#39;</span></span>
+
+      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Detects Rails by the presence of `::Rails::VERSION`. Users who
+</span>    <span class='comment'># require `rspec_tracer/rails` transitively load the Railtie (when
+</span>    <span class='comment'># Rails is also present); this method only sets the flag consumed
+</span>    <span class='comment'># by `RSpecTracer.rails?`. Safe when Rails is absent - the
+</span>    <span class='comment'># `defined?` guard returns nil, flag stays false.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_setup_rails'>setup_rails</span>
+      <span class='ivar'>@rails</span> <span class='op'>=</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_exit_tasks'>run_exit_tasks</span>
+      <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_no_examples'><span class='object_link'><a href="RSpecTracer.html#no_examples-class_method" title="RSpecTracer.no_examples (method)">no_examples</a></span></span>
+        <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_info'><span class='object_link'><a href="RSpecTracer/Logger.html#info-instance_method" title="RSpecTracer::Logger#info (method)">info</a></span></span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Skipped reports generation since all examples were filtered out</span><span class='tstring_end'>&#39;</span></span>
+      <span class='kw'>else</span>
+        <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_run_finalize'>run_finalize</span>
+        <span class='comment'># Under parallel_tests, defer reporter emission until
+</span>        <span class='comment'># last-process finalize merges per-worker snapshots into the
+</span>        <span class='comment'># top-level cache. Each worker still persists its per-worker
+</span>        <span class='comment'># snapshot for the merge to consume. Earlier behavior had every
+</span>        <span class='comment'># worker emit reporters into rspec_tracer_report/parallel_tests_N/
+</span>        <span class='comment'># and purge_worker_dirs! removed those dirs - leaving the user
+</span>        <span class='comment'># with no usable terminal/JSON/HTML output. Now reporters fire
+</span>        <span class='comment'># ONCE at the merged top-level location.
+</span>        <span class='id identifier rubyid_emit_reporters'>emit_reporters</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='id identifier rubyid_parallel_tests?'>parallel_tests?</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_emit_coverage_json'>emit_coverage_json</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html" title="RSpecTracer::RSpec::ParallelTests (module)">ParallelTests</a></span></span><span class='period'>.</span><span class='id identifier rubyid_finalize!'><span class='object_link'><a href="RSpecTracer/RSpec/ParallelTests.html#finalize!-class_method" title="RSpecTracer::RSpec::ParallelTests.finalize! (method)">finalize!</a></span></span> <span class='kw'>if</span> <span class='id identifier rubyid_parallel_tests?'>parallel_tests?</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Engine-owned finalize path. Writes the 15-file JSON cache via
+</span>    <span class='comment'># Storage::JsonBackend. Per-example coverage deltas live on the
+</span>    <span class='comment'># Engine; 2.0 retired the CoverageReporter mid-flow piece (the
+</span>    <span class='comment'># legacy `coverage_reporter.generate_final_examples_coverage +
+</span>    <span class='comment'># merge_coverage(engine.merge_skipped_coverage(...))` is now folded
+</span>    <span class='comment'># into Reporters::CoverageJsonReporter#generate, which fires from
+</span>    <span class='comment'># `emit_coverage_json` after this method returns).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_finalize'>run_finalize</span>
+      <span class='id identifier rubyid_starting'>starting</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_finalize'>finalize</span>
+
+      <span class='id identifier rubyid_ending'>ending</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_elapsed'>elapsed</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/TimeFormatter.html" title="RSpecTracer::TimeFormatter (module)">TimeFormatter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_format_time'><span class='object_link'><a href="RSpecTracer/TimeFormatter.html#format_time-class_method" title="RSpecTracer::TimeFormatter.format_time (method)">format_time</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_ending'>ending</span> <span class='op'>-</span> <span class='id identifier rubyid_starting'>starting</span><span class='rparen'>)</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'><span class='object_link'><a href="RSpecTracer/Logger.html#debug-instance_method" title="RSpecTracer::Logger#debug (method)">debug</a></span></span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer persisted cache (took </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_elapsed'>elapsed</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='id identifier rubyid_snapshot'>snapshot</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='comment'># Graceful-degradation contract per ARCHITECTURE.md
+</span>      <span class='comment'># section Cache corruption recovery: never propagate storage errors
+</span>      <span class='comment'># into the user&#39;s test suite. Read-only cache_path, disk-full
+</span>      <span class='comment'># mid-write, permission flips between runs - log and skip
+</span>      <span class='comment'># report emission. The caller (run_exit_tasks) checks for nil
+</span>      <span class='comment'># before calling emit_reporters; coverage / parallel_tests
+</span>      <span class='comment'># finalize paths run independently downstream.
+</span>      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="RSpecTracer/Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: cache persistence failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>); </span><span class='tstring_end'>&quot;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>skipping report generation. Verify cache_path is writable.</span><span class='tstring_end'>&#39;</span></span>
+      <span class='rparen'>)</span>
+      <span class='kw'>nil</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Fire the configured reporters against the persisted
+</span>    <span class='comment'># Snapshot. Fires per-worker under parallel_tests (same cadence as
+</span>    <span class='comment'># coverage.json emission); each worker produces its own report.json
+</span>    <span class='comment'># under its per-worker report_dir. The Registry rescues every
+</span>    <span class='comment'># reporter individually, so a buggy reporter warns and continues -
+</span>    <span class='comment'># never propagates a non-zero exit into the user&#39;s test suite
+</span>    <span class='comment'># (graceful degradation contract, same as Storage backends).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_emit_reporters'>emit_reporters</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters/Registry.html" title="RSpecTracer::Reporters::Registry (class)">Registry</a></span></span><span class='period'>.</span><span class='id identifier rubyid_emit_all'><span class='object_link'><a href="RSpecTracer/Reporters/Registry.html#emit_all-class_method" title="RSpecTracer::Reporters::Registry.emit_all (method)">emit_all</a></span></span><span class='lparen'>(</span>
+        <span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span>
+        <span class='label'>snapshot:</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span>
+        <span class='label'>report_dir:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='comma'>,</span>
+        <span class='label'>run_metadata:</span> <span class='id identifier rubyid_build_run_metadata'>build_run_metadata</span>
+      <span class='rparen'>)</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="RSpecTracer/Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: reporter pipeline failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_run_metadata'>build_run_metadata</span>
+      <span class='lbrace'>{</span>
+        <span class='label'>pid:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span><span class='comma'>,</span>
+        <span class='label'>run_time:</span> <span class='id identifier rubyid_run_elapsed_seconds'>run_elapsed_seconds</span><span class='comma'>,</span>
+        <span class='label'>started_at:</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@run_started_at</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='ivar'>@run_started_at</span> <span class='op'>:</span> <span class='kw'>nil</span><span class='comma'>,</span>
+        <span class='label'>cache_path:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span>
+        <span class='label'>parallel_tests:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_parallel_tests?'><span class='object_link'><a href="RSpecTracer.html#parallel_tests%3F-class_method" title="RSpecTracer.parallel_tests? (method)">parallel_tests?</a></span></span><span class='comma'>,</span>
+        <span class='label'>rails:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_rails?'><span class='object_link'><a href="RSpecTracer.html#rails%3F-class_method" title="RSpecTracer.rails? (method)">rails?</a></span></span>
+      <span class='rbrace'>}</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_elapsed_seconds'>run_elapsed_seconds</span>
+      <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@run_monotonic_start</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@run_monotonic_start</span>
+
+      <span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span> <span class='op'>-</span> <span class='ivar'>@run_monotonic_start</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='lparen'>(</span><span class='int'>4</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Dedicated coverage.json firing path, parallel to the
+</span>    <span class='comment'># report-reporters Registry pipeline. Fires unconditionally - even
+</span>    <span class='comment'># when no examples ran (matches 1.x where coverage.json gets
+</span>    <span class='comment'># written with whatever boot-time peek_result returned + filter +
+</span>    <span class='comment'># stub). The emitter handles SimpleCov interop internally
+</span>    <span class='comment'># (installs `::Coverage.singleton_class.prepend` shim instead of
+</span>    <span class='comment'># writing coverage.json when SimpleCov is loaded).
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_emit_coverage_json'>emit_coverage_json</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_engine'>engine</span>
+
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters/CoverageJsonReporter.html" title="RSpecTracer::Reporters::CoverageJsonReporter (class)">CoverageJsonReporter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="RSpecTracer/Reporters/Base.html#initialize-instance_method" title="RSpecTracer::Reporters::Base#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+        <span class='label'>snapshot:</span> <span class='kw'>nil</span><span class='comma'>,</span>
+        <span class='label'>report_dir:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='comma'>,</span>
+        <span class='label'>run_metadata:</span> <span class='id identifier rubyid_build_run_metadata'>build_run_metadata</span><span class='comma'>,</span>
+        <span class='label'>logger:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
+      <span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_generate'><span class='object_link'><a href="RSpecTracer/Reporters/Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">generate</a></span></span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="RSpecTracer/Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: coverage.json emit failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Wed May  6 14:44:48 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>
