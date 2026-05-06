@@ -9,8 +9,8 @@
 #
 # This file must remain at the same path and continue to define the
 # same two tasks. The `require 'rspec_tracer'` + `require
-# 'rspec_tracer/remote_cache'` pair lazy-loads the M7.1 backend tree
-# only when the user actually invokes a cache task.
+# 'rspec_tracer/remote_cache'` pair lazy-loads the backend tree only
+# when the user actually invokes a cache task.
 
 require 'rspec_tracer'
 require 'rspec_tracer/remote_cache'

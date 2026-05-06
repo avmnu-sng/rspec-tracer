@@ -10,7 +10,7 @@ module RSpecTracer
     # Observer #4 in the 2.0 tracker pipeline. Emits the binary
     # "blow it all up" signal that runs before any per-example
     # filtering - when any watched file changes, the filter engine
-    # (M3.5) treats every example as affected.
+    # treats every example as affected.
     #
     # Watch list is deliberately hard-coded (not config-overridable):
     # these are the files whose semantics are universal across any
@@ -43,7 +43,7 @@ module RSpecTracer
 
       # Fresh snapshot on every call - callers typically take one at
       # boot (stored as the "current" snapshot) and compare against a
-      # previously-loaded snapshot (returned by storage in M3.4).
+      # previously-loaded snapshot (returned by the storage backend).
       # Unlike DeclaredGlobs.walk, this is not memoized: the caller
       # chooses when to sample.
       def digest_snapshot

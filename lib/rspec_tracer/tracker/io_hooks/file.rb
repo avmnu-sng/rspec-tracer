@@ -16,8 +16,7 @@ module RSpecTracer
       # `@root_prefix` nil-check before the inner bucket check could
       # bail. With the guard, the bucket check happens at FileReads
       # so the reject path skips IOHooks.record entirely. Cuts the
-      # M2 Max reject overhead from ~530 ns/call to ~300 ns/call
-      # (M3.1-M3.2 absorbed orphan).
+      # M2 Max reject overhead from ~530 ns/call to ~300 ns/call.
       module FileReads
         def read(path, ...)
           IOHooks.record(path) if Thread.current[BUCKET_KEY]

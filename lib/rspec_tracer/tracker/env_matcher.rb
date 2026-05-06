@@ -2,7 +2,7 @@
 
 module RSpecTracer
   module Tracker
-    # M5.3 wildcard env matching helper.
+    # Wildcard env matching helper.
     #
     # Lives outside Configuration so configure's alias loop does not
     # leak its private helpers as public _name DSL surface

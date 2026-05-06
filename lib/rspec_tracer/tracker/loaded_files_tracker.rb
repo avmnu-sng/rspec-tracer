@@ -131,9 +131,9 @@ module RSpecTracer
       end
 
       # Hash[relative_path => sha256_hex] for every file in the boot
-      # set. Used by the M3.6 caller to compare against the previous
-      # run's stored `Snapshot.boot_set` - any inequality is a
-      # whole-suite invalidator.
+      # set. The engine compares this against the previous run's
+      # stored `Snapshot.boot_set` - any inequality is a whole-suite
+      # invalidator.
       #
       # Invariant (enforced by capture_boot_set!): every path in
       # `@boot_set` has a matching `@input_cache` entry, so the fetch
@@ -150,9 +150,9 @@ module RSpecTracer
       # cache) is treated as "not invalidated by this signal" - first
       # run is already a cold run for unrelated reasons.
       #
-      # Disabled tracker never invalidates - M3.6's caller ORs this
-      # with WholeSuiteInvalidators.invalidated?, so returning false
-      # keeps the tracker silent when the feature is off.
+      # Disabled tracker never invalidates - the engine ORs this with
+      # WholeSuiteInvalidators.invalidated?, so returning false keeps
+      # the tracker silent when the feature is off.
       def boot_set_invalidated?(previous_snapshot)
         return false unless @enabled
         return false if previous_snapshot.nil?
@@ -229,9 +229,9 @@ module RSpecTracer
       # the cached length from the previous call no new project paths
       # can have appeared. Returns [] without iterating - cuts the
       # per-call cost from ~70 us (full filter loop over ~500 paths) to
-      # one Array#length comparison. M8.4-A profile pass identified
-      # this loop as the dominant per-example cost in the engine
-      # microbench (16% TOTAL); the fast-path drops it to <1%.
+      # one Array#length comparison. A profile pass identified this
+      # loop as the dominant per-example cost in the engine microbench
+      # (16% TOTAL); the fast-path drops it to <1%.
       def new_filtered_paths
         paths = @peek.call
         return [] if @last_peek_length == paths.length

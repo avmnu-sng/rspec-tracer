@@ -56,10 +56,11 @@ module RSpecTracer
         @globs.any? { |glob| File.fnmatch?(glob, rel, FNMATCH_FLAGS) }
       end
 
-      # Per-example attribution. Declared inputs attach to every example
-      # in the suite - the per-example DSL arrives in M5.2. Each example
-      # gets its own Set copy so downstream mutation of one example's
-      # input set does not leak into siblings.
+      # Per-example attribution. Declared inputs attach to every
+      # example in the suite (per-example narrowing is available via
+      # the per-example `tracks:` DSL). Each example gets its own Set
+      # copy so downstream mutation of one example's input set does
+      # not leak into siblings.
       def attribute_to(example_ids)
         inputs = walk
         example_ids.to_h { |id| [id, Set.new(inputs)] }

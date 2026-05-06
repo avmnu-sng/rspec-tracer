@@ -107,9 +107,9 @@ module RSpecTracer
 
           # Forward `**kwargs` too so DSL methods can accept Ruby 3+
           # keyword args (e.g. `track_rails_defaults except: [:views]`,
-          # M3.8's `storage_backend :json, serializer: :msgpack`).
-          # Before M4.1 this wrapper forwarded `*args, &block` only and
-          # silently stripped kwargs; see M3.4 handoff notes.
+          # `storage_backend :json, serializer: :msgpack`). Earlier
+          # forms of this wrapper forwarded `*args, &block` only and
+          # silently stripped kwargs.
           define_method method_name do |*args, **kwargs, &block|
             send(:"_#{method_name}", *args, **kwargs, &block)
           end
@@ -604,7 +604,7 @@ module RSpecTracer
                             end
     end
 
-    # M3.7 transitive-load attribution (closes the constants blind
+    # Transitive-load attribution (closes the constants blind
     # spot). Default `true` - the tracker observes files loaded during
     # the process and attributes them as transitive deps of every
     # subsequent example, so a change to a constants-defining file
@@ -629,7 +629,7 @@ module RSpecTracer
                                   end
     end
 
-    # M4.2 opt-in for narrow schema attribution. Default `false` - the
+    # Opt-in for narrow schema attribution. Default `false` - the
     # Preset `:schema` category already declared-glob-tracks db/schema.rb
     # + db/structure.sql as a safe over-approximation (any schema change
     # re-runs every example). Calling this method opts in to an
@@ -797,14 +797,14 @@ module RSpecTracer
       track_files(*globs)
     end
 
-    # One-way latch. Tracker.setup (M3.6) flips it so a stray
+    # One-way latch. Tracker.setup flips it so a stray
     # `track_files` later in the boot sequence raises instead of
     # silently accumulating into state that has already been read.
     def freeze_declared_globs!
       @declared_globs_frozen = true
     end
 
-    # M5.3 config-level env-tracking DSL. Accumulates names across
+    # Config-level env-tracking DSL. Accumulates names across
     # calls; bare entries flow into `Engine#setup`, are wildcard-
     # expanded via `Tracker::EnvMatcher`, and attach to every
     # previously-seen example (parallel to `track_files`'s "declared
@@ -856,7 +856,7 @@ module RSpecTracer
     EMPTY_TRACKED_ENV_NAMES = [].freeze
     private_constant :EMPTY_TRACKED_ENV_NAMES
 
-    # M5.1 per-spec-file exclusion (closes upstream #41). Accumulates
+    # Per-spec-file exclusion (closes upstream #41). Accumulates
     # glob patterns that match test files rspec-tracer should leave
     # alone: matching examples pass through RSpec unchanged, but the
     # tracer does not compute an identity hash, does not run
@@ -910,7 +910,7 @@ module RSpecTracer
       file_path[(@root.length + 1)..]
     end
 
-    # M3.8 local-cache run-id retention. Default 5 keeps enough
+    # Local-cache run-id retention. Default 5 keeps enough
     # history for rollback debugging without letting the cache grow
     # unbounded on long-lived machines (issue #20). 0 opts out (1.x
     # behavior - dirs accumulate forever). ENV
@@ -945,7 +945,7 @@ module RSpecTracer
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    # M3.8 size budgets. Both return non-negative Integer MiB.
+    # Size budgets. Both return non-negative Integer MiB.
     # Shape identical to cache_retention_local_count:
     # defined-and-nil-arg returns memo, ENV wins, then DSL arg, then
     # module default. 0 disables the respective check.
@@ -1000,8 +1000,8 @@ module RSpecTracer
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    # M3.4 storage backend selector, extended in M3.8 to accept a
-    # kwarg opts hash. Symbol form: `storage_backend :json` or
+    # Storage backend selector with optional kwarg opts hash.
+    # Symbol form: `storage_backend :json` or
     # `storage_backend :sqlite`. ENV `RSPEC_TRACER_STORAGE` wins over
     # the DSL argument, matching the `cache_dir` / `coverage_dir`
     # precedence convention so CI can swap backends without editing
@@ -1089,7 +1089,7 @@ module RSpecTracer
       { serializer: serializer }
     end
 
-    # M6.1 reporter DSL. Accumulates each call onto an internal list of
+    # Reporter DSL. Accumulates each call onto an internal list of
     # `[name_or_class, opts]` pairs that `Reporters::Registry` walks
     # at finalize-time. Matches the `track_files` accumulator shape.
     #
@@ -1099,7 +1099,7 @@ module RSpecTracer
     #   add_reporter MyCustomReporter, color: false
     #
     # Symbol names must match `Reporters::Registry::BUILT_INS.keys`
-    # (`:terminal`, `:json`; M6.2 adds `:html`). Class values are
+    # (`:terminal`, `:json`, `:html`). Class values are
     # trusted - they must subclass / duck-type `Reporters::Base` but
     # validation is deferred to initialize-time so custom reporters
     # defined in user code don't have to exist at DSL-validate time.

@@ -7,8 +7,8 @@ module RSpecTracer
     module Serializer
       # Default serializer for JsonBackend. Produces pretty-printed
       # JSON strings; reads tolerate binary-mode bytes by forcing
-      # UTF-8 on decode (preserves the M3.1 fix for example titles
-      # with non-ASCII bytes on US-ASCII-defaulted filesystems).
+      # UTF-8 on decode (preserves the fix for example titles with
+      # non-ASCII bytes on US-ASCII-defaulted filesystems).
       #
       # Class-level methods (not module_function) so mutant-rspec can
       # observe mutations through the call path; see the mutation-

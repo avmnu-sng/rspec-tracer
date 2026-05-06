@@ -9,9 +9,9 @@ require_relative '../line_stub'
 
 module RSpecTracer
   module Reporters
-    # M8.0 owner of `coverage.json` emission. Replaces the legacy
-    # CoverageReporter + CoverageWriter + CoverageMerger + RubyCoverage
-    # quartet that 1.x carried. Output shape preserved byte-for-byte
+    # Single owner of `coverage.json` emission in 2.0. Replaces the
+    # legacy CoverageReporter + CoverageWriter + CoverageMerger +
+    # RubyCoverage quartet that 1.x carried. Output shape preserved byte-for-byte
     # for downstream consumers (user CI dashboards parse this):
     #
     #   { "RSpecTracer": {
@@ -33,7 +33,7 @@ module RSpecTracer
     # NOT write coverage.json. Instead it installs a small inner module
     # via `::Coverage.singleton_class.prepend` so SimpleCov's at_exit
     # result-merge sees rspec-tracer's filtered coverage. Matches 1.x
-    # behavior + the M4.3 integration matrix convention.
+    # behavior + the integration matrix convention.
     #
     # Parallel_tests: per-worker emit happens through the Registry
     # like every other reporter (each worker writes its own
@@ -287,7 +287,7 @@ module RSpecTracer
       # SimpleCov calls `::Coverage.result` at its at_exit time, this
       # prepended `result` method returns rspec-tracer's filtered
       # cumulative coverage so SimpleCov's result-merge sees exactly
-      # what rspec-tracer saw. Matches the 1.x behavior the M4.3
+      # what rspec-tracer saw. Matches the 1.x behavior the
       # integration matrix relies on.
       module SimpleCovInterop
         class << self

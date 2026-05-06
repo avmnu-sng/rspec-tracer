@@ -105,7 +105,7 @@ module RSpecTracer
         end
       end
 
-      # M8.9: surface a 1.x->2.0 cache mismatch BEFORE the user runs
+      # Surface a 1.x->2.0 cache mismatch BEFORE the user runs
       # rspec and watches everything re-run mysteriously. Reads the
       # cached `last_run.json` (if any) and compares its
       # `schema_version` against the gem's `Schema::CURRENT`. Three
@@ -135,7 +135,7 @@ module RSpecTracer
         "WARN schema:      could not read cache manifest: #{e.class}: #{e.message}"
       end
 
-      # M8.9: when remote_cache is configured, verify the backend is
+      # When remote_cache is configured, verify the backend is
       # reachable from doctor's vantage point so the user catches
       # misconfig (typo'd S3 path / unreachable Redis URL / unwritable
       # local-fs dir) BEFORE the next CI run fails. Best-effort: never
@@ -188,15 +188,15 @@ module RSpecTracer
           '(reachability not probed locally; verified end-to-end on next CI run)'
       end
 
-      # M8.9: surface the M8.2-B / M9.0 / M9.1 narrow-attribution
-      # precondition at diagnostic time. When `track_ar_schema_notifications`
-      # is enabled AND Rails is loaded AND the rspec-rails default
-      # `use_transactional_fixtures = true` is in effect, per-example
-      # BEGIN/COMMIT fires `sql.active_record` inside the rspec-tracer
-      # bucket and attribution silently widens. Same shape as the
-      # boot-time warn shipped with M9.1 (RSpecTracer.start), surfaced
-      # here so users running `rspec-tracer doctor` see the issue
-      # without having to boot a full rspec run first.
+      # Surface the narrow-attribution precondition at diagnostic time.
+      # When `track_ar_schema_notifications` is enabled AND Rails is
+      # loaded AND the rspec-rails default `use_transactional_fixtures
+      # = true` is in effect, per-example BEGIN/COMMIT fires
+      # `sql.active_record` inside the rspec-tracer bucket and
+      # attribution silently widens. Same shape as the boot-time warn
+      # in RSpecTracer.start, surfaced here so users running
+      # `rspec-tracer doctor` see the issue without having to boot a
+      # full rspec run first.
       def self.ar_schema_narrow_attribution_check
         return 'INFO AR schema:   track_ar_schema_notifications not enabled' unless ar_schema_enabled?
         return 'INFO AR schema:   Rails not loaded' unless rails_loaded?

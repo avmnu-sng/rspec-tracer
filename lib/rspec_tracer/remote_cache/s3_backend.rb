@@ -50,7 +50,7 @@ module RSpecTracer
     #     entirely (including its branch_refs.json) when no ref has
     #     been touched in X seconds. Applied at upload time in the
     #     backend's own branch only; cross-branch cleanup is a separate
-    #     Rake task (deferred to M7.2).
+    #     Rake task.
     #
     # Graceful-degradation contract:
     #   - `download` returns false and never raises on wire/validation
@@ -60,8 +60,8 @@ module RSpecTracer
     #   - `prune!` returns count removed, never raises.
     #
     # S3 shells out via `aws` CLI - a single class is the natural unit
-    # of composition here. M8.3 mutation-smoke addition may push this
-    # over the limit further; splitting would be cosmetic.
+    # of composition here. The class is large; splitting would be
+    # cosmetic.
     # rubocop:disable Metrics/ClassLength
     class S3Backend
       class S3BackendError < StandardError; end

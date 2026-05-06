@@ -10,9 +10,9 @@ module RSpecTracer
     # 1.x scattered the parallel-worker glue across `lib/rspec_tracer.rb`
     # (`parallel_tests_setup`, `track_parallel_tests_test_env_number`,
     # `run_parallel_tests_exit_tasks`, `merge_parallel_tests_reports`,
-    # `parallel_tests_last_process?`, etc). M5.1 collapses them here and
+    # `parallel_tests_last_process?`, etc). 2.0 collapses them here and
     # rewires the snapshot merge onto `Storage::JsonBackend#merge_from_peers`
-    # so any storage backend (M3.8 SQLite) gets the merge for free.
+    # so any storage backend (including SQLite) gets the merge for free.
     #
     # Responsibilities:
     #   - Detect `TEST_ENV_NUMBER` + `PARALLEL_TEST_GROUPS` env vars.
@@ -157,12 +157,12 @@ module RSpecTracer
 
         merge_snapshot!
         merge_coverage! unless RSpecTracer.simplecov?
-        # M8.10: emit terminal/JSON/HTML reporters ONCE at the merged
-        # top-level location BEFORE purge_worker_dirs! removes the
-        # per-worker `parallel_tests_N` dirs. Pre-M8.10 each worker
-        # emitted reports into its `rspec_tracer_report/parallel_tests_N`
-        # dir and the purge then deleted them, leaving the user with
-        # zero usable output. Now reporters consume the just-merged
+        # Emit terminal/JSON/HTML reporters ONCE at the merged top-level
+        # location BEFORE purge_worker_dirs! removes the per-worker
+        # `parallel_tests_N` dirs. Earlier behavior had each worker emit
+        # reports into its `rspec_tracer_report/parallel_tests_N` dir
+        # and the purge then deleted them, leaving the user with zero
+        # usable output. Now reporters consume the just-merged
         # top-level snapshot.
         emit_merged_reporters!
         purge_worker_dirs!
@@ -241,7 +241,7 @@ module RSpecTracer
         paths.map { |path| ::File.dirname(path) }
       end
 
-      # M8.10: Emit reporters against the merged top-level snapshot
+      # Emit reporters against the merged top-level snapshot
       # so the user gets one terminal summary + one JSON report + one
       # HTML report at the canonical (non-`parallel_tests_N`) path.
       # Wrapped in its own rescue so a failed reporter never blocks
@@ -400,7 +400,7 @@ module RSpecTracer
       end
 
       # Merge per-worker coverage.json files into a top-level coverage.json.
-      # M8.0 routes through Reporters::CoverageJsonReporter.merge_parallel
+      # Routed through Reporters::CoverageJsonReporter.merge_parallel
       # (replaces the legacy CoverageMerger + CoverageWriter pair).
       def self.merge_coverage!
         base_dir = ::File.dirname(RSpecTracer.coverage_path)

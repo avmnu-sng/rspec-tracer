@@ -69,8 +69,8 @@ module RSpecTracer
       #
       # `tree_sha:` is accepted for protocol uniformity with S3Backend
       # but is currently a no-op: the tree-SHA secondary index is an
-      # S3-only feature (M8.4-B). Future enhancement may extend it
-      # here; the orchestrator already forwards the kwarg.
+      # S3-only feature. Future enhancement may extend it here; the
+      # orchestrator already forwards the kwarg.
       def download(ref, tree_sha: nil)
         _ = tree_sha
         return false if blank?(ref)

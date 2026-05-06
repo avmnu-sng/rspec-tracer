@@ -15,7 +15,7 @@ module RSpecTracer
     #
     # The per-example coverage peek+diff sequence (peek before, peek
     # after) runs through Engine#example_started + Engine#example_finished
-    # only. M8.0 retired the legacy CoverageReporter that previously
+    # only. 2.0 retired the legacy CoverageReporter that previously
     # peeked a second time per example; coverage.json emission now
     # consumes the Engine's per-example deltas + a single finalize-time
     # peek through Tracker::CoverageAdapter#peek_unfiltered.

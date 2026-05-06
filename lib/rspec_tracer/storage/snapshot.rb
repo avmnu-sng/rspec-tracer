@@ -15,34 +15,33 @@ module RSpecTracer
     # into struct internals.
     #
     # `examples_coverage` may be `nil` when a caller explicitly loads
-    # the cheap header only (M3.6 will wire that path). The default
-    # load is eager - `nil` vs `{}` distinguishes "not yet loaded"
-    # from "loaded and empty."
+    # the cheap header only. The default load is eager - `nil` vs `{}`
+    # distinguishes "not yet loaded" from "loaded and empty."
     #
     # Methods are defined on the reopened class body (not inside the
     # Struct.new block) so mutant can introspect them - same pattern
     # as Tracker::Input.
     #
-    # M3.7 adds `boot_set` - Hash[relative_path => sha256_hex] of every
-    # project file loaded before any example runs (spec_helper
-    # requires, gem boot, eager autoload). Backs the constants-
-    # blind-spot fix: the M3.6 caller compares this against the
-    # previous run's boot_set and ORs any mismatch with
-    # WholeSuiteInvalidators when computing the whole_suite_invalidated
-    # bool. Per-example loaded-set attribution folds into `dependency`
-    # via the existing graph registration path - no separate field.
+    # `boot_set` - Hash[relative_path => sha256_hex] of every project
+    # file loaded before any example runs (spec_helper requires, gem
+    # boot, eager autoload). Backs the constants-blind-spot fix: the
+    # engine compares this against the previous run's boot_set and ORs
+    # any mismatch with WholeSuiteInvalidators when computing the
+    # whole_suite_invalidated bool. Per-example loaded-set attribution
+    # folds into `dependency` via the existing graph registration path
+    # - no separate field.
     #
-    # M4.3 adds `wsi_snapshot` - Hash[watch_name => sha256_hex] produced
-    # by `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm
-    # run can't tell whether Gemfile.lock / .ruby-version / .rspec-tracer
+    # `wsi_snapshot` - Hash[watch_name => sha256_hex] produced by
+    # `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm run
+    # can't tell whether Gemfile.lock / .ruby-version / .rspec-tracer
     # (or the tracer gem identity) changed since the previous run, and
     # the engine falls back to "first run = invalidate everything" on
-    # every warm run. The field is optional in the JSON layout so caches
-    # saved before M4.3 continue to load (missing wsi.json coerces to
-    # `{}`, which compares unequal and triggers one cold re-run - safe
-    # fallback, same cost as any other cache miss).
+    # every warm run. The field is optional in the JSON layout so older
+    # caches continue to load (missing wsi.json coerces to `{}`, which
+    # compares unequal and triggers one cold re-run - safe fallback,
+    # same cost as any other cache miss).
     #
-    # M5.2 adds `env_snapshot` - Hash[env_name => md5_hex] produced by
+    # `env_snapshot` - Hash[env_name => md5_hex] produced by
     # `Tracker::EnvSnapshot#digest_snapshot`. Covers env-var values
     # declared via the per-example `tracks: { env: ... }` DSL.
     # Without it, a warm run can't tell whether an env-gated example
@@ -50,13 +49,13 @@ module RSpecTracer
     # treatment as wsi_snapshot: missing file coerces to `{}`, no
     # schema_version bump, one cold re-run on upgrade.
     #
-    # M6.1 adds `env_dependency` - Hash[example_id => Array<env_name>]
-    # capturing which env keys each tracked example declared. The
-    # per-run `env_snapshot` stores the digest of each key; this map
-    # stores the example-to-key attribution that the reporter layer
-    # needs to render "which env vars does this example depend on."
-    # Without it, reports can't surface env dependencies - Engine's
-    # per-run `@tracks_env` map would otherwise be lost at finalize.
+    # `env_dependency` - Hash[example_id => Array<env_name>] capturing
+    # which env keys each tracked example declared. The per-run
+    # `env_snapshot` stores the digest of each key; this map stores
+    # the example-to-key attribution that the reporter layer needs to
+    # render "which env vars does this example depend on." Without it,
+    # reports can't surface env dependencies - Engine's per-run
+    # `@tracks_env` map would otherwise be lost at finalize.
     # Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
     # missing file coerces to `{}`, no schema_version bump.
     #

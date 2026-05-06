@@ -8,7 +8,7 @@ module RSpecTracer
   module Rails
     # I18n backend observer. Covers custom backends (Redis-backed,
     # DB-backed, Chain) that bypass YAML.load_file and would otherwise
-    # miss the M3.2 IOHooks YAML hook.
+    # miss the IOHooks YAML hook.
     #
     # Mechanism: Module#prepend onto ::I18n::Backend::Base - every
     # backend subclass's load_translations resolves through the hook,

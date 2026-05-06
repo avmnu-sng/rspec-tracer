@@ -10,10 +10,10 @@ module RSpecTracer
     # detection via RSpec's identity-hash surface (the same hash 1.x
     # uses for `fail_on_duplicates`).
     #
-    # M3.5 owns the data structure only. `update_status` is called by
-    # M5.1 (RSpec integration hooks) on example-finished events and
-    # by signal handlers on interruption; M3.6 passes the registry
-    # instance through Tracker.setup. The registry itself has no
+    # This module owns the data structure only. `update_status` is
+    # called by the RSpec integration hooks on example-finished events
+    # and by signal handlers on interruption; `Tracker.setup` passes
+    # the registry instance through. The registry itself has no
     # opinion about where status comes from.
     #
     # Statuses
@@ -22,8 +22,8 @@ module RSpecTracer
     #   :failed       - example assertion failed
     #   :pending      - RSpec `pending`
     #   :interrupted  - RSpec was killed mid-example (SIGINT / SIGTERM)
-    #   :flaky        - passed this run but previously failed (M5.1
-    #                   detects via retry semantics)
+    #   :flaky        - passed this run but previously failed
+    #                   (detected via retry semantics)
     #   :skipped      - skipped via `skip` or `:skip` metadata; tracked
     #                   for coverage attribution but NOT auto-re-run
     #

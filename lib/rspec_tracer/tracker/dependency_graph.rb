@@ -17,7 +17,7 @@ module RSpecTracer
     #
     # Keyed by file path, not Input identity
     # -------------------------------------
-    # M3.5's brief described the inverse as "input_identity -> Set<example_id>",
+    # An earlier design framed the inverse as "input_identity -> Set<example_id>",
     # which embeds the Input#kind (e.g. "ruby:lib/foo.rb" vs
     # "declared:lib/foo.rb"). In practice the change-set that drives
     # filtering comes from diffing Snapshot.all_files digests, which

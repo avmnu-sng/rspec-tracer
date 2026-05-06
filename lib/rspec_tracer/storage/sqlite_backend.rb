@@ -43,7 +43,7 @@ module RSpecTracer
       # Raised when the sqlite3 gem cannot be loaded. Engine's
       # build_storage_backend dispatch rescues + falls back to
       # `:json` with a warn line - same optional-dep posture as
-      # RedisBackend (M7.2) uses for the redis gem.
+      # RedisBackend uses for the redis gem.
       class SqliteBackendError < StandardError; end
 
       DB_FILENAME = 'rspec_tracer.sqlite3'
@@ -57,8 +57,7 @@ module RSpecTracer
       # ms gives ~5x margin over a worst-case 1 s save on large caches
       # (cache_load benchmark p50 ~0.6 s at 500 examples), preserving
       # the storage layer's "concurrent writers serialize cleanly"
-      # contract verified in spec/edge_cases/concurrent_write_spec.rb
-      # (M8.2).
+      # contract verified in spec/edge_cases/concurrent_write_spec.rb.
       BUSY_TIMEOUT_MS = 5_000
 
       # SQLite's on-disk file format starts with the literal bytes
@@ -71,7 +70,7 @@ module RSpecTracer
       # Database.new + ensure_schema! sequence writes a fresh db.
       # Without this, configure_connection's PRAGMA raises
       # SQLite3::NotADatabaseException and the user is stuck unless
-      # they manually rm the cache. M8.2's cache_loader_fuzz harness
+      # they manually rm the cache. The `cache_loader_fuzz` harness
       # surfaced this gap.
       SQLITE_MAGIC_BYTES = "SQLite format 3\x00".b.freeze
       private_constant :SQLITE_MAGIC_BYTES
@@ -264,7 +263,7 @@ module RSpecTracer
         # the file's write lock to switch modes; if another connection is
         # mid-transaction (BEGIN IMMEDIATE held), the PRAGMA contends on
         # that lock and raises SQLite3::BusyException unless busy_timeout
-        # has been configured. M8.2's CI run on Ruby 3.3 caught this: the
+        # has been configured. CI on Ruby 3.3 surfaced this: the
         # losing concurrent writer never reached its BEGIN IMMEDIATE
         # because configure_connection's PRAGMA failed first.
         db.busy_timeout = BUSY_TIMEOUT_MS

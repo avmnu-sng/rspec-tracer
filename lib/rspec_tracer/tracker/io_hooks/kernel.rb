@@ -8,7 +8,7 @@ module RSpecTracer
       # chain) and explicit `Kernel.load('x.rb')` (singleton dispatch)
       # fire the hook. Records as :ruby - CoverageAdapter also sees
       # these files through the Coverage module's load-path
-      # instrumentation; M3.5's registry dedupes the overlap.
+      # instrumentation; the example registry dedupes the overlap.
       module KernelReads
         def load(path, ...)
           IOHooks.record_ruby_load(path) if Thread.current[BUCKET_KEY]

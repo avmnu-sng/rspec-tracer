@@ -13,7 +13,7 @@ module RSpecTracer
     # 1.x used `ObjectSpace.each_object(::RSpec::Core::Runner)` to find
     # the already-instantiated runner and prepend onto its singleton
     # class - forcing start-time ordering (RSpec had to be mid-boot).
-    # M5.1 prepends onto the class itself at require time, so the hooks
+    # 2.0 prepends onto the class itself at require time, so the hooks
     # apply to every subsequent Runner / Reporter instance.
     #
     # Consequence: `RSpecTracer.start` no longer requires RSpec to be
