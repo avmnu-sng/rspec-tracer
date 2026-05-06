@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-06T14:42:47Z",
-  "trigger": "main",
+  "generated_at": "2026-05-06T14:49:30Z",
+  "trigger": "tag",
   "latest_stable": null,
-  "latest_prerelease": null,
+  "latest_prerelease": "v2.0.0.pre.1",
   "all_versions": [
+    "v2.0.0.pre.1"
   ]
 }
