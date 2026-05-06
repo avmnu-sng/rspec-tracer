@@ -31,7 +31,8 @@ Goal: skip already-passing examples on subsequent runs.
 
 ```ruby
 # Gemfile
-gem 'rspec-tracer', '~> 2.0', group: :test, require: false
+# 2.0 is in pre-release; switch to '~> 2.0' once 2.0.0 final ships.
+gem 'rspec-tracer', '= 2.0.0.pre.1', group: :test, require: false
 ```
 
 ```sh
@@ -74,7 +75,8 @@ with views, locales, fixtures, schema, and per-example AR queries.
 
 ```ruby
 # Gemfile (test group)
-gem 'rspec-tracer', '~> 2.0', group: :test, require: false
+# 2.0 is in pre-release; switch to '~> 2.0' once 2.0.0 final ships.
+gem 'rspec-tracer', '= 2.0.0.pre.1', group: :test, require: false
 ```
 
 ```ruby
