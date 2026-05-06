@@ -3,6 +3,8 @@
 require_relative 'base'
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Concise stdout summary printed at finalize-time. Output is
     # capped at 4 lines for a typical run (5 when duplicate /
@@ -19,6 +21,8 @@ module RSpecTracer
     #   - The header line paints red on any failure / interrupted,
     #     yellow on pending-only, green otherwise.
     class TerminalReporter < Base
+      # Internal constant.
+      # @api private
       COLORS = {
         reset: 0,
         red: 31,
@@ -46,9 +50,16 @@ module RSpecTracer
       ].freeze
       private_constant :TALLY_FIELDS
 
+      # Internal constant.
+      # @api private
       BYTES_PER_MIB = 1_048_576.0
       private_constant :BYTES_PER_MIB
 
+      # Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+      # Prints a per-run summary to the configured output stream.
+      #
+      # @return [Array<String>, nil] the lines emitted, or nil when the
+      #   run had no examples worth reporting.
       def generate
         return nil if no_op?
 
@@ -60,10 +71,14 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_lines
         [header_line, tally_line, kind_breakdown_line, cache_line, report_line].compact
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def header_line
         total = snapshot.all_examples.size
         run = run_count
@@ -76,6 +91,8 @@ module RSpecTracer
         paint(header_color, text)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def tally_line
         parts = TALLY_FIELDS.filter_map do |field, label|
           ids = snapshot.send(field)
@@ -87,6 +104,8 @@ module RSpecTracer
         paint(:yellow, parts.join(SEPARATOR))
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def cache_line
         path = run_metadata[:cache_path]
         return nil if path.nil? || path.to_s.empty?
@@ -141,6 +160,8 @@ module RSpecTracer
         ''
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def format_cache_suffix(current_bytes, prior_bytes)
         size = format_size_bytes(current_bytes)
         return " (#{size})" if prior_bytes.nil?
@@ -154,12 +175,16 @@ module RSpecTracer
         " (#{size}; #{sign}#{format_size_bytes(delta.abs)} vs prev run)"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def directory_size_bytes(dir)
         Dir[File.join(dir, '**', '*')].sum do |path|
           File.file?(path) ? File.size(path) : 0
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def previous_run_dir_bytes(cache_path, current_id)
         peer_dirs = Dir.children(cache_path).filter_map do |name|
           next if name == current_id || name.start_with?('.')
@@ -173,12 +198,16 @@ module RSpecTracer
         directory_size_bytes(newest_peer)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def report_line
         return nil if report_dir.nil? || report_dir.to_s.empty?
 
         "report: #{File.join(report_dir, JsonReporter::FILENAME)}"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def header_color
         return :red if snapshot.failed_examples.any? || snapshot.interrupted_examples.any?
         return :yellow if snapshot.pending_examples.any?
@@ -186,22 +215,30 @@ module RSpecTracer
         :green
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def run_count
         snapshot.all_examples.count do |_, meta|
           meta.is_a?(::Hash) && meta[:execution_result]
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def duplicate_count
         snapshot.duplicate_examples.size
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def cache_percent(total, skipped)
         return 0 if total.zero?
 
         ((skipped.to_f / total) * 100).round
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def paint(color_key, text)
         return text unless use_color?
 
@@ -209,12 +246,16 @@ module RSpecTracer
         "\e[#{code}m#{text}\e[#{COLORS[:reset]}m"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def use_color?
         return false if ENV.key?('NO_COLOR')
 
         output_stream.respond_to?(:tty?) && output_stream.tty?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def output_stream
         options[:io] || $stdout
       end

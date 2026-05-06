@@ -5,6 +5,8 @@ require 'json'
 require_relative '../storage/schema'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Cache validator. Replaces 1.x's CACHE_FILES_PER_TEST_SUITE=11
     # file-count check, which broke under any FILENAMES change (v2

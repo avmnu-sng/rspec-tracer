@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal RSpec — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RSpec
     # Prepended onto `RSpec::Core::Reporter` by
     # `RSpecTracer::RSpec::Installation.install!`. Replaces the 1.x
@@ -20,12 +22,16 @@ module RSpecTracer
     # consumes the Engine's per-example deltas + a single finalize-time
     # peek through Tracker::CoverageAdapter#peek_unfiltered.
     module ReporterHook
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_started(_example)
         RSpecTracer.engine&.example_started
 
         super
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_finished(example)
         engine = RSpecTracer.engine
         if engine
@@ -36,18 +42,24 @@ module RSpecTracer
         super
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_passed(example)
         _rspec_tracer_status(example, :on_example_passed)
 
         super
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_failed(example)
         _rspec_tracer_status(example, :on_example_failed)
 
         super
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_pending(example)
         _rspec_tracer_status(example, :on_example_pending)
 
@@ -56,6 +68,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def _rspec_tracer_status(example, method)
         engine = RSpecTracer.engine
         return unless engine

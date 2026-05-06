@@ -19,7 +19,11 @@ module RSpecTracer
   # directories resolved from the project's `.rspec-tracer` config
   # (loaded lazily on first sub-command dispatch, not at CLI load time —
   # `doctor` deliberately runs without requiring a configured project).
+  #
+  # @api private
   module CLI
+    # Internal constant.
+    # @api private
     SUB_COMMANDS = {
       'doctor' => 'Doctor',
       'cache:info' => 'CacheInfo',
@@ -48,6 +52,8 @@ module RSpecTracer
       1
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.dispatch(args, stdout:, stderr:)
       sub = args.shift
       klass_name = SUB_COMMANDS[sub]
@@ -57,12 +63,16 @@ module RSpecTracer
       RSpecTracer::CLI.const_get(klass_name).run(args, stdout: stdout, stderr: stderr)
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.unknown_sub_command(sub, stderr)
       stderr.puts "rspec-tracer: unknown sub-command #{sub.inspect}"
       stderr.puts "  available: #{SUB_COMMANDS.keys.join(', ')}"
       1
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.print_top_level_help(stdout)
       stdout.puts <<~HELP
         Usage: rspec-tracer <sub-command> [options]
@@ -83,11 +93,15 @@ module RSpecTracer
       0
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.print_version(stdout)
       stdout.puts "rspec-tracer #{RSpecTracer::VERSION}"
       0
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.load_sub_command(klass_name)
       filename = klass_name.gsub(/([A-Z])/) { |m| "_#{m.downcase}" }.sub(/^_/, '')
       require_relative "cli/#{filename}"

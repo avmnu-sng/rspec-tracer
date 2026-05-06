@@ -3,6 +3,8 @@
 require 'digest'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Process-wide SHA256 file-digest cache. Keyed on absolute path
     # with [mtime_ns, size] as the freshness check — when the file's

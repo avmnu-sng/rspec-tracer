@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal RSpec — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RSpec
     # Per-example tracking DSL. Reads the `tracks:` metadata key
     # off an example and its ancestor example groups and emits a
@@ -31,8 +33,14 @@ module RSpecTracer
     # Pure-function (module-level, no state). Safe to call from the
     # RunnerHook filter loop without synchronization.
     module Metadata
+      # Internal constant.
+      # @api private
       TRACKS_KEY = :tracks
+      # Internal constant.
+      # @api private
       FILES_KEY = :files
+      # Internal constant.
+      # @api private
       ENV_KEY = :env
 
       # Keep methods module-level via `def self.x` (not module_function)

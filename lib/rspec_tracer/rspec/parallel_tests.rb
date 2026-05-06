@@ -4,6 +4,8 @@ require 'fileutils'
 require 'json'
 
 module RSpecTracer
+  # Internal RSpec — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RSpec
     # parallel_tests orchestration for the v2 engine.
     #
@@ -28,6 +30,8 @@ module RSpecTracer
     # StandardError and logs - a partial or corrupt peer cache must
     # never propagate a non-zero exit into the user's test run.
     module ParallelTests
+      # Internal constant.
+      # @api private
       LOCK_ENCODING = 'UTF-8'
 
       # Per-worker boot/done breadcrumbs written to each worker's
@@ -51,6 +55,8 @@ module RSpecTracer
       # straggler `parallel_tests_N/` after purge (failing
       # spec/integration/parallel_tests_spec.rb:88 intermittently).
       BOOT_MARKER_FILENAME = '.rspec_tracer_boot'
+      # Internal constant.
+      # @api private
       DONE_MARKER_FILENAME = '.rspec_tracer_done'
 
       # Bound on the elected worker's wait for missing .done markers.
@@ -59,6 +65,8 @@ module RSpecTracer
       # truly-crashed peer must not pin the elected forever).
       PEER_DONE_DEADLINE_SECONDS = 5
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.active?
         return false if ::ENV.fetch('TEST_ENV_NUMBER', nil).nil?
         return false if ::ENV.fetch('PARALLEL_TEST_GROUPS', nil).nil?
@@ -77,6 +85,8 @@ module RSpecTracer
         value.empty? || value == '1'
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.verbose?
         ::ENV.fetch('RSPEC_TRACER_VERBOSE', nil) == 'true'
       end
@@ -236,6 +246,8 @@ module RSpecTracer
         boot_dirs - done_dirs
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.peer_dirs_with_marker(base_dir, marker_filename)
         paths = ::Dir.glob(::File.join(base_dir, 'parallel_tests_*', marker_filename))
         paths.map { |path| ::File.dirname(path) }
@@ -268,6 +280,8 @@ module RSpecTracer
         )
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.load_merged_snapshot(base_dir)
         backend = RSpecTracer::Storage::JsonBackend.new(
           cache_path: base_dir,
@@ -278,6 +292,8 @@ module RSpecTracer
         backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.build_merged_run_metadata(base_dir)
         {
           pid: Process.pid,
@@ -289,6 +305,8 @@ module RSpecTracer
         }
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.track_test_env_number!
         ::File.open(RSpecTracer.lock_file, ::File::RDWR | ::File::CREAT, 0o644) do |f|
           f.flock(::File::LOCK_EX)
@@ -338,6 +356,8 @@ module RSpecTracer
         ::ParallelTests.first_process?
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remove_lock_file!
         ::FileUtils.rm_f(RSpecTracer.lock_file)
       end

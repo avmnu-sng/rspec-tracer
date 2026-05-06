@@ -10,6 +10,8 @@ require_relative 'redis_backend'
 require_relative 's3_backend'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Orchestrator for the user-facing `rspec_tracer:remote_cache:*`
     # Rake tasks. Composes `GitAncestry` + a `Backend` implementation,
@@ -29,34 +31,80 @@ module RSpecTracer
     #     the tests already passed; cache miss is recoverable next run.
     #
     class UserTasks
+      # Internal constant.
+      # @api private
       BUILT_IN_BACKENDS = {
         s3: S3Backend,
         local_fs: LocalFsBackend,
         redis: RedisBackend
       }.freeze
 
+      # Module-level convenience for {#download!}. Equivalent to
+      # `UserTasks.new(configuration: ..., env: ...).download!`. Invoked
+      # by the bundled `rspec_tracer/remote_cache/Rakefile` shim that
+      # users `import` from their own `Rakefile`.
+      #
+      # @param configuration [Object] anything responding to the
+      #   `cache_path` / `logger` / `remote_cache_*` config surface
+      #   (defaults to the {RSpecTracer} top-level module).
+      # @param env [Hash] env hash to read `GIT_BRANCH` /
+      #   `GIT_DEFAULT_BRANCH` from (defaults to `ENV`).
+      # @return [Boolean] true on a successful cache hit, false on cold
+      #   run or graceful failure.
       def self.download!(configuration: RSpecTracer, env: ENV)
         new(configuration: configuration, env: env).download!
       end
 
+      # Module-level convenience for {#upload!}. Equivalent to
+      # `UserTasks.new(configuration: ..., env: ...).upload!`. Invoked
+      # by the bundled `rspec_tracer/remote_cache/Rakefile` shim.
+      #
+      # @param configuration [Object] anything responding to the
+      #   `cache_path` / `logger` / `remote_cache_*` config surface
+      #   (defaults to the {RSpecTracer} top-level module).
+      # @param env [Hash] env hash to read `GIT_BRANCH` /
+      #   `GIT_DEFAULT_BRANCH` from (defaults to `ENV`).
+      # @return [Boolean] true on a successful upload, false on
+      #   graceful failure (logged but not raised).
       def self.upload!(configuration: RSpecTracer, env: ENV)
         new(configuration: configuration, env: env).upload!
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.prune_all!(configuration: RSpecTracer, env: ENV)
         new(configuration: configuration, env: env).prune_all!
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.git_repo?
         system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(configuration:, env:)
         @config = configuration
         @env = env
         @logger = configuration.logger
       end
 
+      # Pull the closest matching cache for the current branch + commit
+      # ancestry from the configured backend. Walks the candidate refs
+      # produced by {GitAncestry}, downloads + extracts the first ref
+      # whose archive validates, and returns true. Cold-run on miss.
+      #
+      # Errors are caught and logged; a failed download never propagates
+      # a non-zero exit into the test suite (graceful degradation).
+      #
+      # @example In a Rakefile
+      #   require 'rspec_tracer/remote_cache/Rakefile'
+      #   # provides `rake rspec_tracer:remote_cache:download` which
+      #   # invokes RSpecTracer::RemoteCache::UserTasks.download!
+      #
+      # @return [Boolean] true on a successful download, false on cold
+      #   run / graceful failure.
       def download!
         ancestry = build_ancestry
         ancestry.merge_base_branch!
@@ -81,6 +129,19 @@ module RSpecTracer
         false
       end
 
+      # Push the local cache directory for the current branch + commit
+      # to the configured backend, refresh the per-branch ref index, and
+      # apply retention pruning.
+      #
+      # Errors are caught and logged; a failed upload never propagates
+      # non-zero into the test suite (the tests already passed).
+      #
+      # @example In a Rakefile
+      #   require 'rspec_tracer/remote_cache/Rakefile'
+      #   # provides `rake rspec_tracer:remote_cache:upload` which
+      #   # invokes RSpecTracer::RemoteCache::UserTasks.upload!
+      #
+      # @return [Boolean] true on success, false on graceful failure.
       def upload!
         ancestry = build_ancestry
         ancestry.merge_base_branch!
@@ -122,6 +183,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_ancestry
         GitAncestry.new(
           default_branch: require_env('GIT_DEFAULT_BRANCH'),
@@ -143,6 +206,8 @@ module RSpecTracer
         GitAncestry.new(default_branch: default, branch: branch)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def require_env(name)
         value = @env[name]
         raise "#{name} environment variable is not set" if value.nil? || value.to_s.empty?
@@ -150,6 +215,8 @@ module RSpecTracer
         value
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_backend(ancestry)
         entry = remote_cache_backend_entry
         raise 'no remote_cache_backend configured' if entry.nil?
@@ -159,6 +226,8 @@ module RSpecTracer
         klass.new(**merge_runtime_opts(user_opts, ancestry))
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def remote_cache_backend_entry
         explicit = safe_config(:remote_cache_backend_entry)
         return explicit if explicit
@@ -166,6 +235,8 @@ module RSpecTracer
         derive_from_legacy_dsl
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def derive_from_legacy_dsl
         s3_uri = safe_config(:reports_s3_path)
         return nil if s3_uri.nil? || s3_uri.to_s.empty?
@@ -184,6 +255,8 @@ module RSpecTracer
         ]
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def resolve_backend_class(name_or_class)
         case name_or_class
         when Symbol
@@ -197,6 +270,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def merge_runtime_opts(user_opts, ancestry)
         runtime = {
           branch: ancestry.branch_name,
@@ -210,6 +285,8 @@ module RSpecTracer
         runtime.merge(user_opts)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def candidate_refs(ancestry, backend)
         refs = {}
         refs.merge!(backend.branch_refs(ancestry.branch_name)) if ancestry.pr_build?
@@ -217,6 +294,8 @@ module RSpecTracer
         refs.sort_by { |_, ts| -ts }.map(&:first)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def maybe_update_branch_refs(backend, ancestry)
         return unless ancestry.pr_build?
 
@@ -261,6 +340,8 @@ module RSpecTracer
         @logger.debug "rspec-tracer remote_cache: pruned #{removed} refs" if removed.positive?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def retention_opts_for(ancestry)
         if ancestry.pr_build?
           { count: nil, duration_seconds: nil,
@@ -272,6 +353,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def maybe_warn_unbounded(backend)
         return unless backend.respond_to?(:unbounded_warning)
         # Only meaningful on the main tier - PR tier gets branch-TTL
@@ -283,6 +366,8 @@ module RSpecTracer
         @logger.warn(warning) if warning
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def safe_config(method)
         @config.public_send(method)
       rescue NoMethodError

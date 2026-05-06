@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
     # Protocol every storage backend must satisfy. JsonBackend is the
     # default; SqliteBackend is an opt-in alternative on MRI. The
@@ -41,6 +43,8 @@ module RSpecTracer
     #     storage_backend MyBackend.new
     #   end
     module Backend
+      # Internal constant.
+      # @api private
       REQUIRED_METHODS = %i[
         load_graph
         save_graph

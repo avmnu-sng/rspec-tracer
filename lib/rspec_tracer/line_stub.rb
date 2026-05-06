@@ -16,6 +16,8 @@ module RSpecTracer
   # `def self.x` per feedback_mutation_friendly_modules so future
   # mutation gating maps to the singleton form.
   module LineStub
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.for(file_path)
       case RUBY_ENGINE
       when 'ruby'
@@ -27,6 +29,8 @@ module RSpecTracer
       end
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.ruby(file_path)
       lines = File.foreach(file_path).map { nil }
       iseqs = [::RubyVM::InstructionSequence.compile_file(file_path)]
@@ -38,6 +42,8 @@ module RSpecTracer
       lines
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.jruby(file_path)
       lines = File.foreach(file_path).map { nil }
       root_node = ::JRuby.parse(File.read(file_path, encoding: 'UTF-8'))

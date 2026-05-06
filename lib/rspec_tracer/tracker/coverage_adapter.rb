@@ -7,6 +7,8 @@ require_relative 'file_digest'
 require_relative 'input'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Wraps Ruby's built-in ::Coverage module. The first observer in
     # the 2.0 tracker pipeline -- ingests the per-file line-coverage
@@ -28,8 +30,12 @@ module RSpecTracer
       # :auto detects on the first peek by sniffing a value's type.
       MODES = %i[auto array hash].freeze
 
+      # Internal attribute.
+      # @api private
       attr_reader :root, :filters, :mode
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(root:, filters: [], mode: :auto)
         raise ArgumentError, "invalid mode: #{mode.inspect}, allowed: #{MODES}" \
           unless MODES.include?(mode)
@@ -126,12 +132,16 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def detect_mode(raw)
         return :array if raw.empty?
 
         raw.each_value.first.is_a?(Hash) ? :hash : :array
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def filtered?(path)
         return false if @filters.empty?
 
@@ -142,6 +152,8 @@ module RSpecTracer
         @filters.any? { |f| f.match?(file_name: file_name) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def delta?(before, after)
         return true if before.nil? || after.nil?
         return true if before.length != after.length
@@ -152,6 +164,8 @@ module RSpecTracer
         false
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def file_digest(path)
         FileDigest.compute(path)
       end

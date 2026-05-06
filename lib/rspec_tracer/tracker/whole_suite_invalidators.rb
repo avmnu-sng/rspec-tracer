@@ -6,6 +6,8 @@ require_relative 'file_digest'
 require_relative '../version'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Observer #4 in the 2.0 tracker pipeline. Emits the binary
     # "blow it all up" signal that runs before any per-example
@@ -31,11 +33,19 @@ module RSpecTracer
     # silently. Key-presence asymmetry is the invalidation signal
     # (snapshot A has key, snapshot B does not => invalidated).
     class WholeSuiteInvalidators
+      # Internal constant.
+      # @api private
       WATCH_FILES = %w[Gemfile.lock .ruby-version .rspec-tracer].freeze
+      # Internal constant.
+      # @api private
       GEM_IDENTITY_KEY = 'rspec-tracer-gem'
 
+      # Internal attribute.
+      # @api private
       attr_reader :root, :gem_version
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(root:, gem_version: RSpecTracer::VERSION)
         @root = File.expand_path(root)
         @gem_version = gem_version
@@ -76,6 +86,8 @@ module RSpecTracer
         FileDigest.compute(path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def gem_identity_digest
         Digest::SHA256.hexdigest("rspec-tracer-#{@gem_version}")
       end

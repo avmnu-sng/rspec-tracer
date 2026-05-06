@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Rails — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Rails
     # Rails lifecycle adapter. Only required by `lib/rspec_tracer/rails.rb`
     # when `defined?(::Rails::Railtie)` is true, so loading this file in

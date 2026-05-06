@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Per-example status + metadata registry. The Filter consults the
     # registry to decide which examples always re-run (failed / flaky
@@ -34,9 +36,15 @@ module RSpecTracer
     # excluded (matches 1.x `skipped_examples.json` which is written
     # but not added to the re-run set).
     class ExampleRegistry
+      # Internal constant.
+      # @api private
       STATUSES = %i[passed failed pending interrupted flaky skipped].freeze
+      # Internal constant.
+      # @api private
       ALWAYS_RE_RUN_STATUSES = %i[failed flaky pending interrupted].freeze
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize
         @examples = {}
         @identity_index = {}
@@ -55,6 +63,8 @@ module RSpecTracer
         self
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def update_status(example_id, status)
         raise ArgumentError, "unknown status: #{status.inspect}" unless STATUSES.include?(status)
         raise ArgumentError, "example not registered: #{example_id.inspect}" unless @examples.key?(example_id)
@@ -63,10 +73,14 @@ module RSpecTracer
         self
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def status_of(example_id)
         @examples[example_id]&.dig(:status)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def metadata_of(example_id)
         entry = @examples[example_id]
         return nil if entry.nil?
@@ -74,24 +88,34 @@ module RSpecTracer
         entry[:metadata].dup
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def registered?(example_id)
         @examples.key?(example_id)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def all_example_ids
         @examples.keys.to_set
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def size
         @examples.size
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def ids_with_status(status)
         @examples.each_with_object(Set.new) do |(id, entry), acc|
           acc << id if entry[:status] == status
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def always_re_run_ids
         @examples.each_with_object(Set.new) do |(id, entry), acc|
           acc << id if ALWAYS_RE_RUN_STATUSES.include?(entry[:status])
@@ -105,12 +129,16 @@ module RSpecTracer
         @duplicates.transform_values(&:dup)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def duplicate?(identity_hash)
         @duplicates.key?(identity_hash)
       end
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def track_identity(example_id, identity_hash)
         existing = @identity_index[identity_hash]
         if existing.nil?

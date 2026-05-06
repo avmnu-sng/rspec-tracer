@@ -52,6 +52,8 @@ require_relative 'rspec_tracer/version'
 #   ParallelTests#finalize! merges per-worker caches on the last worker.
 module RSpecTracer
   class << self
+    # Internal attribute.
+    # @api private
     attr_accessor :running, :pid, :no_examples, :duplicate_examples
 
     # Boot the tracer. Idempotent — safe to call multiple times in a
@@ -109,6 +111,8 @@ module RSpecTracer
       )
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def at_exit_behavior
       return unless RSpecTracer.pid == Process.pid && RSpecTracer.running
 
@@ -165,6 +169,8 @@ module RSpecTracer
 
     private
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def initial_setup
       RSpecTracer::RSpec::Installation.install!
 
@@ -175,6 +181,8 @@ module RSpecTracer
       @engine.setup
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def setup_coverage
       @simplecov = defined?(SimpleCov) && SimpleCov.running
 
@@ -194,6 +202,8 @@ module RSpecTracer
       @rails = defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def run_exit_tasks
       if RSpecTracer.no_examples
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
@@ -267,6 +277,8 @@ module RSpecTracer
       )
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_run_metadata
       {
         pid: RSpecTracer.pid,
@@ -278,6 +290,8 @@ module RSpecTracer
       }
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def run_elapsed_seconds
       return nil unless defined?(@run_monotonic_start) && @run_monotonic_start
 

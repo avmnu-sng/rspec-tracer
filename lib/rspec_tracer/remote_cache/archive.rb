@@ -5,6 +5,8 @@ require 'rubygems/package'
 require 'zlib'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # tar+gzip pack/extract for the remote-cache S3 payload. Pure
     # Ruby stdlib (`rubygems/package` + `zlib`) - no shell-out, no
@@ -24,6 +26,8 @@ module RSpecTracer
     # `USER_FACING_SURFACE.md` section 6 stay as documented; external tooling
     # that walks `rspec_tracer_cache/` sees the same 15-file layout.
     module Archive
+      # Internal constant.
+      # @api private
       CACHE_FILENAME = 'cache.tar.gz'
 
       # Pack the relevant contents of `cache_path` into `dest_path`.
@@ -48,6 +52,8 @@ module RSpecTracer
         dest_path
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.validate_pack_args!(cache_path, run_id, dest_path)
         raise ArgumentError, 'cache_path is required' if cache_path.nil? || cache_path.empty?
         raise ArgumentError, 'run_id is required' if run_id.nil? || run_id.empty?
@@ -55,6 +61,8 @@ module RSpecTracer
       end
       private_class_method :validate_pack_args!
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.resolve_pack_sources!(cache_path, run_id)
         last_run = File.join(cache_path, 'last_run.json')
         raise ArgumentError, "missing last_run.json at #{last_run}" unless File.file?(last_run)
@@ -98,6 +106,8 @@ module RSpecTracer
       end
       private_class_method :add_file
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.write_entry(entry, dest_dir)
         return unless entry.file?
 

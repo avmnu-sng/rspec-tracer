@@ -12,6 +12,8 @@ require_relative 'backend'
 require_relative 'validator'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # S3 implementation of `RemoteCache::Backend`. Shells out to the
     # `aws` / `awslocal` CLI for every operation - matches 1.x's
@@ -64,15 +66,31 @@ module RSpecTracer
     # cosmetic.
     # rubocop:disable Metrics/ClassLength
     class S3Backend
+      # Internal S3BackendError — see {RSpecTracer} for the user-facing surface.
+      # @api private
       class S3BackendError < StandardError; end
 
+      # Internal constant.
+      # @api private
       MAIN_TIER = 'main'
+      # Internal constant.
+      # @api private
       PR_TIER = 'pr'
+      # Internal constant.
+      # @api private
       BRANCH_REFS_FILENAME = 'branch_refs.json'
+      # Internal constant.
+      # @api private
       LAST_RUN_FILENAME = 'last_run.json'
+      # Internal constant.
+      # @api private
       CACHE_ARCHIVE_FILENAME = Archive::CACHE_FILENAME
+      # Internal constant.
+      # @api private
       ENCODING = 'UTF-8'
 
+      # Internal constant.
+      # @api private
       REQUIRED_OPTS = %i[bucket prefix branch default_branch cache_path].freeze
 
       # rubocop:disable Metrics/ParameterLists
@@ -234,6 +252,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def blank?(value)
         value.nil? || value.to_s.empty?
       end
@@ -249,12 +269,16 @@ module RSpecTracer
         value
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def validate_required!(**opts)
         opts.each do |key, value|
           raise S3BackendError, "#{key} is required" if blank?(value)
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def normalize_test_suite_id(raw)
         return nil if raw.nil?
 
@@ -268,38 +292,56 @@ module RSpecTracer
         @branch != @default_branch
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def own_tier_prefix
         pr_tier? ? "#{PR_TIER}/#{@branch}" : MAIN_TIER
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def main_tier_prefix
         MAIN_TIER
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_url(key)
         "s3://#{@bucket}/#{key}"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_archive_key(tier_prefix, ref)
         join_key(@prefix, tier_prefix, ref, @test_suite_id, CACHE_ARCHIVE_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_tree_pointer_key(tier_prefix, tree_sha)
         join_key(@prefix, tier_prefix, 'by_tree', tree_sha)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_branch_refs_key(branch_name)
         join_key(@prefix, PR_TIER, branch_name.chomp, BRANCH_REFS_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_ref_prefix_url(tier_prefix, ref)
         "#{s3_url(join_key(@prefix, tier_prefix, ref))}/"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def s3_tier_prefix_url(tier_prefix)
         "#{s3_url(join_key(@prefix, tier_prefix))}/"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def join_key(*segments)
         segments.compact.reject { |s| s.to_s.empty? }.join('/')
       end
@@ -310,10 +352,14 @@ module RSpecTracer
         File.join(@cache_path, LAST_RUN_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def local_run_dir(run_id)
         File.join(@cache_path, run_id)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_local_run_id
         return nil unless File.file?(local_last_run_path)
 
@@ -373,6 +419,8 @@ module RSpecTracer
         FileUtils.rm_f(local_tmp) if defined?(local_tmp) && local_tmp
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def upload_tree_pointer(ref, tree_sha)
         pointer_path = File.join(@cache_path, ".tree_pointer_upload_#{Process.pid}_#{SecureRandom.hex(4)}.txt")
         File.write(pointer_path, ref.to_s, encoding: ENCODING)
@@ -400,6 +448,8 @@ module RSpecTracer
         FileUtils.rm_f(archive_path) if defined?(archive_path) && archive_path
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def extract_and_validate(archive_path, tier_prefix, ref)
         begin
           Archive.extract(archive_path: archive_path, dest_dir: @cache_path)
@@ -423,6 +473,8 @@ module RSpecTracer
         FileUtils.rm_rf(local_run_dir(run_id)) if run_id
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def tmp_archive_path(purpose)
         FileUtils.mkdir_p(@cache_path)
         File.join(@cache_path, ".cache_#{purpose}_#{Process.pid}_#{SecureRandom.hex(4)}.tar.gz")
@@ -443,6 +495,8 @@ module RSpecTracer
         list_refs_in_tier(own_tier_prefix)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def list_refs_in_tier(tier_prefix)
         entries = list_objects(join_key(@prefix, tier_prefix))
         return [] if entries.empty?
@@ -475,6 +529,8 @@ module RSpecTracer
         segments.first
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_count!(count)
         refs = list_own_tier_refs
         return 0 if refs.length <= count
@@ -483,12 +539,16 @@ module RSpecTracer
         delete_refs(to_delete.map(&:first))
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_duration!(duration_seconds)
         cutoff = Time.now.to_i - duration_seconds.to_i
         stale = list_own_tier_refs.select { |_, ts| ts < cutoff }.map(&:first)
         delete_refs(stale)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def delete_refs(refs)
         removed = 0
         refs.each do |ref|
@@ -503,6 +563,8 @@ module RSpecTracer
         removed
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_dead_pr_branch!(ttl_seconds)
         refs = list_own_tier_refs
         return 0 if refs.empty?
@@ -547,6 +609,8 @@ module RSpecTracer
         branches.to_a
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def list_common_prefixes(prefix)
         stdout, stderr, status = Open3.capture3(
           @cli_binary, 's3api', 'list-objects-v2',
@@ -582,6 +646,8 @@ module RSpecTracer
         delete_branch_prefix(tier_prefix, refs.length)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def parse_s3_timestamp(iso_string)
         Time.parse(iso_string).to_i
       rescue StandardError
@@ -594,10 +660,14 @@ module RSpecTracer
         run_aws('s3', 'cp', src, dst)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def aws_rm_recursive_silent(dst)
         run_aws('s3', 'rm', dst, '--recursive')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def list_objects(prefix)
         stdout, stderr, status = Open3.capture3(
           @cli_binary, 's3api', 'list-objects-v2',
@@ -618,6 +688,8 @@ module RSpecTracer
         []
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def run_aws(*args)
         stdout, stderr, status = Open3.capture3(@cli_binary, *args)
         [status.success?, stdout, stderr]
@@ -629,6 +701,8 @@ module RSpecTracer
         @logger&.debug("rspec-tracer remote_cache: #{message}")
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_warn(message)
         @logger&.warn("rspec-tracer remote_cache: #{message}")
       end

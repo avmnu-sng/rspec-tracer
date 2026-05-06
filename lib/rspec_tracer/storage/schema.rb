@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
     # Cache schema version and compatibility policy. 1.x shipped caches
     # without any version stamp; 2.0's first migration is simply to
@@ -25,6 +27,8 @@ module RSpecTracer
       # and SUPPORTED narrows to only the new version. No v2 caches
       # were ever persisted in user land.
       CURRENT = 3
+      # Internal constant.
+      # @api private
       SUPPORTED = [CURRENT].freeze
 
       # True when the caller can load a cache stamped with `version`.

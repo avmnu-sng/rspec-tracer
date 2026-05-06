@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Orchestrates reporter emission at finalize-time. Called from
     # `RSpecTracer#run_exit_tasks` once the Engine has persisted its
@@ -30,18 +32,26 @@ module RSpecTracer
         html: 'RSpecTracer::Reporters::HtmlReporter'
       }.freeze
 
+      # Internal constant.
+      # @api private
       DEFAULTS = %i[terminal json html].freeze
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.emit_all(configuration:, snapshot:, report_dir:, run_metadata:)
         new(configuration: configuration).emit_all(
           snapshot: snapshot, report_dir: report_dir, run_metadata: run_metadata
         )
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(configuration:)
         @configuration = configuration
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def emit_all(snapshot:, report_dir:, run_metadata:)
         entries = resolve_entries
         return [] if entries.empty?
@@ -52,12 +62,16 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def resolve_entries
         declared = @configuration.respond_to?(:reporters) ? @configuration.reporters : nil
         source = declared && !declared.empty? ? declared : DEFAULTS.map { |name| [name, {}] }
         source.map { |name_or_class, opts| [resolve_class(name_or_class), opts || {}] }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def resolve_class(name_or_class)
         return name_or_class if name_or_class.is_a?(Class)
 
@@ -68,6 +82,8 @@ module RSpecTracer
         Object.const_get(const_name)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def emit_one(klass, opts, snapshot, report_dir, run_metadata)
         reporter = klass.new(
           snapshot: snapshot,
@@ -82,14 +98,20 @@ module RSpecTracer
         nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def warn_continue(klass, err)
         logger&.warn("rspec-tracer: reporter #{klass.name} failed (#{err.class}: #{err.message})")
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def logger
         @configuration.respond_to?(:logger) ? @configuration.logger : nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def empty_snapshot?(snapshot)
         snapshot.nil? || snapshot.all_examples.nil? || snapshot.all_examples.empty?
       end

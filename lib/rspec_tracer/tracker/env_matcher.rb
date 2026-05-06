@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Wildcard env matching helper.
     #
@@ -25,7 +27,11 @@ module RSpecTracer
     #   - Question mark                 "RAILS_?ENV"
     #   - Empty / nil
     module EnvMatcher
+      # Internal constant.
+      # @api private
       WILDCARD = '*'
+      # Internal constant.
+      # @api private
       DISALLOWED_CHARS = %w[? [ ] ! \\].freeze
 
       # Boolean: does the pattern contain at least one wildcard?
@@ -110,6 +116,8 @@ module RSpecTracer
       class << self
         private
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def glob_to_regex(pattern)
           /\A#{Regexp.escape(pattern).gsub('\\*', '[^=]*')}\z/
         end

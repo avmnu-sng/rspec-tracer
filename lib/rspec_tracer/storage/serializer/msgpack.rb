@@ -3,7 +3,11 @@
 require 'zlib'
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
+    # Internal Serializer — see {RSpecTracer} for the user-facing surface.
+    # @api private
     module Serializer
       # Raised when the caller asks for :msgpack but the msgpack gem
       # is not in the user's bundle. JsonBackend rescues at construct
@@ -28,15 +32,21 @@ module RSpecTracer
       # do not pay the msgpack load cost and so the LoadError path
       # is exercisable in unit specs (hide_const-based).
       class Msgpack
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.extension
           'msgpack.gz'
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.encode(payload)
           ensure_available!
           ::Zlib::Deflate.deflate(::MessagePack.pack(payload))
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.decode(bytes)
           ensure_available!
           ::MessagePack.unpack(::Zlib::Inflate.inflate(bytes))
@@ -62,6 +72,8 @@ module RSpecTracer
         class << self
           private
 
+          # Internal method on the tracer pipeline.
+          # @api private
           def ensure_available!
             return if defined?(::MessagePack)
 

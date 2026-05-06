@@ -8,6 +8,8 @@ require_relative 'backend'
 require_relative 'validator'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Redis implementation of `RemoteCache::Backend`. Each cache ref is
     # one Redis hash keyed under the two-tier layout:
@@ -52,15 +54,33 @@ module RSpecTracer
     # RedisBackendError if the gem is absent, which UserTasks converts
     # into a warning + cold run.
     class RedisBackend
+      # Internal RedisBackendError — see {RSpecTracer} for the user-facing surface.
+      # @api private
       class RedisBackendError < StandardError; end
 
+      # Internal constant.
+      # @api private
       MAIN_TIER = 'main'
+      # Internal constant.
+      # @api private
       PR_TIER = 'pr'
+      # Internal constant.
+      # @api private
       BRANCH_REFS_SUFFIX = 'branch_refs'
+      # Internal constant.
+      # @api private
       PR_BRANCHES_SUFFIX = 'pr_branches'
+      # Internal constant.
+      # @api private
       LAST_RUN_FIELD = 'last_run.json'
+      # Internal constant.
+      # @api private
       TIMESTAMP_FIELD = '_timestamp'
+      # Internal constant.
+      # @api private
       ENCODING = 'UTF-8'
+      # Internal constant.
+      # @api private
       DEFAULT_SCAN_COUNT = 200
 
       # rubocop:disable Metrics/ParameterLists
@@ -189,16 +209,22 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def blank?(value)
         value.nil? || value.to_s.empty?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def validate_required!(**opts)
         opts.each do |key, value|
           raise RedisBackendError, "#{key} is required" if blank?(value)
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def validate_connection_source!(url:, redis_client:)
         return if redis_client
         raise RedisBackendError, 'url or redis_client is required' if blank?(url)
@@ -216,6 +242,8 @@ module RSpecTracer
               "ttl must be a positive integer (seconds) or nil, got #{ttl.inspect}"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_client(url)
         require 'redis'
         ::Redis.new(url: url)
@@ -224,6 +252,8 @@ module RSpecTracer
               "redis gem is not installed; add `gem 'redis'` to your Gemfile to use RedisBackend"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def normalize_test_suite_id(raw)
         return nil if raw.nil?
 
@@ -231,36 +261,52 @@ module RSpecTracer
         value.empty? ? nil : value
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def trim_trailing_colons(str)
         value = str.dup
         value.chop! while value.end_with?(':')
         value
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def pr_tier?
         @branch != @default_branch
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def own_tier_segment
         pr_tier? ? "#{PR_TIER}:#{@branch}" : MAIN_TIER
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def ref_key(tier_segment, ref)
         [@prefix, tier_segment, ref, @test_suite_id].compact.reject(&:empty?).join(':')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def branch_refs_key(branch_name)
         [@prefix, PR_TIER, branch_name.chomp, BRANCH_REFS_SUFFIX].join(':')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def local_last_run_path
         File.join(@cache_path, LAST_RUN_FIELD)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def local_run_dir(run_id)
         File.join(@cache_path, run_id)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_local_run_id
         return nil unless File.file?(local_last_run_path)
 
@@ -275,6 +321,8 @@ module RSpecTracer
         nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_upload_fields(run_id)
         # Float seconds, not integer - multiple uploads within the
         # same clock second otherwise collide on _timestamp and make
@@ -319,6 +367,8 @@ module RSpecTracer
         "#{@prefix}:#{PR_BRANCHES_SUFFIX}"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def try_download_from(tier_segment, ref)
         key = ref_key(tier_segment, ref)
         fields = @redis.hgetall(key)
@@ -361,6 +411,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def rollback_extracted_cache
         run_id = read_local_run_id
         FileUtils.rm_f(local_last_run_path)
@@ -379,14 +431,20 @@ module RSpecTracer
         entries.sort_by { |(_, ts)| -ts }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def scan_matching_keys(pattern)
         @redis.scan_each(match: pattern, count: DEFAULT_SCAN_COUNT).to_a
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def branch_refs_key?(key)
         key.end_with?(":#{BRANCH_REFS_SUFFIX}")
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fetch_timestamp(key)
         raw = @redis.hget(key, TIMESTAMP_FIELD)
         return nil if raw.nil?
@@ -394,11 +452,15 @@ module RSpecTracer
         raw.to_f
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def count_tier_refs(tier_segment)
         pattern = "#{@prefix}:#{tier_segment}:*"
         scan_matching_keys(pattern).count { |k| !branch_refs_key?(k) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_count!(count)
         entries = list_refs_in_tier(own_tier_segment)
         return 0 if entries.length <= count
@@ -407,6 +469,8 @@ module RSpecTracer
         delete_keys(to_delete.map(&:first))
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_duration!(duration_seconds)
         cutoff = Time.now.to_i - duration_seconds.to_i
         stale_keys = list_refs_in_tier(own_tier_segment)
@@ -415,6 +479,8 @@ module RSpecTracer
         delete_keys(stale_keys)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def delete_keys(keys)
         return 0 if keys.empty?
 
@@ -423,6 +489,8 @@ module RSpecTracer
         keys.length
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_dead_pr_branch!(ttl_seconds)
         entries = list_refs_in_tier(own_tier_segment)
         return 0 if entries.empty?
@@ -446,6 +514,8 @@ module RSpecTracer
         0
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def discover_pr_branches
         pattern = "#{@prefix}:#{PR_TIER}:*:#{BRANCH_REFS_SUFFIX}"
         prefix_head = "#{@prefix}:#{PR_TIER}:"
@@ -455,6 +525,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def maybe_prune_branch(branch_name, cutoff)
         tier_segment = "#{PR_TIER}:#{branch_name}"
         entries = list_refs_in_tier(tier_segment)
@@ -466,10 +538,14 @@ module RSpecTracer
         delete_branch_prefix(branch_name, entries.length)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_debug(message)
         @logger&.debug("rspec-tracer remote_cache: #{message}")
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_warn(message)
         @logger&.warn("rspec-tracer remote_cache: #{message}")
       end

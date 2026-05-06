@@ -5,6 +5,8 @@ require_relative '../tracker/input'
 require_relative 'notifications'
 
 module RSpecTracer
+  # Internal Rails — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Rails
     # I18n backend observer. Covers custom backends (Redis-backed,
     # DB-backed, Chain) that bypass YAML.load_file and would otherwise
@@ -28,8 +30,12 @@ module RSpecTracer
     #   the user's test run.
     class I18nTracking
       class << self
+        # Internal attribute.
+        # @api private
         attr_reader :root
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def install(root:, filter: ->(_path) { true })
           @root = File.expand_path(root)
           @root_prefix = "#{@root}/"
@@ -51,6 +57,8 @@ module RSpecTracer
           self
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def installed?
           !@root_prefix.nil?
         end
@@ -99,6 +107,8 @@ module RSpecTracer
 
         private
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def prepend_backend_hook
           return false unless defined?(::I18n::Backend::Base)
 
@@ -113,7 +123,10 @@ module RSpecTracer
       # load_translations ultimately resolves through here via super.
       # Intercepts the filename list, delegates recording to the
       # singleton, and forwards to the real implementation.
+      # @api private
       module LoadTranslationsHook
+        # Internal method on the tracer pipeline.
+        # @api private
         def load_translations(*filenames)
           RSpecTracer::Rails::I18nTracking.record_translations(filenames)
           super

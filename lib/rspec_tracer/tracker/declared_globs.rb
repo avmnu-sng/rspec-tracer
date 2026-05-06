@@ -6,6 +6,8 @@ require_relative 'file_digest'
 require_relative 'input'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Observer #3 in the 2.0 tracker pipeline (CoverageAdapter = #1,
     # IOHooks = #2). Walks user-declared glob patterns at boot, digests
@@ -30,8 +32,12 @@ module RSpecTracer
       # in the sample projects) matches the same files `Dir.glob` would.
       FNMATCH_FLAGS = File::FNM_PATHNAME | File::FNM_EXTGLOB
 
+      # Internal attribute.
+      # @api private
       attr_reader :root, :globs
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(root:, globs: [])
         @root = File.expand_path(root)
         @root_prefix = "#{@root}/"
@@ -68,6 +74,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def compute_walk
         @globs.each_with_object(Set.new) do |glob, acc|
           Dir.glob(glob, base: @root).each do |rel|
@@ -82,6 +90,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def file_digest(path)
         FileDigest.compute(path)
       end

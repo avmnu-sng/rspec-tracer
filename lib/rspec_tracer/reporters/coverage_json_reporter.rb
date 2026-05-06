@@ -8,6 +8,8 @@ require_relative 'base'
 require_relative '../line_stub'
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Single owner of `coverage.json` emission in 2.0. Replaces the
     # legacy CoverageReporter + CoverageWriter + CoverageMerger +
@@ -41,8 +43,17 @@ module RSpecTracer
     # worker calls `merge_parallel` from `RSpec::ParallelTests` to
     # union the per-worker files into the top-level coverage.json.
     class CoverageJsonReporter < Base
+      # Internal constant.
+      # @api private
       FILENAME = 'coverage.json'
 
+      # Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+      # Builds the cumulative coverage payload and writes `coverage.json`
+      # under {#report_dir}, except when SimpleCov owns the run (in which
+      # case the SimpleCov interop shim takes over).
+      #
+      # @return [String, nil] absolute path of the written file, or nil
+      #   when the run wrote nothing (engine missing / SimpleCov interop).
       def generate
         return nil unless RSpecTracer.engine
         return install_simplecov_interop if RSpecTracer.simplecov?
@@ -91,6 +102,8 @@ module RSpecTracer
         output_path
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.merge_line_arrays(into, from)
         from.each_with_index do |strength, idx|
           next if strength.nil? || into[idx].nil?
@@ -102,6 +115,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_coverage
         coverage = engine.coverage_adapter.peek_unfiltered
         accumulate_skipped(coverage)
@@ -200,6 +215,8 @@ module RSpecTracer
         all.sort.to_h { |file_path| [file_path, coverage[file_path] || line_stub(file_path).freeze] }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def file_name_for(file_path)
         prefix = "#{RSpecTracer.root}/"
         return file_path unless file_path.start_with?(prefix)
@@ -207,6 +224,8 @@ module RSpecTracer
         file_path.sub(/\A#{Regexp.escape(RSpecTracer.root)}/, '')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_coverage_json(coverage)
         path = target_path
         FileUtils.mkdir_p(File.dirname(path))
@@ -214,10 +233,14 @@ module RSpecTracer
         File.write(path, JSON.pretty_generate(payload), encoding: 'UTF-8')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def target_path
         File.join(RSpecTracer.coverage_path, FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_stats(coverage)
         total = 0
         covered = 0
@@ -291,15 +314,21 @@ module RSpecTracer
       # integration matrix relies on.
       module SimpleCovInterop
         class << self
+          # Internal attribute.
+          # @api private
           attr_accessor :coverage
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.install(coverage)
           self.coverage = coverage
           klass = ::Coverage.singleton_class
           klass.prepend(self) unless klass.ancestors.include?(self)
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def result
           SimpleCovInterop.coverage
         end

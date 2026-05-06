@@ -7,6 +7,8 @@ require_relative 'base'
 require_relative 'payload_builder'
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Machine-readable summary of a tracer run. Writes
     # `<report_dir>/report.json` containing a stable, schema-versioned
@@ -51,9 +53,19 @@ module RSpecTracer
     # renamed keys ARE. Downstream consumers (HTML reporter, user CI
     # dashboards) should branch on the top-level version.
     class JsonReporter < Base
+      # Internal constant.
+      # @api private
       SCHEMA_VERSION = PayloadBuilder::SCHEMA_VERSION
+      # Internal constant.
+      # @api private
       FILENAME = 'report.json'
 
+      # Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+      # Serializes the canonical payload via {PayloadBuilder} and writes
+      # `report.json` under {#report_dir}.
+      #
+      # @return [String, nil] absolute path of the written file, or nil
+      #   when the run had no examples to report.
       def generate
         return nil if no_op?
 
@@ -66,6 +78,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_payload
         PayloadBuilder.build(snapshot: snapshot, run_metadata: run_metadata)
       end

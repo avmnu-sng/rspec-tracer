@@ -3,6 +3,8 @@
 require 'json'
 
 module RSpecTracer
+  # Internal CLI — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module CLI
     # `rspec-tracer explain <example>` — show why a given example is
     # scheduled to run or skip on the next rspec invocation. Reads the
@@ -36,6 +38,8 @@ module RSpecTracer
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.resolve_run_dir(cache_path, stderr)
         last_run_path = File.join(cache_path, 'last_run.json')
         unless File.file?(last_run_path)
@@ -53,12 +57,16 @@ module RSpecTracer
         run_dir
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.no_match(query, all_examples, stderr)
         stderr.puts "explain: no example matching #{query.inspect}"
         stderr.puts "  cache has #{all_examples.size} examples; pass an example_id or substring of description"
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
           Usage: rspec-tracer explain <example_id_or_substring>
@@ -70,6 +78,8 @@ module RSpecTracer
         0
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.read_json(path)
         return {} unless File.file?(path)
 
@@ -77,6 +87,8 @@ module RSpecTracer
         parsed.is_a?(Hash) ? parsed : {}
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.find_example(all_examples, query)
         return all_examples[query] if all_examples.key?(query)
 
@@ -87,12 +99,16 @@ module RSpecTracer
         end&.last
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_explanation(stdout, meta, run_dir)
         meta = {} unless meta.is_a?(::Hash)
         format_lines(meta).each { |line| stdout.puts line }
         print_dependency_summary(stdout, meta, run_dir)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.format_lines(meta)
         id = first_non_nil(meta, 'example_id', 'id') || '<unknown>'
         file = first_non_nil(meta, 'rerun_file_name', 'file_name')
@@ -107,11 +123,15 @@ module RSpecTracer
         ]
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.first_non_nil(meta, *keys)
         keys.each { |k| return meta[k] unless meta[k].nil? }
         nil
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_dependency_summary(stdout, meta, run_dir)
         deps_path = File.join(run_dir, 'dependency.json')
         return unless File.file?(deps_path)
