@@ -30,6 +30,6 @@ end
 
 ## Status
 
-Placeholder for 2.0. Legacy 1.x persistence lives in
-`lib/rspec_tracer/cache.rb`, `report_writer.rb`, and `coverage_writer.rb`
-and migrates here during Phase 3 (session M3.4).
+Shipping in 2.0. The legacy 1.x persistence files
+(`lib/rspec_tracer/cache.rb`, `report_writer.rb`, `coverage_writer.rb`)
+were retired and replaced by this storage subsystem.

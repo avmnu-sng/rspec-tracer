@@ -44,7 +44,7 @@ Installation module logs a warn-level line. Users are still free to
 ignore it - the tracer degrades to "attribute whatever we can observe
 from now on".
 
-## Per-example metadata DSL (M5.2)
+## Per-example metadata DSL
 
 Annotate a describe / context / example with `tracks: { files: ..., env: ... }`
 to declare additional dependencies that Coverage + IO observation cannot see:

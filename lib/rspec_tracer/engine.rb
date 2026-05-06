@@ -58,9 +58,9 @@ module RSpecTracer
   # Cache parity: `finalize` builds a Snapshot with file-name-keyed
   # dependency / reverse_dependency / all_files maps (matching the
   # 1.x on-disk convention - root-stripped file names with a leading
-  # "/") and hands it to Storage::JsonBackend. The schema bump to 3
-  # from M3.7 adds `boot_set`; everything else mirrors the 1.x
-  # cache layout byte-for-byte.
+  # "/") and hands it to Storage::JsonBackend. The 2.0 schema bump
+  # adds `boot_set`; everything else mirrors the 1.x cache layout
+  # byte-for-byte.
   # rubocop:disable Metrics/ClassLength
   class Engine
     EXAMPLE_RUN_REASON = {
@@ -104,7 +104,7 @@ module RSpecTracer
       @tracks_files = Hash.new { |h, id| h[id] = Set.new } # id => Set<abs_path>
       @tracks_env = Hash.new { |h, id| h[id] = Set.new }   # id => Set<env_name>
       @tracked_env_names = Set.new
-      @config_tracked_env_names = Set.new # M5.3 config-level subset (post-expansion)
+      @config_tracked_env_names = Set.new # config-level subset (post-expansion)
       @previous_snapshot = nil
       @run_id = nil
       @before_peek = nil
@@ -152,8 +152,8 @@ module RSpecTracer
       self
     end
 
-    # M5.2 per-example tracking DSL hook. Called from RunnerHook with
-    # the normalized `{files: Set<String>, env: Set<String>}` that
+    # Per-example tracking DSL hook. Called from RunnerHook with the
+    # normalized `{files: Set<String>, env: Set<String>}` that
     # `RSpec::Metadata.tracks_for(example)` produced. Resolves the
     # file globs against the project root once per distinct glob
     # string (memoized) and unions the matching Inputs into this
@@ -161,11 +161,11 @@ module RSpecTracer
     # `@tracked_env_names` so the finalize snapshot covers every key
     # the run cared about.
     #
-    # M5.3: per-example env entries may carry wildcard patterns
-    # (`tracks: { env: 'RAILS_*' }`). `EnvMatcher.expand` is the
-    # single funnel - literals pass through, wildcards expand against
-    # the live ENV, and unsupported syntax raises ArgumentError at
-    # this point (RunnerHook Pass 1, before any example body runs).
+    # Per-example env entries may carry wildcard patterns (`tracks:
+    # { env: 'RAILS_*' }`). `EnvMatcher.expand` is the single funnel
+    # - literals pass through, wildcards expand against the live ENV,
+    # and unsupported syntax raises ArgumentError at this point
+    # (RunnerHook Pass 1, before any example body runs).
     # rubocop:disable Metrics/PerceivedComplexity
     def register_tracks(example_id, tracks)
       files = tracks[:files] || tracks['files'] || Set.new
@@ -181,18 +181,17 @@ module RSpecTracer
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    # M5.2 / M5.3. Called from RunnerHook AFTER the filter-decision
-    # pre-walk has populated `@tracks_env` / `@tracked_env_names` for
-    # every example. Compares each declared env key against the
-    # previous snapshot's `env_snapshot` via Tracker::EnvSnapshot;
-    # marks any example whose tracked-env set intersects the
-    # invalidated set as re-runnable. Strictly additive vs other
-    # filter reasons - if the example was already in
-    # `@filtered_examples` for a stronger reason (files_changed /
-    # whole_suite_invalidator / failed_example / ...), env_changed
-    # does NOT overwrite.
+    # Called from RunnerHook AFTER the filter-decision pre-walk has
+    # populated `@tracks_env` / `@tracked_env_names` for every
+    # example. Compares each declared env key against the previous
+    # snapshot's `env_snapshot` via Tracker::EnvSnapshot; marks any
+    # example whose tracked-env set intersects the invalidated set
+    # as re-runnable. Strictly additive vs other filter reasons - if
+    # the example was already in `@filtered_examples` for a stronger
+    # reason (files_changed / whole_suite_invalidator /
+    # failed_example / ...), env_changed does NOT overwrite.
     #
-    # M5.3 config-level path: when an invalidated key intersects
+    # Config-level path: when an invalidated key intersects
     # `@config_tracked_env_names` (the post-expansion config-level
     # set), every previously-seen example re-runs - mirrors the
     # `track_files` "declared globs attach to every example"
@@ -338,7 +337,7 @@ module RSpecTracer
 
     private
 
-    # M5.3. Read the config-level `track_env(*names)` accumulator,
+    # Read the config-level `track_env(*names)` accumulator,
     # expand any wildcard patterns against the live ENV via
     # EnvMatcher.expand (which raises ArgumentError on unsupported
     # syntax - intentionally surfaces config errors at run start),
@@ -355,7 +354,7 @@ module RSpecTracer
       @tracked_env_names.merge(expanded)
     end
 
-    # M5.3. Mark every previously-seen example for re-run. Called
+    # Mark every previously-seen example for re-run. Called
     # when a config-level env key flips between runs.
     def mark_all_prev_examples(reason)
       @previous_snapshot.all_examples.each_key do |example_id|
@@ -365,7 +364,7 @@ module RSpecTracer
       end
     end
 
-    # M5.2 / M5.3 per-example env-changed mark. Walks @tracks_env,
+    # Per-example env-changed mark. Walks @tracks_env,
     # marks examples whose declared env set intersects invalidated.
     # Additive vs other filter reasons (won't overwrite).
     def mark_per_example_intersections(invalidated, reason)
@@ -883,9 +882,9 @@ module RSpecTracer
       @env_snapshot.digest_snapshot(@tracked_env_names)
     end
 
-    # M6.1. Project the per-example `@tracks_env` map (Set<env_name>
-    # per example_id) into a JSON-friendly Hash[id => sorted Array]
-    # for persistence. Reporters consume this to render the env-
+    # Project the per-example `@tracks_env` map (Set<env_name> per
+    # example_id) into a JSON-friendly Hash[id => sorted Array] for
+    # persistence. Reporters consume this to render the env-
     # dependency view on the Examples Dependency report. Empty sets
     # drop out so the on-disk map stays narrow. Sort keeps the output
     # deterministic for downstream diffs and golden tests.

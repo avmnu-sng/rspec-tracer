@@ -25,8 +25,8 @@ module RSpecTracer
     #
     # Lifecycle:
     #   1. IOHooks.install(root:, filter:, extensions:) - called once
-    #      at Tracker.setup time (wired in M3.6). Prepends hook modules
-    #      onto File/IO/YAML/JSON/Kernel singleton classes.
+    #      at Tracker.setup time. Prepends hook modules onto
+    #      File/IO/YAML/JSON/Kernel singleton classes.
     #   2. Example execution runs inside IOHooks.with_bucket(bucket)
     #      {...}. Hooks push Inputs into the thread-local bucket;
     #      outside a with_bucket call every hook fast-rejects.
@@ -137,8 +137,8 @@ module RSpecTracer
 
         # Record a :ruby input (Kernel#load hook). Belt-and-suspenders
         # for dynamically-constructed load paths that might bypass the
-        # Coverage module's require-graph observation. M3.5's registry
-        # dedupes overlap with CoverageAdapter.
+        # Coverage module's require-graph observation. The example
+        # registry dedupes overlap with CoverageAdapter.
         def record_ruby_load(path)
           _record(path, :ruby) { |p| p.end_with?('.rb') }
         end

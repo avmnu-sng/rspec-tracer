@@ -2,7 +2,7 @@
 
 module RSpecTracer
   module Reporters
-    # Abstract base for every reporter M6.1 / M6.2 ships. Takes the
+    # Abstract base for every reporter rspec-tracer ships. Takes the
     # finalized Storage::Snapshot + report_dir + run_metadata triplet
     # (architectural decision (b), Option X - raw Snapshot, no
     # projection struct) and exposes two lifecycle hooks:

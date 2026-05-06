@@ -4,11 +4,13 @@ require 'set'
 
 module RSpecTracer
   module Tracker
-    # Closed taxonomy of input sources. M3.1 only produces :ruby
-    # (Coverage-observed source). The other kinds are the surface for
-    # M3.2 (:data via I/O hooks), M3.3 (:declared, :lockfile), M3.7
-    # (:env) and later sessions. Adding a new kind is a one-line change
-    # here plus a test; shrinking the set is a schema_version bump.
+    # Closed taxonomy of input sources. The kinds correspond to the
+    # observation surface: `:ruby` (Coverage-observed source), `:data`
+    # (I/O hooks), `:declared` / `:lockfile` (declared globs), `:env`
+    # (env_snapshot), `:notification` (Rails notifications),
+    # `:template` / `:schema` (Rails subscribers). Adding a new kind
+    # is a one-line change here plus a test; shrinking the set is a
+    # schema_version bump.
     ALLOWED_INPUT_KINDS = %i[
       ruby template data schema lockfile declared env notification
     ].to_set.freeze

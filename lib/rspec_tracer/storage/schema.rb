@@ -19,11 +19,11 @@ module RSpecTracer
     # caller pays one cold run on upgrade - the deal 1.x users already
     # expect for any rspec-tracer version bump.
     module Schema
-      # schema_version 2 shipped with M3.4 (first versioned schema;
-      # 1.x was unstamped). M3.7 introduces `Snapshot.boot_set` -
-      # breaking for any reader that assumed the v2 field list - so
-      # CURRENT bumps to 3 and SUPPORTED narrows to only the new
-      # version. Pre-release: no v2 caches are persisted in user land.
+      # schema_version 2 was the first versioned schema (1.x was
+      # unstamped). 2.0 adds `Snapshot.boot_set` - breaking for any
+      # reader that assumed the v2 field list - so CURRENT bumps to 3
+      # and SUPPORTED narrows to only the new version. No v2 caches
+      # were ever persisted in user land.
       CURRENT = 3
       SUPPORTED = [CURRENT].freeze
 

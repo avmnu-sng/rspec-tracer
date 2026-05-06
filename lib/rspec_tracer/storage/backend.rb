@@ -3,9 +3,9 @@
 module RSpecTracer
   module Storage
     # Protocol every storage backend must satisfy. JsonBackend is the
-    # only shipping implementation in 2.0; SqliteBackend arrives in
-    # M3.8. The `spec/contracts/storage_backend.rb` shared-examples
-    # group asserts the full contract on every implementation.
+    # default; SqliteBackend is an opt-in alternative on MRI. The
+    # `spec/contracts/storage_backend.rb` shared-examples group asserts
+    # the full contract on every implementation.
     #
     # Rationale for the method set (from ARCHITECTURE.md, Contracts
     # between layers):

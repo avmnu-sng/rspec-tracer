@@ -66,14 +66,13 @@ Leaving `:schema` in `track_rails_defaults` while also enabling the
 subscriber is a no-op in terms of the re-run set - declared-glob
 dominates at graph registration.
 
-## Phase 4 scope split
+## Components
 
-- **M4.1**: preset + detection + Railtie scaffold.
-- **M4.2** (this file, shipped): Notifications + I18nTracking
-  observers, `track_ar_schema_notifications` opt-in DSL, and
-  Engine.setup wiring. Factory and fixture coverage ride the existing
-  LoadedFilesTracker / YAML.load_file hook surface; regression specs
-  verify both mechanically.
-- **M4.3**: integration test against the reference Rails app
-  (`spec/fixtures/rails_app/`) covering the full "change X -> Y re-runs"
-  behavior matrix.
+- **Preset + detection + Railtie scaffold.**
+- **Notifications + I18nTracking observers**, the
+  `track_ar_schema_notifications` opt-in DSL, and `Engine.setup`
+  wiring. Factory and fixture coverage ride the existing
+  `LoadedFilesTracker` / `YAML.load_file` hook surface.
+- **Integration coverage** against the reference Rails app
+  (`spec/fixtures/rails_app/`) verifying the full "change X -> Y
+  re-runs" behavior matrix.

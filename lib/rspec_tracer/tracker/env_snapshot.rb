@@ -7,7 +7,7 @@ module RSpecTracer
   module Tracker
     # Observer #5 in the 2.0 tracker pipeline (WholeSuiteInvalidators
     # is #4). Owns the per-run snapshot of environment-variable
-    # values that M5.2's `tracks: { env: ... }` metadata declares.
+    # values that the per-example `tracks: { env: ... }` metadata declares.
     #
     # Watch list is caller-provided - unlike WholeSuiteInvalidators,
     # which hard-codes Gemfile.lock / .ruby-version / .rspec-tracer,

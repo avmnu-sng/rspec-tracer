@@ -16,7 +16,7 @@ require_relative 'rspec_tracer/example'
 # Reporters must load before load_config so the Configuration DSL's
 # `add_reporter` can validate symbol names against
 # `Reporters::Registry::BUILT_INS` when a user `.rspec-tracer` calls
-# it at configure time (M6.1).
+# it at configure time.
 require_relative 'rspec_tracer/reporters/base'
 require_relative 'rspec_tracer/reporters/payload_builder'
 require_relative 'rspec_tracer/reporters/coverage_json_reporter'
@@ -36,7 +36,7 @@ require_relative 'rspec_tracer/source_file'
 require_relative 'rspec_tracer/time_formatter'
 require_relative 'rspec_tracer/version'
 
-# Top-level entry point. Drives the M5.1 lifecycle:
+# Top-level entry point. Drives the lifecycle:
 #
 #   RSpecTracer.start
 #     -> RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
@@ -48,7 +48,7 @@ require_relative 'rspec_tracer/version'
 #   flow) runs the finalize stack: Engine#finalize writes the 13-file
 #   snapshot via Storage::JsonBackend, Reporters::CoverageJsonReporter
 #   writes coverage.json (single owner, replacing the 1.x
-#   CoverageReporter + CoverageWriter pair retired in M8.0),
+#   CoverageReporter + CoverageWriter pair retired in 2.0),
 #   ParallelTests#finalize! merges per-worker caches on the last worker.
 module RSpecTracer
   class << self
@@ -87,7 +87,7 @@ module RSpecTracer
       initial_setup
     end
 
-    # M8.9: SimpleCov load-order is part of the documented contract -
+    # SimpleCov load-order is part of the documented contract -
     # SimpleCov.start MUST run before RSpecTracer.start when both are
     # used together (see README §SimpleCov interop). When the user
     # has SimpleCov loaded but not started, we'd silently call
@@ -199,15 +199,14 @@ module RSpecTracer
         RSpecTracer.logger.info 'Skipped reports generation since all examples were filtered out'
       else
         snapshot = run_finalize
-        # M8.10: under parallel_tests, defer reporter emission until
+        # Under parallel_tests, defer reporter emission until
         # last-process finalize merges per-worker snapshots into the
         # top-level cache. Each worker still persists its per-worker
-        # snapshot for the merge to consume. Pre-M8.10 every worker
-        # emitted reporters into rspec_tracer_report/parallel_tests_N/
+        # snapshot for the merge to consume. Earlier behavior had every
+        # worker emit reporters into rspec_tracer_report/parallel_tests_N/
         # and purge_worker_dirs! removed those dirs - leaving the user
         # with no usable terminal/JSON/HTML output. Now reporters fire
-        # ONCE at the merged top-level location (3x v1 orphan: M6.2 +
-        # M7.1 + M7.2).
+        # ONCE at the merged top-level location.
         emit_reporters(snapshot) if snapshot && !parallel_tests?
       end
 
@@ -218,7 +217,7 @@ module RSpecTracer
 
     # Engine-owned finalize path. Writes the 15-file JSON cache via
     # Storage::JsonBackend. Per-example coverage deltas live on the
-    # Engine; M8.0 retired the CoverageReporter mid-flow piece (the
+    # Engine; 2.0 retired the CoverageReporter mid-flow piece (the
     # legacy `coverage_reporter.generate_final_examples_coverage +
     # merge_coverage(engine.merge_skipped_coverage(...))` is now folded
     # into Reporters::CoverageJsonReporter#generate, which fires from
@@ -248,7 +247,7 @@ module RSpecTracer
       nil
     end
 
-    # M6.1. Fire the configured reporters against the persisted
+    # Fire the configured reporters against the persisted
     # Snapshot. Fires per-worker under parallel_tests (same cadence as
     # coverage.json emission); each worker produces its own report.json
     # under its per-worker report_dir. The Registry rescues every
@@ -285,7 +284,7 @@ module RSpecTracer
       (::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - @run_monotonic_start).round(4)
     end
 
-    # M8.0: dedicated coverage.json firing path, parallel to the
+    # Dedicated coverage.json firing path, parallel to the
     # report-reporters Registry pipeline. Fires unconditionally - even
     # when no examples ran (matches 1.x where coverage.json gets
     # written with whatever boot-time peek_result returned + filter +

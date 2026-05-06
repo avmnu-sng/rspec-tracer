@@ -2,8 +2,8 @@
 
 module RSpecTracer
   # Path manipulation helpers used by Example.location_file_name.
-  # Post-M8.0 retirement, the only caller is example.rb (the legacy
-  # CoverageReporter that previously used these is gone).
+  # Post-coverage-stack retirement, the only caller is example.rb
+  # (the legacy CoverageReporter that previously used these is gone).
   #
   # All methods declared `def self.x` per
   # feedback_mutation_friendly_modules so mutant observes mutations

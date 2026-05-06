@@ -14,15 +14,15 @@ module RSpecTracer
     # The fix: at boot, walk the union of user-declared globs and a
     # pure-Ruby default set (lib/**/*.rb). Every match on disk that is
     # not in the loaded cache's known_paths emits an Input, which the
-    # filter engine (M3.5) treats as "added" and re-runs any example
-    # whose dependency graph could plausibly include it.
+    # filter engine treats as "added" and re-runs any example whose
+    # dependency graph could plausibly include it.
     #
     # Kind is :declared for every emission. The pure-Ruby default is
     # logically a pre-declared glob on the user's behalf - the
     # attribution semantics are identical to an explicit
     # `track_files 'lib/**/*.rb'`.
     #
-    # Rails preset (app/**/*.rb) arrives in M4.1 through
+    # The Rails preset (app/**/*.rb) flows through
     # Configuration#track_rails_defaults; the default list here stays
     # framework-agnostic.
     class NewFileDetector

@@ -4,7 +4,7 @@ require 'set'
 
 module RSpecTracer
   module RSpec
-    # M5.2 per-example tracking DSL. Reads the `tracks:` metadata key
+    # Per-example tracking DSL. Reads the `tracks:` metadata key
     # off an example and its ancestor example groups and emits a
     # normalized union of declared file globs + env-var names.
     #

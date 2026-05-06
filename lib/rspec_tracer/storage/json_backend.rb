@@ -42,9 +42,9 @@ module RSpecTracer
     # asserts across 1000 iterations.
     #
     # Encoding: every read and write passes `encoding: 'UTF-8'`.
-    # This fixes the M3.1-flagged `Encoding::InvalidByteSequenceError`
-    # that bit the dogfood path when an example title contained a
-    # non-ASCII byte on a US-ASCII-defaulted filesystem.
+    # Fixes the `Encoding::InvalidByteSequenceError` that bit the
+    # dogfood path when an example title contained a non-ASCII byte on
+    # a US-ASCII-defaulted filesystem.
     # rubocop:disable Metrics/ClassLength
     class JsonBackend
       # On-disk filenames under the default `:json` serializer. This
@@ -57,20 +57,20 @@ module RSpecTracer
       # boot_set.json lands at the end of the list - additive w.r.t.
       # 1.x and v2 readers that walked this enumeration. It carries
       # the project's transitive boot-load set (schema_version 3).
-      # wsi_snapshot.json (M4.3) persists the WholeSuiteInvalidators
+      # wsi_snapshot.json persists the WholeSuiteInvalidators
       # digest_snapshot so warm runs can tell whether Gemfile.lock /
       # .ruby-version / .rspec-tracer / tracer-gem identity changed
       # since the previous run. Without it, warm runs always saw a
       # nil previous and treated every run as a cold first run.
-      # Missing file deserializes to `{}` so pre-M4.3 caches still
-      # load - the fallback path fires one full re-run (safe).
-      # env_snapshot.json (M5.2) persists the `Tracker::EnvSnapshot`
-      # digest map for env-var values the per-example `tracks:
-      # { env: ... }` DSL declares. Same missing-coerces-to-`{}`
-      # fallback as wsi_snapshot - no schema bump.
-      # env_dependency.json (M6.1) persists the per-example tracked-env
+      # Missing file deserializes to `{}` so older caches still load -
+      # the fallback path fires one full re-run (safe).
+      # env_snapshot.json persists the `Tracker::EnvSnapshot` digest
+      # map for env-var values the per-example `tracks: { env: ... }`
+      # DSL declares. Same missing-coerces-to-`{}` fallback as
+      # wsi_snapshot - no schema bump.
+      # env_dependency.json persists the per-example tracked-env
       # attribution map that reporters need for the Examples Dependency
-      # report. Missing file coerces to `{}`; pre-M6.1 caches load
+      # report. Missing file coerces to `{}`; older caches load
       # without a cold re-run.
       FILENAMES = %w[
         all_examples.json

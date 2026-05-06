@@ -7,8 +7,8 @@ module RSpecTracer
     # Concise stdout summary printed at finalize-time. Output is
     # capped at 4 lines for a typical run (5 when duplicate /
     # interrupted / flaky / pending counters are non-zero). Kind-less
-    # taxonomy per M6.1 decision - the in-memory Input#kind enum does
-    # not survive Storage::Snapshot persistence, so breaking down
+    # taxonomy by design - the in-memory Input#kind enum does not
+    # survive Storage::Snapshot persistence, so breaking down
     # "Changed files: Templates / Locales / Ruby" would require a
     # schema bump (deferred).
     #
@@ -31,7 +31,7 @@ module RSpecTracer
       # "\u00B7" = U+00B7 MIDDLE DOT. Written as the ASCII escape form
       # so mutant's US-ASCII-defaulted parser doesn't choke on
       # non-ASCII bytes in the source file. Same discipline as the
-      # dependency_graph.rb fix (M3.5).
+      # dependency_graph.rb workaround.
       SEPARATOR = " \u00B7 "
       private_constant :SEPARATOR
 

@@ -21,9 +21,9 @@ module RSpecTracer
     # this module centralized them.
     #
     # Thread-safety: rspec example execution is single-threaded
-    # (M5.1 cold-subprocess contract); the cache uses a plain Hash
-    # without locking. Multi-threaded callers are unsupported
-    # (consistent with the rest of the tracer's threading model).
+    # (cold-subprocess contract); the cache uses a plain Hash without
+    # locking. Multi-threaded callers are unsupported (consistent
+    # with the rest of the tracer's threading model).
     module FileDigest
       class << self
         # Returns the SHA256 hex digest of `path`, or nil when the

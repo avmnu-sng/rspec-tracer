@@ -9,7 +9,7 @@ module RSpecTracer
       # is not in the user's bundle. JsonBackend rescues at construct
       # time + falls back to the Json serializer with a warn line,
       # same optional-dep pattern the RedisBackend uses for the redis
-      # gem (see M7.2 handoff notes).
+      # gem.
       class MsgpackGemNotInstalled < StandardError; end
 
       # MessagePack + zlib serializer. msgpack encode is ~2x smaller
@@ -51,9 +51,7 @@ module RSpecTracer
         # post-load constant. The previous @msgpack_loaded ivar memo
         # was load-bearing for mutation observability: once any prior
         # test tripped the memo, mutations on the require line were
-        # observably equivalent (M8.3-A retro: ~25 pp local-vs-CI
-        # variance on this subject; memory:
-        # feedback_mutant_local_vs_ci_variance).
+        # observably equivalent.
         def self.available?
           ensure_available!
           true
