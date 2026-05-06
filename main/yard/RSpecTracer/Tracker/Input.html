@@ -424,12 +424,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-37
-38
-39</pre>
+39
+40
+41</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_digest'>digest</span>
   <span class='ivar'>@digest</span>
@@ -481,12 +481,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-37
-38
-39</pre>
+39
+40
+41</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_identity'>identity</span>
   <span class='ivar'>@identity</span>
@@ -538,12 +538,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-37
-38
-39</pre>
+39
+40
+41</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_kind'>kind</span>
   <span class='ivar'>@kind</span>
@@ -595,12 +595,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-37
-38
-39</pre>
+39
+40
+41</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_path'>path</span>
   <span class='ivar'>@path</span>
@@ -632,8 +632,6 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-40
-41
 42
 43
 44
@@ -643,10 +641,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
 48
 49
 50
-51</pre>
+51
+52
+53</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 40</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 42</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span><span class='comma'>,</span> <span class='label'>kind:</span><span class='comma'>,</span> <span class='label'>digest:</span><span class='comma'>,</span> <span class='label'>root:</span><span class='rparen'>)</span>
   <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../Tracker.html#ALLOWED_INPUT_KINDS-constant" title="RSpecTracer::Tracker::ALLOWED_INPUT_KINDS (constant)">ALLOWED_INPUT_KINDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_kind'>kind</span><span class='rparen'>)</span>
@@ -693,17 +693,17 @@ under same root =&gt; same identity&quot;, nothing stronger.</p>
       <pre class="lines">
 
 
-58
-59
 60
 61
 62
 63
 64
-65</pre>
+65
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 58</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 60</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_relative_path'>relative_path</span><span class='lparen'>(</span><span class='id identifier rubyid_abs_path'>abs_path</span><span class='comma'>,</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
   <span class='id identifier rubyid_root_abs'>root_abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -754,12 +754,12 @@ with matching identity compare equal.</p>
       <pre class="lines">
 
 
-78
-79
-80</pre>
+80
+81
+82</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 78</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 80</span>
 
 <span class='kw'>def</span> <span class='op'>==</span><span class='lparen'>(</span><span class='id identifier rubyid_other'>other</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_other'>other</span><span class='period'>.</span><span class='id identifier rubyid_instance_of?'>instance_of?</span><span class='lparen'>(</span><span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_identity'>identity</span> <span class='op'>==</span> <span class='id identifier rubyid_other'>other</span><span class='period'>.</span><span class='id identifier rubyid_identity'>identity</span>
@@ -784,12 +784,12 @@ with matching identity compare equal.</p>
       <pre class="lines">
 
 
-84
-85
-86</pre>
+86
+87
+88</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 84</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 86</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_hash'>hash</span>
   <span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_hash'>hash</span>
@@ -839,12 +839,12 @@ stale iff the content changed.</p>
       <pre class="lines">
 
 
-71
-72
-73</pre>
+73
+74
+75</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 71</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 73</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_stale?'>stale?</span><span class='lparen'>(</span><span class='id identifier rubyid_current_digest'>current_digest</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_current_digest'>current_digest</span> <span class='op'>!=</span> <span class='id identifier rubyid_digest'>digest</span>
@@ -859,7 +859,7 @@ stale iff the content changed.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -100,8 +100,7 @@ paid 2 method-dispatch frames + IOHooks._record's
 <code>@root_prefix</code> nil-check before the inner bucket check could
 bail. With the guard, the bucket check happens at FileReads
 so the reject path skips IOHooks.record entirely. Cuts the
-M2 Max reject overhead from ~530 ns/call to ~300 ns/call
-(M3.1-M3.2 absorbed orphan).</p>
+M2 Max reject overhead from ~530 ns/call to ~300 ns/call.</p>
 
   </div>
 </div>
@@ -236,13 +235,13 @@ M2 Max reject overhead from ~530 ns/call to ~300 ns/call
       <pre class="lines">
 
 
+26
 27
 28
-29
-30</pre>
+29</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 27</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 26</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_binread'>binread</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="../IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
@@ -268,13 +267,13 @@ M2 Max reject overhead from ~530 ns/call to ~300 ns/call
       <pre class="lines">
 
 
+36
 37
 38
-39
-40</pre>
+39</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 36</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="../IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
@@ -300,13 +299,13 @@ M2 Max reject overhead from ~530 ns/call to ~300 ns/call
       <pre class="lines">
 
 
+21
 22
 23
-24
-25</pre>
+24</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 22</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 21</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="../IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
@@ -332,13 +331,13 @@ M2 Max reject overhead from ~530 ns/call to ~300 ns/call
       <pre class="lines">
 
 
+31
 32
 33
-34
-35</pre>
+34</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 32</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/io_hooks/file.rb', line 31</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_readlines'>readlines</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="../IOHooks.html" title="RSpecTracer::Tracker::IOHooks (module)">IOHooks</a></span></span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
@@ -354,7 +353,7 @@ M2 Max reject overhead from ~530 ns/call to ~300 ns/call
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

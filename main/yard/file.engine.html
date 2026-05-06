@@ -119,9 +119,9 @@
 </span>  <span class='comment'># Cache parity: `finalize` builds a Snapshot with file-name-keyed
 </span>  <span class='comment'># dependency / reverse_dependency / all_files maps (matching the
 </span>  <span class='comment'># 1.x on-disk convention - root-stripped file names with a leading
-</span>  <span class='comment'># &quot;/&quot;) and hands it to Storage::JsonBackend. The schema bump to 3
-</span>  <span class='comment'># from M3.7 adds `boot_set`; everything else mirrors the 1.x
-</span>  <span class='comment'># cache layout byte-for-byte.
+</span>  <span class='comment'># &quot;/&quot;) and hands it to Storage::JsonBackend. The 2.0 schema bump
+</span>  <span class='comment'># adds `boot_set`; everything else mirrors the 1.x cache layout
+</span>  <span class='comment'># byte-for-byte.
 </span>  <span class='comment'># rubocop:disable Metrics/ClassLength
 </span>  <span class='kw'>class</span> <span class='const'>Engine</span>
     <span class='const'>EXAMPLE_RUN_REASON</span> <span class='op'>=</span> <span class='lbrace'>{</span>
@@ -165,7 +165,7 @@
       <span class='ivar'>@tracks_files</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span> <span class='comment'># id =&gt; Set&lt;abs_path&gt;
 </span>      <span class='ivar'>@tracks_env</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span>   <span class='comment'># id =&gt; Set&lt;env_name&gt;
 </span>      <span class='ivar'>@tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
-      <span class='ivar'>@config_tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='comment'># M5.3 config-level subset (post-expansion)
+      <span class='ivar'>@config_tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='comment'># config-level subset (post-expansion)
 </span>      <span class='ivar'>@previous_snapshot</span> <span class='op'>=</span> <span class='kw'>nil</span>
       <span class='ivar'>@run_id</span> <span class='op'>=</span> <span class='kw'>nil</span>
       <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='kw'>nil</span>
@@ -213,8 +213,8 @@
       <span class='kw'>self</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M5.2 per-example tracking DSL hook. Called from RunnerHook with
-</span>    <span class='comment'># the normalized `{files: Set&lt;String&gt;, env: Set&lt;String&gt;}` that
+    <span class='comment'># Per-example tracking DSL hook. Called from RunnerHook with the
+</span>    <span class='comment'># normalized `{files: Set&lt;String&gt;, env: Set&lt;String&gt;}` that
 </span>    <span class='comment'># `RSpec::Metadata.tracks_for(example)` produced. Resolves the
 </span>    <span class='comment'># file globs against the project root once per distinct glob
 </span>    <span class='comment'># string (memoized) and unions the matching Inputs into this
@@ -222,11 +222,11 @@
 </span>    <span class='comment'># `@tracked_env_names` so the finalize snapshot covers every key
 </span>    <span class='comment'># the run cared about.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M5.3: per-example env entries may carry wildcard patterns
-</span>    <span class='comment'># (`tracks: { env: &#39;RAILS_*&#39; }`). `EnvMatcher.expand` is the
-</span>    <span class='comment'># single funnel - literals pass through, wildcards expand against
-</span>    <span class='comment'># the live ENV, and unsupported syntax raises ArgumentError at
-</span>    <span class='comment'># this point (RunnerHook Pass 1, before any example body runs).
+</span>    <span class='comment'># Per-example env entries may carry wildcard patterns (`tracks:
+</span>    <span class='comment'># { env: &#39;RAILS_*&#39; }`). `EnvMatcher.expand` is the single funnel
+</span>    <span class='comment'># - literals pass through, wildcards expand against the live ENV,
+</span>    <span class='comment'># and unsupported syntax raises ArgumentError at this point
+</span>    <span class='comment'># (RunnerHook Pass 1, before any example body runs).
 </span>    <span class='comment'># rubocop:disable Metrics/PerceivedComplexity
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_register_tracks'>register_tracks</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='symbol'>:files</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>files</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -242,18 +242,17 @@
     <span class='kw'>end</span>
     <span class='comment'># rubocop:enable Metrics/PerceivedComplexity
 </span>
-    <span class='comment'># M5.2 / M5.3. Called from RunnerHook AFTER the filter-decision
-</span>    <span class='comment'># pre-walk has populated `@tracks_env` / `@tracked_env_names` for
-</span>    <span class='comment'># every example. Compares each declared env key against the
-</span>    <span class='comment'># previous snapshot&#39;s `env_snapshot` via Tracker::EnvSnapshot;
-</span>    <span class='comment'># marks any example whose tracked-env set intersects the
-</span>    <span class='comment'># invalidated set as re-runnable. Strictly additive vs other
-</span>    <span class='comment'># filter reasons - if the example was already in
-</span>    <span class='comment'># `@filtered_examples` for a stronger reason (files_changed /
-</span>    <span class='comment'># whole_suite_invalidator / failed_example / ...), env_changed
-</span>    <span class='comment'># does NOT overwrite.
+    <span class='comment'># Called from RunnerHook AFTER the filter-decision pre-walk has
+</span>    <span class='comment'># populated `@tracks_env` / `@tracked_env_names` for every
+</span>    <span class='comment'># example. Compares each declared env key against the previous
+</span>    <span class='comment'># snapshot&#39;s `env_snapshot` via Tracker::EnvSnapshot; marks any
+</span>    <span class='comment'># example whose tracked-env set intersects the invalidated set
+</span>    <span class='comment'># as re-runnable. Strictly additive vs other filter reasons - if
+</span>    <span class='comment'># the example was already in `@filtered_examples` for a stronger
+</span>    <span class='comment'># reason (files_changed / whole_suite_invalidator /
+</span>    <span class='comment'># failed_example / ...), env_changed does NOT overwrite.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M5.3 config-level path: when an invalidated key intersects
+</span>    <span class='comment'># Config-level path: when an invalidated key intersects
 </span>    <span class='comment'># `@config_tracked_env_names` (the post-expansion config-level
 </span>    <span class='comment'># set), every previously-seen example re-runs - mirrors the
 </span>    <span class='comment'># `track_files` &quot;declared globs attach to every example&quot;
@@ -399,7 +398,7 @@
 
     <span class='id identifier rubyid_private'>private</span>
 
-    <span class='comment'># M5.3. Read the config-level `track_env(*names)` accumulator,
+    <span class='comment'># Read the config-level `track_env(*names)` accumulator,
 </span>    <span class='comment'># expand any wildcard patterns against the live ENV via
 </span>    <span class='comment'># EnvMatcher.expand (which raises ArgumentError on unsupported
 </span>    <span class='comment'># syntax - intentionally surfaces config errors at run start),
@@ -416,7 +415,7 @@
       <span class='ivar'>@tracked_env_names</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_expanded'>expanded</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M5.3. Mark every previously-seen example for re-run. Called
+    <span class='comment'># Mark every previously-seen example for re-run. Called
 </span>    <span class='comment'># when a config-level env key flips between runs.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_mark_all_prev_examples'>mark_all_prev_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
       <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_each_key'>each_key</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='op'>|</span>
@@ -426,7 +425,7 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M5.2 / M5.3 per-example env-changed mark. Walks @tracks_env,
+    <span class='comment'># Per-example env-changed mark. Walks @tracks_env,
 </span>    <span class='comment'># marks examples whose declared env set intersects invalidated.
 </span>    <span class='comment'># Additive vs other filter reasons (won&#39;t overwrite).
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_mark_per_example_intersections'>mark_per_example_intersections</span><span class='lparen'>(</span><span class='id identifier rubyid_invalidated'>invalidated</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
@@ -944,9 +943,9 @@
       <span class='ivar'>@env_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span><span class='lparen'>(</span><span class='ivar'>@tracked_env_names</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M6.1. Project the per-example `@tracks_env` map (Set&lt;env_name&gt;
-</span>    <span class='comment'># per example_id) into a JSON-friendly Hash[id =&gt; sorted Array]
-</span>    <span class='comment'># for persistence. Reporters consume this to render the env-
+    <span class='comment'># Project the per-example `@tracks_env` map (Set&lt;env_name&gt; per
+</span>    <span class='comment'># example_id) into a JSON-friendly Hash[id =&gt; sorted Array] for
+</span>    <span class='comment'># persistence. Reporters consume this to render the env-
 </span>    <span class='comment'># dependency view on the Examples Dependency report. Empty sets
 </span>    <span class='comment'># drop out so the on-disk map stays narrow. Sort keeps the output
 </span>    <span class='comment'># deterministic for downstream diffs and golden tests.
@@ -1044,7 +1043,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

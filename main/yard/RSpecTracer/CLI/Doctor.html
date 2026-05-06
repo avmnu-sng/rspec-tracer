@@ -110,7 +110,7 @@ presence. Exits 0 on healthy diagnosis, 1 if any check fails.</p>
         <dt id="REMOTE_CACHE_PROBES-constant" class="">REMOTE_CACHE_PROBES =
           <div class="docstring">
   <div class="discussion">
-    <p>M8.9: when remote_cache is configured, verify the backend is
+    <p>When remote_cache is configured, verify the backend is
 reachable from doctor's vantage point so the user catches
 misconfig (typo'd S3 path / unreachable Redis URL / unwritable
 local-fs dir) BEFORE the next CI run fails. Best-effort: never
@@ -185,7 +185,7 @@ FAIL the gate, just surface a WARN/INFO line.</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M8.9: surface the M8.2-B / M9.0 / M9.1 narrow-attribution precondition at diagnostic time.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Surface the narrow-attribution precondition at diagnostic time.</p></div></span>
   
 </li>
 
@@ -229,7 +229,7 @@ FAIL the gate, just surface a WARN/INFO line.</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M8.9: surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs rspec and watches everything re-run mysteriously.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs rspec and watches everything re-run mysteriously.</p></div></span>
   
 </li>
 
@@ -707,15 +707,15 @@ FAIL the gate, just surface a WARN/INFO line.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M8.9: surface the M8.2-B / M9.0 / M9.1 narrow-attribution
-precondition at diagnostic time. When <code>track_ar_schema_notifications</code>
-is enabled AND Rails is loaded AND the rspec-rails default
-<code>use_transactional_fixtures = true</code> is in effect, per-example
-BEGIN/COMMIT fires <code>sql.active_record</code> inside the rspec-tracer
-bucket and attribution silently widens. Same shape as the
-boot-time warn shipped with M9.1 (RSpecTracer.start), surfaced
-here so users running <code>rspec-tracer doctor</code> see the issue
-without having to boot a full rspec run first.</p>
+    <p>Surface the narrow-attribution precondition at diagnostic time.
+When <code>track_ar_schema_notifications</code> is enabled AND Rails is
+loaded AND the rspec-rails default `use_transactional_fixtures</p>
+<h1 id="true__is_in_effect__per_example_BEGIN_COMMIT_fires">true` is in effect, per-example BEGIN/COMMIT fires</h1>
+<p><code>sql.active_record</code> inside the rspec-tracer bucket and
+attribution silently widens. Same shape as the boot-time warn
+in RSpecTracer.start, surfaced here so users running
+<code>rspec-tracer doctor</code> see the issue without having to boot a
+full rspec run first.</p>
 
   </div>
 </div>
@@ -802,7 +802,7 @@ without having to boot a full rspec run first.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M8.9: surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs
+    <p>Surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs
 rspec and watches everything re-run mysteriously. Reads the
 cached <code>last_run.json</code> (if any) and compares its
 <code>schema_version</code> against the gem's <code>Schema::CURRENT</code>. Three
@@ -1682,7 +1682,7 @@ FAILed; warnings keep status 0).</p></div>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

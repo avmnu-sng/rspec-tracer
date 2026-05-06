@@ -89,9 +89,9 @@
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
     <p>Protocol every storage backend must satisfy. JsonBackend is the
-only shipping implementation in 2.0; SqliteBackend arrives in
-M3.8. The <code>spec/contracts/storage_backend.rb</code> shared-examples
-group asserts the full contract on every implementation.</p>
+default; SqliteBackend is an opt-in alternative on MRI. The
+<code>spec/contracts/storage_backend.rb</code> shared-examples group asserts
+the full contract on every implementation.</p>
 <p>Rationale for the method set (from ARCHITECTURE.md, Contracts
 between layers):</p>
 <pre class="code ruby"><code class="ruby">- `load_graph(schema_version:)` returns `Snapshot` or `nil`.
@@ -288,7 +288,7 @@ responded to</p></div>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -92,9 +92,9 @@
 <p>1.x scattered the parallel-worker glue across <code>lib/rspec_tracer.rb</code>
 (<code>parallel_tests_setup</code>, <code>track_parallel_tests_test_env_number</code>,
 <code>run_parallel_tests_exit_tasks</code>, <code>merge_parallel_tests_reports</code>,
-<code>parallel_tests_last_process?</code>, etc). M5.1 collapses them here and
+<code>parallel_tests_last_process?</code>, etc). 2.0 collapses them here and
 rewires the snapshot merge onto <code>Storage::JsonBackend#merge_from_peers</code>
-so any storage backend (M3.8 SQLite) gets the merge for free.</p>
+so any storage backend (including SQLite) gets the merge for free.</p>
 <p>Responsibilities:</p>
 <pre class="code ruby"><code class="ruby">- Detect `TEST_ENV_NUMBER` + `PARALLEL_TEST_GROUPS` env vars.
 - Maintain the shared `rspec_tracer.lock` file that records the
@@ -260,7 +260,7 @@ truly-crashed peer must not pin the elected forever).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M8.10: Emit reporters against the merged top-level snapshot so the user gets one terminal summary + one JSON report + one HTML report at the canonical (non-<code>parallel_tests_N</code>) path.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Emit reporters against the merged top-level snapshot so the user gets one terminal summary + one JSON report + one HTML report at the canonical (non-<code>parallel_tests_N</code>) path.</p></div></span>
   
 </li>
 
@@ -784,7 +784,7 @@ truly-crashed peer must not pin the elected forever).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M8.10: Emit reporters against the merged top-level snapshot
+    <p>Emit reporters against the merged top-level snapshot
 so the user gets one terminal summary + one JSON report + one
 HTML report at the canonical (non-<code>parallel_tests_N</code>) path.
 Wrapped in its own rescue so a failed reporter never blocks
@@ -944,12 +944,12 @@ the elected has decided it's safe to purge, leaving stragglers.</p>
 
   <span class='id identifier rubyid_merge_snapshot!'>merge_snapshot!</span>
   <span class='id identifier rubyid_merge_coverage!'>merge_coverage!</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_simplecov?'><span class='object_link'><a href="../../RSpecTracer.html#simplecov%3F-class_method" title="RSpecTracer.simplecov? (method)">simplecov?</a></span></span>
-  <span class='comment'># M8.10: emit terminal/JSON/HTML reporters ONCE at the merged
-</span>  <span class='comment'># top-level location BEFORE purge_worker_dirs! removes the
-</span>  <span class='comment'># per-worker `parallel_tests_N` dirs. Pre-M8.10 each worker
-</span>  <span class='comment'># emitted reports into its `rspec_tracer_report/parallel_tests_N`
-</span>  <span class='comment'># dir and the purge then deleted them, leaving the user with
-</span>  <span class='comment'># zero usable output. Now reporters consume the just-merged
+  <span class='comment'># Emit terminal/JSON/HTML reporters ONCE at the merged top-level
+</span>  <span class='comment'># location BEFORE purge_worker_dirs! removes the per-worker
+</span>  <span class='comment'># `parallel_tests_N` dirs. Earlier behavior had each worker emit
+</span>  <span class='comment'># reports into its `rspec_tracer_report/parallel_tests_N` dir
+</span>  <span class='comment'># and the purge then deleted them, leaving the user with zero
+</span>  <span class='comment'># usable output. Now reporters consume the just-merged
 </span>  <span class='comment'># top-level snapshot.
 </span>  <span class='id identifier rubyid_emit_merged_reporters!'>emit_merged_reporters!</span>
   <span class='id identifier rubyid_purge_worker_dirs!'>purge_worker_dirs!</span>
@@ -1158,7 +1158,7 @@ RSpec's own Reporter, not this module.</p>
 </h3><div class="docstring">
   <div class="discussion">
     <p>Merge per-worker coverage.json files into a top-level coverage.json.
-M8.0 routes through Reporters::CoverageJsonReporter.merge_parallel
+Routed through Reporters::CoverageJsonReporter.merge_parallel
 (replaces the legacy CoverageMerger + CoverageWriter pair).</p>
 
   </div>
@@ -1960,7 +1960,7 @@ over indefinite wait).</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -112,11 +112,13 @@
         <dt id="ALLOWED_INPUT_KINDS-constant" class="">ALLOWED_INPUT_KINDS =
           <div class="docstring">
   <div class="discussion">
-    <p>Closed taxonomy of input sources. M3.1 only produces :ruby
-(Coverage-observed source). The other kinds are the surface for
-M3.2 (:data via I/O hooks), M3.3 (:declared, :lockfile), M3.7
-(:env) and later sessions. Adding a new kind is a one-line change
-here plus a test; shrinking the set is a schema_version bump.</p>
+    <p>Closed taxonomy of input sources. The kinds correspond to the
+observation surface: <code>:ruby</code> (Coverage-observed source), <code>:data</code>
+(I/O hooks), <code>:declared</code> / <code>:lockfile</code> (declared globs), <code>:env</code>
+(env_snapshot), <code>:notification</code> (Rails notifications),
+<code>:template</code> / <code>:schema</code> (Rails subscribers). Adding a new kind
+is a one-line change here plus a test; shrinking the set is a
+schema_version bump.</p>
 
   </div>
 </div>
@@ -143,7 +145,7 @@ here plus a test; shrinking the set is a schema_version bump.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

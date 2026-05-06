@@ -64,9 +64,9 @@
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='kw'>module</span> <span class='const'>Storage</span>
     <span class='comment'># Protocol every storage backend must satisfy. JsonBackend is the
-</span>    <span class='comment'># only shipping implementation in 2.0; SqliteBackend arrives in
-</span>    <span class='comment'># M3.8. The `spec/contracts/storage_backend.rb` shared-examples
-</span>    <span class='comment'># group asserts the full contract on every implementation.
+</span>    <span class='comment'># default; SqliteBackend is an opt-in alternative on MRI. The
+</span>    <span class='comment'># `spec/contracts/storage_backend.rb` shared-examples group asserts
+</span>    <span class='comment'># the full contract on every implementation.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Rationale for the method set (from ARCHITECTURE.md, Contracts
 </span>    <span class='comment'># between layers):
@@ -125,7 +125,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

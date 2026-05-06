@@ -77,7 +77,7 @@
 <span class='comment'># Reporters must load before load_config so the Configuration DSL&#39;s
 </span><span class='comment'># `add_reporter` can validate symbol names against
 </span><span class='comment'># `Reporters::Registry::BUILT_INS` when a user `.rspec-tracer` calls
-</span><span class='comment'># it at configure time (M6.1).
+</span><span class='comment'># it at configure time.
 </span><span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/base</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/payload_builder</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/reporters/coverage_json_reporter</span><span class='tstring_end'>&#39;</span></span>
@@ -97,7 +97,7 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/time_formatter</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/version</span><span class='tstring_end'>&#39;</span></span>
 
-<span class='comment'># Top-level entry point. Drives the M5.1 lifecycle:
+<span class='comment'># Top-level entry point. Drives the lifecycle:
 </span><span class='comment'>#
 </span><span class='comment'>#   RSpecTracer.start
 </span><span class='comment'>#     -&gt; RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
@@ -109,7 +109,7 @@
 </span><span class='comment'>#   flow) runs the finalize stack: Engine#finalize writes the 13-file
 </span><span class='comment'>#   snapshot via Storage::JsonBackend, Reporters::CoverageJsonReporter
 </span><span class='comment'>#   writes coverage.json (single owner, replacing the 1.x
-</span><span class='comment'>#   CoverageReporter + CoverageWriter pair retired in M8.0),
+</span><span class='comment'>#   CoverageReporter + CoverageWriter pair retired in 2.0),
 </span><span class='comment'>#   ParallelTests#finalize! merges per-worker caches on the last worker.
 </span><span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
@@ -148,7 +148,7 @@
       <span class='id identifier rubyid_initial_setup'>initial_setup</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M8.9: SimpleCov load-order is part of the documented contract -
+    <span class='comment'># SimpleCov load-order is part of the documented contract -
 </span>    <span class='comment'># SimpleCov.start MUST run before RSpecTracer.start when both are
 </span>    <span class='comment'># used together (see README §SimpleCov interop). When the user
 </span>    <span class='comment'># has SimpleCov loaded but not started, we&#39;d silently call
@@ -260,15 +260,14 @@
         <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_info'><span class='object_link'><a href="RSpecTracer/Logger.html#info-instance_method" title="RSpecTracer::Logger#info (method)">info</a></span></span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Skipped reports generation since all examples were filtered out</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>else</span>
         <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_run_finalize'>run_finalize</span>
-        <span class='comment'># M8.10: under parallel_tests, defer reporter emission until
+        <span class='comment'># Under parallel_tests, defer reporter emission until
 </span>        <span class='comment'># last-process finalize merges per-worker snapshots into the
 </span>        <span class='comment'># top-level cache. Each worker still persists its per-worker
-</span>        <span class='comment'># snapshot for the merge to consume. Pre-M8.10 every worker
-</span>        <span class='comment'># emitted reporters into rspec_tracer_report/parallel_tests_N/
+</span>        <span class='comment'># snapshot for the merge to consume. Earlier behavior had every
+</span>        <span class='comment'># worker emit reporters into rspec_tracer_report/parallel_tests_N/
 </span>        <span class='comment'># and purge_worker_dirs! removed those dirs - leaving the user
 </span>        <span class='comment'># with no usable terminal/JSON/HTML output. Now reporters fire
-</span>        <span class='comment'># ONCE at the merged top-level location (3x v1 orphan: M6.2 +
-</span>        <span class='comment'># M7.1 + M7.2).
+</span>        <span class='comment'># ONCE at the merged top-level location.
 </span>        <span class='id identifier rubyid_emit_reporters'>emit_reporters</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='id identifier rubyid_parallel_tests?'>parallel_tests?</span>
       <span class='kw'>end</span>
 
@@ -279,7 +278,7 @@
 
     <span class='comment'># Engine-owned finalize path. Writes the 15-file JSON cache via
 </span>    <span class='comment'># Storage::JsonBackend. Per-example coverage deltas live on the
-</span>    <span class='comment'># Engine; M8.0 retired the CoverageReporter mid-flow piece (the
+</span>    <span class='comment'># Engine; 2.0 retired the CoverageReporter mid-flow piece (the
 </span>    <span class='comment'># legacy `coverage_reporter.generate_final_examples_coverage +
 </span>    <span class='comment'># merge_coverage(engine.merge_skipped_coverage(...))` is now folded
 </span>    <span class='comment'># into Reporters::CoverageJsonReporter#generate, which fires from
@@ -309,7 +308,7 @@
       <span class='kw'>nil</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M6.1. Fire the configured reporters against the persisted
+    <span class='comment'># Fire the configured reporters against the persisted
 </span>    <span class='comment'># Snapshot. Fires per-worker under parallel_tests (same cadence as
 </span>    <span class='comment'># coverage.json emission); each worker produces its own report.json
 </span>    <span class='comment'># under its per-worker report_dir. The Registry rescues every
@@ -346,7 +345,7 @@
       <span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span> <span class='op'>-</span> <span class='ivar'>@run_monotonic_start</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='lparen'>(</span><span class='int'>4</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M8.0: dedicated coverage.json firing path, parallel to the
+    <span class='comment'># Dedicated coverage.json firing path, parallel to the
 </span>    <span class='comment'># report-reporters Registry pipeline. Fires unconditionally - even
 </span>    <span class='comment'># when no examples ran (matches 1.x where coverage.json gets
 </span>    <span class='comment'># written with whatever boot-time peek_result returned + filter +
@@ -371,7 +370,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

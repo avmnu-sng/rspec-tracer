@@ -65,11 +65,13 @@
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='kw'>module</span> <span class='const'>Tracker</span>
-    <span class='comment'># Closed taxonomy of input sources. M3.1 only produces :ruby
-</span>    <span class='comment'># (Coverage-observed source). The other kinds are the surface for
-</span>    <span class='comment'># M3.2 (:data via I/O hooks), M3.3 (:declared, :lockfile), M3.7
-</span>    <span class='comment'># (:env) and later sessions. Adding a new kind is a one-line change
-</span>    <span class='comment'># here plus a test; shrinking the set is a schema_version bump.
+    <span class='comment'># Closed taxonomy of input sources. The kinds correspond to the
+</span>    <span class='comment'># observation surface: `:ruby` (Coverage-observed source), `:data`
+</span>    <span class='comment'># (I/O hooks), `:declared` / `:lockfile` (declared globs), `:env`
+</span>    <span class='comment'># (env_snapshot), `:notification` (Rails notifications),
+</span>    <span class='comment'># `:template` / `:schema` (Rails subscribers). Adding a new kind
+</span>    <span class='comment'># is a one-line change here plus a test; shrinking the set is a
+</span>    <span class='comment'># schema_version bump.
 </span>    <span class='const'>ALLOWED_INPUT_KINDS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_content'>ruby</span><span class='words_sep'> </span><span class='tstring_content'>template</span><span class='words_sep'> </span><span class='tstring_content'>data</span><span class='words_sep'> </span><span class='tstring_content'>schema</span><span class='words_sep'> </span><span class='tstring_content'>lockfile</span><span class='words_sep'> </span><span class='tstring_content'>declared</span><span class='words_sep'> </span><span class='tstring_content'>env</span><span class='words_sep'> </span><span class='tstring_content'>notification</span><span class='words_sep'>
 </span><span class='words_sep'>    </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
@@ -150,7 +152,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

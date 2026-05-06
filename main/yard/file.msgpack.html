@@ -70,7 +70,7 @@
 </span>      <span class='comment'># is not in the user&#39;s bundle. JsonBackend rescues at construct
 </span>      <span class='comment'># time + falls back to the Json serializer with a warn line,
 </span>      <span class='comment'># same optional-dep pattern the RedisBackend uses for the redis
-</span>      <span class='comment'># gem (see M7.2 handoff notes).
+</span>      <span class='comment'># gem.
 </span>      <span class='kw'>class</span> <span class='const'>MsgpackGemNotInstalled</span> <span class='op'>&lt;</span> <span class='const'>StandardError</span><span class='semicolon'>;</span> <span class='kw'>end</span>
 
       <span class='comment'># MessagePack + zlib serializer. msgpack encode is ~2x smaller
@@ -112,9 +112,7 @@
 </span>        <span class='comment'># post-load constant. The previous @msgpack_loaded ivar memo
 </span>        <span class='comment'># was load-bearing for mutation observability: once any prior
 </span>        <span class='comment'># test tripped the memo, mutations on the require line were
-</span>        <span class='comment'># observably equivalent (M8.3-A retro: ~25 pp local-vs-CI
-</span>        <span class='comment'># variance on this subject; memory:
-</span>        <span class='comment'># feedback_mutant_local_vs_ci_variance).
+</span>        <span class='comment'># observably equivalent.
 </span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_available?'>available?</span>
           <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
           <span class='kw'>true</span>
@@ -141,7 +139,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

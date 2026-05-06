@@ -471,10 +471,11 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Per-example attribution. Declared inputs attach to every example
-in the suite - the per-example DSL arrives in M5.2. Each example
-gets its own Set copy so downstream mutation of one example's
-input set does not leak into siblings.</p>
+    <p>Per-example attribution. Declared inputs attach to every
+example in the suite (per-example narrowing is available via
+the per-example <code>tracks:</code> DSL). Each example gets its own Set
+copy so downstream mutation of one example's input set does
+not leak into siblings.</p>
 
   </div>
 </div>
@@ -487,13 +488,13 @@ input set does not leak into siblings.</p>
       <pre class="lines">
 
 
-63
 64
 65
-66</pre>
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 63</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 64</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_attribute_to'>attribute_to</span><span class='lparen'>(</span><span class='id identifier rubyid_example_ids'>example_ids</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_inputs'>inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_walk'>walk</span>
@@ -612,7 +613,7 @@ the tracker instance.&quot;</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

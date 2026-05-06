@@ -86,8 +86,8 @@
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Lifecycle:
 </span>    <span class='comment'>#   1. IOHooks.install(root:, filter:, extensions:) - called once
-</span>    <span class='comment'>#      at Tracker.setup time (wired in M3.6). Prepends hook modules
-</span>    <span class='comment'>#      onto File/IO/YAML/JSON/Kernel singleton classes.
+</span>    <span class='comment'>#      at Tracker.setup time. Prepends hook modules onto
+</span>    <span class='comment'>#      File/IO/YAML/JSON/Kernel singleton classes.
 </span>    <span class='comment'>#   2. Example execution runs inside IOHooks.with_bucket(bucket)
 </span>    <span class='comment'>#      {...}. Hooks push Inputs into the thread-local bucket;
 </span>    <span class='comment'>#      outside a with_bucket call every hook fast-rejects.
@@ -198,8 +198,8 @@
 
         <span class='comment'># Record a :ruby input (Kernel#load hook). Belt-and-suspenders
 </span>        <span class='comment'># for dynamically-constructed load paths that might bypass the
-</span>        <span class='comment'># Coverage module&#39;s require-graph observation. M3.5&#39;s registry
-</span>        <span class='comment'># dedupes overlap with CoverageAdapter.
+</span>        <span class='comment'># Coverage module&#39;s require-graph observation. The example
+</span>        <span class='comment'># registry dedupes overlap with CoverageAdapter.
 </span>        <span class='kw'>def</span> <span class='id identifier rubyid_record_ruby_load'>record_ruby_load</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
           <span class='id identifier rubyid__record'>_record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='symbol'>:ruby</span><span class='rparen'>)</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_p'>p</span><span class='op'>|</span> <span class='id identifier rubyid_p'>p</span><span class='period'>.</span><span class='id identifier rubyid_end_with?'>end_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>.rb</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span>
         <span class='kw'>end</span>
@@ -256,7 +256,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

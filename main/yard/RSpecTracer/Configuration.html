@@ -551,9 +551,9 @@ standard Ruby semantics.</p>
 
       <span class='comment'># Forward `**kwargs` too so DSL methods can accept Ruby 3+
 </span>      <span class='comment'># keyword args (e.g. `track_rails_defaults except: [:views]`,
-</span>      <span class='comment'># M3.8&#39;s `storage_backend :json, serializer: :msgpack`).
-</span>      <span class='comment'># Before M4.1 this wrapper forwarded `*args, &amp;block` only and
-</span>      <span class='comment'># silently stripped kwargs; see M3.4 handoff notes.
+</span>      <span class='comment'># `storage_backend :json, serializer: :msgpack`). Earlier
+</span>      <span class='comment'># forms of this wrapper forwarded `*args, &amp;block` only and
+</span>      <span class='comment'># silently stripped kwargs.
 </span>      <span class='id identifier rubyid_define_method'>define_method</span> <span class='id identifier rubyid_method_name'>method_name</span> <span class='kw'>do</span> <span class='op'>|</span><span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='op'>|</span>
         <span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:&quot;_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_method_name'>method_name</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
@@ -624,7 +624,7 @@ standard Ruby semantics.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

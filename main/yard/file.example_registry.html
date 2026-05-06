@@ -71,10 +71,10 @@
 </span>    <span class='comment'># detection via RSpec&#39;s identity-hash surface (the same hash 1.x
 </span>    <span class='comment'># uses for `fail_on_duplicates`).
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M3.5 owns the data structure only. `update_status` is called by
-</span>    <span class='comment'># M5.1 (RSpec integration hooks) on example-finished events and
-</span>    <span class='comment'># by signal handlers on interruption; M3.6 passes the registry
-</span>    <span class='comment'># instance through Tracker.setup. The registry itself has no
+</span>    <span class='comment'># This module owns the data structure only. `update_status` is
+</span>    <span class='comment'># called by the RSpec integration hooks on example-finished events
+</span>    <span class='comment'># and by signal handlers on interruption; `Tracker.setup` passes
+</span>    <span class='comment'># the registry instance through. The registry itself has no
 </span>    <span class='comment'># opinion about where status comes from.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Statuses
@@ -83,8 +83,8 @@
 </span>    <span class='comment'>#   :failed       - example assertion failed
 </span>    <span class='comment'>#   :pending      - RSpec `pending`
 </span>    <span class='comment'>#   :interrupted  - RSpec was killed mid-example (SIGINT / SIGTERM)
-</span>    <span class='comment'>#   :flaky        - passed this run but previously failed (M5.1
-</span>    <span class='comment'>#                   detects via retry semantics)
+</span>    <span class='comment'>#   :flaky        - passed this run but previously failed
+</span>    <span class='comment'>#                   (detected via retry semantics)
 </span>    <span class='comment'>#   :skipped      - skipped via `skip` or `:skip` metadata; tracked
 </span>    <span class='comment'>#                   for coverage attribution but NOT auto-re-run
 </span>    <span class='comment'>#
@@ -186,7 +186,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

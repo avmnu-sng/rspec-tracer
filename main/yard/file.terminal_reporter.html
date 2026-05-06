@@ -68,8 +68,8 @@
     <span class='comment'># Concise stdout summary printed at finalize-time. Output is
 </span>    <span class='comment'># capped at 4 lines for a typical run (5 when duplicate /
 </span>    <span class='comment'># interrupted / flaky / pending counters are non-zero). Kind-less
-</span>    <span class='comment'># taxonomy per M6.1 decision - the in-memory Input#kind enum does
-</span>    <span class='comment'># not survive Storage::Snapshot persistence, so breaking down
+</span>    <span class='comment'># taxonomy by design - the in-memory Input#kind enum does not
+</span>    <span class='comment'># survive Storage::Snapshot persistence, so breaking down
 </span>    <span class='comment'># &quot;Changed files: Templates / Locales / Ruby&quot; would require a
 </span>    <span class='comment'># schema bump (deferred).
 </span>    <span class='comment'>#
@@ -92,7 +92,7 @@
       <span class='comment'># &quot;\u00B7&quot; = U+00B7 MIDDLE DOT. Written as the ASCII escape form
 </span>      <span class='comment'># so mutant&#39;s US-ASCII-defaulted parser doesn&#39;t choke on
 </span>      <span class='comment'># non-ASCII bytes in the source file. Same discipline as the
-</span>      <span class='comment'># dependency_graph.rb fix (M3.5).
+</span>      <span class='comment'># dependency_graph.rb workaround.
 </span>      <span class='const'>SEPARATOR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'> \u00B7 </span><span class='tstring_end'>&quot;</span></span>
       <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:SEPARATOR</span>
 
@@ -284,7 +284,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

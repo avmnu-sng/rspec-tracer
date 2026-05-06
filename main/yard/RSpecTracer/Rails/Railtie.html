@@ -109,10 +109,11 @@
     <p>Rails lifecycle adapter. Only required by <code>lib/rspec_tracer/rails.rb</code>
 when <code>defined?(::Rails::Railtie)</code> is true, so loading this file in
 a non-Rails process is not expected and will raise NameError.</p>
-<p>M4.1 scope: define the Railtie class + register one initializer
-that logs a single confirmation line. M4.2 fills in
-ActiveSupport::Notifications subscribers for ActionView template
-renders, I18n lookups, and schema/factory/fixture tracking.</p>
+<p>Defines the Railtie class + registers one initializer that logs
+a single confirmation line. The actual ActiveSupport::Notifications
+subscribers for ActionView template renders, I18n lookups, and
+schema/factory/fixture tracking live in <code>notifications.rb</code> and
+<code>i18n_tracking.rb</code> and are wired by <code>Engine.setup</code>.</p>
 
   </div>
 </div>
@@ -132,7 +133,7 @@ renders, I18n lookups, and schema/factory/fixture tracking.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

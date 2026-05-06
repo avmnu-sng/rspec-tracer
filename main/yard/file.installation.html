@@ -74,7 +74,7 @@
 </span>    <span class='comment'># 1.x used `ObjectSpace.each_object(::RSpec::Core::Runner)` to find
 </span>    <span class='comment'># the already-instantiated runner and prepend onto its singleton
 </span>    <span class='comment'># class - forcing start-time ordering (RSpec had to be mid-boot).
-</span>    <span class='comment'># M5.1 prepends onto the class itself at require time, so the hooks
+</span>    <span class='comment'># 2.0 prepends onto the class itself at require time, so the hooks
 </span>    <span class='comment'># apply to every subsequent Runner / Reporter instance.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Consequence: `RSpecTracer.start` no longer requires RSpec to be
@@ -154,7 +154,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

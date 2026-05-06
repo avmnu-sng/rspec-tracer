@@ -103,9 +103,9 @@
 </span>    <span class='comment'># asserts across 1000 iterations.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Encoding: every read and write passes `encoding: &#39;UTF-8&#39;`.
-</span>    <span class='comment'># This fixes the M3.1-flagged `Encoding::InvalidByteSequenceError`
-</span>    <span class='comment'># that bit the dogfood path when an example title contained a
-</span>    <span class='comment'># non-ASCII byte on a US-ASCII-defaulted filesystem.
+</span>    <span class='comment'># Fixes the `Encoding::InvalidByteSequenceError` that bit the
+</span>    <span class='comment'># dogfood path when an example title contained a non-ASCII byte on
+</span>    <span class='comment'># a US-ASCII-defaulted filesystem.
 </span>    <span class='comment'># rubocop:disable Metrics/ClassLength
 </span>    <span class='kw'>class</span> <span class='const'>JsonBackend</span>
       <span class='comment'># On-disk filenames under the default `:json` serializer. This
@@ -118,20 +118,20 @@
 </span>      <span class='comment'># boot_set.json lands at the end of the list - additive w.r.t.
 </span>      <span class='comment'># 1.x and v2 readers that walked this enumeration. It carries
 </span>      <span class='comment'># the project&#39;s transitive boot-load set (schema_version 3).
-</span>      <span class='comment'># wsi_snapshot.json (M4.3) persists the WholeSuiteInvalidators
+</span>      <span class='comment'># wsi_snapshot.json persists the WholeSuiteInvalidators
 </span>      <span class='comment'># digest_snapshot so warm runs can tell whether Gemfile.lock /
 </span>      <span class='comment'># .ruby-version / .rspec-tracer / tracer-gem identity changed
 </span>      <span class='comment'># since the previous run. Without it, warm runs always saw a
 </span>      <span class='comment'># nil previous and treated every run as a cold first run.
-</span>      <span class='comment'># Missing file deserializes to `{}` so pre-M4.3 caches still
-</span>      <span class='comment'># load - the fallback path fires one full re-run (safe).
-</span>      <span class='comment'># env_snapshot.json (M5.2) persists the `Tracker::EnvSnapshot`
-</span>      <span class='comment'># digest map for env-var values the per-example `tracks:
-</span>      <span class='comment'># { env: ... }` DSL declares. Same missing-coerces-to-`{}`
-</span>      <span class='comment'># fallback as wsi_snapshot - no schema bump.
-</span>      <span class='comment'># env_dependency.json (M6.1) persists the per-example tracked-env
+</span>      <span class='comment'># Missing file deserializes to `{}` so older caches still load -
+</span>      <span class='comment'># the fallback path fires one full re-run (safe).
+</span>      <span class='comment'># env_snapshot.json persists the `Tracker::EnvSnapshot` digest
+</span>      <span class='comment'># map for env-var values the per-example `tracks: { env: ... }`
+</span>      <span class='comment'># DSL declares. Same missing-coerces-to-`{}` fallback as
+</span>      <span class='comment'># wsi_snapshot - no schema bump.
+</span>      <span class='comment'># env_dependency.json persists the per-example tracked-env
 </span>      <span class='comment'># attribution map that reporters need for the Examples Dependency
-</span>      <span class='comment'># report. Missing file coerces to `{}`; pre-M6.1 caches load
+</span>      <span class='comment'># report. Missing file coerces to `{}`; older caches load
 </span>      <span class='comment'># without a cold re-run.
 </span>      <span class='const'>FILENAMES</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>all_examples.json</span><span class='words_sep'>
@@ -853,7 +853,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

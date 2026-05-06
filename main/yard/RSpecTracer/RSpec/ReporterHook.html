@@ -100,7 +100,7 @@ the tracer treats it as invisible)
 </code></pre>
 <p>The per-example coverage peek+diff sequence (peek before, peek
 after) runs through Engine#example_started + Engine#example_finished
-only. M8.0 retired the legacy CoverageReporter that previously
+only. 2.0 retired the legacy CoverageReporter that previously
 peeked a second time per example; coverage.json emission now
 consumes the Engine's per-example deltas + a single finalize-time
 peek through Tracker::CoverageAdapter#peek_unfiltered.</p>
@@ -428,7 +428,7 @@ peek through Tracker::CoverageAdapter#peek_unfiltered.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -80,11 +80,11 @@
 </span>    <span class='comment'># caller pays one cold run on upgrade - the deal 1.x users already
 </span>    <span class='comment'># expect for any rspec-tracer version bump.
 </span>    <span class='kw'>module</span> <span class='const'>Schema</span>
-      <span class='comment'># schema_version 2 shipped with M3.4 (first versioned schema;
-</span>      <span class='comment'># 1.x was unstamped). M3.7 introduces `Snapshot.boot_set` -
-</span>      <span class='comment'># breaking for any reader that assumed the v2 field list - so
-</span>      <span class='comment'># CURRENT bumps to 3 and SUPPORTED narrows to only the new
-</span>      <span class='comment'># version. Pre-release: no v2 caches are persisted in user land.
+      <span class='comment'># schema_version 2 was the first versioned schema (1.x was
+</span>      <span class='comment'># unstamped). 2.0 adds `Snapshot.boot_set` - breaking for any
+</span>      <span class='comment'># reader that assumed the v2 field list - so CURRENT bumps to 3
+</span>      <span class='comment'># and SUPPORTED narrows to only the new version. No v2 caches
+</span>      <span class='comment'># were ever persisted in user land.
 </span>      <span class='const'>CURRENT</span> <span class='op'>=</span> <span class='int'>3</span>
       <span class='const'>SUPPORTED</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='const'>CURRENT</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
@@ -100,7 +100,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

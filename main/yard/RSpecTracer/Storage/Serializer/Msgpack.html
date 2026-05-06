@@ -256,9 +256,7 @@ calls and <code>defined?(::MessagePack)</code> cheaply detects the
 post-load constant. The previous @msgpack_loaded ivar memo
 was load-bearing for mutation observability: once any prior
 test tripped the memo, mutations on the require line were
-observably equivalent (M8.3-A retro: ~25 pp local-vs-CI
-variance on this subject; memory:
-feedback_mutant_local_vs_ci_variance).</p>
+observably equivalent.</p>
 
   </div>
 </div>
@@ -284,15 +282,15 @@ feedback_mutant_local_vs_ci_variance).</p>
       <pre class="lines">
 
 
+55
+56
 57
 58
 59
-60
-61
-62</pre>
+60</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 57</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 55</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_available?'>available?</span>
   <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
@@ -404,7 +402,7 @@ feedback_mutant_local_vs_ci_variance).</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

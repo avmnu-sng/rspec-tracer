@@ -117,43 +117,44 @@ so a full cache can be reconstructed in one trip.</p>
 <code>to_h</code> / <code>from_h</code> so the backend can serialize without reaching
 into struct internals.</p>
 <p><code>examples_coverage</code> may be <code>nil</code> when a caller explicitly loads
-the cheap header only (M3.6 will wire that path). The default
-load is eager - <code>nil</code> vs <code>{}</code> distinguishes &quot;not yet loaded&quot;
-from &quot;loaded and empty.&quot;</p>
+the cheap header only. The default load is eager - <code>nil</code> vs <code>{}</code>
+distinguishes &quot;not yet loaded&quot; from &quot;loaded and empty.&quot;</p>
 <p>Methods are defined on the reopened class body (not inside the
 Struct.new block) so mutant can introspect them - same pattern
 as Tracker::Input.</p>
-<p>M3.7 adds <code>boot_set</code> - Hash[relative_path =&gt; sha256_hex] of every
-project file loaded before any example runs (spec_helper
-requires, gem boot, eager autoload). Backs the constants-
-blind-spot fix: the M3.6 caller compares this against the
-previous run's boot_set and ORs any mismatch with
-WholeSuiteInvalidators when computing the whole_suite_invalidated
-bool. Per-example loaded-set attribution folds into <code>dependency</code>
-via the existing graph registration path - no separate field.</p>
-<p>M4.3 adds <code>wsi_snapshot</code> - Hash[watch_name =&gt; sha256_hex] produced
-by <code>WholeSuiteInvalidators#digest_snapshot</code>. Without it, a warm
-run can't tell whether Gemfile.lock / .ruby-version / .rspec-tracer
+<p><code>boot_set</code> - Hash[relative_path =&gt; sha256_hex] of every project
+file loaded before any example runs (spec_helper requires, gem
+boot, eager autoload). Backs the constants-blind-spot fix: the
+engine compares this against the previous run's boot_set and ORs
+any mismatch with WholeSuiteInvalidators when computing the
+whole_suite_invalidated bool. Per-example loaded-set attribution
+folds into <code>dependency</code> via the existing graph registration path</p>
+<ul>
+<li>no separate field.</li>
+</ul>
+<p><code>wsi_snapshot</code> - Hash[watch_name =&gt; sha256_hex] produced by
+<code>WholeSuiteInvalidators#digest_snapshot</code>. Without it, a warm run
+can't tell whether Gemfile.lock / .ruby-version / .rspec-tracer
 (or the tracer gem identity) changed since the previous run, and
 the engine falls back to &quot;first run = invalidate everything&quot; on
-every warm run. The field is optional in the JSON layout so caches
-saved before M4.3 continue to load (missing wsi.json coerces to
-<code>{}</code>, which compares unequal and triggers one cold re-run - safe
-fallback, same cost as any other cache miss).</p>
-<p>M5.2 adds <code>env_snapshot</code> - Hash[env_name =&gt; md5_hex] produced by
+every warm run. The field is optional in the JSON layout so older
+caches continue to load (missing wsi.json coerces to <code>{}</code>, which
+compares unequal and triggers one cold re-run - safe fallback,
+same cost as any other cache miss).</p>
+<p><code>env_snapshot</code> - Hash[env_name =&gt; md5_hex] produced by
 <code>Tracker::EnvSnapshot#digest_snapshot</code>. Covers env-var values
 declared via the per-example <code>tracks: { env: ... }</code> DSL.
 Without it, a warm run can't tell whether an env-gated example
 needs to re-run when the env changes. Same optional-in-JSON
 treatment as wsi_snapshot: missing file coerces to <code>{}</code>, no
 schema_version bump, one cold re-run on upgrade.</p>
-<p>M6.1 adds <code>env_dependency</code> - Hash[example_id =&gt; Array&lt;env_name&gt;]
-capturing which env keys each tracked example declared. The
-per-run <code>env_snapshot</code> stores the digest of each key; this map
-stores the example-to-key attribution that the reporter layer
-needs to render &quot;which env vars does this example depend on.&quot;
-Without it, reports can't surface env dependencies - Engine's
-per-run <code>@tracks_env</code> map would otherwise be lost at finalize.
+<p><code>env_dependency</code> - Hash[example_id =&gt; Array&lt;env_name&gt;] capturing
+which env keys each tracked example declared. The per-run
+<code>env_snapshot</code> stores the digest of each key; this map stores
+the example-to-key attribution that the reporter layer needs to
+render &quot;which env vars does this example depend on.&quot; Without it,
+reports can't surface env dependencies - Engine's per-run
+<code>@tracks_env</code> map would otherwise be lost at finalize.
 Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
 missing file coerces to <code>{}</code>, no schema_version bump.</p>
 <p><code>cache_hit_reason</code> is a SUITE-LEVEL aggregate. It maps
@@ -714,12 +715,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_all_examples'>all_examples</span>
   <span class='ivar'>@all_examples</span>
@@ -771,12 +772,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_all_files'>all_files</span>
   <span class='ivar'>@all_files</span>
@@ -828,12 +829,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_boot_set'>boot_set</span>
   <span class='ivar'>@boot_set</span>
@@ -885,12 +886,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_cache_hit_reason'>cache_hit_reason</span>
   <span class='ivar'>@cache_hit_reason</span>
@@ -942,12 +943,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_dependency'>dependency</span>
   <span class='ivar'>@dependency</span>
@@ -999,12 +1000,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_duplicate_examples'>duplicate_examples</span>
   <span class='ivar'>@duplicate_examples</span>
@@ -1056,12 +1057,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_env_dependency'>env_dependency</span>
   <span class='ivar'>@env_dependency</span>
@@ -1113,12 +1114,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_env_snapshot'>env_snapshot</span>
   <span class='ivar'>@env_snapshot</span>
@@ -1170,12 +1171,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_examples_coverage'>examples_coverage</span>
   <span class='ivar'>@examples_coverage</span>
@@ -1227,12 +1228,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_failed_examples'>failed_examples</span>
   <span class='ivar'>@failed_examples</span>
@@ -1284,12 +1285,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_flaky_examples'>flaky_examples</span>
   <span class='ivar'>@flaky_examples</span>
@@ -1341,12 +1342,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_interrupted_examples'>interrupted_examples</span>
   <span class='ivar'>@interrupted_examples</span>
@@ -1398,12 +1399,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_pending_examples'>pending_examples</span>
   <span class='ivar'>@pending_examples</span>
@@ -1455,12 +1456,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency'>reverse_dependency</span>
   <span class='ivar'>@reverse_dependency</span>
@@ -1512,12 +1513,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_run_id'>run_id</span>
   <span class='ivar'>@run_id</span>
@@ -1569,12 +1570,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_schema_version'>schema_version</span>
   <span class='ivar'>@schema_version</span>
@@ -1626,12 +1627,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_skipped_examples'>skipped_examples</span>
   <span class='ivar'>@skipped_examples</span>
@@ -1683,12 +1684,12 @@ extends the meta table.</p>
       <pre class="lines">
 
 
+72
 73
-74
-75</pre>
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_wsi_snapshot'>wsi_snapshot</span>
   <span class='ivar'>@wsi_snapshot</span>
@@ -1732,6 +1733,7 @@ save is composed incrementally.</p>
       <pre class="lines">
 
 
+99
 100
 101
 102
@@ -1752,11 +1754,10 @@ save is composed incrementally.</p>
 117
 118
 119
-120
-121</pre>
+120</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 100</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/snapshot.rb', line 99</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_empty'>empty</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='comma'>,</span> <span class='label'>run_id:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
@@ -1790,7 +1791,7 @@ save is composed incrementally.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

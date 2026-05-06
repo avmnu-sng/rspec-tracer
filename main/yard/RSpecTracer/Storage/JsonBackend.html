@@ -126,9 +126,9 @@ malformed JSON, wrong schema, binary-garbage input all yield
 <code>nil</code> + an info log. This is the invariant the fuzz spec
 asserts across 1000 iterations.</p>
 <p>Encoding: every read and write passes <code>encoding: 'UTF-8'</code>.
-This fixes the M3.1-flagged <code>Encoding::InvalidByteSequenceError</code>
-that bit the dogfood path when an example title contained a
-non-ASCII byte on a US-ASCII-defaulted filesystem.
+Fixes the <code>Encoding::InvalidByteSequenceError</code> that bit the
+dogfood path when an example title contained a non-ASCII byte on
+a US-ASCII-defaulted filesystem.
 rubocop:disable Metrics/ClassLength</p>
 
   </div>
@@ -170,19 +170,20 @@ and per-field semantics do not change.
 boot_set.json lands at the end of the list - additive w.r.t.
 1.x and v2 readers that walked this enumeration. It carries
 the project's transitive boot-load set (schema_version 3).
-wsi_snapshot.json (M4.3) persists the WholeSuiteInvalidators
+wsi_snapshot.json persists the WholeSuiteInvalidators
 digest_snapshot so warm runs can tell whether Gemfile.lock /
 .ruby-version / .rspec-tracer / tracer-gem identity changed
 since the previous run. Without it, warm runs always saw a
 nil previous and treated every run as a cold first run.
-Missing file deserializes to <code>{}</code> so pre-M4.3 caches still
-load - the fallback path fires one full re-run (safe).
-env_snapshot.json (M5.2) persists the <code>Tracker::EnvSnapshot</code>
-digest map for env-var values the per-example <code>tracks: { env: ... }</code> DSL declares. Same missing-coerces-to-<code>{}</code>
-fallback as wsi_snapshot - no schema bump.
-env_dependency.json (M6.1) persists the per-example tracked-env
+Missing file deserializes to <code>{}</code> so older caches still load -
+the fallback path fires one full re-run (safe).
+env_snapshot.json persists the <code>Tracker::EnvSnapshot</code> digest
+map for env-var values the per-example <code>tracks: { env: ... }</code>
+DSL declares. Same missing-coerces-to-<code>{}</code> fallback as
+wsi_snapshot - no schema bump.
+env_dependency.json persists the per-example tracked-env
 attribution map that reporters need for the Examples Dependency
-report. Missing file coerces to <code>{}</code>; pre-M6.1 caches load
+report. Missing file coerces to <code>{}</code>; older caches load
 without a cold re-run.</p>
 
   </div>
@@ -1414,7 +1415,7 @@ measurable assertion.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

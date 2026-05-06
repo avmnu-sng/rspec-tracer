@@ -71,7 +71,7 @@
     <span class='comment'># Observer #4 in the 2.0 tracker pipeline. Emits the binary
 </span>    <span class='comment'># &quot;blow it all up&quot; signal that runs before any per-example
 </span>    <span class='comment'># filtering - when any watched file changes, the filter engine
-</span>    <span class='comment'># (M3.5) treats every example as affected.
+</span>    <span class='comment'># treats every example as affected.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Watch list is deliberately hard-coded (not config-overridable):
 </span>    <span class='comment'># these are the files whose semantics are universal across any
@@ -104,7 +104,7 @@
 
       <span class='comment'># Fresh snapshot on every call - callers typically take one at
 </span>      <span class='comment'># boot (stored as the &quot;current&quot; snapshot) and compare against a
-</span>      <span class='comment'># previously-loaded snapshot (returned by storage in M3.4).
+</span>      <span class='comment'># previously-loaded snapshot (returned by the storage backend).
 </span>      <span class='comment'># Unlike DeclaredGlobs.walk, this is not memoized: the caller
 </span>      <span class='comment'># chooses when to sample.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span>
@@ -145,7 +145,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

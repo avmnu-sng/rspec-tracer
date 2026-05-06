@@ -107,7 +107,7 @@
     <p>Observer #4 in the 2.0 tracker pipeline. Emits the binary
 &quot;blow it all up&quot; signal that runs before any per-example
 filtering - when any watched file changes, the filter engine
-(M3.5) treats every example as affected.</p>
+treats every example as affected.</p>
 <p>Watch list is deliberately hard-coded (not config-overridable):
 these are the files whose semantics are universal across any
 rspec-tracer user.</p>
@@ -242,7 +242,7 @@ silently. Key-presence asymmetry is the invalidation signal
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Fresh snapshot on every call - callers typically take one at boot (stored as the &quot;current&quot; snapshot) and compare against a previously-loaded snapshot (returned by storage in M3.4).</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Fresh snapshot on every call - callers typically take one at boot (stored as the &quot;current&quot; snapshot) and compare against a previously-loaded snapshot (returned by the storage backend).</p></div></span>
   
 </li>
 
@@ -448,7 +448,7 @@ silently. Key-presence asymmetry is the invalidation signal
   <div class="discussion">
     <p>Fresh snapshot on every call - callers typically take one at
 boot (stored as the &quot;current&quot; snapshot) and compare against a
-previously-loaded snapshot (returned by storage in M3.4).
+previously-loaded snapshot (returned by the storage backend).
 Unlike DeclaredGlobs.walk, this is not memoized: the caller
 chooses when to sample.</p>
 
@@ -555,7 +555,7 @@ watch files in one check.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

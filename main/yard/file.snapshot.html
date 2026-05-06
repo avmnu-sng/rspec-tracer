@@ -76,34 +76,33 @@
 </span>    <span class='comment'># into struct internals.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># `examples_coverage` may be `nil` when a caller explicitly loads
-</span>    <span class='comment'># the cheap header only (M3.6 will wire that path). The default
-</span>    <span class='comment'># load is eager - `nil` vs `{}` distinguishes &quot;not yet loaded&quot;
-</span>    <span class='comment'># from &quot;loaded and empty.&quot;
+</span>    <span class='comment'># the cheap header only. The default load is eager - `nil` vs `{}`
+</span>    <span class='comment'># distinguishes &quot;not yet loaded&quot; from &quot;loaded and empty.&quot;
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Methods are defined on the reopened class body (not inside the
 </span>    <span class='comment'># Struct.new block) so mutant can introspect them - same pattern
 </span>    <span class='comment'># as Tracker::Input.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M3.7 adds `boot_set` - Hash[relative_path =&gt; sha256_hex] of every
-</span>    <span class='comment'># project file loaded before any example runs (spec_helper
-</span>    <span class='comment'># requires, gem boot, eager autoload). Backs the constants-
-</span>    <span class='comment'># blind-spot fix: the M3.6 caller compares this against the
-</span>    <span class='comment'># previous run&#39;s boot_set and ORs any mismatch with
-</span>    <span class='comment'># WholeSuiteInvalidators when computing the whole_suite_invalidated
-</span>    <span class='comment'># bool. Per-example loaded-set attribution folds into `dependency`
-</span>    <span class='comment'># via the existing graph registration path - no separate field.
+</span>    <span class='comment'># `boot_set` - Hash[relative_path =&gt; sha256_hex] of every project
+</span>    <span class='comment'># file loaded before any example runs (spec_helper requires, gem
+</span>    <span class='comment'># boot, eager autoload). Backs the constants-blind-spot fix: the
+</span>    <span class='comment'># engine compares this against the previous run&#39;s boot_set and ORs
+</span>    <span class='comment'># any mismatch with WholeSuiteInvalidators when computing the
+</span>    <span class='comment'># whole_suite_invalidated bool. Per-example loaded-set attribution
+</span>    <span class='comment'># folds into `dependency` via the existing graph registration path
+</span>    <span class='comment'># - no separate field.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M4.3 adds `wsi_snapshot` - Hash[watch_name =&gt; sha256_hex] produced
-</span>    <span class='comment'># by `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm
-</span>    <span class='comment'># run can&#39;t tell whether Gemfile.lock / .ruby-version / .rspec-tracer
+</span>    <span class='comment'># `wsi_snapshot` - Hash[watch_name =&gt; sha256_hex] produced by
+</span>    <span class='comment'># `WholeSuiteInvalidators#digest_snapshot`. Without it, a warm run
+</span>    <span class='comment'># can&#39;t tell whether Gemfile.lock / .ruby-version / .rspec-tracer
 </span>    <span class='comment'># (or the tracer gem identity) changed since the previous run, and
 </span>    <span class='comment'># the engine falls back to &quot;first run = invalidate everything&quot; on
-</span>    <span class='comment'># every warm run. The field is optional in the JSON layout so caches
-</span>    <span class='comment'># saved before M4.3 continue to load (missing wsi.json coerces to
-</span>    <span class='comment'># `{}`, which compares unequal and triggers one cold re-run - safe
-</span>    <span class='comment'># fallback, same cost as any other cache miss).
+</span>    <span class='comment'># every warm run. The field is optional in the JSON layout so older
+</span>    <span class='comment'># caches continue to load (missing wsi.json coerces to `{}`, which
+</span>    <span class='comment'># compares unequal and triggers one cold re-run - safe fallback,
+</span>    <span class='comment'># same cost as any other cache miss).
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M5.2 adds `env_snapshot` - Hash[env_name =&gt; md5_hex] produced by
+</span>    <span class='comment'># `env_snapshot` - Hash[env_name =&gt; md5_hex] produced by
 </span>    <span class='comment'># `Tracker::EnvSnapshot#digest_snapshot`. Covers env-var values
 </span>    <span class='comment'># declared via the per-example `tracks: { env: ... }` DSL.
 </span>    <span class='comment'># Without it, a warm run can&#39;t tell whether an env-gated example
@@ -111,13 +110,13 @@
 </span>    <span class='comment'># treatment as wsi_snapshot: missing file coerces to `{}`, no
 </span>    <span class='comment'># schema_version bump, one cold re-run on upgrade.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M6.1 adds `env_dependency` - Hash[example_id =&gt; Array&lt;env_name&gt;]
-</span>    <span class='comment'># capturing which env keys each tracked example declared. The
-</span>    <span class='comment'># per-run `env_snapshot` stores the digest of each key; this map
-</span>    <span class='comment'># stores the example-to-key attribution that the reporter layer
-</span>    <span class='comment'># needs to render &quot;which env vars does this example depend on.&quot;
-</span>    <span class='comment'># Without it, reports can&#39;t surface env dependencies - Engine&#39;s
-</span>    <span class='comment'># per-run `@tracks_env` map would otherwise be lost at finalize.
+</span>    <span class='comment'># `env_dependency` - Hash[example_id =&gt; Array&lt;env_name&gt;] capturing
+</span>    <span class='comment'># which env keys each tracked example declared. The per-run
+</span>    <span class='comment'># `env_snapshot` stores the digest of each key; this map stores
+</span>    <span class='comment'># the example-to-key attribution that the reporter layer needs to
+</span>    <span class='comment'># render &quot;which env vars does this example depend on.&quot; Without it,
+</span>    <span class='comment'># reports can&#39;t surface env dependencies - Engine&#39;s per-run
+</span>    <span class='comment'># `@tracks_env` map would otherwise be lost at finalize.
 </span>    <span class='comment'># Same optional-in-JSON treatment as wsi_snapshot / env_snapshot:
 </span>    <span class='comment'># missing file coerces to `{}`, no schema_version bump.
 </span>    <span class='comment'>#
@@ -185,7 +184,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

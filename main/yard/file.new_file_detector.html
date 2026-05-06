@@ -75,15 +75,15 @@
 </span>    <span class='comment'># The fix: at boot, walk the union of user-declared globs and a
 </span>    <span class='comment'># pure-Ruby default set (lib/**/*.rb). Every match on disk that is
 </span>    <span class='comment'># not in the loaded cache&#39;s known_paths emits an Input, which the
-</span>    <span class='comment'># filter engine (M3.5) treats as &quot;added&quot; and re-runs any example
-</span>    <span class='comment'># whose dependency graph could plausibly include it.
+</span>    <span class='comment'># filter engine treats as &quot;added&quot; and re-runs any example whose
+</span>    <span class='comment'># dependency graph could plausibly include it.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Kind is :declared for every emission. The pure-Ruby default is
 </span>    <span class='comment'># logically a pre-declared glob on the user&#39;s behalf - the
 </span>    <span class='comment'># attribution semantics are identical to an explicit
 </span>    <span class='comment'># `track_files &#39;lib/**/*.rb&#39;`.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># Rails preset (app/**/*.rb) arrives in M4.1 through
+</span>    <span class='comment'># The Rails preset (app/**/*.rb) flows through
 </span>    <span class='comment'># Configuration#track_rails_defaults; the default list here stays
 </span>    <span class='comment'># framework-agnostic.
 </span>    <span class='kw'>class</span> <span class='const'>NewFileDetector</span>
@@ -117,7 +117,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

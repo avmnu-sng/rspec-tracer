@@ -109,8 +109,8 @@
     <p>Concise stdout summary printed at finalize-time. Output is
 capped at 4 lines for a typical run (5 when duplicate /
 interrupted / flaky / pending counters are non-zero). Kind-less
-taxonomy per M6.1 decision - the in-memory Input#kind enum does
-not survive Storage::Snapshot persistence, so breaking down
+taxonomy by design - the in-memory Input#kind enum does not
+survive Storage::Snapshot persistence, so breaking down
 &quot;Changed files: Templates / Locales / Ruby&quot; would require a
 schema bump (deferred).</p>
 <p>Color policy:</p>
@@ -240,7 +240,7 @@ yellow on pending-only, green otherwise.</code></pre>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

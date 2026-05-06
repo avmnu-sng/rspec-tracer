@@ -168,9 +168,9 @@
 
           <span class='comment'># Forward `**kwargs` too so DSL methods can accept Ruby 3+
 </span>          <span class='comment'># keyword args (e.g. `track_rails_defaults except: [:views]`,
-</span>          <span class='comment'># M3.8&#39;s `storage_backend :json, serializer: :msgpack`).
-</span>          <span class='comment'># Before M4.1 this wrapper forwarded `*args, &amp;block` only and
-</span>          <span class='comment'># silently stripped kwargs; see M3.4 handoff notes.
+</span>          <span class='comment'># `storage_backend :json, serializer: :msgpack`). Earlier
+</span>          <span class='comment'># forms of this wrapper forwarded `*args, &amp;block` only and
+</span>          <span class='comment'># silently stripped kwargs.
 </span>          <span class='id identifier rubyid_define_method'>define_method</span> <span class='id identifier rubyid_method_name'>method_name</span> <span class='kw'>do</span> <span class='op'>|</span><span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='op'>|</span>
             <span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:&quot;_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_method_name'>method_name</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
           <span class='kw'>end</span>
@@ -665,7 +665,7 @@
                             <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M3.7 transitive-load attribution (closes the constants blind
+    <span class='comment'># Transitive-load attribution (closes the constants blind
 </span>    <span class='comment'># spot). Default `true` - the tracker observes files loaded during
 </span>    <span class='comment'># the process and attributes them as transitive deps of every
 </span>    <span class='comment'># subsequent example, so a change to a constants-defining file
@@ -690,7 +690,7 @@
                                   <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M4.2 opt-in for narrow schema attribution. Default `false` - the
+    <span class='comment'># Opt-in for narrow schema attribution. Default `false` - the
 </span>    <span class='comment'># Preset `:schema` category already declared-glob-tracks db/schema.rb
 </span>    <span class='comment'># + db/structure.sql as a safe over-approximation (any schema change
 </span>    <span class='comment'># re-runs every example). Calling this method opts in to an
@@ -858,14 +858,14 @@
       <span class='id identifier rubyid_track_files'>track_files</span><span class='lparen'>(</span><span class='op'>*</span><span class='id identifier rubyid_globs'>globs</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># One-way latch. Tracker.setup (M3.6) flips it so a stray
+    <span class='comment'># One-way latch. Tracker.setup flips it so a stray
 </span>    <span class='comment'># `track_files` later in the boot sequence raises instead of
 </span>    <span class='comment'># silently accumulating into state that has already been read.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_freeze_declared_globs!'>freeze_declared_globs!</span>
       <span class='ivar'>@declared_globs_frozen</span> <span class='op'>=</span> <span class='kw'>true</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M5.3 config-level env-tracking DSL. Accumulates names across
+    <span class='comment'># Config-level env-tracking DSL. Accumulates names across
 </span>    <span class='comment'># calls; bare entries flow into `Engine#setup`, are wildcard-
 </span>    <span class='comment'># expanded via `Tracker::EnvMatcher`, and attach to every
 </span>    <span class='comment'># previously-seen example (parallel to `track_files`&#39;s &quot;declared
@@ -917,7 +917,7 @@
     <span class='const'>EMPTY_TRACKED_ENV_NAMES</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:EMPTY_TRACKED_ENV_NAMES</span>
 
-    <span class='comment'># M5.1 per-spec-file exclusion (closes upstream #41). Accumulates
+    <span class='comment'># Per-spec-file exclusion (closes upstream #41). Accumulates
 </span>    <span class='comment'># glob patterns that match test files rspec-tracer should leave
 </span>    <span class='comment'># alone: matching examples pass through RSpec unchanged, but the
 </span>    <span class='comment'># tracer does not compute an identity hash, does not run
@@ -971,7 +971,7 @@
       <span class='id identifier rubyid_file_path'>file_path</span><span class='lbracket'>[</span><span class='lparen'>(</span><span class='ivar'>@root</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span> <span class='op'>+</span> <span class='int'>1</span><span class='rparen'>)</span><span class='op'>..</span><span class='rbracket'>]</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M3.8 local-cache run-id retention. Default 5 keeps enough
+    <span class='comment'># Local-cache run-id retention. Default 5 keeps enough
 </span>    <span class='comment'># history for rollback debugging without letting the cache grow
 </span>    <span class='comment'># unbounded on long-lived machines (issue #20). 0 opts out (1.x
 </span>    <span class='comment'># behavior - dirs accumulate forever). ENV
@@ -1006,7 +1006,7 @@
     <span class='kw'>end</span>
     <span class='comment'># rubocop:enable Metrics/PerceivedComplexity
 </span>
-    <span class='comment'># M3.8 size budgets. Both return non-negative Integer MiB.
+    <span class='comment'># Size budgets. Both return non-negative Integer MiB.
 </span>    <span class='comment'># Shape identical to cache_retention_local_count:
 </span>    <span class='comment'># defined-and-nil-arg returns memo, ENV wins, then DSL arg, then
 </span>    <span class='comment'># module default. 0 disables the respective check.
@@ -1061,8 +1061,8 @@
     <span class='kw'>end</span>
     <span class='comment'># rubocop:enable Metrics/PerceivedComplexity
 </span>
-    <span class='comment'># M3.4 storage backend selector, extended in M3.8 to accept a
-</span>    <span class='comment'># kwarg opts hash. Symbol form: `storage_backend :json` or
+    <span class='comment'># Storage backend selector with optional kwarg opts hash.
+</span>    <span class='comment'># Symbol form: `storage_backend :json` or
 </span>    <span class='comment'># `storage_backend :sqlite`. ENV `RSPEC_TRACER_STORAGE` wins over
 </span>    <span class='comment'># the DSL argument, matching the `cache_dir` / `coverage_dir`
 </span>    <span class='comment'># precedence convention so CI can swap backends without editing
@@ -1150,7 +1150,7 @@
       <span class='lbrace'>{</span> <span class='label'>serializer:</span> <span class='id identifier rubyid_serializer'>serializer</span> <span class='rbrace'>}</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># M6.1 reporter DSL. Accumulates each call onto an internal list of
+    <span class='comment'># Reporter DSL. Accumulates each call onto an internal list of
 </span>    <span class='comment'># `[name_or_class, opts]` pairs that `Reporters::Registry` walks
 </span>    <span class='comment'># at finalize-time. Matches the `track_files` accumulator shape.
 </span>    <span class='comment'>#
@@ -1160,7 +1160,7 @@
 </span>    <span class='comment'>#   add_reporter MyCustomReporter, color: false
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Symbol names must match `Reporters::Registry::BUILT_INS.keys`
-</span>    <span class='comment'># (`:terminal`, `:json`; M6.2 adds `:html`). Class values are
+</span>    <span class='comment'># (`:terminal`, `:json`, `:html`). Class values are
 </span>    <span class='comment'># trusted - they must subclass / duck-type `Reporters::Base` but
 </span>    <span class='comment'># validation is deferred to initialize-time so custom reporters
 </span>    <span class='comment'># defined in user code don&#39;t have to exist at DSL-validate time.
@@ -1371,7 +1371,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -137,9 +137,9 @@ via Tracker::CoverageAdapter#peek_unfiltered + the engine's
 <p>Cache parity: <code>finalize</code> builds a Snapshot with file-name-keyed
 dependency / reverse_dependency / all_files maps (matching the
 1.x on-disk convention - root-stripped file names with a leading
-&quot;/&quot;) and hands it to Storage::JsonBackend. The schema bump to 3
-from M3.7 adds <code>boot_set</code>; everything else mirrors the 1.x
-cache layout byte-for-byte.
+&quot;/&quot;) and hands it to Storage::JsonBackend. The 2.0 schema bump
+adds <code>boot_set</code>; everything else mirrors the 1.x cache layout
+byte-for-byte.
 rubocop:disable Metrics/ClassLength</p>
 
   </div>
@@ -586,7 +586,7 @@ user surface unchanged under v2.</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M5.2 / M5.3.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Called from RunnerHook AFTER the filter-decision pre-walk has populated <code>@tracks_env</code> / <code>@tracked_env_names</code> for every example.</p></div></span>
   
 </li>
 
@@ -896,7 +896,7 @@ user surface unchanged under v2.</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M5.2 per-example tracking DSL hook.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Per-example tracking DSL hook.</p></div></span>
   
 </li>
 
@@ -1027,7 +1027,7 @@ user surface unchanged under v2.</p>
   <span class='ivar'>@tracks_files</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span> <span class='comment'># id =&gt; Set&lt;abs_path&gt;
 </span>  <span class='ivar'>@tracks_env</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span>   <span class='comment'># id =&gt; Set&lt;env_name&gt;
 </span>  <span class='ivar'>@tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
-  <span class='ivar'>@config_tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='comment'># M5.3 config-level subset (post-expansion)
+  <span class='ivar'>@config_tracked_env_names</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='comment'># config-level subset (post-expansion)
 </span>  <span class='ivar'>@previous_snapshot</span> <span class='op'>=</span> <span class='kw'>nil</span>
   <span class='ivar'>@run_id</span> <span class='op'>=</span> <span class='kw'>nil</span>
   <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='kw'>nil</span>
@@ -1593,17 +1593,16 @@ user surface unchanged under v2.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M5.2 / M5.3. Called from RunnerHook AFTER the filter-decision
-pre-walk has populated <code>@tracks_env</code> / <code>@tracked_env_names</code> for
-every example. Compares each declared env key against the
-previous snapshot's <code>env_snapshot</code> via Tracker::EnvSnapshot;
-marks any example whose tracked-env set intersects the
-invalidated set as re-runnable. Strictly additive vs other
-filter reasons - if the example was already in
-<code>@filtered_examples</code> for a stronger reason (files_changed /
-whole_suite_invalidator / failed_example / ...), env_changed
-does NOT overwrite.</p>
-<p>M5.3 config-level path: when an invalidated key intersects
+    <p>Called from RunnerHook AFTER the filter-decision pre-walk has
+populated <code>@tracks_env</code> / <code>@tracked_env_names</code> for every
+example. Compares each declared env key against the previous
+snapshot's <code>env_snapshot</code> via Tracker::EnvSnapshot; marks any
+example whose tracked-env set intersects the invalidated set
+as re-runnable. Strictly additive vs other filter reasons - if
+the example was already in <code>@filtered_examples</code> for a stronger
+reason (files_changed / whole_suite_invalidator /
+failed_example / ...), env_changed does NOT overwrite.</p>
+<p>Config-level path: when an invalidated key intersects
 <code>@config_tracked_env_names</code> (the post-expansion config-level
 set), every previously-seen example re-runs - mirrors the
 <code>track_files</code> &quot;declared globs attach to every example&quot;
@@ -1621,6 +1620,7 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+200
 201
 202
 203
@@ -1633,11 +1633,10 @@ already run via the no_cache path; no special-casing needed.</p>
 210
 211
 212
-213
-214</pre>
+213</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 201</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 200</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_apply_env_filter_decisions'>apply_env_filter_decisions</span>
   <span class='kw'>return</span> <span class='kw'>self</span> <span class='kw'>if</span> <span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1673,16 +1672,16 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+215
 216
 217
 218
 219
 220
-221
-222</pre>
+221</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 216</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 215</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_deregister_duplicate_examples'>deregister_duplicate_examples</span>
   <span class='ivar'>@duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_select!'>select!</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_entries'>entries</span><span class='op'>|</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_count'>count</span> <span class='op'>&gt;</span> <span class='int'>1</span> <span class='rbrace'>}</span>
@@ -1711,6 +1710,7 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+234
 235
 236
 237
@@ -1733,11 +1733,10 @@ already run via the no_cache path; no special-casing needed.</p>
 254
 255
 256
-257
-258</pre>
+257</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 235</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 234</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_example_finished'>example_finished</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_after_peek'>after_peek</span> <span class='op'>=</span> <span class='ivar'>@coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek'>peek</span>
@@ -1792,17 +1791,17 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+225
 226
 227
 228
 229
 230
 231
-232
-233</pre>
+232</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 226</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 225</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_example_started'>example_started</span>
   <span class='ivar'>@before_peek</span> <span class='op'>=</span> <span class='ivar'>@coverage_adapter</span><span class='period'>.</span><span class='id identifier rubyid_peek'>peek</span>
@@ -1841,12 +1840,12 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+330
 331
-332
-333</pre>
+332</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 331</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 330</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_filtered_example_ids'>filtered_example_ids</span>
   <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
@@ -1880,6 +1879,7 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
+291
 292
 293
 294
@@ -1890,11 +1890,10 @@ already run via the no_cache path; no special-casing needed.</p>
 299
 300
 301
-302
-303</pre>
+302</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 292</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 291</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_finalize'>finalize</span>
   <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_all_example_ids'>all_example_ids</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span>
@@ -1943,6 +1942,7 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+312
 313
 314
 315
@@ -1956,11 +1956,10 @@ carries forward the contribution of skipped examples.</p>
 323
 324
 325
-326
-327</pre>
+326</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 313</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 312</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_merge_skipped_coverage'>merge_skipped_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_skipped_ids'>skipped_ids</span><span class='comma'>,</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_source'>source</span> <span class='op'>=</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>||</span> <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_examples_coverage'>examples_coverage</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -1997,16 +1996,16 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+273
 274
 275
 276
 277
 278
-279
-280</pre>
+279</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 274</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 273</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_failed'>on_example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
@@ -2035,16 +2034,16 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+265
 266
 267
 268
 269
 270
-271
-272</pre>
+271</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 266</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 265</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_passed'>on_example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
@@ -2073,16 +2072,16 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+281
 282
 283
 284
 285
 286
-287
-288</pre>
+287</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 282</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 281</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_pending'>on_example_pending</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
@@ -2111,14 +2110,14 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+259
 260
 261
 262
-263
-264</pre>
+263</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 260</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 259</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_skipped'>on_example_skipped</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
   <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_register'>register</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_registered?'>registered?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
@@ -2167,12 +2166,12 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
+334
 335
-336
-337</pre>
+336</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 335</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 334</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_previous_snapshot_loaded?'>previous_snapshot_loaded?</span>
   <span class='op'>!</span><span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -2233,20 +2232,21 @@ carries forward the contribution of skipped examples.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M5.2 per-example tracking DSL hook. Called from RunnerHook with
-the normalized <code>{files: Set&lt;String&gt;, env: Set&lt;String&gt;}</code> that
+    <p>Per-example tracking DSL hook. Called from RunnerHook with the
+normalized <code>{files: Set&lt;String&gt;, env: Set&lt;String&gt;}</code> that
 <code>RSpec::Metadata.tracks_for(example)</code> produced. Resolves the
 file globs against the project root once per distinct glob
 string (memoized) and unions the matching Inputs into this
 example's dependency set. Env names are accumulated into
 <code>@tracked_env_names</code> so the finalize snapshot covers every key
 the run cared about.</p>
-<p>M5.3: per-example env entries may carry wildcard patterns
-(<code>tracks: { env: 'RAILS_*' }</code>). <code>EnvMatcher.expand</code> is the
-single funnel - literals pass through, wildcards expand against
-the live ENV, and unsupported syntax raises ArgumentError at
-this point (RunnerHook Pass 1, before any example body runs).
-rubocop:disable Metrics/PerceivedComplexity</p>
+<p>Per-example env entries may carry wildcard patterns (<code>tracks: { env: 'RAILS_*' }</code>). <code>EnvMatcher.expand</code> is the single funnel</p>
+<ul>
+<li>literals pass through, wildcards expand against the live ENV,
+and unsupported syntax raises ArgumentError at this point
+(RunnerHook Pass 1, before any example body runs).
+rubocop:disable Metrics/PerceivedComplexity</li>
+</ul>
 
   </div>
 </div>
@@ -2447,7 +2447,7 @@ rubocop:disable Metrics/PerceivedComplexity</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

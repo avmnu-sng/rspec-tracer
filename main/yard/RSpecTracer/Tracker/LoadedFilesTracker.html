@@ -636,9 +636,9 @@ nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
 </h3><div class="docstring">
   <div class="discussion">
     <p>Hash[relative_path =&gt; sha256_hex] for every file in the boot
-set. Used by the M3.6 caller to compare against the previous
-run's stored <code>Snapshot.boot_set</code> - any inequality is a
-whole-suite invalidator.</p>
+set. The engine compares this against the previous run's
+stored <code>Snapshot.boot_set</code> - any inequality is a whole-suite
+invalidator.</p>
 <p>Invariant (enforced by capture_boot_set!): every path in
 <code>@boot_set</code> has a matching <code>@input_cache</code> entry, so the fetch
 never raises. Disabled trackers produce an empty <code>@boot_set</code>,
@@ -689,9 +689,9 @@ so the enumeration naturally returns {} without a guard.</p>
 previously-stored one. <code>nil</code> previous_snapshot (first run, no
 cache) is treated as &quot;not invalidated by this signal&quot; - first
 run is already a cold run for unrelated reasons.</p>
-<p>Disabled tracker never invalidates - M3.6's caller ORs this
-with WholeSuiteInvalidators.invalidated?, so returning false
-keeps the tracker silent when the feature is off.</p>
+<p>Disabled tracker never invalidates - the engine ORs this with
+WholeSuiteInvalidators.invalidated?, so returning false keeps
+the tracker silent when the feature is off.</p>
 
   </div>
 </div>
@@ -1053,7 +1053,7 @@ with no digest work.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

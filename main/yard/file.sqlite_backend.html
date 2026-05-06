@@ -104,7 +104,7 @@
       <span class='comment'># Raised when the sqlite3 gem cannot be loaded. Engine&#39;s
 </span>      <span class='comment'># build_storage_backend dispatch rescues + falls back to
 </span>      <span class='comment'># `:json` with a warn line - same optional-dep posture as
-</span>      <span class='comment'># RedisBackend (M7.2) uses for the redis gem.
+</span>      <span class='comment'># RedisBackend uses for the redis gem.
 </span>      <span class='kw'>class</span> <span class='const'>SqliteBackendError</span> <span class='op'>&lt;</span> <span class='const'>StandardError</span><span class='semicolon'>;</span> <span class='kw'>end</span>
 
       <span class='const'>DB_FILENAME</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.sqlite3</span><span class='tstring_end'>&#39;</span></span>
@@ -118,8 +118,7 @@
 </span>      <span class='comment'># ms gives ~5x margin over a worst-case 1 s save on large caches
 </span>      <span class='comment'># (cache_load benchmark p50 ~0.6 s at 500 examples), preserving
 </span>      <span class='comment'># the storage layer&#39;s &quot;concurrent writers serialize cleanly&quot;
-</span>      <span class='comment'># contract verified in spec/edge_cases/concurrent_write_spec.rb
-</span>      <span class='comment'># (M8.2).
+</span>      <span class='comment'># contract verified in spec/edge_cases/concurrent_write_spec.rb.
 </span>      <span class='const'>BUSY_TIMEOUT_MS</span> <span class='op'>=</span> <span class='int'>5_000</span>
 
       <span class='comment'># SQLite&#39;s on-disk file format starts with the literal bytes
@@ -132,7 +131,7 @@
 </span>      <span class='comment'># Database.new + ensure_schema! sequence writes a fresh db.
 </span>      <span class='comment'># Without this, configure_connection&#39;s PRAGMA raises
 </span>      <span class='comment'># SQLite3::NotADatabaseException and the user is stuck unless
-</span>      <span class='comment'># they manually rm the cache. M8.2&#39;s cache_loader_fuzz harness
+</span>      <span class='comment'># they manually rm the cache. The `cache_loader_fuzz` harness
 </span>      <span class='comment'># surfaced this gap.
 </span>      <span class='const'>SQLITE_MAGIC_BYTES</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>SQLite format 3\x00</span><span class='tstring_end'>&quot;</span></span><span class='period'>.</span><span class='id identifier rubyid_b'>b</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
       <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:SQLITE_MAGIC_BYTES</span>
@@ -325,7 +324,7 @@
 </span>        <span class='comment'># the file&#39;s write lock to switch modes; if another connection is
 </span>        <span class='comment'># mid-transaction (BEGIN IMMEDIATE held), the PRAGMA contends on
 </span>        <span class='comment'># that lock and raises SQLite3::BusyException unless busy_timeout
-</span>        <span class='comment'># has been configured. M8.2&#39;s CI run on Ruby 3.3 caught this: the
+</span>        <span class='comment'># has been configured. CI on Ruby 3.3 surfaced this: the
 </span>        <span class='comment'># losing concurrent writer never reached its BEGIN IMMEDIATE
 </span>        <span class='comment'># because configure_connection&#39;s PRAGMA failed first.
 </span>        <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_busy_timeout'>busy_timeout</span> <span class='op'>=</span> <span class='const'>BUSY_TIMEOUT_MS</span>
@@ -646,7 +645,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -150,8 +150,8 @@
 </span>      <span class='comment'>#
 </span>      <span class='comment'># `tree_sha:` is accepted for protocol uniformity with S3Backend
 </span>      <span class='comment'># but is currently a no-op: the tree-SHA secondary index is an
-</span>      <span class='comment'># S3-only feature (M8.4-B). Future enhancement may extend it
-</span>      <span class='comment'># here; the orchestrator already forwards the kwarg.
+</span>      <span class='comment'># S3-only feature. Future enhancement may extend it here; the
+</span>      <span class='comment'># orchestrator already forwards the kwarg.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
         <span class='id identifier rubyid__'>_</span> <span class='op'>=</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span>
         <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='rparen'>)</span>
@@ -539,7 +539,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

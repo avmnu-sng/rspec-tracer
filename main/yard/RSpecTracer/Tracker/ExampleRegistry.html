@@ -109,18 +109,18 @@ registry to decide which examples always re-run (failed / flaky
 / pending / interrupted); the registry also owns duplicate
 detection via RSpec's identity-hash surface (the same hash 1.x
 uses for <code>fail_on_duplicates</code>).</p>
-<p>M3.5 owns the data structure only. <code>update_status</code> is called by
-M5.1 (RSpec integration hooks) on example-finished events and
-by signal handlers on interruption; M3.6 passes the registry
-instance through Tracker.setup. The registry itself has no
+<p>This module owns the data structure only. <code>update_status</code> is
+called by the RSpec integration hooks on example-finished events
+and by signal handlers on interruption; <code>Tracker.setup</code> passes
+the registry instance through. The registry itself has no
 opinion about where status comes from.</p>
 <h2 id="Statuses">Statuses</h2>
 <p>:passed       - completed cleanly
 :failed       - example assertion failed
 :pending      - RSpec <code>pending</code>
 :interrupted  - RSpec was killed mid-example (SIGINT / SIGTERM)
-:flaky        - passed this run but previously failed (M5.1
-detects via retry semantics)
+:flaky        - passed this run but previously failed
+(detected via retry semantics)
 :skipped      - skipped via <code>skip</code> or <code>:skip</code> metadata; tracked
 for coverage attribution but NOT auto-re-run</p>
 <p><code>always_re_run_ids</code> returns the union of flaky,
@@ -946,7 +946,7 @@ identity_hash but a different example_id accumulate into
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

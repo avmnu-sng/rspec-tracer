@@ -69,7 +69,7 @@
   <span class='kw'>module</span> <span class='const'>Rails</span>
     <span class='comment'># I18n backend observer. Covers custom backends (Redis-backed,
 </span>    <span class='comment'># DB-backed, Chain) that bypass YAML.load_file and would otherwise
-</span>    <span class='comment'># miss the M3.2 IOHooks YAML hook.
+</span>    <span class='comment'># miss the IOHooks YAML hook.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Mechanism: Module#prepend onto ::I18n::Backend::Base - every
 </span>    <span class='comment'># backend subclass&#39;s load_translations resolves through the hook,
@@ -185,7 +185,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

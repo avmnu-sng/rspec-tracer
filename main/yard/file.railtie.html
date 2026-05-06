@@ -67,10 +67,11 @@
 </span>    <span class='comment'># when `defined?(::Rails::Railtie)` is true, so loading this file in
 </span>    <span class='comment'># a non-Rails process is not expected and will raise NameError.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># M4.1 scope: define the Railtie class + register one initializer
-</span>    <span class='comment'># that logs a single confirmation line. M4.2 fills in
-</span>    <span class='comment'># ActiveSupport::Notifications subscribers for ActionView template
-</span>    <span class='comment'># renders, I18n lookups, and schema/factory/fixture tracking.
+</span>    <span class='comment'># Defines the Railtie class + registers one initializer that logs
+</span>    <span class='comment'># a single confirmation line. The actual ActiveSupport::Notifications
+</span>    <span class='comment'># subscribers for ActionView template renders, I18n lookups, and
+</span>    <span class='comment'># schema/factory/fixture tracking live in `notifications.rb` and
+</span>    <span class='comment'># `i18n_tracking.rb` and are wired by `Engine.setup`.
 </span>    <span class='kw'>class</span> <span class='const'>Railtie</span> <span class='op'>&lt;</span> <span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>Railtie</span>
       <span class='id identifier rubyid_initializer'>initializer</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.setup</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>do</span>
         <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_info'><span class='object_link'><a href="RSpecTracer/Logger.html#info-instance_method" title="RSpecTracer::Logger#info (method)">info</a></span></span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer Rails integration loaded</span><span class='tstring_end'>&#39;</span></span>
@@ -80,7 +81,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -192,9 +192,9 @@
       <span class='kw'>end</span>
 
       <span class='comment'># Hash[relative_path =&gt; sha256_hex] for every file in the boot
-</span>      <span class='comment'># set. Used by the M3.6 caller to compare against the previous
-</span>      <span class='comment'># run&#39;s stored `Snapshot.boot_set` - any inequality is a
-</span>      <span class='comment'># whole-suite invalidator.
+</span>      <span class='comment'># set. The engine compares this against the previous run&#39;s
+</span>      <span class='comment'># stored `Snapshot.boot_set` - any inequality is a whole-suite
+</span>      <span class='comment'># invalidator.
 </span>      <span class='comment'>#
 </span>      <span class='comment'># Invariant (enforced by capture_boot_set!): every path in
 </span>      <span class='comment'># `@boot_set` has a matching `@input_cache` entry, so the fetch
@@ -211,9 +211,9 @@
 </span>      <span class='comment'># cache) is treated as &quot;not invalidated by this signal&quot; - first
 </span>      <span class='comment'># run is already a cold run for unrelated reasons.
 </span>      <span class='comment'>#
-</span>      <span class='comment'># Disabled tracker never invalidates - M3.6&#39;s caller ORs this
-</span>      <span class='comment'># with WholeSuiteInvalidators.invalidated?, so returning false
-</span>      <span class='comment'># keeps the tracker silent when the feature is off.
+</span>      <span class='comment'># Disabled tracker never invalidates - the engine ORs this with
+</span>      <span class='comment'># WholeSuiteInvalidators.invalidated?, so returning false keeps
+</span>      <span class='comment'># the tracker silent when the feature is off.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_boot_set_invalidated?'>boot_set_invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
         <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -290,9 +290,9 @@
 </span>      <span class='comment'># the cached length from the previous call no new project paths
 </span>      <span class='comment'># can have appeared. Returns [] without iterating - cuts the
 </span>      <span class='comment'># per-call cost from ~70 us (full filter loop over ~500 paths) to
-</span>      <span class='comment'># one Array#length comparison. M8.4-A profile pass identified
-</span>      <span class='comment'># this loop as the dominant per-example cost in the engine
-</span>      <span class='comment'># microbench (16% TOTAL); the fast-path drops it to &lt;1%.
+</span>      <span class='comment'># one Array#length comparison. A profile pass identified this
+</span>      <span class='comment'># loop as the dominant per-example cost in the engine microbench
+</span>      <span class='comment'># (16% TOTAL); the fast-path drops it to &lt;1%.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_new_filtered_paths'>new_filtered_paths</span>
         <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='ivar'>@peek</span><span class='period'>.</span><span class='id identifier rubyid_call'>call</span>
         <span class='kw'>return</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='ivar'>@last_peek_length</span> <span class='op'>==</span> <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span>
@@ -342,7 +342,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

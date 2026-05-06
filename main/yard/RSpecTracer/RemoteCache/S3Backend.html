@@ -137,7 +137,7 @@ X seconds in any tier the backend visits.
 entirely (including its branch_refs.json) when no ref has
 been touched in X seconds. Applied at upload time in the
 backend&#39;s own branch only; cross-branch cleanup is a separate
-Rake task (deferred to M7.2).
+Rake task.
 </code></pre>
 <p>Graceful-degradation contract:</p>
 <pre class="code ruby"><code class="ruby">- `download` returns false and never raises on wire/validation
@@ -147,8 +147,8 @@ failure. Partial downloads are cleaned up.
 - `prune!` returns count removed, never raises.
 </code></pre>
 <p>S3 shells out via <code>aws</code> CLI - a single class is the natural unit
-of composition here. M8.3 mutation-smoke addition may push this
-over the limit further; splitting would be cosmetic.
+of composition here. The class is large; splitting would be
+cosmetic.
 rubocop:disable Metrics/ClassLength</p>
 
   </div>
@@ -930,7 +930,7 @@ failure for PR tier.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

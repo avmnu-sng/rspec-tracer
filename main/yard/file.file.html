@@ -77,8 +77,7 @@
 </span>      <span class='comment'># `@root_prefix` nil-check before the inner bucket check could
 </span>      <span class='comment'># bail. With the guard, the bucket check happens at FileReads
 </span>      <span class='comment'># so the reject path skips IOHooks.record entirely. Cuts the
-</span>      <span class='comment'># M2 Max reject overhead from ~530 ns/call to ~300 ns/call
-</span>      <span class='comment'># (M3.1-M3.2 absorbed orphan).
+</span>      <span class='comment'># M2 Max reject overhead from ~530 ns/call to ~300 ns/call.
 </span>      <span class='kw'>module</span> <span class='const'>FileReads</span>
         <span class='kw'>def</span> <span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
           <span class='const'>IOHooks</span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
@@ -105,7 +104,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -111,7 +111,7 @@
 </span>    <span class='comment'>#     entirely (including its branch_refs.json) when no ref has
 </span>    <span class='comment'>#     been touched in X seconds. Applied at upload time in the
 </span>    <span class='comment'>#     backend&#39;s own branch only; cross-branch cleanup is a separate
-</span>    <span class='comment'>#     Rake task (deferred to M7.2).
+</span>    <span class='comment'>#     Rake task.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Graceful-degradation contract:
 </span>    <span class='comment'>#   - `download` returns false and never raises on wire/validation
@@ -121,8 +121,8 @@
 </span>    <span class='comment'>#   - `prune!` returns count removed, never raises.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># S3 shells out via `aws` CLI - a single class is the natural unit
-</span>    <span class='comment'># of composition here. M8.3 mutation-smoke addition may push this
-</span>    <span class='comment'># over the limit further; splitting would be cosmetic.
+</span>    <span class='comment'># of composition here. The class is large; splitting would be
+</span>    <span class='comment'># cosmetic.
 </span>    <span class='comment'># rubocop:disable Metrics/ClassLength
 </span>    <span class='kw'>class</span> <span class='const'>S3Backend</span>
       <span class='kw'>class</span> <span class='const'>S3BackendError</span> <span class='op'>&lt;</span> <span class='const'>StandardError</span><span class='semicolon'>;</span> <span class='kw'>end</span>
@@ -699,7 +699,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

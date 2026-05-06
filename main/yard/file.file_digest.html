@@ -82,9 +82,9 @@
 </span>    <span class='comment'># this module centralized them.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Thread-safety: rspec example execution is single-threaded
-</span>    <span class='comment'># (M5.1 cold-subprocess contract); the cache uses a plain Hash
-</span>    <span class='comment'># without locking. Multi-threaded callers are unsupported
-</span>    <span class='comment'># (consistent with the rest of the tracer&#39;s threading model).
+</span>    <span class='comment'># (cold-subprocess contract); the cache uses a plain Hash without
+</span>    <span class='comment'># locking. Multi-threaded callers are unsupported (consistent
+</span>    <span class='comment'># with the rest of the tracer&#39;s threading model).
 </span>    <span class='kw'>module</span> <span class='const'>FileDigest</span>
       <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
         <span class='comment'># Returns the SHA256 hex digest of `path`, or nil when the
@@ -120,7 +120,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -121,11 +121,11 @@ expect for any rspec-tracer version bump.</p>
         <dt id="CURRENT-constant" class="">CURRENT =
           <div class="docstring">
   <div class="discussion">
-    <p>schema_version 2 shipped with M3.4 (first versioned schema;
-1.x was unstamped). M3.7 introduces <code>Snapshot.boot_set</code> -
-breaking for any reader that assumed the v2 field list - so
-CURRENT bumps to 3 and SUPPORTED narrows to only the new
-version. Pre-release: no v2 caches are persisted in user land.</p>
+    <p>schema_version 2 was the first versioned schema (1.x was
+unstamped). 2.0 adds <code>Snapshot.boot_set</code> - breaking for any
+reader that assumed the v2 field list - so CURRENT bumps to 3
+and SUPPORTED narrows to only the new version. No v2 caches
+were ever persisted in user land.</p>
 
   </div>
 </div>
@@ -250,7 +250,7 @@ the version field. The caller logs and falls back to cold run.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

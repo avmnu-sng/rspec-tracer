@@ -95,7 +95,7 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Top-level entry point. Drives the M5.1 lifecycle:</p>
+    <p>Top-level entry point. Drives the lifecycle:</p>
 <pre class="code ruby"><code class="ruby">RSpecTracer.start
 -&gt; RSpec::Installation.install!  (prepend RunnerHook + ReporterHook)
 -&gt; setup_coverage                (::Coverage.start unless SimpleCov owns it)
@@ -106,7 +106,7 @@ at_exit_behavior (installed via `at_exit` elsewhere in the boot
 flow) runs the finalize stack: Engine#finalize writes the 13-file
 snapshot via Storage::JsonBackend, Reporters::CoverageJsonReporter
 writes coverage.json (single owner, replacing the 1.x
-CoverageReporter + CoverageWriter pair retired in M8.0),
+CoverageReporter + CoverageWriter pair retired in 2.0),
 ParallelTests#finalize! merges per-worker caches on the last worker.</code></pre>
 
   </div>
@@ -417,7 +417,7 @@ ParallelTests#finalize! merges per-worker caches on the last worker.</code></pre
   
 
   
-    <span class="summary_desc"><div class='inline'><p>M8.9: SimpleCov load-order is part of the documented contract - SimpleCov.start MUST run before RSpecTracer.start when both are used together (see README §SimpleCov interop).</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>SimpleCov load-order is part of the documented contract - SimpleCov.start MUST run before RSpecTracer.start when both are used together (see README §SimpleCov interop).</p></div></span>
   
 </li>
 
@@ -973,7 +973,7 @@ SimpleCov is loaded but not started.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>M8.9: SimpleCov load-order is part of the documented contract -
+    <p>SimpleCov load-order is part of the documented contract -
 SimpleCov.start MUST run before RSpecTracer.start when both are
 used together (see README §SimpleCov interop). When the user
 has SimpleCov loaded but not started, we'd silently call
@@ -1031,7 +1031,7 @@ coverage output.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:56 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -106,9 +106,9 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>M8.0 owner of <code>coverage.json</code> emission. Replaces the legacy
-CoverageReporter + CoverageWriter + CoverageMerger + RubyCoverage
-quartet that 1.x carried. Output shape preserved byte-for-byte
+    <p>Single owner of <code>coverage.json</code> emission in 2.0. Replaces the
+legacy CoverageReporter + CoverageWriter + CoverageMerger +
+RubyCoverage quartet that 1.x carried. Output shape preserved byte-for-byte
 for downstream consumers (user CI dashboards parse this):</p>
 <pre class="code ruby"><code class="ruby">{ &quot;RSpecTracer&quot;: {
   &quot;coverage&quot;: { &quot;&lt;absolute_path&gt;&quot;: [Integer|nil, ...], ... },
@@ -127,7 +127,7 @@ skipped-example per-line strengths add into the cumulative map.</p>
 NOT write coverage.json. Instead it installs a small inner module
 via <code>::Coverage.singleton_class.prepend</code> so SimpleCov's at_exit
 result-merge sees rspec-tracer's filtered coverage. Matches 1.x
-behavior + the M4.3 integration matrix convention.</p>
+behavior + the integration matrix convention.</p>
 <p>Parallel_tests: per-worker emit happens through the Registry
 like every other reporter (each worker writes its own
 coverage.json under the per-worker coverage_path). The elected
@@ -481,7 +481,7 @@ this emitter.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:58 2026 by
+  Generated on Wed May  6 09:24:20 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

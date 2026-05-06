@@ -166,7 +166,7 @@
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='comment'># M8.9: surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs
+      <span class='comment'># Surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs
 </span>      <span class='comment'># rspec and watches everything re-run mysteriously. Reads the
 </span>      <span class='comment'># cached `last_run.json` (if any) and compares its
 </span>      <span class='comment'># `schema_version` against the gem&#39;s `Schema::CURRENT`. Three
@@ -196,7 +196,7 @@
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN schema:      could not read cache manifest: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
       <span class='kw'>end</span>
 
-      <span class='comment'># M8.9: when remote_cache is configured, verify the backend is
+      <span class='comment'># When remote_cache is configured, verify the backend is
 </span>      <span class='comment'># reachable from doctor&#39;s vantage point so the user catches
 </span>      <span class='comment'># misconfig (typo&#39;d S3 path / unreachable Redis URL / unwritable
 </span>      <span class='comment'># local-fs dir) BEFORE the next CI run fails. Best-effort: never
@@ -249,15 +249,15 @@
           <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>(reachability not probed locally; verified end-to-end on next CI run)</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>end</span>
 
-      <span class='comment'># M8.9: surface the M8.2-B / M9.0 / M9.1 narrow-attribution
-</span>      <span class='comment'># precondition at diagnostic time. When `track_ar_schema_notifications`
-</span>      <span class='comment'># is enabled AND Rails is loaded AND the rspec-rails default
-</span>      <span class='comment'># `use_transactional_fixtures = true` is in effect, per-example
-</span>      <span class='comment'># BEGIN/COMMIT fires `sql.active_record` inside the rspec-tracer
-</span>      <span class='comment'># bucket and attribution silently widens. Same shape as the
-</span>      <span class='comment'># boot-time warn shipped with M9.1 (RSpecTracer.start), surfaced
-</span>      <span class='comment'># here so users running `rspec-tracer doctor` see the issue
-</span>      <span class='comment'># without having to boot a full rspec run first.
+      <span class='comment'># Surface the narrow-attribution precondition at diagnostic time.
+</span>      <span class='comment'># When `track_ar_schema_notifications` is enabled AND Rails is
+</span>      <span class='comment'># loaded AND the rspec-rails default `use_transactional_fixtures
+</span>      <span class='comment'># = true` is in effect, per-example BEGIN/COMMIT fires
+</span>      <span class='comment'># `sql.active_record` inside the rspec-tracer bucket and
+</span>      <span class='comment'># attribution silently widens. Same shape as the boot-time warn
+</span>      <span class='comment'># in RSpecTracer.start, surfaced here so users running
+</span>      <span class='comment'># `rspec-tracer doctor` see the issue without having to boot a
+</span>      <span class='comment'># full rspec run first.
 </span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO AR schema:   track_ar_schema_notifications not enabled</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_ar_schema_enabled?'>ar_schema_enabled?</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO AR schema:   Rails not loaded</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_loaded?'>rails_loaded?</span>
@@ -296,7 +296,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

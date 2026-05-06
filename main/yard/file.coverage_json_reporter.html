@@ -70,9 +70,9 @@
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='kw'>module</span> <span class='const'>Reporters</span>
-    <span class='comment'># M8.0 owner of `coverage.json` emission. Replaces the legacy
-</span>    <span class='comment'># CoverageReporter + CoverageWriter + CoverageMerger + RubyCoverage
-</span>    <span class='comment'># quartet that 1.x carried. Output shape preserved byte-for-byte
+    <span class='comment'># Single owner of `coverage.json` emission in 2.0. Replaces the
+</span>    <span class='comment'># legacy CoverageReporter + CoverageWriter + CoverageMerger +
+</span>    <span class='comment'># RubyCoverage quartet that 1.x carried. Output shape preserved byte-for-byte
 </span>    <span class='comment'># for downstream consumers (user CI dashboards parse this):
 </span>    <span class='comment'>#
 </span>    <span class='comment'>#   { &quot;RSpecTracer&quot;: {
@@ -94,7 +94,7 @@
 </span>    <span class='comment'># NOT write coverage.json. Instead it installs a small inner module
 </span>    <span class='comment'># via `::Coverage.singleton_class.prepend` so SimpleCov&#39;s at_exit
 </span>    <span class='comment'># result-merge sees rspec-tracer&#39;s filtered coverage. Matches 1.x
-</span>    <span class='comment'># behavior + the M4.3 integration matrix convention.
+</span>    <span class='comment'># behavior + the integration matrix convention.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Parallel_tests: per-worker emit happens through the Registry
 </span>    <span class='comment'># like every other reporter (each worker writes its own
@@ -348,7 +348,7 @@
 </span>      <span class='comment'># SimpleCov calls `::Coverage.result` at its at_exit time, this
 </span>      <span class='comment'># prepended `result` method returns rspec-tracer&#39;s filtered
 </span>      <span class='comment'># cumulative coverage so SimpleCov&#39;s result-merge sees exactly
-</span>      <span class='comment'># what rspec-tracer saw. Matches the 1.x behavior the M4.3
+</span>      <span class='comment'># what rspec-tracer saw. Matches the 1.x behavior the
 </span>      <span class='comment'># integration matrix relies on.
 </span>      <span class='kw'>module</span> <span class='const'>SimpleCovInterop</span>
         <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
@@ -370,7 +370,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:55 2026 by
+  Generated on Wed May  6 09:24:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

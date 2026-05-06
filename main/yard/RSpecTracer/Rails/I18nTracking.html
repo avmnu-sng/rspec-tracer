@@ -106,7 +106,7 @@
   <div class="discussion">
     <p>I18n backend observer. Covers custom backends (Redis-backed,
 DB-backed, Chain) that bypass YAML.load_file and would otherwise
-miss the M3.2 IOHooks YAML hook.</p>
+miss the IOHooks YAML hook.</p>
 <p>Mechanism: Module#prepend onto ::I18n::Backend::Base - every
 backend subclass's load_translations resolves through the hook,
 even when the subclass overrides and super-calls Base. Backends
@@ -631,7 +631,7 @@ install state clears, so post-uninstall the hook is a no-op.</p>
 </div>
 
       <div id="footer">
-  Generated on Tue May  5 22:02:57 2026 by
+  Generated on Wed May  6 09:24:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
