@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Pure function that computes the filter result for a suite run:
     # given the previous dependency graph, the current change set,
@@ -36,6 +38,8 @@ module RSpecTracer
     # function mirrors that by iterating only the four re-run
     # statuses.
     module Filter
+      # Internal constant.
+      # @api private
       REASONS = %i[
         whole_suite_invalidator
         interrupted
@@ -56,6 +60,8 @@ module RSpecTracer
         pending: :pending_example
       }.freeze
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.select(graph:, change_set:, registry:, whole_suite_invalidated:, all_example_ids:)
         ids = all_example_ids.to_set
         return whole_suite_result(ids) if whole_suite_invalidated
@@ -72,10 +78,14 @@ module RSpecTracer
         result.keys.to_set
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.whole_suite_result(ids)
         ids.to_h { |id| [id, :whole_suite_invalidator] }
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.add_always_re_run(result, registry, ids)
         STATUS_TO_REASON.each do |status, reason|
           registry.ids_with_status(status).each do |id|
@@ -86,6 +96,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.add_new_examples(result, graph, ids)
         known = graph.example_ids.to_set
         ids.each do |id|
@@ -95,6 +107,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.add_files_changed(result, graph, change_set, ids)
         graph.examples_depending_on(change_set).each do |id|
           next unless ids.include?(id)
@@ -103,6 +117,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.assign_once(result, id, reason)
         result[id] ||= reason
       end

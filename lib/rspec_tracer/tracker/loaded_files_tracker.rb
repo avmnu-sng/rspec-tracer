@@ -7,6 +7,8 @@ require_relative 'file_digest'
 require_relative 'input'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Observer #5 in the 2.0 tracker pipeline. Closes the constants-
     # lookup blind spot documented in KNOWN_ISSUES.md B10.
@@ -72,6 +74,8 @@ module RSpecTracer
     # teams an opt-out for pathological suites where the transitive
     # over-approximation is too aggressive.
     class LoadedFilesTracker
+      # Internal constant.
+      # @api private
       DEFAULT_PEEK = -> { ::Coverage.peek_result.keys }
 
       # boot_set is exposed as an attr_reader rather than a hand-
@@ -79,6 +83,8 @@ module RSpecTracer
       # nil is a valid "not yet captured" state callers rely on.
       attr_reader :root, :boot_set
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(root:, peek: DEFAULT_PEEK, enabled: true)
         @root = File.expand_path(root)
         @root_prefix = "#{@root}/"
@@ -96,6 +102,8 @@ module RSpecTracer
         @last_peek_length = nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def enabled?
         @enabled
       end
@@ -203,6 +211,8 @@ module RSpecTracer
         @loaded_set.dup
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def loaded_set_size
         @loaded_set.size
       end
@@ -267,10 +277,14 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def file_digest(path)
         FileDigest.compute(path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def relative_path(abs_path)
         return abs_path unless abs_path.start_with?(@root_prefix)
 

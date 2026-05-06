@@ -63,6 +63,8 @@ module RSpecTracer
   # byte-for-byte.
   # rubocop:disable Metrics/ClassLength
   class Engine
+    # Internal constant.
+    # @api private
     EXAMPLE_RUN_REASON = {
       explicit_run: 'Explicit run',
       no_cache: 'No cache',
@@ -89,11 +91,15 @@ module RSpecTracer
       env_changed: EXAMPLE_RUN_REASON[:env_changed]
     }.freeze
 
+    # Internal attribute.
+    # @api private
     attr_reader :registry, :graph, :loaded_files_tracker, :coverage_adapter,
                 :declared_globs, :whole_suite_invalidators, :new_file_detector,
                 :env_snapshot, :storage_backend, :all_examples, :duplicate_examples,
                 :examples_coverage, :all_files
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def initialize(configuration: RSpecTracer)
       @configuration = configuration
       @filtered_examples = {}
@@ -110,6 +116,8 @@ module RSpecTracer
       @before_peek = nil
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def setup
       @configuration.freeze_declared_globs!
 
@@ -137,12 +145,16 @@ module RSpecTracer
       !previously_seen || @filtered_examples.key?(example_id)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def run_example_reason(example_id)
       return EXAMPLE_RUN_REASON[:explicit_run] if @configuration.run_all_examples
 
       @filtered_examples[example_id] || EXAMPLE_RUN_REASON[:no_cache]
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def register_example(example)
       example_id = example[:example_id]
       @registry.register(example_id, metadata: example, identity_hash: example_id)
@@ -212,6 +224,8 @@ module RSpecTracer
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def deregister_duplicate_examples
       @duplicate_examples.select! { |_, entries| entries.count > 1 }
       return if @duplicate_examples.empty?
@@ -222,6 +236,8 @@ module RSpecTracer
 
     # --- per-example surface --------------------------------------
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def example_started
       @before_peek = @coverage_adapter.peek
       @current_bucket = {}
@@ -231,6 +247,8 @@ module RSpecTracer
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def example_finished(example_id)
       after_peek = @coverage_adapter.peek
       record_coverage_delta(example_id, @before_peek, after_peek)
@@ -256,12 +274,16 @@ module RSpecTracer
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def on_example_skipped(example_id)
       @registry.register(example_id) unless @registry.registered?(example_id)
       @registry.update_status(example_id, :skipped)
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def on_example_passed(example_id, result)
       return if @duplicate_examples[example_id]&.count.to_i > 1
 
@@ -270,6 +292,8 @@ module RSpecTracer
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def on_example_failed(example_id, result)
       return if @duplicate_examples[example_id]&.count.to_i > 1
 
@@ -278,6 +302,8 @@ module RSpecTracer
       self
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def on_example_pending(example_id, result)
       return if @duplicate_examples[example_id]&.count.to_i > 1
 
@@ -331,6 +357,8 @@ module RSpecTracer
       @filtered_examples.keys
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def previous_snapshot_loaded?
       !@previous_snapshot.nil?
     end
@@ -376,6 +404,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_observers
       @registry = RSpecTracer::Tracker::ExampleRegistry.new
       @graph = RSpecTracer::Tracker::DependencyGraph.new
@@ -414,6 +444,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_json_backend(cache_path)
       RSpecTracer::Storage::JsonBackend.new(
         cache_path: cache_path,
@@ -425,6 +457,8 @@ module RSpecTracer
       )
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_sqlite_backend(cache_path)
       RSpecTracer::Storage::SqliteBackend.new(
         cache_path: cache_path, logger: @configuration.logger
@@ -436,6 +470,8 @@ module RSpecTracer
       build_json_backend(cache_path)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def install_io_hooks
       declared = @declared_globs
       RSpecTracer::Tracker::IOHooks.install(
@@ -519,6 +555,8 @@ module RSpecTracer
       )
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def uninstall_rails_observers
       return unless rails_observers_installed?
 
@@ -529,6 +567,8 @@ module RSpecTracer
       @rails_observers_installed = false
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def rails_observers_installed?
       defined?(@rails_observers_installed) && @rails_observers_installed == true
     end
@@ -547,12 +587,16 @@ module RSpecTracer
       RSpecTracer::Rails::Notifications.clear_bucket
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def ar_schema_notifications_enabled?
       return false unless @configuration.respond_to?(:track_ar_schema_notifications?)
 
       @configuration.track_ar_schema_notifications?
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def ar_schema_path_probes
       %w[db/schema.rb db/structure.sql].each_with_object([]) do |rel, acc|
         abs = File.expand_path(rel, @configuration.root)
@@ -587,6 +631,8 @@ module RSpecTracer
       read_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_read_backend
       return @storage_backend unless RSpecTracer.parallel_tests?
 
@@ -614,6 +660,8 @@ module RSpecTracer
       seed_graph_from_previous(prev)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def seed_all_examples_from_previous(prev)
       return unless prev.all_examples.is_a?(Hash)
 
@@ -684,6 +732,8 @@ module RSpecTracer
       @configuration.filters.any? { |f| f.match?(file_name: file_name) }
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def compute_filter_decisions
       prev = @previous_snapshot
       return if prev.nil?
@@ -702,9 +752,13 @@ module RSpecTracer
       @filtered_examples = result.transform_values { |reason| FILTER_REASON_STRINGS.fetch(reason) }
     end
 
+    # Internal constant.
+    # @api private
     SEED_STATUS_ORDER = %i[interrupted flaky failed pending].freeze
     private_constant :SEED_STATUS_ORDER
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def seed_registry_from_previous(prev)
       SEED_STATUS_ORDER.each do |status|
         ids = prev.send(:"#{status}_examples")
@@ -712,6 +766,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def seed_registry_entry(id, status, metadata)
       return if @registry.registered?(id)
 
@@ -727,6 +783,8 @@ module RSpecTracer
       graph
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def compute_change_set(prev)
       changed = Set.new
       prev.all_files.each_value do |file_meta|
@@ -745,16 +803,22 @@ module RSpecTracer
       changed
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def whole_suite_changed?(prev)
       wsi_prev = prev.wsi_snapshot if prev.respond_to?(:wsi_snapshot)
       @whole_suite_invalidators.invalidated?(wsi_prev) ||
         @loaded_files_tracker.boot_set_invalidated?(prev.boot_set)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def current_file_digest(file_name)
       RSpecTracer::Tracker::FileDigest.compute(absolute_path(file_name))
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def record_coverage_delta(example_id, before, after)
       entry = @examples_coverage[example_id] ||= {}
 
@@ -768,6 +832,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def accumulate_delta(file_entry, before_lines, after_lines)
       length = (after_lines || before_lines || []).length
       length.times do |i|
@@ -786,6 +852,8 @@ module RSpecTracer
       delta.positive? ? delta : nil
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def accumulate_line_coverage(accumulator, line_coverage)
       line_coverage.each do |line_key, strength|
         index = line_key.to_i
@@ -793,6 +861,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def attribute_to_example(example_id, inputs)
       paths = Set.new
       inputs.each do |input|
@@ -808,12 +878,16 @@ module RSpecTracer
       @graph.register_example(example_id, paths)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def record_execution_result(example_id, result)
       return unless @all_examples.key?(example_id)
 
       @all_examples[example_id][:execution_result] = formatted_execution_result(result)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def formatted_execution_result(result)
       {
         started_at: result.started_at.utc,
@@ -823,6 +897,8 @@ module RSpecTracer
       }
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def build_snapshot
       run_id = Digest::MD5.hexdigest(@all_examples.keys.sort.to_json)
       @run_id = run_id
@@ -910,6 +986,8 @@ module RSpecTracer
       @resolved_glob_cache[glob] ||= walk_one_glob(glob)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def walk_one_glob(glob)
       inputs = Set.new
       root = @configuration.root
@@ -927,6 +1005,8 @@ module RSpecTracer
       inputs
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def tracks_file_digest(path)
       RSpecTracer::Tracker::FileDigest.compute(path)
     end
@@ -939,32 +1019,44 @@ module RSpecTracer
       set.nil? || set.empty? ? Set.new : set.dup
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def duplicates_for_snapshot
       @duplicate_examples.select { |_, entries| entries.count > 1 }
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def all_files_by_name
       @all_files.each_with_object({}) do |(_, meta), acc|
         acc[meta[:file_name]] = meta
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def dependency_by_name
       @graph.dependency_hash.transform_values do |paths|
         paths.to_set { |p| path_to_file_name(p) }
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def reverse_dependency_by_name
       @graph.reverse_dependency_hash.each_with_object({}) do |(path, ids), acc|
         acc[path_to_file_name(path)] = ids.to_set
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def absolute_path(file_name)
       File.expand_path(file_name.to_s.sub(%r{^/}, ''), @configuration.root)
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def path_to_file_name(abs_path)
       root_prefix = "#{@configuration.root}/"
       return abs_path unless abs_path.start_with?(root_prefix)
@@ -972,6 +1064,8 @@ module RSpecTracer
       "/#{abs_path[root_prefix.length..]}"
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def symbol_or_string(hash, key)
       return hash[key] if hash.key?(key)
 

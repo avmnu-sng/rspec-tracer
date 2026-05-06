@@ -8,6 +8,8 @@ require_relative 'base'
 require_relative 'payload_builder'
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Renders a single-page HTML report at `<report_dir>/index.html`
     # consuming the canonical payload built by `PayloadBuilder`
@@ -32,9 +34,17 @@ module RSpecTracer
     # condition logs a warning and returns nil rather than propagating
     # a non-zero exit into the user's test suite.
     class HtmlReporter < Base
+      # Internal constant.
+      # @api private
       FILENAME = 'index.html'
+      # Internal constant.
+      # @api private
       ASSETS_DIR = 'assets'
+      # Internal constant.
+      # @api private
       FALLBACK_MARKER = '<!-- RSPEC_TRACER_FALLBACK -->'
+      # Internal constant.
+      # @api private
       REPORT_DATA_REGEX = %r{<script id="report-data" type="application/json">.*?</script>}m
 
       # Absolute path to the committed frontend build under
@@ -43,6 +53,12 @@ module RSpecTracer
       # template root.
       DIST_DIR = File.expand_path('html/dist', __dir__)
 
+      # Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+      # Renders the bundled HTML template with the run payload and writes
+      # `index.html` (plus the asset directory) under {#report_dir}.
+      #
+      # @return [String, nil] absolute path of the written index, or nil
+      #   when there is nothing to render.
       def generate
         return nil if no_op?
 
@@ -66,6 +82,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_template
         path = File.join(dist_dir, FILENAME)
         return File.read(path, encoding: 'UTF-8') if File.file?(path)
@@ -74,6 +92,8 @@ module RSpecTracer
         nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def inject(template, payload)
         with_payload = template.sub(
           REPORT_DATA_REGEX,
@@ -90,11 +110,15 @@ module RSpecTracer
         JSON.generate(payload).gsub('<', '\\u003c').gsub('>', '\\u003e').gsub('&', '\\u0026')
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def render_fallback(payload)
         sections = fallback_sections(payload[:reports] || {})
         %(<div id="fallback" class="fallback-root">#{sections.join("\n")}</div>)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_sections(reports)
         dups = reports[:duplicate_examples] || []
         flakies = reports[:flaky_examples] || []
@@ -106,6 +130,8 @@ module RSpecTracer
         sections
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_all_examples(items)
         headers = ['Description', 'Location', 'Status', 'Run reason', 'Result', 'Duration']
         rows = items.map do |item|
@@ -120,6 +146,8 @@ module RSpecTracer
         fallback_table('all-examples', 'All Examples', headers, rows)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_duplicate_examples(items)
         headers = ['Example ID', 'Occurrences', 'Description', 'Location']
         rows = items.flat_map do |group|
@@ -132,6 +160,8 @@ module RSpecTracer
         fallback_table('duplicate-examples', 'Duplicate Examples', headers, rows)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_flaky_examples(items)
         headers = ['Example ID', 'Description', 'Location']
         rows = items.map do |item|
@@ -141,6 +171,8 @@ module RSpecTracer
         fallback_table('flaky-examples', 'Flaky Examples', headers, rows)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_examples_dependency(items)
         headers = ['Example ID', 'Files', 'Env keys', 'Dependencies']
         rows = items.map do |item|
@@ -154,6 +186,8 @@ module RSpecTracer
         fallback_table('examples-dependency', 'Examples Dependency', headers, rows)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_files_dependency(items)
         headers = ['File', 'Examples', 'Spec files', 'Dependent spec files']
         rows = items.map do |item|
@@ -166,6 +200,8 @@ module RSpecTracer
         fallback_table('files-dependency', 'Files Dependency', headers, rows)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fallback_table(id, title, headers, rows)
         header_cells = headers.map { |h| "<th scope=\"col\">#{CGI.escapeHTML(h)}</th>" }.join
         body = rows.empty? ? %(<tr><td colspan="#{headers.size}">No rows.</td></tr>) : rows.join
@@ -180,14 +216,20 @@ module RSpecTracer
         HTML
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def cell(value)
         "<td>#{CGI.escapeHTML(value.to_s)}</td>"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def cell_code(value)
         "<td><code>#{CGI.escapeHTML(value.to_s)}</code></td>"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def format_duration(seconds)
         return '' unless seconds.is_a?(::Numeric)
         return format('%d us', (seconds * 1_000_000).round) if seconds < 0.001
@@ -196,6 +238,8 @@ module RSpecTracer
         format('%.3f s', seconds)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def copy_assets
         src = File.join(dist_dir, ASSETS_DIR)
         return unless File.directory?(src)
@@ -206,10 +250,14 @@ module RSpecTracer
         FileUtils.cp_r(Dir[File.join(src, '*')], dest)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def dist_dir
         options[:dist_dir] || DIST_DIR
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def generated_at_override
         options[:generated_at]
       end

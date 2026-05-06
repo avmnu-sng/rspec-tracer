@@ -4,6 +4,8 @@ require_relative '../tracker/file_digest'
 require_relative '../tracker/input'
 
 module RSpecTracer
+  # Internal Rails — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Rails
     # ActiveSupport::Notifications observer for Rails-side inputs that
     # Coverage and IOHooks can't see directly. Subscribes to:
@@ -35,12 +37,20 @@ module RSpecTracer
     # that, the AR subscriber is never installed and the sql.active_record
     # event stream is ignored.
     class Notifications
+      # Internal constant.
+      # @api private
       BUCKET_KEY = :rspec_tracer_rails_bucket
+      # Internal constant.
+      # @api private
       AR_FLAG_KEY = :rspec_tracer_rails_ar_emitted
 
       class << self
+        # Internal attribute.
+        # @api private
         attr_reader :root
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def install(root:, filter: ->(_path) { true }, ar_schema_paths: [])
           @root = File.expand_path(root)
           @root_prefix = "#{@root}/"
@@ -56,6 +66,8 @@ module RSpecTracer
           self
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def uninstall
           (@handles || []).each { |handle| safely_unsubscribe(handle) }
           @handles = nil
@@ -66,6 +78,8 @@ module RSpecTracer
           self
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def installed?
           !@root_prefix.nil?
         end
@@ -82,6 +96,8 @@ module RSpecTracer
           Thread.current[AR_FLAG_KEY] = nil
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def current_bucket
           Thread.current[BUCKET_KEY]
         end
@@ -157,28 +173,38 @@ module RSpecTracer
 
         private
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def ar_enabled?
           !(@ar_schema_inputs.nil? || @ar_schema_inputs.empty?)
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def subscribe_render_template
           @handles << ::ActiveSupport::Notifications.subscribe('render_template.action_view') do |*args|
             handle_render_event(args.last)
           end
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def subscribe_render_partial
           @handles << ::ActiveSupport::Notifications.subscribe('render_partial.action_view') do |*args|
             handle_render_event(args.last)
           end
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def subscribe_render_collection
           @handles << ::ActiveSupport::Notifications.subscribe('render_collection.action_view') do |*args|
             handle_render_event(args.last)
           end
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def subscribe_sql_active_record
           @handles << ::ActiveSupport::Notifications.subscribe('sql.active_record') do |*args|
             handle_sql_event(args.last)
@@ -207,6 +233,8 @@ module RSpecTracer
           end.freeze
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def try_build_schema_input(path)
           abs = File.expand_path(path.to_s, @root)
           return nil unless abs.start_with?(@root_prefix)
@@ -222,6 +250,8 @@ module RSpecTracer
           nil
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def safely_unsubscribe(handle)
           ::ActiveSupport::Notifications.unsubscribe(handle)
         rescue StandardError

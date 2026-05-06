@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
+    # Internal IOHooks — see {RSpecTracer} for the user-facing surface.
+    # @api private
     module IOHooks
       # Prepended onto File.singleton_class. Each method records the
       # path (IOHooks.record fast-rejects outside a bucketed example
@@ -18,21 +22,29 @@ module RSpecTracer
       # so the reject path skips IOHooks.record entirely. Cuts the
       # M2 Max reject overhead from ~530 ns/call to ~300 ns/call.
       module FileReads
+        # Internal method on the tracer pipeline.
+        # @api private
         def read(path, ...)
           IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def binread(path, ...)
           IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def readlines(path, ...)
           IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def open(path, ...)
           IOHooks.record(path) if Thread.current[BUCKET_KEY]
           super

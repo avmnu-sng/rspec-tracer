@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Reporters subsystem. Houses the default reporters (terminal,
+  # JSON, HTML, coverage.json) plus the protocol class
+  # ({Base}) that users subclass when shipping custom reporters
+  # via `add_reporter MyReporter`.
   module Reporters
     # Abstract base for every reporter rspec-tracer ships. Takes the
     # finalized Storage::Snapshot + report_dir + run_metadata triplet
@@ -35,6 +39,11 @@ module RSpecTracer
     #     add_reporter MyReporter, my_option: true
     #   end
     class Base
+      # @return [RSpecTracer::Storage::Snapshot, nil] finalized run snapshot.
+      # @return [String] absolute report directory.
+      # @return [Hash] run_metadata hash (pid / run_time / etc).
+      # @return [#info, #warn, nil] tracer logger.
+      # @return [Hash] reporter-specific options.
       attr_reader :snapshot, :report_dir, :run_metadata, :logger, :options
 
       # @param snapshot [RSpecTracer::Storage::Snapshot] the finalized

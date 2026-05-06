@@ -3,6 +3,8 @@
 require 'time'
 
 module RSpecTracer
+  # Internal Reporters — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Reporters
     # Builds the canonical reporter payload (schema v1) from a
     # finalized `Storage::Snapshot` plus a `run_metadata` Hash. Shared
@@ -21,18 +23,26 @@ module RSpecTracer
     # Removed or renamed keys bump `SCHEMA_VERSION` and require a
     # downstream coordination pass.
     class PayloadBuilder
+      # Internal constant.
+      # @api private
       SCHEMA_VERSION = 1
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.build(snapshot:, run_metadata:, generated_at: nil)
         new(snapshot: snapshot, run_metadata: run_metadata, generated_at: generated_at).build
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(snapshot:, run_metadata:, generated_at: nil)
         @snapshot = snapshot
         @run_metadata = run_metadata || {}
         @generated_at = generated_at || ::Time.now.utc
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build
         {
           schema_version: SCHEMA_VERSION,
@@ -51,6 +61,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def summary_block
         {
           total_examples: @snapshot.all_examples.size,
@@ -69,6 +81,8 @@ module RSpecTracer
         }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def count_status(status)
         status_str = status.to_s
         @snapshot.all_examples.count do |_, meta|
@@ -81,6 +95,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def all_examples_report
         @snapshot.all_examples.map do |id, meta|
           meta = {} unless meta.is_a?(::Hash)
@@ -95,6 +111,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def duplicate_examples_report
         @snapshot.duplicate_examples.map do |id, entries|
           list = entries.is_a?(::Array) ? entries : []
@@ -109,6 +127,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def flaky_examples_report
         @snapshot.flaky_examples.to_a.sort.map do |id|
           meta = @snapshot.all_examples[id]
@@ -117,6 +137,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def examples_dependency_report
         env_map = @snapshot.env_dependency || {}
         @snapshot.dependency.keys.sort.map do |id|
@@ -130,6 +152,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def files_dependency_report
         entries = @snapshot.reverse_dependency.map do |file_name, example_ids|
           ids_array = example_ids.is_a?(::Set) ? example_ids.to_a : Array(example_ids)
@@ -143,6 +167,8 @@ module RSpecTracer
         entries.sort_by { |e| [-e[:example_count], e[:file_name].to_s] }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def aggregate_spec_counts(example_ids)
         counts = ::Hash.new(0)
         example_ids.each do |id|
@@ -157,6 +183,8 @@ module RSpecTracer
         counts.sort_by { |name, count| [-count, name] }.to_h
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def location_for(meta)
         file = meta[:rerun_file_name] || meta[:file_name]
         line = meta[:rerun_line_number] || meta[:line_number]
@@ -180,6 +208,8 @@ module RSpecTracer
         result.is_a?(::Hash) ? (result[:status] || 'unknown').to_s : 'unknown'
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def normalize_execution_result(result)
         return nil unless result.is_a?(::Hash)
 
@@ -191,6 +221,8 @@ module RSpecTracer
         }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def stringify_time(value)
         return nil if value.nil?
         return value if value.is_a?(::String)

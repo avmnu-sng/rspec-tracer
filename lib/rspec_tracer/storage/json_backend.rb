@@ -14,6 +14,8 @@ require_relative 'serializer/msgpack'
 require_relative 'snapshot'
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
     # JSON-on-disk storage backend. 1.x shipped this layout without a
     # formal contract; 2.0 treats the FILENAMES list below as the
@@ -91,8 +93,14 @@ module RSpecTracer
         cache_hit_reason.json
       ].freeze
 
+      # Internal constant.
+      # @api private
       LAST_RUN_FILENAME = 'last_run.json'
+      # Internal constant.
+      # @api private
       LOCK_FILENAME = '.rspec_tracer.lock'
+      # Internal constant.
+      # @api private
       ENCODING = 'UTF-8'
 
       # Known snapshot field symbols. Derived directly from FIELD_KINDS
@@ -125,11 +133,15 @@ module RSpecTracer
       # Keeping this as a nested class (not a Proc) so mutant can
       # introspect the reader contract.
       class FieldReader
+        # Internal method on the tracer pipeline.
+        # @api private
         def initialize(backend:, dir:)
           @backend = backend
           @dir = dir
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def read(field)
           @backend.read_field(@dir, field)
         end
@@ -144,10 +156,14 @@ module RSpecTracer
       ID_SET_FIELDS = %w[
         interrupted_examples flaky_examples failed_examples pending_examples skipped_examples
       ].freeze
+      # Internal constant.
+      # @api private
       HASH_FIELDS = %w[
         all_examples duplicate_examples all_files examples_coverage
         boot_set wsi_snapshot env_snapshot env_dependency cache_hit_reason
       ].freeze
+      # Internal constant.
+      # @api private
       DEPENDENCY_FIELDS = %w[dependency reverse_dependency].freeze
 
       # Read-side field -> deserializer-kind map. Drives
@@ -180,6 +196,8 @@ module RSpecTracer
         cache_hit_reason: :plain_hash
       }.freeze
 
+      # Internal attribute.
+      # @api private
       attr_reader :cache_path, :serializer, :serializer_name
 
       # rubocop:disable Metrics/ParameterLists
@@ -195,6 +213,8 @@ module RSpecTracer
         @serializer_name = serializer
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def last_run_id
         manifest = read_last_run_manifest
         return nil unless manifest.is_a?(Hash)
@@ -205,6 +225,8 @@ module RSpecTracer
         run_id
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def load_graph(schema_version:)
         manifest = read_last_run_manifest
         return nil unless manifest.is_a?(Hash)
@@ -258,6 +280,8 @@ module RSpecTracer
         "#{field}.#{@serializer.extension}"
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def save_graph(snapshot, schema_version:)
         raise ArgumentError, 'snapshot must not be nil' if snapshot.nil?
 
@@ -308,6 +332,8 @@ module RSpecTracer
         0
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def transactional_save(&block)
         raise ArgumentError, 'block required' unless block
 
@@ -318,6 +344,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def clear!
         return unless File.directory?(@cache_path)
 
@@ -356,6 +384,8 @@ module RSpecTracer
       # per-line coverage) only fire on collaborating workers that
       # happened to observe the same input file.
       module Merger
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.call(snapshots, schema_version:)
           state = empty_state
           snapshots.each { |s| absorb(state, s) }
@@ -385,6 +415,8 @@ module RSpecTracer
           )
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.empty_state
           {
             all_examples: {},
@@ -455,6 +487,8 @@ module RSpecTracer
           source.each { |reason, count| target[reason] += count }
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.merge_examples_coverage!(target, source)
           source.each do |id, per_file|
             entry = target[id] ||= {}
@@ -467,6 +501,8 @@ module RSpecTracer
           end
         end
 
+        # Internal helper for the tracer pipeline.
+        # @api private
         def self.reverse_of(dependency)
           reverse = Hash.new { |h, k| h[k] = Set.new }
           dependency.each do |id, file_names|
@@ -478,18 +514,26 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def last_run_path
         File.join(@cache_path, LAST_RUN_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def lock_path
         File.join(@cache_path, LOCK_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def maybe_prune_after_save
         prune_run_dirs!(keep: @retention_local_count) if @retention_local_count
       end
 
+      # Internal constant.
+      # @api private
       BYTES_PER_MB = 1_048_576
       private_constant :BYTES_PER_MB
 
@@ -507,10 +551,14 @@ module RSpecTracer
         warn_oversized_cache_total if positive_threshold?(@warn_total_mb)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def positive_threshold?(value)
         value.is_a?(::Integer) && value.positive?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def warn_oversized_run_files(run_id)
         run_dir = File.join(@cache_path, run_id)
         return unless File.directory?(run_dir)
@@ -529,6 +577,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def warn_oversized_cache_total
         total = total_cache_size_bytes
         threshold_bytes = @warn_total_mb * BYTES_PER_MB
@@ -551,6 +601,8 @@ module RSpecTracer
         Dir[File.join(run_dir, "*.#{@serializer.extension}")]
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def total_cache_size_bytes
         total = 0
         Dir[File.join(@cache_path, '**', "*.#{@serializer.extension}")].each do |path|
@@ -561,6 +613,8 @@ module RSpecTracer
         0
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def format_mib(bytes)
         "#{(bytes.to_f / BYTES_PER_MB).round(1)} MiB"
       end
@@ -601,6 +655,8 @@ module RSpecTracer
         [keep_paths, prune_paths]
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_last_run_manifest
         return nil unless File.file?(last_run_path)
 
@@ -618,6 +674,8 @@ module RSpecTracer
         JSON.parse(contents)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_json_atomic(path, data)
         tmp_path = "#{path}.tmp.#{Process.pid}.#{rand(1_000_000)}"
         File.write(tmp_path, JSON.pretty_generate(data), encoding: ENCODING)
@@ -626,12 +684,16 @@ module RSpecTracer
         File.delete(tmp_path) if tmp_path && File.file?(tmp_path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_run_files(dir, snapshot)
         HASH_FIELDS.each { |f| write_run_field(dir, f, snapshot.send(f) || {}) }
         ID_SET_FIELDS.each { |f| write_run_field(dir, f, serialize_id_set(snapshot.send(f))) }
         DEPENDENCY_FIELDS.each { |f| write_run_field(dir, f, serialize_dependency(snapshot.send(f))) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_run_field(dir, name, payload)
         write_payload_atomic(File.join(dir, field_filename(name.to_sym)), payload)
       end
@@ -648,6 +710,8 @@ module RSpecTracer
         File.delete(tmp_path) if tmp_path && File.file?(tmp_path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_last_run_atomic(schema_version:, run_id:)
         manifest = { 'schema_version' => schema_version, 'run_id' => run_id, 'timestamp' => Time.now.utc.iso8601 }
         write_json_atomic(last_run_path, manifest)
@@ -700,6 +764,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_run_file(dir, name)
         path = File.join(dir, name)
         return nil unless File.file?(path)
@@ -716,6 +782,8 @@ module RSpecTracer
         collection.to_a.sort
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def deserialize_id_set(raw)
         return Set.new unless raw.is_a?(Array)
 
@@ -730,6 +798,8 @@ module RSpecTracer
         collection.transform_values { |paths| Array(paths) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def deserialize_dependency(raw)
         return {} unless raw.is_a?(Hash)
 
@@ -758,6 +828,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def info(message)
         @logger&.info(message)
       end
@@ -779,6 +851,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def msgpack_unavailable_fallback
         @logger&.warn(
           'rspec-tracer cache: msgpack gem is not installed; falling back to :json. ' \

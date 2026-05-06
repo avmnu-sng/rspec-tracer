@@ -15,6 +15,8 @@ require_relative 'remote_cache/s3_backend'
 require_relative 'remote_cache/user_tasks'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
   end
 end

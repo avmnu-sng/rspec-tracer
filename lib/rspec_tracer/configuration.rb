@@ -44,16 +44,28 @@ module RSpecTracer
     # exists), or when an option value fails validation.
     class InvalidUsageError < StandardError; end
 
+    # Internal constant.
+    # @api private
     ALLOWED_CONFIGURER = %w[
       lib/rspec_tracer/load_default_config.rb
       lib/rspec_tracer/load_global_config.rb
       lib/rspec_tracer/load_local_config.rb
     ].freeze
 
+    # Internal constant.
+    # @api private
     DEFAULT_CACHE_DIR = 'rspec_tracer_cache'
+    # Internal constant.
+    # @api private
     DEFAULT_COVERAGE_DIR = 'rspec_tracer_coverage'
+    # Internal constant.
+    # @api private
     DEFAULT_REPORT_DIR = 'rspec_tracer_report'
+    # Internal constant.
+    # @api private
     DEFAULT_LOCK_FILE = 'rspec_tracer.lock'
+    # Internal constant.
+    # @api private
     DEFAULT_STORAGE_BACKEND = :json
     # :sqlite opt-in: MRI >= 3.2 only (sqlite3 2.x gem requirement).
     # Kept closed so typos raise early.
@@ -61,6 +73,8 @@ module RSpecTracer
     # Keys allowed in `storage_backend`'s opts hash. `:serializer` is
     # accepted only for the :json backend (see validate_storage_opts!).
     STORAGE_BACKEND_OPT_KEYS = %i[serializer].freeze
+    # Internal constant.
+    # @api private
     STORAGE_BACKEND_SERIALIZERS = %i[json msgpack].freeze
     # Per-save retention on the local cache's run-id directories.
     # 5 keeps enough history for rollback debugging without letting
@@ -73,8 +87,12 @@ module RSpecTracer
     # the user can still act on them. Set to 0 to disable either
     # individually.
     DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB = 50
+    # Internal constant.
+    # @api private
     DEFAULT_CACHE_SIZE_WARN_TOTAL_MB = 500
 
+    # Internal constant.
+    # @api private
     LOG_LEVEL = {
       off: 0,
       debug: 1,
@@ -83,6 +101,8 @@ module RSpecTracer
       error: 4
     }.freeze
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def configure(&)
       # Scan the full caller chain (not just the immediate two frames):
       # MRI / JRuby place the load_*_config.rb loader at depth 2, but
@@ -295,6 +315,8 @@ module RSpecTracer
       @remote_cache_backend_entry
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def validate_remote_cache_backend(name_or_class)
       case name_or_class
       when ::Symbol, ::Class
@@ -342,6 +364,8 @@ module RSpecTracer
       @remote_cache_uri = value
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def dispatch_remote_cache_uri(parsed)
       case parsed.scheme
       when 's3'
@@ -370,6 +394,8 @@ module RSpecTracer
       raise InvalidUsageError, "invalid remote_cache_uri: #{value.inspect} (#{e.message})"
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def valid_remote_cache_uri?(parsed)
       return false if parsed.scheme.nil?
 
@@ -454,6 +480,8 @@ module RSpecTracer
       @cache_retention_pr_branch_ttl_seconds
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def raise_if_retention_conflict(other_method)
       other_ivar =
         case other_method
@@ -466,6 +494,8 @@ module RSpecTracer
             'cache_retention_count and cache_retention_duration are mutually exclusive'
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def parse_retention_duration_seconds(spec)
       case spec
       when ::Integer
@@ -480,6 +510,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def parse_retention_duration_from_string(spec)
       match = spec.strip.match(/\A(\d+)\s+(second|minute|hour|day|week)s?\z/i)
       unless match
@@ -546,6 +578,8 @@ module RSpecTracer
                        end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def warn_once_deprecation(key, message)
       @_deprecation_warnings ||= {}
       return if @_deprecation_warnings.key?(key)
@@ -853,6 +887,8 @@ module RSpecTracer
       @track_env_names.dup.freeze
     end
 
+    # Internal constant.
+    # @api private
     EMPTY_TRACKED_ENV_NAMES = [].freeze
     private_constant :EMPTY_TRACKED_ENV_NAMES
 
@@ -895,6 +931,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def _ignore_spec_file_candidates(file_path)
       candidates = [file_path]
       stripped = file_path.delete_prefix('./')
@@ -904,6 +942,8 @@ module RSpecTracer
       candidates
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def _relative_file_path(file_path)
       return file_path unless defined?(@root) && @root && file_path.start_with?("#{@root}/")
 
@@ -977,6 +1017,8 @@ module RSpecTracer
       @cache_size_warn_per_file_mb
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def cache_size_warn_total_mb(size_mb = nil)
       return @cache_size_warn_total_mb if defined?(@cache_size_warn_total_mb) && size_mb.nil?
 
@@ -1061,9 +1103,13 @@ module RSpecTracer
       @storage_backend_opts
     end
 
+    # Internal constant.
+    # @api private
     EMPTY_STORAGE_BACKEND_OPTS = {}.freeze
     private_constant :EMPTY_STORAGE_BACKEND_OPTS
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def validate_and_resolve_storage_opts(backend, opts)
       unknown = opts.keys - STORAGE_BACKEND_OPT_KEYS
       unless unknown.empty?
@@ -1123,6 +1169,8 @@ module RSpecTracer
       @reporters.dup.freeze
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def validate_reporter_entry(name_or_class)
       case name_or_class
       when ::Symbol
@@ -1139,6 +1187,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def reporter_builtins_keys
       return [] unless defined?(RSpecTracer::Reporters::Registry)
 
@@ -1224,6 +1274,8 @@ module RSpecTracer
       raise NotImplementedError
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def valid_s3_path?(s3_path)
       uri = URI.parse(s3_path)
 
@@ -1232,6 +1284,8 @@ module RSpecTracer
       false
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def parallel_tests_id
       if ParallelTests.first_process?
         'parallel_tests_1'
@@ -1240,6 +1294,8 @@ module RSpecTracer
       end
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def parse_filter(filter = nil, &block)
       arg = filter || block
 
@@ -1269,6 +1325,8 @@ module RSpecTracer
             "unknown .rspec-tracer DSL method #{name.inspect}; did you mean #{suggestion.inspect}?"
     end
 
+    # Internal method on the tracer pipeline.
+    # @api private
     def respond_to_missing?(name, include_private = false)
       super
     end
@@ -1280,6 +1338,8 @@ module RSpecTracer
     # twice during `load_default_config` + `load_local_config` and would
     # double-alias any helper instance methods we kept here).
     module DslTypoSuggester
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.candidates
         # Strip one or more leading `_` to canonicalize through the
         # configure wrapper's aliasing levels (single underscore after
@@ -1293,6 +1353,8 @@ module RSpecTracer
         end.uniq
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.nearest(typed, candidates)
         prefix_match = candidates
           .select { |c| typed.start_with?(c) || c.start_with?(typed) }

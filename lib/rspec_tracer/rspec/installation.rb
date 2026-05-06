@@ -6,6 +6,8 @@ require_relative 'reporter_hook'
 require_relative 'runner_hook'
 
 module RSpecTracer
+  # Internal RSpec — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RSpec
     # Prepends RunnerHook + ReporterHook onto RSpec's runner/reporter
     # classes. Called once from `RSpecTracer.start`.
@@ -82,6 +84,8 @@ module RSpecTracer
         nil
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self._count_accumulated_files
         ::Coverage.peek_result.count do |_, cov|
           lines = cov.is_a?(::Hash) ? cov[:lines] : cov

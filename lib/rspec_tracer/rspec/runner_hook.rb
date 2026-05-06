@@ -3,6 +3,8 @@
 require_relative 'metadata'
 
 module RSpecTracer
+  # Internal RSpec — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RSpec
     # Prepended onto `RSpec::Core::Runner` by
     # `RSpecTracer::RSpec::Installation.install!`. Replaces the 1.x
@@ -29,6 +31,8 @@ module RSpecTracer
     # (actual: N, skipped: N)` - is preserved byte-for-byte from 1.x so
     # cucumber scenarios and CI log parsers keep working.
     module RunnerHook
+      # Internal method on the tracer pipeline.
+      # @api private
       def run_specs(example_groups)
         return super unless RSpecTracer.engine
 
@@ -67,6 +71,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def _rspec_tracer_no_examples?(actual_count)
         return false unless actual_count.zero?
 
@@ -154,6 +160,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def _rspec_tracer_duplicates_detected?
         duplicates = RSpecTracer.engine.duplicate_examples
         return false if duplicates.empty?

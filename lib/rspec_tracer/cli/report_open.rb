@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal CLI — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module CLI
     # `rspec-tracer report:open` — open the HTML report in the default
     # browser. Resolves `report_path/index.html` and dispatches via
@@ -45,6 +47,8 @@ module RSpecTracer
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
           Usage: rspec-tracer report:open
@@ -64,6 +68,8 @@ module RSpecTracer
         %w[open xdg-open].find { |bin| which(bin) }
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.which(binary)
         found = ENV.fetch('PATH', '').split(File::PATH_SEPARATOR).any? do |dir|
           path = File.join(dir, binary)

@@ -11,6 +11,8 @@ module RSpecTracer
   # runner-hook spec drive; the three private helpers stay reachable
   # only from `from` itself.
   module Example
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.from(example)
       data = {
         example_group: example.example_group.name,
@@ -23,6 +25,8 @@ module RSpecTracer
       data.merge(example_id: Digest::MD5.hexdigest(data.to_json))
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.example_location(example)
       metadata = example.metadata
 
@@ -41,6 +45,8 @@ module RSpecTracer
       location.merge(example_rerun_location(example.example_group.parent_groups))
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.example_rerun_location(example_groups)
       example_groups.each do |example_group|
         metadata = example_group.metadata
@@ -54,6 +60,8 @@ module RSpecTracer
       end
     end
 
+    # Internal helper for the tracer pipeline.
+    # @api private
     def self.location_file_name(rspec_file_name)
       file_path = RSpecTracer::SourceFile.file_path(rspec_file_name)
 

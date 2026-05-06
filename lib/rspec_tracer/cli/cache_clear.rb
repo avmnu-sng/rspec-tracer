@@ -3,6 +3,8 @@
 require 'fileutils'
 
 module RSpecTracer
+  # Internal CLI — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module CLI
     # `rspec-tracer cache:clear` — remove cache, coverage, and report
     # directories. Prompts for confirmation unless `--yes` is passed.
@@ -31,21 +33,29 @@ module RSpecTracer
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.existing_targets
         [RSpecTracer.cache_path, RSpecTracer.coverage_path, RSpecTracer.report_path]
           .select { |path| File.directory?(path) }
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.nothing_to_remove(stdout)
         stdout.puts 'cache:clear: nothing to remove (cache directories do not exist)'
         0
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.announce(stdout, existing)
         stdout.puts 'cache:clear: will remove:'
         existing.each { |path| stdout.puts "  - #{path}" }
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.confirm?(stdout)
         stdout.print 'Proceed? [y/N] '
         stdout.flush
@@ -53,11 +63,15 @@ module RSpecTracer
         %w[y yes].include?(response)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.aborted(stdout)
         stdout.puts 'cache:clear: aborted'
         0
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remove_each(stdout, existing)
         existing.each do |path|
           FileUtils.rm_rf(path)
@@ -65,6 +79,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
           Usage: rspec-tracer cache:clear [--yes]

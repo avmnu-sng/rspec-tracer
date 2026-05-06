@@ -5,6 +5,8 @@ require 'set'
 require_relative 'declared_globs'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
     # KNOWN_ISSUES Section B5: 1.x's fetch_changed_files loop only
@@ -26,8 +28,12 @@ module RSpecTracer
     # Configuration#track_rails_defaults; the default list here stays
     # framework-agnostic.
     class NewFileDetector
+      # Internal constant.
+      # @api private
       DEFAULT_GLOBS = %w[lib/**/*.rb].freeze
 
+      # Internal attribute.
+      # @api private
       attr_reader :root
 
       # Input contract: declared_globs and default_globs are Arrays of

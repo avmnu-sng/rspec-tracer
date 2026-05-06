@@ -11,6 +11,8 @@ require_relative 'schema'
 require_relative 'snapshot'
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
     # SQLite-on-disk storage backend. Single file
     # `cache_path/rspec_tracer.sqlite3` with a normalized 9-table
@@ -46,8 +48,14 @@ module RSpecTracer
       # RedisBackend uses for the redis gem.
       class SqliteBackendError < StandardError; end
 
+      # Internal constant.
+      # @api private
       DB_FILENAME = 'rspec_tracer.sqlite3'
+      # Internal constant.
+      # @api private
       JOURNAL_MODE_SQL = 'PRAGMA journal_mode = MEMORY'
+      # Internal constant.
+      # @api private
       SYNCHRONOUS_SQL = 'PRAGMA synchronous = NORMAL'
 
       # Two concurrent save_graph calls (parallel_tests workers, fork-
@@ -75,6 +83,8 @@ module RSpecTracer
       SQLITE_MAGIC_BYTES = "SQLite format 3\x00".b.freeze
       private_constant :SQLITE_MAGIC_BYTES
 
+      # Internal constant.
+      # @api private
       STATUS_FIELDS = {
         interrupted_examples: 'interrupted',
         flaky_examples: 'flaky',
@@ -83,6 +93,8 @@ module RSpecTracer
         skipped_examples: 'skipped'
       }.freeze
 
+      # Internal constant.
+      # @api private
       DIGEST_MAP_KINDS = {
         boot_set: 'boot',
         wsi_snapshot: 'wsi',
@@ -102,23 +114,33 @@ module RSpecTracer
       # Binds a SqliteBackend so LazySnapshot readers can dispatch
       # one field at a time without threading a connection through.
       class SqliteFieldReader
+        # Internal method on the tracer pipeline.
+        # @api private
         def initialize(backend:)
           @backend = backend
         end
 
+        # Internal method on the tracer pipeline.
+        # @api private
         def read(field)
           @backend.read_field(field)
         end
       end
 
+      # Internal attribute.
+      # @api private
       attr_reader :cache_path
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(cache_path:, logger: nil)
         @cache_path = File.expand_path(cache_path)
         @logger = logger
         load_sqlite_driver!
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def last_run_id
         with_connection do |db|
           row = db.get_first_row('SELECT run_id FROM meta LIMIT 1')
@@ -131,6 +153,8 @@ module RSpecTracer
         nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def load_graph(schema_version:)
         with_connection do |db|
           return nil unless meta_table_exists?(db)
@@ -155,6 +179,8 @@ module RSpecTracer
         nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def save_graph(snapshot, schema_version:)
         raise ArgumentError, 'snapshot must not be nil' if snapshot.nil?
 
@@ -173,12 +199,16 @@ module RSpecTracer
         snapshot
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def clear!
         return unless File.directory?(@cache_path)
 
         FileUtils.rm_rf(@cache_path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def transactional_save(&block)
         raise ArgumentError, 'block required' unless block
 
@@ -211,10 +241,14 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def db_path
         File.join(@cache_path, DB_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def load_sqlite_driver!
         require 'sqlite3'
       rescue LoadError
@@ -224,6 +258,8 @@ module RSpecTracer
               'or switch to `storage_backend :json`.'
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def with_connection
         return nil unless File.file?(db_path)
 
@@ -234,6 +270,8 @@ module RSpecTracer
         db&.close
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def with_write_connection
         FileUtils.mkdir_p(@cache_path)
         reset_corrupt_db_file!
@@ -258,6 +296,8 @@ module RSpecTracer
         File.delete(db_path)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def configure_connection(db)
         # Set busy_timeout FIRST. journal_mode = MEMORY itself requires
         # the file's write lock to switch modes; if another connection is
@@ -271,6 +311,8 @@ module RSpecTracer
         db.execute(SYNCHRONOUS_SQL)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def meta_table_exists?(db)
         row = db.get_first_row(
           "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'meta' LIMIT 1"
@@ -278,10 +320,14 @@ module RSpecTracer
         !row.nil?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def ensure_schema!(db)
         SCHEMA_STATEMENTS.each { |sql| db.execute(sql) }
       end
 
+      # Internal constant.
+      # @api private
       SCHEMA_STATEMENTS = [
         'CREATE TABLE IF NOT EXISTS meta (' \
         'schema_version INTEGER NOT NULL, ' \
@@ -335,12 +381,16 @@ module RSpecTracer
       ].freeze
       private_constant :SCHEMA_STATEMENTS
 
+      # Internal constant.
+      # @api private
       TRUNCATE_TABLES = %w[
         meta examples duplicate_examples all_files dependency
         examples_coverage env_dependency digest_maps id_sets
       ].freeze
       private_constant :TRUNCATE_TABLES
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_all_tables(db, snapshot, schema_version:)
         TRUNCATE_TABLES.each { |t| db.execute("DELETE FROM #{t}") }
 
@@ -354,18 +404,24 @@ module RSpecTracer
         write_grouped_rows(db, snapshot)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_example_rows(db, snapshot)
         insert_examples(db, snapshot.all_examples || {})
         insert_duplicate_examples(db, snapshot.duplicate_examples || {})
         insert_all_files(db, snapshot.all_files || {})
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_graph_rows(db, snapshot)
         insert_dependency(db, snapshot.dependency || {})
         insert_examples_coverage(db, snapshot.examples_coverage || {})
         insert_env_dependency(db, snapshot.env_dependency || {})
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def write_grouped_rows(db, snapshot)
         DIGEST_MAP_KINDS.each do |field, kind|
           insert_digest_map(db, kind, snapshot.send(field) || {})
@@ -375,11 +431,15 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_examples(db, examples)
         sql = 'INSERT INTO examples (example_id, metadata_json) VALUES (?, ?)'
         examples.each { |id, meta| db.execute(sql, [id.to_s, ::JSON.generate(meta || {})]) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_duplicate_examples(db, dupes)
         sql = 'INSERT INTO duplicate_examples (example_id, idx, entry_json) VALUES (?, ?, ?)'
         dupes.each do |id, list|
@@ -389,6 +449,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_all_files(db, all_files)
         sql = 'INSERT INTO all_files (file_name, file_path, digest) VALUES (?, ?, ?)'
         all_files.each do |file_name, meta|
@@ -398,6 +460,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_dependency(db, dependency)
         sql = 'INSERT INTO dependency (example_id, file_name) VALUES (?, ?)'
         dependency.each do |id, file_names|
@@ -405,6 +469,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_examples_coverage(db, coverage)
         sql = 'INSERT INTO examples_coverage (example_id, file_path, line_key, strength) VALUES (?, ?, ?, ?)'
         coverage.each do |id, per_file|
@@ -432,6 +498,8 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_env_dependency(db, env_dep)
         sql = 'INSERT INTO env_dependency (example_id, env_name) VALUES (?, ?)'
         env_dep.each do |id, names|
@@ -439,16 +507,22 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_digest_map(db, kind, map)
         sql = 'INSERT INTO digest_maps (kind, key, digest) VALUES (?, ?, ?)'
         map.each { |k, digest| db.execute(sql, [kind, k.to_s, digest.to_s]) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def insert_id_set(db, status, ids)
         sql = 'INSERT INTO id_sets (status, example_id) VALUES (?, ?)'
         Array(ids.to_a).each { |id| db.execute(sql, [status, id.to_s]) }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def dispatch_read(db, field)
         case field
         when :all_examples then read_all_examples(db)
@@ -466,12 +540,16 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def dispatch_read_grouped(db, field)
         return read_id_set(db, STATUS_FIELDS.fetch(field)) if STATUS_FIELDS.key?(field)
 
         read_digest_map(db, DIGEST_MAP_KINDS.fetch(field))
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_all_examples(db)
         result = {}
         db.execute('SELECT example_id, metadata_json FROM examples').each do |row|
@@ -481,6 +559,8 @@ module RSpecTracer
         result
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_duplicate_examples(db)
         result = Hash.new { |h, k| h[k] = [] }
         rows = db.execute('SELECT example_id, idx, entry_json FROM duplicate_examples ORDER BY example_id, idx')
@@ -491,6 +571,8 @@ module RSpecTracer
         result.each_with_object({}) { |(k, v), h| h[k] = v } # strip default_proc
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_all_files(db)
         result = {}
         db.execute('SELECT file_name, file_path, digest FROM all_files').each do |row|
@@ -500,6 +582,8 @@ module RSpecTracer
         result
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_dependency(db)
         result = Hash.new { |h, k| h[k] = Set.new }
         db.execute('SELECT example_id, file_name FROM dependency').each do |row|
@@ -509,6 +593,8 @@ module RSpecTracer
         result.each_with_object({}) { |(k, v), h| h[k] = v }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_reverse_dependency(db)
         result = Hash.new { |h, k| h[k] = Set.new }
         db.execute('SELECT file_name, example_id FROM dependency').each do |row|
@@ -518,6 +604,8 @@ module RSpecTracer
         result.each_with_object({}) { |(k, v), h| h[k] = v }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_examples_coverage(db)
         result = {}
         rows = db.execute('SELECT example_id, file_path, line_key, strength FROM examples_coverage')
@@ -529,6 +617,8 @@ module RSpecTracer
         result
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_env_dependency(db)
         result = Hash.new { |h, k| h[k] = [] }
         rows = db.execute('SELECT example_id, env_name FROM env_dependency ORDER BY example_id, env_name')
@@ -539,6 +629,8 @@ module RSpecTracer
         result.each_with_object({}) { |(k, v), h| h[k] = v }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_id_set(db, status)
         result = Set.new
         db.execute('SELECT example_id FROM id_sets WHERE status = ?', [status]).each do |row|
@@ -547,6 +639,8 @@ module RSpecTracer
         result
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_digest_map(db, kind)
         result = {}
         db.execute('SELECT key, digest FROM digest_maps WHERE kind = ?', [kind]).each do |row|
@@ -556,12 +650,16 @@ module RSpecTracer
         result
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def empty_default_for(field)
         return Set.new if STATUS_FIELDS.key?(field)
 
         {}
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def decode_hash_with_sym_keys(json_bytes)
         parsed = ::JSON.parse(json_bytes)
         return parsed unless parsed.is_a?(Hash)
@@ -569,12 +667,16 @@ module RSpecTracer
         parsed.transform_keys(&:to_sym)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def fetch_hash(hash, key)
         return hash[key] if hash.key?(key)
 
         hash[key.to_s]
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def info(message)
         @logger&.info(message)
       end

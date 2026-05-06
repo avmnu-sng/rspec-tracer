@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal Storage — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Storage
     # Value object returned by `Backend#load_graph` and accepted by
     # `Backend#save_graph`. Bundles every collection that 1.x's
@@ -91,6 +93,8 @@ module RSpecTracer
       keyword_init: true
     )
 
+    # Internal Snapshot — see {RSpecTracer} for the user-facing surface.
+    # @api private
     class Snapshot
       # Defaults every collection to its 1.x starting shape: Hash for
       # keyed collections, Set for example-id lists. Keeps spec

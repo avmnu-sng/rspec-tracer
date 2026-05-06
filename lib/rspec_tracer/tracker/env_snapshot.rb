@@ -4,6 +4,8 @@ require 'digest/md5'
 require 'set'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Observer #5 in the 2.0 tracker pipeline (WholeSuiteInvalidators
     # is #4). Owns the per-run snapshot of environment-variable

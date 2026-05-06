@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Protocol every remote-cache backend must satisfy. S3Backend,
     # LocalFsBackend, and RedisBackend all implement it. The shared-
@@ -45,6 +47,8 @@ module RSpecTracer
     #     remote_cache_backend MyCustomBackend, custom_opt: 'value'
     #   end
     module Backend
+      # Internal constant.
+      # @api private
       REQUIRED_METHODS = %i[
         download
         upload

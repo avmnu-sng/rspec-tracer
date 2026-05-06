@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Internal CLI — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module CLI
     # `rspec-tracer doctor` — diagnose config + environment.
     # Reports Ruby + rspec-tracer versions, project root resolution,
@@ -39,6 +41,8 @@ module RSpecTracer
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
           Usage: rspec-tracer doctor
@@ -49,30 +53,44 @@ module RSpecTracer
         0
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.ruby_version_check
         "OK   ruby:        #{RUBY_DESCRIPTION}"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.tracer_version_check
         "OK   rspec-tracer: #{RSpecTracer::VERSION}"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.project_root_check
         "OK   root:        #{RSpecTracer.root}"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.cache_path_check
         path_check('cache_path:', RSpecTracer.cache_path)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.coverage_path_check
         path_check('coverage_path:', RSpecTracer.coverage_path)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.report_path_check
         path_check('report_path:', RSpecTracer.report_path)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.path_check(label, path)
         return "FAIL #{label} <missing>" if path.nil? || path.empty?
         return "FAIL #{label} #{path} (does not exist)" unless File.directory?(path)
@@ -81,6 +99,8 @@ module RSpecTracer
         "OK   #{label} #{path}"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.git_check
         if system('git', 'rev-parse', 'HEAD', out: File::NULL, err: File::NULL)
           'OK   git:         HEAD reachable (remote_cache will work)'
@@ -89,6 +109,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.simplecov_check
         if defined?(::SimpleCov)
           'OK   SimpleCov:   loaded (interop active)'
@@ -97,6 +119,8 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.rails_check
         if defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
           "OK   Rails:       #{::Rails::VERSION::STRING}"
@@ -146,6 +170,8 @@ module RSpecTracer
         redis: ->(opts) { remote_cache_redis_check(opts) }
       }.freeze
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remote_cache_check
         entry = remote_cache_entry
         return 'INFO remote_cache: not configured (skip)' unless entry
@@ -157,12 +183,16 @@ module RSpecTracer
         instance_exec(opts, &probe)
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remote_cache_entry
         return nil unless RSpecTracer.respond_to?(:remote_cache_backend_entry)
 
         RSpecTracer.remote_cache_backend_entry
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remote_cache_s3_check(opts)
         bucket = opts[:bucket] || opts['bucket']
         return 'WARN remote_cache: :s3 configured without :bucket' if bucket.nil? || bucket.empty?
@@ -171,6 +201,8 @@ module RSpecTracer
           '(reachability not probed locally; verified end-to-end on next CI run)'
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remote_cache_local_fs_check(opts)
         path = opts[:path] || opts['path']
         return 'WARN remote_cache: :local_fs configured without :path' if path.nil? || path.empty?
@@ -180,6 +212,8 @@ module RSpecTracer
         "OK   remote_cache: :local_fs path=#{path}"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.remote_cache_redis_check(opts)
         url = opts[:url] || opts['url'] || ENV.fetch('RSPEC_TRACER_REMOTE_CACHE_URI', nil)
         return 'WARN remote_cache: :redis configured without :url' if url.nil? || url.empty?
@@ -210,16 +244,22 @@ module RSpecTracer
         end
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.ar_schema_enabled?
         return false unless RSpecTracer.respond_to?(:track_ar_schema_notifications?)
 
         RSpecTracer.track_ar_schema_notifications?
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.rails_loaded?
         defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.transactional_fixtures_default?
         return false unless defined?(::RSpec) && ::RSpec.respond_to?(:configuration)
 

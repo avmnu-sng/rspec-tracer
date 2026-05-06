@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Closed taxonomy of input sources. The kinds correspond to the
     # observation surface: `:ruby` (Coverage-observed source), `:data`
@@ -38,7 +40,11 @@ module RSpecTracer
     # singleton and mutant reports Subjects: 0 for them.
     Input = Struct.new(:path, :kind, :digest, :identity, keyword_init: true)
 
+    # Internal Input — see {RSpecTracer} for the user-facing surface.
+    # @api private
     class Input
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.for_file(path:, kind:, digest:, root:)
         unless ALLOWED_INPUT_KINDS.include?(kind)
           raise ArgumentError,
@@ -83,6 +89,8 @@ module RSpecTracer
 
       alias eql? ==
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def hash
         identity.hash
       end

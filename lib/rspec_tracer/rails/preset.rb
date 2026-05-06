@@ -5,6 +5,12 @@ require 'set'
 require_relative '../configuration'
 
 module RSpecTracer
+  # Internal Rails — see {RSpecTracer} for the user-facing surface.
+  # @api private
+  #
+  # Internal Rails-integration subsystem (Railtie + ActiveSupport
+  # notifications + I18n hooks + the default-glob preset). Activated
+  # when the user's spec_helper requires `rspec_tracer/rails`.
   module Rails
     # Default Rails glob preset - the Coverage-invisible surface that
     # rspec-tracer cannot auto-observe via its standard Ruby-execution
@@ -34,6 +40,8 @@ module RSpecTracer
     # Unknown `except:` keys raise Configuration::InvalidUsageError, same
     # pattern as `storage_backend(:bogus)`.
     class Preset
+      # Internal constant.
+      # @api private
       DEFAULTS = {
         views: %w[app/views/**/*].freeze,
         helpers: %w[app/helpers/**/*.rb].freeze,
@@ -47,8 +55,12 @@ module RSpecTracer
         ].freeze
       }.freeze
 
+      # Internal constant.
+      # @api private
       ALLOWED_KEYS = DEFAULTS.keys.to_set.freeze
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.globs(except: [])
         excluded = normalize_excluded(except)
         validate_excluded!(excluded)
@@ -61,10 +73,14 @@ module RSpecTracer
           .freeze
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.normalize_excluded(except)
         Array(except).compact
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.validate_excluded!(excluded)
         unknown = excluded.reject { |key| ALLOWED_KEYS.include?(key) }
         return if unknown.empty?

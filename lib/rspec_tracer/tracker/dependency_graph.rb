@@ -3,6 +3,8 @@
 require 'set'
 
 module RSpecTracer
+  # Internal Tracker — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module Tracker
     # Directed bipartite graph over (example_id, file path). The
     # forward map answers "which files does this example depend on?";
@@ -34,25 +36,35 @@ module RSpecTracer
     # directly) without forcing Snapshot-load sites to reconstruct
     # Input objects from paths.
     class DependencyGraph
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize
         @forward = {}
         @inverse_index = nil
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def register_example(example_id, inputs)
         @forward[example_id] = coerce_paths(inputs)
         @inverse_index = nil
         self
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def paths_for(example_id)
         @forward[example_id] || Set.new
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def example_ids
         @forward.keys
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def empty?
         @forward.empty?
       end
@@ -82,12 +94,16 @@ module RSpecTracer
         @forward.transform_values(&:dup)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def reverse_dependency_hash
         inverse_index.transform_values(&:dup)
       end
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def coerce_paths(collection)
         return Set.new if collection.nil?
 
@@ -96,10 +112,14 @@ module RSpecTracer
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def inverse_index
         @inverse_index ||= build_inverse_index
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def build_inverse_index
         map = {}
         @forward.each do |example_id, paths|

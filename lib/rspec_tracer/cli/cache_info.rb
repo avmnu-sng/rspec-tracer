@@ -3,6 +3,8 @@
 require 'json'
 
 module RSpecTracer
+  # Internal CLI — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module CLI
     # `rspec-tracer cache:info` — show cache size, last run, and
     # invalidation stats. Reads `last_run.json` + the run-id'd JSON
@@ -39,6 +41,8 @@ module RSpecTracer
         1
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
           Usage: rspec-tracer cache:info
@@ -50,6 +54,8 @@ module RSpecTracer
         0
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.print_run_summary(stdout, cache_path, run_id)
         run_dir = File.join(cache_path, run_id)
         return unless File.directory?(run_dir)
@@ -62,6 +68,8 @@ module RSpecTracer
         stdout.puts "examples:   #{total} tracked"
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.directory_size(path)
         return 0 unless File.directory?(path)
 
@@ -76,6 +84,8 @@ module RSpecTracer
         total
       end
 
+      # Internal helper for the tracer pipeline.
+      # @api private
       def self.format_bytes(bytes)
         return '0 B' if bytes <= 0
 

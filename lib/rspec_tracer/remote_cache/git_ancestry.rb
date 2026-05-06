@@ -4,6 +4,8 @@ require 'English'
 require 'set'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Git ancestry walker. Given the current branch + default branch,
     # answers "which commit should I upload cache under?" and "which
@@ -47,14 +49,20 @@ module RSpecTracer
     # and re-run the merge; idempotent on a clean tree). See
     # RSPEC_TRACER.md "Caching on CI" for the user-facing rationale.
     class GitAncestry
+      # Internal GitAncestryError — see {RSpecTracer} for the user-facing surface.
+      # @api private
       class GitAncestryError < StandardError; end
 
       # Matches 1.x. 25 commits is a 14-year-stable tradeoff between
       # cache hit rate on slow trunks and ancestry-walk cost.
       ANCESTRY_DEPTH = 25
 
+      # Internal attribute.
+      # @api private
       attr_reader :default_branch_name, :branch_name
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def initialize(default_branch:, branch:)
         raise GitAncestryError, 'default_branch is required' if default_branch.nil? || default_branch.to_s.empty?
         raise GitAncestryError, 'branch is required' if branch.nil? || branch.to_s.empty?
@@ -137,6 +145,8 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def reset_memo!
         remove_instance_variable(:@merge_commit) if defined?(@merge_commit)
         remove_instance_variable(:@branch_ref) if defined?(@branch_ref)
@@ -144,6 +154,8 @@ module RSpecTracer
         remove_instance_variable(:@ancestry_refs) if defined?(@ancestry_refs)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def current_branch
         branch = `git rev-parse --abbrev-ref HEAD`.chomp
         raise GitAncestryError, 'Could not determine current branch' unless $CHILD_STATUS.success?
@@ -151,6 +163,8 @@ module RSpecTracer
         branch
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def pull_remote_branch!
         fetched = system(
           'git', 'fetch', 'origin', "#{@branch_name}:#{@branch_name}",
@@ -163,6 +177,8 @@ module RSpecTracer
         raise GitAncestryError, "Could not pull remote branch #{@branch_name}" unless checked_out
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def merge_default_branch!
         merged = system(
           'git', 'merge', "origin/#{@default_branch_name}",
@@ -172,6 +188,8 @@ module RSpecTracer
         raise GitAncestryError, "Could not merge #{@default_branch_name} into #{@branch_name}" unless merged
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def head_ref
         head = `git rev-parse HEAD`.chomp
         raise GitAncestryError, 'Could not find HEAD commit sha' unless $CHILD_STATUS.success?
@@ -179,6 +197,8 @@ module RSpecTracer
         head
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def merged_parents
         parents = []
         first_parent = `git rev-parse HEAD^1`.chomp
@@ -190,6 +210,8 @@ module RSpecTracer
         parents
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def rev_list(spec)
         output = `git rev-list --max-count=#{ANCESTRY_DEPTH} #{spec}`.chomp
         raise GitAncestryError, "Could not list revs for #{spec}" unless $CHILD_STATUS.success?
@@ -197,6 +219,8 @@ module RSpecTracer
         output.split
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def refs_committer_timestamp(ref_list)
         return {} if ref_list.empty?
 

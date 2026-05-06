@@ -9,6 +9,8 @@ require_relative 'backend'
 require_relative 'validator'
 
 module RSpecTracer
+  # Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+  # @api private
   module RemoteCache
     # Filesystem implementation of `RemoteCache::Backend`. Target is
     # a shared directory: an NFS mount, a per-host dev cache, or a CI
@@ -37,13 +39,27 @@ module RSpecTracer
     # on node A may miss; retries converge. Document as user concern,
     # not a backend correctness issue.
     class LocalFsBackend
+      # Internal LocalFsBackendError — see {RSpecTracer} for the user-facing surface.
+      # @api private
       class LocalFsBackendError < StandardError; end
 
+      # Internal constant.
+      # @api private
       MAIN_TIER = 'main'
+      # Internal constant.
+      # @api private
       PR_TIER = 'pr'
+      # Internal constant.
+      # @api private
       BRANCH_REFS_FILENAME = 'branch_refs.json'
+      # Internal constant.
+      # @api private
       LAST_RUN_FILENAME = 'last_run.json'
+      # Internal constant.
+      # @api private
       CACHE_ARCHIVE_FILENAME = Archive::CACHE_FILENAME
+      # Internal constant.
+      # @api private
       ENCODING = 'UTF-8'
 
       # rubocop:disable Metrics/ParameterLists
@@ -181,16 +197,22 @@ module RSpecTracer
 
       private
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def blank?(value)
         value.nil? || value.to_s.empty?
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def validate_required!(**opts)
         opts.each do |key, value|
           raise LocalFsBackendError, "#{key} is required" if blank?(value)
         end
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def normalize_test_suite_id(raw)
         return nil if raw.nil?
 
@@ -198,42 +220,62 @@ module RSpecTracer
         value.empty? ? nil : value
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def pr_tier?
         @branch != @default_branch
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def own_tier_prefix
         pr_tier? ? "#{PR_TIER}/#{@branch}" : MAIN_TIER
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def main_tier_prefix
         MAIN_TIER
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def archive_path(tier_prefix, ref)
         File.join(*[@root, tier_prefix, ref, @test_suite_id, CACHE_ARCHIVE_FILENAME].compact)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def ref_dir(tier_prefix, ref)
         File.join(@root, tier_prefix, ref)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def tier_dir(tier_prefix)
         File.join(@root, tier_prefix)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def branch_refs_path(branch_name)
         File.join(@root, PR_TIER, branch_name.chomp, BRANCH_REFS_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def local_last_run_path
         File.join(@cache_path, LAST_RUN_FILENAME)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def local_run_dir(run_id)
         File.join(@cache_path, run_id)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def read_local_run_id
         return nil unless File.file?(local_last_run_path)
 
@@ -259,6 +301,8 @@ module RSpecTracer
         extract_and_validate(src, tier_prefix, ref)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def extract_and_validate(src, tier_prefix, ref)
         begin
           Archive.extract(archive_path: src, dest_dir: @cache_path)
@@ -300,6 +344,8 @@ module RSpecTracer
         refs.sort_by { |_, ts| -ts }
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_count!(count)
         refs = list_refs_in_tier(own_tier_prefix)
         return 0 if refs.length <= count
@@ -308,12 +354,16 @@ module RSpecTracer
         delete_refs(to_delete.map(&:first), own_tier_prefix)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_by_duration!(duration_seconds)
         cutoff = Time.now.to_i - duration_seconds.to_i
         stale = list_refs_in_tier(own_tier_prefix).select { |_, ts| ts < cutoff }.map(&:first)
         delete_refs(stale, own_tier_prefix)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def delete_refs(refs, tier_prefix)
         removed = 0
         refs.each do |ref|
@@ -326,6 +376,8 @@ module RSpecTracer
         removed
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def prune_dead_pr_branch!(ttl_seconds)
         refs = list_refs_in_tier(own_tier_prefix)
         return 0 if refs.empty?
@@ -348,6 +400,8 @@ module RSpecTracer
         0
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def branch_dirs(pr_root)
         Dir.each_child(pr_root)
           .map { |name| File.join(pr_root, name) }
@@ -369,10 +423,14 @@ module RSpecTracer
         delete_branch_prefix(tier_prefix, refs.length)
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_debug(message)
         @logger&.debug("rspec-tracer remote_cache: #{message}")
       end
 
+      # Internal method on the tracer pipeline.
+      # @api private
       def log_warn(message)
         @logger&.warn("rspec-tracer remote_cache: #{message}")
       end
