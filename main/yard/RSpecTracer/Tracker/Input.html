@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::Input
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -108,23 +108,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Value object representing a single input to a test. A test is a
-pure function of its inputs (see ARCHITECTURE.md); every input
-the tracker observes becomes one Input.</p>
-<p>Construct via Input.for_file - it expands the absolute path,
-validates the kind, and precomputes the stable identity string.
-The returned struct is frozen.</p>
-<p>Equality, hash, and eql? key on :identity only - two Inputs with
-the same identity but different digests are considered the same
-input at different points in time. Freshness lives on :digest
-and is queried via #stale?.</p>
-<p>Digest algorithm is caller-chosen (the observer owns content
-hashing); 2.0's default is SHA256 hex (see CoverageAdapter).
-Changing the algorithm is a storage schema_version bump.</p>
-<p>Methods are defined on the reopened class body (not the
-Struct.new block) so mutant can introspect them via
-Method#source_location - block-scoped defs live on an anonymous
-singleton and mutant reports Subjects: 0 for them.</p>
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal Input — see <span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> for the user-facing surface.</p>
 
   </div>
 </div>
@@ -265,10 +253,10 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -287,7 +275,7 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Strip <code>root/</code> prefix from an absolute path.</p></div></span>
@@ -321,7 +309,7 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Inputs are value-typed and not meant to be subclassed; <code>instance_of?</code> is precise where <code>is_a?</code> would let a subclass with matching identity compare equal.</p></div></span>
@@ -343,10 +331,10 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -365,7 +353,7 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p><code>!=</code> handles every case correctly: nil-vs-nil is NOT stale (absent stayed absent), present-vs-nil and nil-vs-present are stale (file appeared/disappeared), and digest-vs-digest is stale iff the content changed.</p></div></span>
@@ -424,12 +412,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-39
-40
-41</pre>
+41
+42
+43</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_digest'>digest</span>
   <span class='ivar'>@digest</span>
@@ -481,12 +469,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-39
-40
-41</pre>
+41
+42
+43</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_identity'>identity</span>
   <span class='ivar'>@identity</span>
@@ -538,12 +526,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-39
-40
-41</pre>
+41
+42
+43</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_kind'>kind</span>
   <span class='ivar'>@kind</span>
@@ -595,12 +583,12 @@ singleton and mutant reports Subjects: 0 for them.</p>
       <pre class="lines">
 
 
-39
-40
-41</pre>
+41
+42
+43</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 39</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_path'>path</span>
   <span class='ivar'>@path</span>
@@ -626,27 +614,40 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-42
-43
-44
-45
-46
-47
 48
 49
 50
 51
 52
-53</pre>
+53
+54
+55
+56
+57
+58
+59</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 42</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 48</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span><span class='comma'>,</span> <span class='label'>kind:</span><span class='comma'>,</span> <span class='label'>digest:</span><span class='comma'>,</span> <span class='label'>root:</span><span class='rparen'>)</span>
   <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../Tracker.html#ALLOWED_INPUT_KINDS-constant" title="RSpecTracer::Tracker::ALLOWED_INPUT_KINDS (constant)">ALLOWED_INPUT_KINDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_kind'>kind</span><span class='rparen'>)</span>
@@ -676,7 +677,11 @@ singleton and mutant reports Subjects: 0 for them.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Strip <code>root/</code> prefix from an absolute path. When the path
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Strip <code>root/</code> prefix from an absolute path. When the path
 escapes the root (absolute symlink target, vendored gem under a
 different tree, etc.) we fall back to the full absolute path so
 identity stays unique - the deterministic rule is &quot;same path
@@ -693,17 +698,17 @@ under same root =&gt; same identity&quot;, nothing stronger.</p>
       <pre class="lines">
 
 
-60
-61
-62
-63
-64
-65
 66
-67</pre>
+67
+68
+69
+70
+71
+72
+73</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 60</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 66</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_relative_path'>relative_path</span><span class='lparen'>(</span><span class='id identifier rubyid_abs_path'>abs_path</span><span class='comma'>,</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
   <span class='id identifier rubyid_root_abs'>root_abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -739,7 +744,11 @@ under same root =&gt; same identity&quot;, nothing stronger.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Inputs are value-typed and not meant to be subclassed;
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Inputs are value-typed and not meant to be subclassed;
 <code>instance_of?</code> is precise where <code>is_a?</code> would let a subclass
 with matching identity compare equal.</p>
 
@@ -754,12 +763,12 @@ with matching identity compare equal.</p>
       <pre class="lines">
 
 
-80
-81
-82</pre>
+86
+87
+88</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 80</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 86</span>
 
 <span class='kw'>def</span> <span class='op'>==</span><span class='lparen'>(</span><span class='id identifier rubyid_other'>other</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_other'>other</span><span class='period'>.</span><span class='id identifier rubyid_instance_of?'>instance_of?</span><span class='lparen'>(</span><span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_identity'>identity</span> <span class='op'>==</span> <span class='id identifier rubyid_other'>other</span><span class='period'>.</span><span class='id identifier rubyid_identity'>identity</span>
@@ -778,18 +787,31 @@ with matching identity compare equal.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-86
-87
-88</pre>
+94
+95
+96</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 86</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 94</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_hash'>hash</span>
   <span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_hash'>hash</span>
@@ -810,7 +832,11 @@ with matching identity compare equal.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p><code>!=</code> handles every case correctly: nil-vs-nil is NOT stale
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p><code>!=</code> handles every case correctly: nil-vs-nil is NOT stale
 (absent stayed absent), present-vs-nil and nil-vs-present are
 stale (file appeared/disappeared), and digest-vs-digest is
 stale iff the content changed.</p>
@@ -839,12 +865,12 @@ stale iff the content changed.</p>
       <pre class="lines">
 
 
-73
-74
-75</pre>
+79
+80
+81</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/input.rb', line 79</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_stale?'>stale?</span><span class='lparen'>(</span><span class='id identifier rubyid_current_digest'>current_digest</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_current_digest'>current_digest</span> <span class='op'>!=</span> <span class='id identifier rubyid_digest'>digest</span>
@@ -859,7 +885,7 @@ stale iff the content changed.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

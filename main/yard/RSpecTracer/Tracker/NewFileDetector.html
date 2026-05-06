@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::NewFileDetector
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
 KNOWN_ISSUES Section B5: 1.x's fetch_changed_files loop only
 iterated the previous run's cache, so newly-added source files
 were never discovered and never triggered re-runs.</p>
@@ -136,7 +140,20 @@ framework-agnostic.</p>
     <dl class="constants">
       
         <dt id="DEFAULT_GLOBS-constant" class="">DEFAULT_GLOBS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='tstring_content'>lib/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
@@ -168,10 +185,10 @@ framework-agnostic.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute root.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -205,7 +222,7 @@ framework-agnostic.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Input contract: declared_globs and default_globs are Arrays of String glob patterns.</p></div></span>
@@ -227,7 +244,7 @@ framework-agnostic.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Set<Input> for every on-disk match not present in the supplied known_paths Set.</p></div></span>
@@ -253,7 +270,11 @@ framework-agnostic.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Input contract: declared_globs and default_globs are Arrays of
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Input contract: declared_globs and default_globs are Arrays of
 String glob patterns. Configuration#declared_globs already
 normalizes user input (flatten / compact / to_s / uniq / freeze),
 and DeclaredGlobs#initialize re-applies the same coercion
@@ -272,13 +293,13 @@ coercion here would be triple-applied dead code.</p>
       <pre class="lines">
 
 
-40
-41
-42
-43</pre>
+46
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 40</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 46</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>declared_globs:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='label'>default_globs:</span> <span class='const'><span class='object_link'><a href="#DEFAULT_GLOBS-constant" title="RSpecTracer::Tracker::NewFileDetector::DEFAULT_GLOBS (constant)">DEFAULT_GLOBS</a></span></span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -307,7 +328,11 @@ coercion here would be triple-applied dead code.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute root.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -320,12 +345,12 @@ coercion here would be triple-applied dead code.</p>
       <pre class="lines">
 
 
-31
-32
-33</pre>
+37
+38
+39</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 31</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 37</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -353,7 +378,11 @@ coercion here would be triple-applied dead code.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Set<Input> for every on-disk match not present in the supplied
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Set<Input> for every on-disk match not present in the supplied
 known_paths Set. Called once per suite boot; the walker's
 underlying digest work is memoized on the DeclaredGlobs
 instance so repeated calls within a single suite don't re-hash.
@@ -371,12 +400,12 @@ is O(1) so no upstream <code>to_set</code> is needed.</p>
       <pre class="lines">
 
 
-51
-52
-53</pre>
+57
+58
+59</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 51</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/new_file_detector.rb', line 57</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_new_files'>new_files</span><span class='lparen'>(</span><span class='label'>known_paths:</span><span class='rparen'>)</span>
   <span class='ivar'>@walker</span><span class='period'>.</span><span class='id identifier rubyid_walk'>walk</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_input'>input</span><span class='op'>|</span> <span class='id identifier rubyid_known_paths'>known_paths</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
@@ -391,7 +420,7 @@ is O(1) so no upstream <code>to_set</code> is needed.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

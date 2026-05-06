@@ -68,7 +68,9 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>payload_builder</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Reporters</span>
+  <span class='comment'># Internal Reporters — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Reporters</span>
     <span class='comment'># Machine-readable summary of a tracer run. Writes
 </span>    <span class='comment'># `&lt;report_dir&gt;/report.json` containing a stable, schema-versioned
 </span>    <span class='comment'># envelope around the 5 report types that 1.x&#39;s HTML reporter
@@ -112,10 +114,20 @@
 </span>    <span class='comment'># renamed keys ARE. Downstream consumers (HTML reporter, user CI
 </span>    <span class='comment'># dashboards) should branch on the top-level version.
 </span>    <span class='kw'>class</span> <span class='const'>JsonReporter</span> <span class='op'>&lt;</span> <span class='const'>Base</span>
-      <span class='const'>SCHEMA_VERSION</span> <span class='op'>=</span> <span class='const'>PayloadBuilder</span><span class='op'>::</span><span class='const'>SCHEMA_VERSION</span>
-      <span class='const'>FILENAME</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>report.json</span><span class='tstring_end'>&#39;</span></span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>SCHEMA_VERSION</span> <span class='op'>=</span> <span class='const'>PayloadBuilder</span><span class='op'>::</span><span class='const'>SCHEMA_VERSION</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>FILENAME</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>report.json</span><span class='tstring_end'>&#39;</span></span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
+      <span class='comment'># Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+</span>      <span class='comment'># Serializes the canonical payload via {PayloadBuilder} and writes
+</span>      <span class='comment'># `report.json` under {#report_dir}.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @return [String, nil] absolute path of the written file, or nil
+</span>      <span class='comment'>#   when the run had no examples to report.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
 
         <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='id identifier rubyid_report_dir'>report_dir</span><span class='rparen'>)</span>
@@ -127,7 +139,9 @@
 
       <span class='id identifier rubyid_private'>private</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_build_payload'>build_payload</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_payload'>build_payload</span>
         <span class='const'>PayloadBuilder</span><span class='period'>.</span><span class='id identifier rubyid_build'>build</span><span class='lparen'>(</span><span class='label'>snapshot:</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>run_metadata:</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -135,7 +149,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

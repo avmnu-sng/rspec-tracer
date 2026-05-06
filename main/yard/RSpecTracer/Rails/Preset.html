@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Rails::Preset
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Default Rails glob preset - the Coverage-invisible surface that
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Default Rails glob preset - the Coverage-invisible surface that
 rspec-tracer cannot auto-observe via its standard Ruby-execution
 tracking. Enabled by <code>track_rails_defaults</code> in .rspec-tracer.</p>
 <p>Covered categories (each toggleable via the <code>except:</code> kwarg):</p>
@@ -145,7 +149,20 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
     <dl class="constants">
       
         <dt id="DEFAULTS-constant" class="">DEFAULTS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span>
   <span class='label'>views:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>app/views/**/*</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
@@ -161,7 +178,20 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
 <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="ALLOWED_KEYS-constant" class="">ALLOWED_KEYS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='const'><span class='object_link'><a href="#DEFAULTS-constant" title="RSpecTracer::Rails::Preset::DEFAULTS (constant)">DEFAULTS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
@@ -196,10 +226,10 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -218,10 +248,10 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -240,10 +270,10 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -267,26 +297,39 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
-62</pre>
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 52</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 64</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_globs'>globs</span><span class='lparen'>(</span><span class='label'>except:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_excluded'>excluded</span> <span class='op'>=</span> <span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
@@ -313,18 +356,31 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-64
-65
-66</pre>
+78
+79
+80</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 64</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 78</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
   <span class='const'>Array</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_compact'>compact</span>
@@ -345,7 +401,11 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
 
   </div>
 </div>
@@ -371,17 +431,17 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
       <pre class="lines">
 
 
-68
-69
-70
-71
-72
-73
-74
-75</pre>
+84
+85
+86
+87
+88
+89
+90
+91</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 68</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/preset.rb', line 84</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_unknown'>unknown</span> <span class='op'>=</span> <span class='id identifier rubyid_excluded'>excluded</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_key'>key</span><span class='op'>|</span> <span class='const'><span class='object_link'><a href="#ALLOWED_KEYS-constant" title="RSpecTracer::Rails::Preset::ALLOWED_KEYS (constant)">ALLOWED_KEYS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
@@ -401,7 +461,7 @@ pattern as <code>storage_backend(:bogus)</code>.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

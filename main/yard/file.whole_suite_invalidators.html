@@ -67,7 +67,9 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>../version</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Tracker</span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
     <span class='comment'># Observer #4 in the 2.0 tracker pipeline. Emits the binary
 </span>    <span class='comment'># &quot;blow it all up&quot; signal that runs before any per-example
 </span>    <span class='comment'># filtering - when any watched file changes, the filter engine
@@ -92,12 +94,20 @@
 </span>    <span class='comment'># silently. Key-presence asymmetry is the invalidation signal
 </span>    <span class='comment'># (snapshot A has key, snapshot B does not =&gt; invalidated).
 </span>    <span class='kw'>class</span> <span class='const'>WholeSuiteInvalidators</span>
-      <span class='const'>WATCH_FILES</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>Gemfile.lock</span><span class='words_sep'> </span><span class='tstring_content'>.ruby-version</span><span class='words_sep'> </span><span class='tstring_content'>.rspec-tracer</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
-      <span class='const'>GEM_IDENTITY_KEY</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer-gem</span><span class='tstring_end'>&#39;</span></span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>WATCH_FILES</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>Gemfile.lock</span><span class='words_sep'> </span><span class='tstring_content'>.ruby-version</span><span class='words_sep'> </span><span class='tstring_content'>.rspec-tracer</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>GEM_IDENTITY_KEY</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer-gem</span><span class='tstring_end'>&#39;</span></span>
 
-      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span><span class='comma'>,</span> <span class='symbol'>:gem_version</span>
+      <span class='comment'># Internal attribute.
+</span>      <span class='comment'># @api private
+</span>      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span><span class='comma'>,</span> <span class='symbol'>:gem_version</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>gem_version:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>gem_version:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='rparen'>)</span>
         <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
         <span class='ivar'>@gem_version</span> <span class='op'>=</span> <span class='id identifier rubyid_gem_version'>gem_version</span>
       <span class='kw'>end</span>
@@ -137,7 +147,9 @@
         <span class='const'>FileDigest</span><span class='period'>.</span><span class='id identifier rubyid_compute'>compute</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_gem_identity_digest'>gem_identity_digest</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_gem_identity_digest'>gem_identity_digest</span>
         <span class='const'>Digest</span><span class='op'>::</span><span class='const'>SHA256</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer-</span><span class='embexpr_beg'>#{</span><span class='ivar'>@gem_version</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -145,7 +157,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

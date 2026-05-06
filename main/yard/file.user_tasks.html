@@ -71,7 +71,9 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>s3_backend</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>RemoteCache</span>
+  <span class='comment'># Internal RemoteCache — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>RemoteCache</span>
     <span class='comment'># Orchestrator for the user-facing `rspec_tracer:remote_cache:*`
 </span>    <span class='comment'># Rake tasks. Composes `GitAncestry` + a `Backend` implementation,
 </span>    <span class='comment'># drives the download (candidate-ref walk + first-valid wins) and
@@ -90,35 +92,81 @@
 </span>    <span class='comment'>#     the tests already passed; cache miss is recoverable next run.
 </span>    <span class='comment'>#
 </span>    <span class='kw'>class</span> <span class='const'>UserTasks</span>
-      <span class='const'>BUILT_IN_BACKENDS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>BUILT_IN_BACKENDS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
         <span class='label'>s3:</span> <span class='const'>S3Backend</span><span class='comma'>,</span>
         <span class='label'>local_fs:</span> <span class='const'>LocalFsBackend</span><span class='comma'>,</span>
         <span class='label'>redis:</span> <span class='const'>RedisBackend</span>
       <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_download!'>download!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
+      <span class='comment'># Module-level convenience for {#download!}. Equivalent to
+</span>      <span class='comment'># `UserTasks.new(configuration: ..., env: ...).download!`. Invoked
+</span>      <span class='comment'># by the bundled `rspec_tracer/remote_cache/Rakefile` shim that
+</span>      <span class='comment'># users `import` from their own `Rakefile`.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @param configuration [Object] anything responding to the
+</span>      <span class='comment'>#   `cache_path` / `logger` / `remote_cache_*` config surface
+</span>      <span class='comment'>#   (defaults to the {RSpecTracer} top-level module).
+</span>      <span class='comment'># @param env [Hash] env hash to read `GIT_BRANCH` /
+</span>      <span class='comment'>#   `GIT_DEFAULT_BRANCH` from (defaults to `ENV`).
+</span>      <span class='comment'># @return [Boolean] true on a successful cache hit, false on cold
+</span>      <span class='comment'>#   run or graceful failure.
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_download!'>download!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_download!'>download!</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_upload!'>upload!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
+      <span class='comment'># Module-level convenience for {#upload!}. Equivalent to
+</span>      <span class='comment'># `UserTasks.new(configuration: ..., env: ...).upload!`. Invoked
+</span>      <span class='comment'># by the bundled `rspec_tracer/remote_cache/Rakefile` shim.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @param configuration [Object] anything responding to the
+</span>      <span class='comment'>#   `cache_path` / `logger` / `remote_cache_*` config surface
+</span>      <span class='comment'>#   (defaults to the {RSpecTracer} top-level module).
+</span>      <span class='comment'># @param env [Hash] env hash to read `GIT_BRANCH` /
+</span>      <span class='comment'>#   `GIT_DEFAULT_BRANCH` from (defaults to `ENV`).
+</span>      <span class='comment'># @return [Boolean] true on a successful upload, false on
+</span>      <span class='comment'>#   graceful failure (logged but not raised).
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_upload!'>upload!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_upload!'>upload!</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_git_repo?'>git_repo?</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_git_repo?'>git_repo?</span>
         <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>git</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rev-parse</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>HEAD</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='comma'>,</span> <span class='label'>env:</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='comma'>,</span> <span class='label'>env:</span><span class='rparen'>)</span>
         <span class='ivar'>@config</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span>
         <span class='ivar'>@env</span> <span class='op'>=</span> <span class='id identifier rubyid_env'>env</span>
         <span class='ivar'>@logger</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_download!'>download!</span>
+      <span class='comment'># Pull the closest matching cache for the current branch + commit
+</span>      <span class='comment'># ancestry from the configured backend. Walks the candidate refs
+</span>      <span class='comment'># produced by {GitAncestry}, downloads + extracts the first ref
+</span>      <span class='comment'># whose archive validates, and returns true. Cold-run on miss.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Errors are caught and logged; a failed download never propagates
+</span>      <span class='comment'># a non-zero exit into the test suite (graceful degradation).
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @example In a Rakefile
+</span>      <span class='comment'>#   require &#39;rspec_tracer/remote_cache/Rakefile&#39;
+</span>      <span class='comment'>#   # provides `rake rspec_tracer:remote_cache:download` which
+</span>      <span class='comment'>#   # invokes RSpecTracer::RemoteCache::UserTasks.download!
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @return [Boolean] true on a successful download, false on cold
+</span>      <span class='comment'>#   run / graceful failure.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_download!'>download!</span>
         <span class='id identifier rubyid_ancestry'>ancestry</span> <span class='op'>=</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
         <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_merge_base_branch!'>merge_base_branch!</span>
         <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
@@ -142,7 +190,20 @@
         <span class='kw'>false</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_upload!'>upload!</span>
+      <span class='comment'># Push the local cache directory for the current branch + commit
+</span>      <span class='comment'># to the configured backend, refresh the per-branch ref index, and
+</span>      <span class='comment'># apply retention pruning.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Errors are caught and logged; a failed upload never propagates
+</span>      <span class='comment'># non-zero into the test suite (the tests already passed).
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @example In a Rakefile
+</span>      <span class='comment'>#   require &#39;rspec_tracer/remote_cache/Rakefile&#39;
+</span>      <span class='comment'>#   # provides `rake rspec_tracer:remote_cache:upload` which
+</span>      <span class='comment'>#   # invokes RSpecTracer::RemoteCache::UserTasks.upload!
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @return [Boolean] true on success, false on graceful failure.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_upload!'>upload!</span>
         <span class='id identifier rubyid_ancestry'>ancestry</span> <span class='op'>=</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
         <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_merge_base_branch!'>merge_base_branch!</span>
         <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
@@ -183,7 +244,9 @@
 
       <span class='id identifier rubyid_private'>private</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
         <span class='const'>GitAncestry</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
           <span class='label'>default_branch:</span> <span class='id identifier rubyid_require_env'>require_env</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>GIT_DEFAULT_BRANCH</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
           <span class='label'>branch:</span> <span class='id identifier rubyid_require_env'>require_env</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>GIT_BRANCH</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -204,14 +267,18 @@
         <span class='const'>GitAncestry</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>default_branch:</span> <span class='id identifier rubyid_default'>default</span><span class='comma'>,</span> <span class='label'>branch:</span> <span class='id identifier rubyid_branch'>branch</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_require_env'>require_env</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_require_env'>require_env</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_value'>value</span> <span class='op'>=</span> <span class='ivar'>@env</span><span class='lbracket'>[</span><span class='id identifier rubyid_name'>name</span><span class='rbracket'>]</span>
         <span class='id identifier rubyid_raise'>raise</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_name'>name</span><span class='embexpr_end'>}</span><span class='tstring_content'> environment variable is not set</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_value'>value</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_value'>value</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
         <span class='id identifier rubyid_value'>value</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_entry'>entry</span> <span class='op'>=</span> <span class='id identifier rubyid_remote_cache_backend_entry'>remote_cache_backend_entry</span>
         <span class='id identifier rubyid_raise'>raise</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>no remote_cache_backend configured</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_entry'>entry</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
@@ -220,14 +287,18 @@
         <span class='id identifier rubyid_klass'>klass</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='op'>**</span><span class='id identifier rubyid_merge_runtime_opts'>merge_runtime_opts</span><span class='lparen'>(</span><span class='id identifier rubyid_user_opts'>user_opts</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_remote_cache_backend_entry'>remote_cache_backend_entry</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_remote_cache_backend_entry'>remote_cache_backend_entry</span>
         <span class='id identifier rubyid_explicit'>explicit</span> <span class='op'>=</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='symbol'>:remote_cache_backend_entry</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='id identifier rubyid_explicit'>explicit</span> <span class='kw'>if</span> <span class='id identifier rubyid_explicit'>explicit</span>
 
         <span class='id identifier rubyid_derive_from_legacy_dsl'>derive_from_legacy_dsl</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_derive_from_legacy_dsl'>derive_from_legacy_dsl</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_derive_from_legacy_dsl'>derive_from_legacy_dsl</span>
         <span class='id identifier rubyid_s3_uri'>s3_uri</span> <span class='op'>=</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='symbol'>:reports_s3_path</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_s3_uri'>s3_uri</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_s3_uri'>s3_uri</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
@@ -245,7 +316,9 @@
         <span class='rbracket'>]</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_resolve_backend_class'>resolve_backend_class</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_resolve_backend_class'>resolve_backend_class</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
         <span class='kw'>case</span> <span class='id identifier rubyid_name_or_class'>name_or_class</span>
         <span class='kw'>when</span> <span class='const'>Symbol</span>
           <span class='const'>BUILT_IN_BACKENDS</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span> <span class='kw'>do</span>
@@ -258,7 +331,9 @@
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_merge_runtime_opts'>merge_runtime_opts</span><span class='lparen'>(</span><span class='id identifier rubyid_user_opts'>user_opts</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_merge_runtime_opts'>merge_runtime_opts</span><span class='lparen'>(</span><span class='id identifier rubyid_user_opts'>user_opts</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_runtime'>runtime</span> <span class='op'>=</span> <span class='lbrace'>{</span>
           <span class='label'>branch:</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='comma'>,</span>
           <span class='label'>default_branch:</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_default_branch_name'>default_branch_name</span><span class='comma'>,</span>
@@ -271,14 +346,18 @@
 </span>        <span class='id identifier rubyid_runtime'>runtime</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_user_opts'>user_opts</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_candidate_refs'>candidate_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='comma'>,</span> <span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_candidate_refs'>candidate_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='comma'>,</span> <span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_refs'>refs</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
         <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_merge!'>merge!</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_pr_build?'>pr_build?</span>
         <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_merge!'>merge!</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_ancestry_refs'>ancestry_refs</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_sort_by'>sort_by</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_ts'>ts</span><span class='op'>|</span> <span class='op'>-</span><span class='id identifier rubyid_ts'>ts</span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:first</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_maybe_update_branch_refs'>maybe_update_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_maybe_update_branch_refs'>maybe_update_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_pr_build?'>pr_build?</span>
 
         <span class='id identifier rubyid_existing'>existing</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -322,7 +401,9 @@
         <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'>debug</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: pruned </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_removed'>removed</span><span class='embexpr_end'>}</span><span class='tstring_content'> refs</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_removed'>removed</span><span class='period'>.</span><span class='id identifier rubyid_positive?'>positive?</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_retention_opts_for'>retention_opts_for</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_retention_opts_for'>retention_opts_for</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
         <span class='kw'>if</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_pr_build?'>pr_build?</span>
           <span class='lbrace'>{</span> <span class='label'>count:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>duration_seconds:</span> <span class='kw'>nil</span><span class='comma'>,</span>
             <span class='label'>pr_branch_ttl_seconds:</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='symbol'>:cache_retention_pr_branch_ttl_seconds</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
@@ -333,7 +414,9 @@
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_maybe_warn_unbounded'>maybe_warn_unbounded</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_maybe_warn_unbounded'>maybe_warn_unbounded</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:unbounded_warning</span><span class='rparen'>)</span>
         <span class='comment'># Only meaningful on the main tier - PR tier gets branch-TTL
 </span>        <span class='comment'># retention and is bounded by branch lifecycle.
@@ -344,7 +427,9 @@
         <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span><span class='id identifier rubyid_warning'>warning</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_warning'>warning</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='id identifier rubyid_method'>method</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='id identifier rubyid_method'>method</span><span class='rparen'>)</span>
         <span class='ivar'>@config</span><span class='period'>.</span><span class='id identifier rubyid_public_send'>public_send</span><span class='lparen'>(</span><span class='id identifier rubyid_method'>method</span><span class='rparen'>)</span>
       <span class='kw'>rescue</span> <span class='const'>NoMethodError</span>
         <span class='kw'>nil</span>
@@ -373,7 +458,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

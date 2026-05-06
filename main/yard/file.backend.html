@@ -62,7 +62,9 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Storage</span>
+  <span class='comment'># Internal Storage — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Storage</span>
     <span class='comment'># Protocol every storage backend must satisfy. JsonBackend is the
 </span>    <span class='comment'># default; SqliteBackend is an opt-in alternative on MRI. The
 </span>    <span class='comment'># `spec/contracts/storage_backend.rb` shared-examples group asserts
@@ -102,7 +104,9 @@
 </span>    <span class='comment'>#     storage_backend MyBackend.new
 </span>    <span class='comment'>#   end
 </span>    <span class='kw'>module</span> <span class='const'>Backend</span>
-      <span class='const'>REQUIRED_METHODS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='words_sep'>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>REQUIRED_METHODS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>load_graph</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>save_graph</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>last_run_id</span><span class='words_sep'>
@@ -125,7 +129,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

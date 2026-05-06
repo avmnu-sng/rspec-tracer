@@ -64,7 +64,9 @@
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Tracker</span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
     <span class='comment'># Directed bipartite graph over (example_id, file path). The
 </span>    <span class='comment'># forward map answers &quot;which files does this example depend on?&quot;;
 </span>    <span class='comment'># the memoized inverse answers &quot;which examples depend on this
@@ -95,26 +97,36 @@
 </span>    <span class='comment'># directly) without forcing Snapshot-load sites to reconstruct
 </span>    <span class='comment'># Input objects from paths.
 </span>    <span class='kw'>class</span> <span class='const'>DependencyGraph</span>
-      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span>
         <span class='ivar'>@forward</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
         <span class='ivar'>@inverse_index</span> <span class='op'>=</span> <span class='kw'>nil</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
         <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
         <span class='ivar'>@inverse_index</span> <span class='op'>=</span> <span class='kw'>nil</span>
         <span class='kw'>self</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_paths_for'>paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_paths_for'>paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
         <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_ids'>example_ids</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_ids'>example_ids</span>
         <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_empty?'>empty?</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_empty?'>empty?</span>
         <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
       <span class='kw'>end</span>
 
@@ -143,13 +155,17 @@
         <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency_hash'>reverse_dependency_hash</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency_hash'>reverse_dependency_hash</span>
         <span class='id identifier rubyid_inverse_index'>inverse_index</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
       <span class='id identifier rubyid_private'>private</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_collection'>collection</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_collection'>collection</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='id identifier rubyid_collection'>collection</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
         <span class='id identifier rubyid_collection'>collection</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
@@ -157,11 +173,15 @@
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_inverse_index'>inverse_index</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_inverse_index'>inverse_index</span>
         <span class='ivar'>@inverse_index</span> <span class='op'>||=</span> <span class='id identifier rubyid_build_inverse_index'>build_inverse_index</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_build_inverse_index'>build_inverse_index</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_inverse_index'>build_inverse_index</span>
         <span class='id identifier rubyid_map'>map</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
         <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_paths'>paths</span><span class='op'>|</span>
           <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
@@ -175,7 +195,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

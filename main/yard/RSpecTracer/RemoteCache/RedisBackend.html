@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::RemoteCache::RedisBackend
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Redis implementation of <code>RemoteCache::Backend</code>. Each cache ref is
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Redis implementation of <code>RemoteCache::Backend</code>. Each cache ref is
 one Redis hash keyed under the two-tier layout:</p>
 <pre class="code ruby"><code class="ruby">&lt;prefix&gt;:main:&lt;sha&gt;[:&lt;test_suite_id&gt;]           -&gt; HASH
 &lt;prefix&gt;:pr:&lt;branch&gt;:&lt;sha&gt;[:&lt;test_suite_id&gt;]    -&gt; HASH
@@ -169,42 +173,146 @@ into a warning + cold run.</p>
     <dl class="constants">
       
         <dt id="MAIN_TIER-constant" class="">MAIN_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>main</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="PR_TIER-constant" class="">PR_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pr</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="BRANCH_REFS_SUFFIX-constant" class="">BRANCH_REFS_SUFFIX =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>branch_refs</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="PR_BRANCHES_SUFFIX-constant" class="">PR_BRANCHES_SUFFIX =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pr_branches</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="LAST_RUN_FIELD-constant" class="">LAST_RUN_FIELD =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="TIMESTAMP_FIELD-constant" class="">TIMESTAMP_FIELD =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>_timestamp</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="ENCODING-constant" class="">ENCODING =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="DEFAULT_SCAN_COUNT-constant" class="">DEFAULT_SCAN_COUNT =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='int'>200</span></pre></dd>
       
@@ -239,7 +347,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Read branch_refs for the given branch.</p></div></span>
@@ -261,7 +369,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Download cache for <code>ref</code>.</p></div></span>
@@ -285,7 +393,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>rubocop:disable Metrics/ParameterLists.</p></div></span>
@@ -307,7 +415,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Apply retention to own tier.</p></div></span>
@@ -329,7 +437,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Cross-tier PR-branch cleanup.</p></div></span>
@@ -351,7 +459,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Warn when main tier has grown beyond threshold and no retention is configured.</p></div></span>
@@ -373,7 +481,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Upload local cache as a hash under own-tier key.</p></div></span>
@@ -395,7 +503,7 @@ into a warning + cold run.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Persist branch_refs for the given branch.</p></div></span>
@@ -421,7 +529,11 @@ into a warning + cold run.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>rubocop:disable Metrics/ParameterLists</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Metrics/ParameterLists</p>
 
   </div>
 </div>
@@ -434,26 +546,26 @@ into a warning + cold run.</p>
       <pre class="lines">
 
 
-67
-68
-69
-70
-71
-72
-73
-74
-75
-76
-77
-78
-79
-80
-81
-82
-83</pre>
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 67</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 87</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>prefix:</span><span class='comma'>,</span> <span class='label'>branch:</span><span class='comma'>,</span> <span class='label'>default_branch:</span><span class='comma'>,</span> <span class='label'>cache_path:</span><span class='comma'>,</span>
                <span class='label'>url:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>redis_client:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>test_suite_id:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='comma'>,</span>
@@ -495,7 +607,11 @@ into a warning + cold run.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Read branch_refs for the given branch. Returns
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read branch_refs for the given branch. Returns
 <code>{sha =&gt; ts_epoch}</code> or <code>{}</code> when missing / malformed.</p>
 
   </div>
@@ -509,21 +625,21 @@ into a warning + cold run.</p>
       <pre class="lines">
 
 
-124
-125
-126
-127
-128
-129
-130
-131
-132
-133
-134
-135</pre>
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 124</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 144</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -553,7 +669,11 @@ into a warning + cold run.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Download cache for <code>ref</code>. Tries own tier, falls back to main
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Download cache for <code>ref</code>. Tries own tier, falls back to main
 tier. Returns true on validated success, false otherwise.
 Cleans up partially-written files on failure.</p>
 <p><code>tree_sha:</code> is accepted for protocol uniformity with S3Backend
@@ -572,18 +692,18 @@ orchestrator already forwards the kwarg.</p>
       <pre class="lines">
 
 
-94
-95
-96
-97
-98
-99
-100
-101
-102</pre>
+114
+115
+116
+117
+118
+119
+120
+121
+122</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 94</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 114</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid__'>_</span> <span class='op'>=</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span>
@@ -610,7 +730,11 @@ orchestrator already forwards the kwarg.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Apply retention to own tier. Returns count removed. Two or more
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Apply retention to own tier. Returns count removed. Two or more
 knobs may be set; each applies independently. Never raises - a
 wire-level Redis error on any sub-prune logs + is absorbed.
 rubocop:disable Metrics/PerceivedComplexity</p>
@@ -626,19 +750,19 @@ rubocop:disable Metrics/PerceivedComplexity</p>
       <pre class="lines">
 
 
-152
-153
-154
-155
-156
-157
-158
-159
-160
-161</pre>
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 152</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 172</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune!'>prune!</span><span class='lparen'>(</span><span class='label'>count:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>duration_seconds:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_removed'>removed</span> <span class='op'>=</span> <span class='int'>0</span>
@@ -666,7 +790,11 @@ rubocop:disable Metrics/PerceivedComplexity</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Cross-tier PR-branch cleanup. Enumerates every PR branch under
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Cross-tier PR-branch cleanup. Enumerates every PR branch under
 the configured prefix (by scanning for <code>&lt;prefix&gt;:pr:&lt;branch&gt;:branch_refs</code>
 keys and deriving branch names), applies the TTL to each,
 deletes dead branches whole. Returns total refs removed. No-op
@@ -683,19 +811,19 @@ on nil / non-positive TTL.</p>
       <pre class="lines">
 
 
-169
-170
-171
-172
-173
-174
-175
-176
-177
-178</pre>
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 169</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 189</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>unless</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
@@ -723,7 +851,11 @@ on nil / non-positive TTL.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Warn when main tier has grown beyond threshold and no retention
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Warn when main tier has grown beyond threshold and no retention
 is configured.</p>
 
   </div>
@@ -737,16 +869,16 @@ is configured.</p>
       <pre class="lines">
 
 
-182
-183
-184
-185
-186
-187
-188</pre>
+202
+203
+204
+205
+206
+207
+208</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 182</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 202</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_unbounded_warning'>unbounded_warning</span><span class='lparen'>(</span><span class='label'>warn_threshold:</span> <span class='int'>500</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_count'>count</span> <span class='op'>=</span> <span class='id identifier rubyid_count_tier_refs'>count_tier_refs</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="#MAIN_TIER-constant" title="RSpecTracer::RemoteCache::RedisBackend::MAIN_TIER (constant)">MAIN_TIER</a></span></span><span class='rparen'>)</span>
@@ -771,7 +903,11 @@ is configured.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Upload local cache as a hash under own-tier key. Raises on I/O
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Upload local cache as a hash under own-tier key. Raises on I/O
 or Redis wire failure.</p>
 <p><code>tree_sha:</code> is accepted for protocol uniformity with S3Backend
 (no-op here; see <code>download</code>).</p>
@@ -800,21 +936,21 @@ or Redis wire failure.</p>
       <pre class="lines">
 
 
-109
-110
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120</pre>
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 109</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 129</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_upload'>upload</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid__'>_</span> <span class='op'>=</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span>
@@ -844,7 +980,11 @@ or Redis wire failure.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Persist branch_refs for the given branch. No-op for main-branch
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Persist branch_refs for the given branch. No-op for main-branch
 writes. Raises on Redis wire failure for PR tier.</p>
 
   </div>
@@ -858,17 +998,17 @@ writes. Raises on Redis wire failure for PR tier.</p>
       <pre class="lines">
 
 
-139
-140
-141
-142
-143
-144
-145
-146</pre>
+159
+160
+161
+162
+163
+164
+165
+166</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 139</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/redis_backend.rb', line 159</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_write_branch_refs'>write_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='comma'>,</span> <span class='id identifier rubyid_refs'>refs</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -888,7 +1028,7 @@ writes. Raises on Redis wire failure for PR tier.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

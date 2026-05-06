@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::Reporters::CoverageJsonReporter::SimpleCovInterop
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Inner module preserving 1.x's RubyCoverage shim contract. When
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Inner module preserving 1.x's RubyCoverage shim contract. When
 SimpleCov calls <code>::Coverage.result</code> at its at_exit time, this
 prepended <code>result</code> method returns rspec-tracer's filtered
 cumulative coverage so SimpleCov's result-merge sees exactly
@@ -124,10 +128,10 @@ integration matrix relies on.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute coverage.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -159,10 +163,10 @@ integration matrix relies on.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -191,10 +195,10 @@ integration matrix relies on.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -220,7 +224,11 @@ integration matrix relies on.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute coverage.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -233,12 +241,12 @@ integration matrix relies on.</p>
       <pre class="lines">
 
 
-294
-295
-296</pre>
+319
+320
+321</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 294</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 319</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_coverage'>coverage</span>
   <span class='ivar'>@coverage</span>
@@ -264,20 +272,33 @@ integration matrix relies on.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-297
-298
-299
-300
-301</pre>
+324
+325
+326
+327
+328</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 297</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 324</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_install'>install</span><span class='lparen'>(</span><span class='id identifier rubyid_coverage'>coverage</span><span class='rparen'>)</span>
   <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_coverage'>coverage</span> <span class='op'>=</span> <span class='id identifier rubyid_coverage'>coverage</span>
@@ -304,18 +325,31 @@ integration matrix relies on.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-303
-304
-305</pre>
+332
+333
+334</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 303</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/coverage_json_reporter.rb', line 332</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_result'>result</span>
   <span class='const'><span class='object_link'><a href="" title="RSpecTracer::Reporters::CoverageJsonReporter::SimpleCovInterop (module)">SimpleCovInterop</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage'><span class='object_link'><a href="#coverage-class_method" title="RSpecTracer::Reporters::CoverageJsonReporter::SimpleCovInterop.coverage (method)">coverage</a></span></span>
@@ -330,7 +364,7 @@ integration matrix relies on.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

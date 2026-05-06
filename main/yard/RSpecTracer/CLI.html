@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::CLI
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -90,15 +90,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Command-line entry for the <code>rspec-tracer</code> binary. Five sub-commands
-per USER_FACING_SURFACE.md §10: <code>doctor</code>, <code>cache:info</code>, <code>cache:clear</code>,
-<code>report:open</code>, <code>explain &lt;example&gt;</code>.</p>
-<p>The CLI is opt-in — the canonical CI flow continues to go through
-<code>rake rspec_tracer:remote_cache:*</code> tasks per USER_FACING_SURFACE.md
-§5. Sub-commands operate against the local cache + report
-directories resolved from the project's <code>.rspec-tracer</code> config
-(loaded lazily on first sub-command dispatch, not at CLI load time —
-<code>doctor</code> deliberately runs without requiring a configured project).</p>
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal CLI — see <span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> for the user-facing surface.</p>
 
   </div>
 </div>
@@ -125,7 +121,20 @@ directories resolved from the project's <code>.rspec-tracer</code> config
     <dl class="constants">
       
         <dt id="SUB_COMMANDS-constant" class="">SUB_COMMANDS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span>
   <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>doctor</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Doctor</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
@@ -166,10 +175,10 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -188,10 +197,10 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -210,10 +219,10 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -232,10 +241,10 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -254,7 +263,7 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>CLI entry.</p></div></span>
@@ -276,10 +285,10 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -303,23 +312,36 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-51
-52
-53
-54
-55
-56
 57
-58</pre>
+58
+59
+60
+61
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 51</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 57</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_dispatch'>dispatch</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span><span class='comma'>,</span> <span class='label'>stderr:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_sub'>sub</span> <span class='op'>=</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_shift'>shift</span>
@@ -343,25 +365,38 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-91
-92
-93
-94
-95
-96
-97
-98
-99
-100</pre>
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 91</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 105</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_load_sub_command'>load_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_klass_name'>klass_name</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_filename'>filename</span> <span class='op'>=</span> <span class='id identifier rubyid_klass_name'>klass_name</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>([A-Z])</span><span class='regexp_end'>/</span></span><span class='rparen'>)</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_m'>m</span><span class='op'>|</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_m'>m</span><span class='period'>.</span><span class='id identifier rubyid_downcase'>downcase</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>^_</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -387,22 +422,25 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-66
-67
-68
-69
-70
-71
-72
-73
-74
-75
 76
 77
 78
@@ -411,10 +449,20 @@ directories resolved from the project's <code>.rspec-tracer</code> config
 81
 82
 83
-84</pre>
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 66</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 76</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_top_level_help'>print_top_level_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
@@ -449,19 +497,32 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-86
-87
-88
-89</pre>
+98
+99
+100
+101</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 86</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 98</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_version'>print_version</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -483,7 +544,11 @@ directories resolved from the project's <code>.rspec-tracer</code> config
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>CLI entry. Called by <code>bin/rspec-tracer</code> with <code>ARGV</code>. Wraps every
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>CLI entry. Called by <code>bin/rspec-tracer</code> with <code>ARGV</code>. Wraps every
 sub-command in a top-level rescue so the binary always exits
 with a meaningful integer status (0 / 1) instead of a backtrace.</p>
 
@@ -565,19 +630,19 @@ the program name)</p></div>
       <pre class="lines">
 
 
-40
-41
-42
-43
 44
 45
 46
 47
 48
-49</pre>
+49
+50
+51
+52
+53</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 40</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 44</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_argv'>argv</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_args'>args</span> <span class='op'>=</span> <span class='id identifier rubyid_argv'>argv</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span>
@@ -603,20 +668,33 @@ the program name)</p></div>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-60
-61
-62
-63
-64</pre>
+68
+69
+70
+71
+72</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 60</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli.rb', line 68</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_unknown_sub_command'>unknown_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_sub'>sub</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: unknown sub-command </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_sub'>sub</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -633,7 +711,7 @@ the program name)</p></div>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -105,24 +105,38 @@
 </span>    <span class='comment'># exists), or when an option value fails validation.
 </span>    <span class='kw'>class</span> <span class='const'>InvalidUsageError</span> <span class='op'>&lt;</span> <span class='const'>StandardError</span><span class='semicolon'>;</span> <span class='kw'>end</span>
 
-    <span class='const'>ALLOWED_CONFIGURER</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='words_sep'>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>ALLOWED_CONFIGURER</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_content'>lib/rspec_tracer/load_default_config.rb</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_content'>lib/rspec_tracer/load_global_config.rb</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_content'>lib/rspec_tracer/load_local_config.rb</span><span class='words_sep'>
 </span><span class='words_sep'>    </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-    <span class='const'>DEFAULT_CACHE_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_cache</span><span class='tstring_end'>&#39;</span></span>
-    <span class='const'>DEFAULT_COVERAGE_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_coverage</span><span class='tstring_end'>&#39;</span></span>
-    <span class='const'>DEFAULT_REPORT_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_report</span><span class='tstring_end'>&#39;</span></span>
-    <span class='const'>DEFAULT_LOCK_FILE</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.lock</span><span class='tstring_end'>&#39;</span></span>
-    <span class='const'>DEFAULT_STORAGE_BACKEND</span> <span class='op'>=</span> <span class='symbol'>:json</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_CACHE_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_cache</span><span class='tstring_end'>&#39;</span></span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_COVERAGE_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_coverage</span><span class='tstring_end'>&#39;</span></span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_REPORT_DIR</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_report</span><span class='tstring_end'>&#39;</span></span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_LOCK_FILE</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.lock</span><span class='tstring_end'>&#39;</span></span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_STORAGE_BACKEND</span> <span class='op'>=</span> <span class='symbol'>:json</span>
     <span class='comment'># :sqlite opt-in: MRI &gt;= 3.2 only (sqlite3 2.x gem requirement).
 </span>    <span class='comment'># Kept closed so typos raise early.
 </span>    <span class='const'>STORAGE_BACKEND_NAMES</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>sqlite</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='comment'># Keys allowed in `storage_backend`&#39;s opts hash. `:serializer` is
 </span>    <span class='comment'># accepted only for the :json backend (see validate_storage_opts!).
 </span>    <span class='const'>STORAGE_BACKEND_OPT_KEYS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>serializer</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
-    <span class='const'>STORAGE_BACKEND_SERIALIZERS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>msgpack</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>STORAGE_BACKEND_SERIALIZERS</span> <span class='op'>=</span> <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>msgpack</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='comment'># Per-save retention on the local cache&#39;s run-id directories.
 </span>    <span class='comment'># 5 keeps enough history for rollback debugging without letting
 </span>    <span class='comment'># the cache grow unbounded (issue #20). 0 opts out entirely.
@@ -134,9 +148,13 @@
 </span>    <span class='comment'># the user can still act on them. Set to 0 to disable either
 </span>    <span class='comment'># individually.
 </span>    <span class='const'>DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB</span> <span class='op'>=</span> <span class='int'>50</span>
-    <span class='const'>DEFAULT_CACHE_SIZE_WARN_TOTAL_MB</span> <span class='op'>=</span> <span class='int'>500</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>DEFAULT_CACHE_SIZE_WARN_TOTAL_MB</span> <span class='op'>=</span> <span class='int'>500</span>
 
-    <span class='const'>LOG_LEVEL</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>LOG_LEVEL</span> <span class='op'>=</span> <span class='lbrace'>{</span>
       <span class='label'>off:</span> <span class='int'>0</span><span class='comma'>,</span>
       <span class='label'>debug:</span> <span class='int'>1</span><span class='comma'>,</span>
       <span class='label'>info:</span> <span class='int'>2</span><span class='comma'>,</span>
@@ -144,7 +162,9 @@
       <span class='label'>error:</span> <span class='int'>4</span>
     <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_configure'>configure</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_configure'>configure</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span>
       <span class='comment'># Scan the full caller chain (not just the immediate two frames):
 </span>      <span class='comment'># MRI / JRuby place the load_*_config.rb loader at depth 2, but
 </span>      <span class='comment'># TruffleRuby&#39;s `load` interposes an extra runtime frame, pushing
@@ -356,7 +376,9 @@
       <span class='ivar'>@remote_cache_backend_entry</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_validate_remote_cache_backend'>validate_remote_cache_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_validate_remote_cache_backend'>validate_remote_cache_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
       <span class='kw'>case</span> <span class='id identifier rubyid_name_or_class'>name_or_class</span>
       <span class='kw'>when</span> <span class='op'>::</span><span class='const'>Symbol</span><span class='comma'>,</span> <span class='op'>::</span><span class='const'>Class</span>
         <span class='kw'>nil</span>
@@ -403,7 +425,9 @@
       <span class='ivar'>@remote_cache_uri</span> <span class='op'>=</span> <span class='id identifier rubyid_value'>value</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_dispatch_remote_cache_uri'>dispatch_remote_cache_uri</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_dispatch_remote_cache_uri'>dispatch_remote_cache_uri</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='rparen'>)</span>
       <span class='kw'>case</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_scheme'>scheme</span>
       <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>s3</span><span class='tstring_end'>&#39;</span></span>
         <span class='id identifier rubyid_prefix'>prefix</span> <span class='op'>=</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>%r{</span><span class='tstring_content'>^/</span><span class='regexp_end'>}</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -431,7 +455,9 @@
       <span class='id identifier rubyid_raise'>raise</span> <span class='const'>InvalidUsageError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>invalid remote_cache_uri: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_value'>value</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'> (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_valid_remote_cache_uri?'>valid_remote_cache_uri?</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_valid_remote_cache_uri?'>valid_remote_cache_uri?</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_scheme'>scheme</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
       <span class='kw'>case</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_scheme'>scheme</span>
@@ -515,7 +541,9 @@
       <span class='ivar'>@cache_retention_pr_branch_ttl_seconds</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_raise_if_retention_conflict'>raise_if_retention_conflict</span><span class='lparen'>(</span><span class='id identifier rubyid_other_method'>other_method</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_raise_if_retention_conflict'>raise_if_retention_conflict</span><span class='lparen'>(</span><span class='id identifier rubyid_other_method'>other_method</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_other_ivar'>other_ivar</span> <span class='op'>=</span>
         <span class='kw'>case</span> <span class='id identifier rubyid_other_method'>other_method</span>
         <span class='kw'>when</span> <span class='symbol'>:cache_retention_count</span> <span class='kw'>then</span> <span class='symbol'>:@cache_retention_count</span>
@@ -527,7 +555,9 @@
             <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache_retention_count and cache_retention_duration are mutually exclusive</span><span class='tstring_end'>&#39;</span></span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_parse_retention_duration_seconds'>parse_retention_duration_seconds</span><span class='lparen'>(</span><span class='id identifier rubyid_spec'>spec</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_parse_retention_duration_seconds'>parse_retention_duration_seconds</span><span class='lparen'>(</span><span class='id identifier rubyid_spec'>spec</span><span class='rparen'>)</span>
       <span class='kw'>case</span> <span class='id identifier rubyid_spec'>spec</span>
       <span class='kw'>when</span> <span class='op'>::</span><span class='const'>Integer</span>
         <span class='id identifier rubyid_raise'>raise</span> <span class='const'>InvalidUsageError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>retention duration must be positive</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_spec'>spec</span><span class='period'>.</span><span class='id identifier rubyid_positive?'>positive?</span>
@@ -541,7 +571,9 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_parse_retention_duration_from_string'>parse_retention_duration_from_string</span><span class='lparen'>(</span><span class='id identifier rubyid_spec'>spec</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_parse_retention_duration_from_string'>parse_retention_duration_from_string</span><span class='lparen'>(</span><span class='id identifier rubyid_spec'>spec</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_match'>match</span> <span class='op'>=</span> <span class='id identifier rubyid_spec'>spec</span><span class='period'>.</span><span class='id identifier rubyid_strip'>strip</span><span class='period'>.</span><span class='id identifier rubyid_match'>match</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>\A(\d+)\s+(second|minute|hour|day|week)s?\z</span><span class='regexp_end'>/i</span></span><span class='rparen'>)</span>
       <span class='kw'>unless</span> <span class='id identifier rubyid_match'>match</span>
         <span class='id identifier rubyid_raise'>raise</span> <span class='const'>InvalidUsageError</span><span class='comma'>,</span>
@@ -607,7 +639,9 @@
                        <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_warn_once_deprecation'>warn_once_deprecation</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='comma'>,</span> <span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_warn_once_deprecation'>warn_once_deprecation</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='comma'>,</span> <span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
       <span class='ivar'>@_deprecation_warnings</span> <span class='op'>||=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@_deprecation_warnings</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span>
 
@@ -914,7 +948,9 @@
       <span class='ivar'>@track_env_names</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='kw'>end</span>
 
-    <span class='const'>EMPTY_TRACKED_ENV_NAMES</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>EMPTY_TRACKED_ENV_NAMES</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:EMPTY_TRACKED_ENV_NAMES</span>
 
     <span class='comment'># Per-spec-file exclusion (closes upstream #41). Accumulates
@@ -956,7 +992,9 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid__ignore_spec_file_candidates'>_ignore_spec_file_candidates</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid__ignore_spec_file_candidates'>_ignore_spec_file_candidates</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_candidates'>candidates</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rbracket'>]</span>
       <span class='id identifier rubyid_stripped'>stripped</span> <span class='op'>=</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='period'>.</span><span class='id identifier rubyid_delete_prefix'>delete_prefix</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>./</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
       <span class='id identifier rubyid_candidates'>candidates</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_stripped'>stripped</span> <span class='kw'>if</span> <span class='id identifier rubyid_stripped'>stripped</span> <span class='op'>!=</span> <span class='id identifier rubyid_file_path'>file_path</span>
@@ -965,7 +1003,9 @@
       <span class='id identifier rubyid_candidates'>candidates</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid__relative_file_path'>_relative_file_path</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid__relative_file_path'>_relative_file_path</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='id identifier rubyid_file_path'>file_path</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@root</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@root</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_file_path'>file_path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='ivar'>@root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
 
       <span class='id identifier rubyid_file_path'>file_path</span><span class='lbracket'>[</span><span class='lparen'>(</span><span class='ivar'>@root</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span> <span class='op'>+</span> <span class='int'>1</span><span class='rparen'>)</span><span class='op'>..</span><span class='rbracket'>]</span>
@@ -1038,7 +1078,9 @@
       <span class='ivar'>@cache_size_warn_per_file_mb</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_cache_size_warn_total_mb'>cache_size_warn_total_mb</span><span class='lparen'>(</span><span class='id identifier rubyid_size_mb'>size_mb</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_cache_size_warn_total_mb'>cache_size_warn_total_mb</span><span class='lparen'>(</span><span class='id identifier rubyid_size_mb'>size_mb</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='ivar'>@cache_size_warn_total_mb</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@cache_size_warn_total_mb</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_size_mb'>size_mb</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
       <span class='kw'>if</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_CACHE_SIZE_WARN_TOTAL_MB</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -1122,10 +1164,14 @@
       <span class='ivar'>@storage_backend_opts</span>
     <span class='kw'>end</span>
 
-    <span class='const'>EMPTY_STORAGE_BACKEND_OPTS</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>EMPTY_STORAGE_BACKEND_OPTS</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:EMPTY_STORAGE_BACKEND_OPTS</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_validate_and_resolve_storage_opts'>validate_and_resolve_storage_opts</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_validate_and_resolve_storage_opts'>validate_and_resolve_storage_opts</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_unknown'>unknown</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='op'>-</span> <span class='const'>STORAGE_BACKEND_OPT_KEYS</span>
       <span class='kw'>unless</span> <span class='id identifier rubyid_unknown'>unknown</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
         <span class='id identifier rubyid_raise'>raise</span> <span class='const'>InvalidUsageError</span><span class='comma'>,</span>
@@ -1184,7 +1230,9 @@
       <span class='ivar'>@reporters</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_validate_reporter_entry'>validate_reporter_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_validate_reporter_entry'>validate_reporter_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_name_or_class'>name_or_class</span><span class='rparen'>)</span>
       <span class='kw'>case</span> <span class='id identifier rubyid_name_or_class'>name_or_class</span>
       <span class='kw'>when</span> <span class='op'>::</span><span class='const'>Symbol</span>
         <span class='id identifier rubyid_allowed'>allowed</span> <span class='op'>=</span> <span class='id identifier rubyid_reporter_builtins_keys'>reporter_builtins_keys</span>
@@ -1200,7 +1248,9 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_reporter_builtins_keys'>reporter_builtins_keys</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_reporter_builtins_keys'>reporter_builtins_keys</span>
       <span class='kw'>return</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters/Registry.html" title="RSpecTracer::Reporters::Registry (class)">Registry</a></span></span><span class='rparen'>)</span>
 
       <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters/Registry.html" title="RSpecTracer::Reporters::Registry (class)">Registry</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Reporters/Registry.html#BUILT_INS-constant" title="RSpecTracer::Reporters::Registry::BUILT_INS (constant)">BUILT_INS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
@@ -1285,7 +1335,9 @@
       <span class='id identifier rubyid_raise'>raise</span> <span class='const'>NotImplementedError</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_valid_s3_path?'>valid_s3_path?</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_path'>s3_path</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_valid_s3_path?'>valid_s3_path?</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_path'>s3_path</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_uri'>uri</span> <span class='op'>=</span> <span class='const'>URI</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_path'>s3_path</span><span class='rparen'>)</span>
 
       <span class='id identifier rubyid_uri'>uri</span><span class='period'>.</span><span class='id identifier rubyid_scheme'>scheme</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>s3</span><span class='tstring_end'>&#39;</span></span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='id identifier rubyid_uri'>uri</span><span class='period'>.</span><span class='id identifier rubyid_host'>host</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -1293,7 +1345,9 @@
       <span class='kw'>false</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_parallel_tests_id'>parallel_tests_id</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_parallel_tests_id'>parallel_tests_id</span>
       <span class='kw'>if</span> <span class='const'>ParallelTests</span><span class='period'>.</span><span class='id identifier rubyid_first_process?'>first_process?</span>
         <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>parallel_tests_1</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>else</span>
@@ -1301,7 +1355,9 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_parse_filter'>parse_filter</span><span class='lparen'>(</span><span class='id identifier rubyid_filter'>filter</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_parse_filter'>parse_filter</span><span class='lparen'>(</span><span class='id identifier rubyid_filter'>filter</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_arg'>arg</span> <span class='op'>=</span> <span class='id identifier rubyid_filter'>filter</span> <span class='op'>||</span> <span class='id identifier rubyid_block'>block</span>
 
       <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Either a filter or a block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_arg'>arg</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1330,7 +1386,9 @@
             <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown .rspec-tracer DSL method </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>; did you mean </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_suggestion'>suggestion</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>?</span><span class='tstring_end'>&quot;</span></span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_respond_to_missing?'>respond_to_missing?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='id identifier rubyid_include_private'>include_private</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_respond_to_missing?'>respond_to_missing?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='id identifier rubyid_include_private'>include_private</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
       <span class='kw'>super</span>
     <span class='kw'>end</span>
 
@@ -1341,7 +1399,9 @@
 </span>    <span class='comment'># twice during `load_default_config` + `load_local_config` and would
 </span>    <span class='comment'># double-alias any helper instance methods we kept here).
 </span>    <span class='kw'>module</span> <span class='const'>DslTypoSuggester</span>
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_candidates'>candidates</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_candidates'>candidates</span>
         <span class='comment'># Strip one or more leading `_` to canonicalize through the
 </span>        <span class='comment'># configure wrapper&#39;s aliasing levels (single underscore after
 </span>        <span class='comment'># one configure, double after two, etc.).
@@ -1354,7 +1414,9 @@
         <span class='kw'>end</span><span class='period'>.</span><span class='id identifier rubyid_uniq'>uniq</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_nearest'>nearest</span><span class='lparen'>(</span><span class='id identifier rubyid_typed'>typed</span><span class='comma'>,</span> <span class='id identifier rubyid_candidates'>candidates</span><span class='rparen'>)</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_nearest'>nearest</span><span class='lparen'>(</span><span class='id identifier rubyid_typed'>typed</span><span class='comma'>,</span> <span class='id identifier rubyid_candidates'>candidates</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_prefix_match'>prefix_match</span> <span class='op'>=</span> <span class='id identifier rubyid_candidates'>candidates</span>
           <span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_c'>c</span><span class='op'>|</span> <span class='id identifier rubyid_typed'>typed</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='id identifier rubyid_c'>c</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_c'>c</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='id identifier rubyid_typed'>typed</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
           <span class='period'>.</span><span class='id identifier rubyid_max_by'>max_by</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:length</span><span class='rparen'>)</span>
@@ -1371,7 +1433,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:41 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -66,7 +66,9 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>declared_globs</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Tracker</span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
     <span class='comment'># Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
 </span>    <span class='comment'># KNOWN_ISSUES Section B5: 1.x&#39;s fetch_changed_files loop only
 </span>    <span class='comment'># iterated the previous run&#39;s cache, so newly-added source files
@@ -87,9 +89,13 @@
 </span>    <span class='comment'># Configuration#track_rails_defaults; the default list here stays
 </span>    <span class='comment'># framework-agnostic.
 </span>    <span class='kw'>class</span> <span class='const'>NewFileDetector</span>
-      <span class='const'>DEFAULT_GLOBS</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>lib/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>DEFAULT_GLOBS</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>lib/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span>
+      <span class='comment'># Internal attribute.
+</span>      <span class='comment'># @api private
+</span>      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span>
 
       <span class='comment'># Input contract: declared_globs and default_globs are Arrays of
 </span>      <span class='comment'># String glob patterns. Configuration#declared_globs already
@@ -117,7 +123,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

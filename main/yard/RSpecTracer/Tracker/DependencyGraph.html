@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::DependencyGraph
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Directed bipartite graph over (example_id, file path). The
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Directed bipartite graph over (example_id, file path). The
 forward map answers &quot;which files does this example depend on?&quot;;
 the memoized inverse answers &quot;which examples depend on this
 file?&quot; in O(1) per lookup.</p>
@@ -164,7 +168,7 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Snapshot projection.</p></div></span>
@@ -186,10 +190,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -208,10 +212,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -230,7 +234,7 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>O(|change_set| x avg-examples-per-file).</p></div></span>
@@ -254,10 +258,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of DependencyGraph.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -276,10 +280,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -298,10 +302,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -320,10 +324,10 @@ Input objects from paths.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -346,7 +350,11 @@ Input objects from paths.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of DependencyGraph.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -359,13 +367,13 @@ Input objects from paths.</p>
       <pre class="lines">
 
 
-37
-38
-39
-40</pre>
+41
+42
+43
+44</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span>
   <span class='ivar'>@forward</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -394,7 +402,11 @@ Input objects from paths.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Snapshot projection. <code>dependency_hash</code> feeds
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Snapshot projection. <code>dependency_hash</code> feeds
 Snapshot.dependency; <code>reverse_dependency_hash</code> feeds
 Snapshot.reverse_dependency. Both return fresh Sets per value
 so downstream mutation can't leak into the graph's state.</p>
@@ -410,12 +422,12 @@ so downstream mutation can't leak into the graph's state.</p>
       <pre class="lines">
 
 
-81
-82
-83</pre>
+93
+94
+95</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 81</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 93</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_dependency_hash'>dependency_hash</span>
   <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
@@ -436,7 +448,11 @@ so downstream mutation can't leak into the graph's state.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -462,12 +478,12 @@ so downstream mutation can't leak into the graph's state.</p>
       <pre class="lines">
 
 
-56
-57
-58</pre>
+68
+69
+70</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 56</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 68</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_empty?'>empty?</span>
   <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -486,18 +502,31 @@ so downstream mutation can't leak into the graph's state.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-52
-53
-54</pre>
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 52</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 62</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_example_ids'>example_ids</span>
   <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
@@ -518,7 +547,11 @@ so downstream mutation can't leak into the graph's state.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>O(|change_set| x avg-examples-per-file). <code>change_set</code> can be
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>O(|change_set| x avg-examples-per-file). <code>change_set</code> can be
 a Set<Input>, Set<String>, or any mix - coerced the same way
 <code>register_example</code> coerces its inputs arg.</p>
 
@@ -533,22 +566,22 @@ a Set<Input>, Set<String>, or any mix - coerced the same way
       <pre class="lines">
 
 
-63
-64
-65
-66
-67
-68
-69
-70
-71
-72
-73
-74
-75</pre>
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 63</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 75</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_examples_depending_on'>examples_depending_on</span><span class='lparen'>(</span><span class='id identifier rubyid_change_set'>change_set</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='ivar'>@forward</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -577,18 +610,31 @@ a Set<Input>, Set<String>, or any mix - coerced the same way
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-48
-49
-50</pre>
+56
+57
+58</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 48</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 56</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_paths_for'>paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
   <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -607,20 +653,33 @@ a Set<Input>, Set<String>, or any mix - coerced the same way
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-42
-43
-44
-45
-46</pre>
+48
+49
+50
+51
+52</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 42</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 48</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
   <span class='ivar'>@forward</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_coerce_paths'>coerce_paths</span><span class='lparen'>(</span><span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span>
@@ -641,18 +700,31 @@ a Set<Input>, Set<String>, or any mix - coerced the same way
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-85
-86
-87</pre>
+99
+100
+101</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 85</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/dependency_graph.rb', line 99</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_reverse_dependency_hash'>reverse_dependency_hash</span>
   <span class='id identifier rubyid_inverse_index'>inverse_index</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:dup</span><span class='rparen'>)</span>
@@ -667,7 +739,7 @@ a Set<Input>, Set<String>, or any mix - coerced the same way
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

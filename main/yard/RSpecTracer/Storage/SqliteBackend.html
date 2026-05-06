@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Storage::SqliteBackend
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>SQLite-on-disk storage backend. Single file
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>SQLite-on-disk storage backend. Single file
 <code>cache_path/rspec_tracer.sqlite3</code> with a normalized 9-table
 schema so a warm run can materialize only the rows a given
 field needs (Filter.select hits ~50-500 example_ids out of
@@ -154,24 +158,67 @@ rubocop:disable Metrics/ClassLength</p>
     <dl class="constants">
       
         <dt id="DB_FILENAME-constant" class="">DB_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.sqlite3</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="JOURNAL_MODE_SQL-constant" class="">JOURNAL_MODE_SQL =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PRAGMA journal_mode = MEMORY</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="SYNCHRONOUS_SQL-constant" class="">SYNCHRONOUS_SQL =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PRAGMA synchronous = NORMAL</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="BUSY_TIMEOUT_MS-constant" class="">BUSY_TIMEOUT_MS =
           <div class="docstring">
   <div class="discussion">
-    <p>Two concurrent save_graph calls (parallel_tests workers, fork-
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Two concurrent save_graph calls (parallel_tests workers, fork-
 based test harnesses) both reach <code>BEGIN IMMEDIATE</code> and contend
 on SQLite's RESERVED write lock. Without busy_timeout, the
 losing writer raises SQLite3::BusyException immediately. 5000
@@ -190,7 +237,20 @@ contract verified in spec/edge_cases/concurrent_write_spec.rb.</p>
         <dd><pre class="code"><span class='int'>5_000</span></pre></dd>
       
         <dt id="STATUS_FIELDS-constant" class="">STATUS_FIELDS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span>
   <span class='label'>interrupted_examples:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>interrupted</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
@@ -201,7 +261,20 @@ contract verified in spec/edge_cases/concurrent_write_spec.rb.</p>
 <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="DIGEST_MAP_KINDS-constant" class="">DIGEST_MAP_KINDS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span>
   <span class='label'>boot_set:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>boot</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
@@ -212,7 +285,11 @@ contract verified in spec/edge_cases/concurrent_write_spec.rb.</p>
         <dt id="READABLE_FIELDS-constant" class="">READABLE_FIELDS =
           <div class="docstring">
   <div class="discussion">
-    <p>Mirrors FIELD_FILENAMES from JsonBackend - the set of Snapshot
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Mirrors FIELD_FILENAMES from JsonBackend - the set of Snapshot
 fields a LazySnapshot reader may ask about. Used by
 SqliteFieldReader to reject unknown fields before hitting the
 DB. Kept in step with Snapshot.members minus the envelope.</p>
@@ -258,10 +335,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute cache_path.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -293,10 +370,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -317,10 +394,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of SqliteBackend.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -339,10 +416,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -361,10 +438,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -383,7 +460,7 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Read one field on behalf of a LazySnapshot.</p></div></span>
@@ -405,10 +482,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -427,10 +504,10 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -453,7 +530,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of SqliteBackend.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -466,14 +547,14 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-116
-117
-118
-119
-120</pre>
+136
+137
+138
+139
+140</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 116</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 136</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='ivar'>@cache_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
@@ -503,7 +584,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute cache_path.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -516,12 +601,12 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-114
-115
-116</pre>
+132
+133
+134</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 114</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 132</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_cache_path'>cache_path</span>
   <span class='ivar'>@cache_path</span>
@@ -547,20 +632,33 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-176
-177
-178
-179
-180</pre>
+204
+205
+206
+207
+208</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 176</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 204</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span>
   <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
@@ -581,26 +679,39 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-122
-123
-124
-125
-126
-127
-128
-129
-130
-131
-132</pre>
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 122</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 144</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
@@ -627,38 +738,51 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-134
-135
-136
-137
-138
-139
-140
-141
-142
-143
-144
-145
-146
-147
-148
-149
-150
-151
-152
-153
-154
-155
-156</pre>
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 134</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 158</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
@@ -699,7 +823,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Read one field on behalf of a LazySnapshot. Missing table or
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read one field on behalf of a LazySnapshot. Missing table or
 empty result returns the per-field empty default (Set for
 id-set fields, {} for hashes) so partial caches behave
 identically to JsonBackend under the same conditions.
@@ -731,19 +859,19 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-201
-202
-203
-204
-205
-206
-207
-208
-209
-210</pre>
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 201</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 231</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown snapshot field: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="#READABLE_FIELDS-constant" title="RSpecTracer::Storage::SqliteBackend::READABLE_FIELDS (constant)">READABLE_FIELDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
@@ -771,7 +899,11 @@ failures on the DB itself.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -797,26 +929,26 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-158
-159
-160
-161
-162
-163
-164
-165
-166
-167
-168
-169
-170
-171
-172
-173
-174</pre>
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 158</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 184</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot must not be nil</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -851,7 +983,11 @@ failures on the DB itself.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -877,20 +1013,20 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-182
-183
-184
-185
-186
-187
-188
-189
-190
-191
-192</pre>
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 182</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 212</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_block'>block</span>
@@ -913,7 +1049,7 @@ failures on the DB itself.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

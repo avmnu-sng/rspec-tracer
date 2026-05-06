@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::DeclaredGlobs
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Observer #3 in the 2.0 tracker pipeline (CoverageAdapter = #1,
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Observer #3 in the 2.0 tracker pipeline (CoverageAdapter = #1,
 IOHooks = #2). Walks user-declared glob patterns at boot, digests
 each matching file, and emits :declared Inputs. Declared globs
 cover inputs that cannot be auto-observed - files no app code
@@ -136,7 +140,11 @@ when two globs match the same file.</p>
         <dt id="FNMATCH_FLAGS-constant" class="">FNMATCH_FLAGS =
           <div class="docstring">
   <div class="discussion">
-    <p>FNM_PATHNAME keeps <code>*</code> from eating <code>/</code> so globs walk directory
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>FNM_PATHNAME keeps <code>*</code> from eating <code>/</code> so globs walk directory
 boundaries predictably. FNM_EXTGLOB enables <code>{a,b}</code> alternation
 so <code>coverage_track_files '{app,lib}/**/*.rb'</code> (a real pattern
 in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
@@ -178,10 +186,10 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute globs.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -205,10 +213,10 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute root.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -240,7 +248,7 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Per-example attribution.</p></div></span>
@@ -262,7 +270,7 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>O(N_globs) per call; N is typically 1-10.</p></div></span>
@@ -286,10 +294,10 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of DeclaredGlobs.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -308,7 +316,7 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Memoized across calls - the architecture constraint is &quot;glob walk at boot is a single pass; result cached for the life of the tracker instance.&quot;.</p></div></span>
@@ -334,7 +342,11 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of DeclaredGlobs.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -347,14 +359,14 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
       <pre class="lines">
 
 
-35
-36
-37
-38
-39</pre>
+41
+42
+43
+44
+45</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 35</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>globs:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -384,7 +396,11 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute globs.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -397,12 +413,12 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
       <pre class="lines">
 
 
-33
-34
-35</pre>
+37
+38
+39</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 33</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 37</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_globs'>globs</span>
   <span class='ivar'>@globs</span>
@@ -425,7 +441,11 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute root.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -438,12 +458,12 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
       <pre class="lines">
 
 
-33
-34
-35</pre>
+37
+38
+39</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 33</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 37</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -471,7 +491,11 @@ in the sample projects) matches the same files <code>Dir.glob</code> would.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Per-example attribution. Declared inputs attach to every
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Per-example attribution. Declared inputs attach to every
 example in the suite (per-example narrowing is available via
 the per-example <code>tracks:</code> DSL). Each example gets its own Set
 copy so downstream mutation of one example's input set does
@@ -488,13 +512,13 @@ not leak into siblings.</p>
       <pre class="lines">
 
 
-64
-65
-66
-67</pre>
+70
+71
+72
+73</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 64</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 70</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_attribute_to'>attribute_to</span><span class='lparen'>(</span><span class='id identifier rubyid_example_ids'>example_ids</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_inputs'>inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_walk'>walk</span>
@@ -516,7 +540,11 @@ not leak into siblings.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>O(N_globs) per call; N is typically 1-10. Absolute paths only -
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>O(N_globs) per call; N is typically 1-10. Absolute paths only -
 the callers (IOHooks precedence, NewFileDetector diff) always
 hold absolute paths. Paths outside root never match.</p>
 
@@ -544,16 +572,16 @@ hold absolute paths. Paths outside root never match.</p>
       <pre class="lines">
 
 
-51
-52
-53
-54
-55
-56
-57</pre>
+57
+58
+59
+60
+61
+62
+63</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 51</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 57</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_covers?'>covers?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='ivar'>@globs</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -578,7 +606,11 @@ hold absolute paths. Paths outside root never match.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Memoized across calls - the architecture constraint is &quot;glob
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Memoized across calls - the architecture constraint is &quot;glob
 walk at boot is a single pass; result cached for the life of
 the tracker instance.&quot;</p>
 
@@ -593,12 +625,12 @@ the tracker instance.&quot;</p>
       <pre class="lines">
 
 
-44
-45
-46</pre>
+50
+51
+52</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 44</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/declared_globs.rb', line 50</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_walk'>walk</span>
   <span class='ivar'>@walk</span> <span class='op'>||=</span> <span class='id identifier rubyid_compute_walk'>compute_walk</span>
@@ -613,7 +645,7 @@ the tracker instance.&quot;</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

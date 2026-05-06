@@ -62,7 +62,9 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Storage</span>
+  <span class='comment'># Internal Storage — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Storage</span>
     <span class='comment'># Cache schema version and compatibility policy. 1.x shipped caches
 </span>    <span class='comment'># without any version stamp; 2.0&#39;s first migration is simply to
 </span>    <span class='comment'># start emitting a version and refuse to load anything else.
@@ -86,7 +88,9 @@
 </span>      <span class='comment'># and SUPPORTED narrows to only the new version. No v2 caches
 </span>      <span class='comment'># were ever persisted in user land.
 </span>      <span class='const'>CURRENT</span> <span class='op'>=</span> <span class='int'>3</span>
-      <span class='const'>SUPPORTED</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='const'>CURRENT</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>SUPPORTED</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='const'>CURRENT</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
       <span class='comment'># True when the caller can load a cache stamped with `version`.
 </span>      <span class='comment'># nil (an unstamped 1.x cache) is explicitly unsupported -
@@ -100,7 +104,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

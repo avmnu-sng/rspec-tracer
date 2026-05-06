@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::RSpec::Metadata
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Per-example tracking DSL. Reads the <code>tracks:</code> metadata key
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Per-example tracking DSL. Reads the <code>tracks:</code> metadata key
 off an example and its ancestor example groups and emits a
 normalized union of declared file globs + env-var names.</p>
 <p>DSL shape (user-facing):</p>
@@ -126,17 +130,56 @@ RunnerHook filter loop without synchronization.</p>
     <dl class="constants">
       
         <dt id="TRACKS_KEY-constant" class="">TRACKS_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='symbol'>:tracks</span></pre></dd>
       
         <dt id="FILES_KEY-constant" class="">FILES_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='symbol'>:files</span></pre></dd>
       
         <dt id="ENV_KEY-constant" class="">ENV_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='symbol'>:env</span></pre></dd>
       
@@ -171,7 +214,7 @@ RunnerHook filter loop without synchronization.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>parent_groups returns outer-first.</p></div></span>
@@ -193,7 +236,7 @@ RunnerHook filter loop without synchronization.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>A <code>tracks:</code> value of nil, non-Hash, or an empty Hash contributes nothing.</p></div></span>
@@ -215,7 +258,7 @@ RunnerHook filter loop without synchronization.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>String -&gt; [String]; Array -&gt; itself; anything else -&gt; [].</p></div></span>
@@ -237,7 +280,7 @@ RunnerHook filter loop without synchronization.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Keep methods module-level via <code>def self.x</code> (not module_function) so mutant can observe them - module_function attaches the methods to an anonymous singleton that Method#source_location can't trace (memory: feedback_mutation_friendly_modules).</p></div></span>
@@ -266,7 +309,11 @@ RunnerHook filter loop without synchronization.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>parent_groups returns outer-first. Walk from outer to inner so
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>parent_groups returns outer-first. Walk from outer to inner so
 the set-union is order-agnostic anyway; the order is
 documented for future readers who need it deterministic.</p>
 
@@ -281,14 +328,14 @@ documented for future readers who need it deterministic.</p>
       <pre class="lines">
 
 
-55
-56
-57
-58
-59</pre>
+63
+64
+65
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 55</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 63</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_collect'>collect</span><span class='lparen'>(</span><span class='id identifier rubyid_parent_groups'>parent_groups</span><span class='comma'>,</span> <span class='id identifier rubyid_files'>files</span><span class='comma'>,</span> <span class='id identifier rubyid_envs'>envs</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_parent_groups'>parent_groups</span><span class='period'>.</span><span class='id identifier rubyid_reverse_each'>reverse_each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_group'>group</span><span class='op'>|</span>
@@ -311,7 +358,11 @@ documented for future readers who need it deterministic.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>A <code>tracks:</code> value of nil, non-Hash, or an empty Hash contributes
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>A <code>tracks:</code> value of nil, non-Hash, or an empty Hash contributes
 nothing. Non-Hash values are silently ignored - tolerating
 user typos over raising is consistent with the rest of the
 DSL surface (add_filter, coverage_track_files).</p>
@@ -327,15 +378,15 @@ DSL surface (add_filter, coverage_track_files).</p>
       <pre class="lines">
 
 
-65
-66
-67
-68
-69
-70</pre>
+73
+74
+75
+76
+77
+78</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 65</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 73</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_hash'>merge_hash</span><span class='lparen'>(</span><span class='id identifier rubyid_tracks'>tracks</span><span class='comma'>,</span> <span class='id identifier rubyid_files'>files</span><span class='comma'>,</span> <span class='id identifier rubyid_envs'>envs</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_tracks'>tracks</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
@@ -359,7 +410,11 @@ DSL surface (add_filter, coverage_track_files).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>String -&gt; [String]; Array -&gt; itself; anything else -&gt; []. nil,
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>String -&gt; [String]; Array -&gt; itself; anything else -&gt; []. nil,
 empty-string, and blank values are filtered so
 <code>tracks: { files: '', env: nil }</code> doesn't inject empty entries
 into the attribution set.</p>
@@ -375,19 +430,19 @@ into the attribution set.</p>
       <pre class="lines">
 
 
-76
-77
-78
-79
-80
-81
-82
-83
 84
-85</pre>
+85
+86
+87
+88
+89
+90
+91
+92
+93</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 76</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 84</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize'>normalize</span><span class='lparen'>(</span><span class='id identifier rubyid_value'>value</span><span class='rparen'>)</span>
   <span class='kw'>case</span> <span class='id identifier rubyid_value'>value</span>
@@ -415,7 +470,11 @@ into the attribution set.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Keep methods module-level via <code>def self.x</code> (not module_function)
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Keep methods module-level via <code>def self.x</code> (not module_function)
 so mutant can observe them - module_function attaches the
 methods to an anonymous singleton that Method#source_location
 can't trace (memory: feedback_mutation_friendly_modules).</p>
@@ -431,18 +490,18 @@ can't trace (memory: feedback_mutation_friendly_modules).</p>
       <pre class="lines">
 
 
-42
-43
-44
-45
-46
-47
-48
-49
-50</pre>
+50
+51
+52
+53
+54
+55
+56
+57
+58</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 42</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/metadata.rb', line 50</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_tracks_for'>tracks_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -463,7 +522,7 @@ can't trace (memory: feedback_mutation_friendly_modules).</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Reporters::Registry
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Orchestrates reporter emission at finalize-time. Called from
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Orchestrates reporter emission at finalize-time. Called from
 <code>RSpecTracer#run_exit_tasks</code> once the Engine has persisted its
 Snapshot (architectural decision (a): wire from run_exit_tasks,
 not Engine-internal). Each configured reporter gets an isolated
@@ -138,7 +142,11 @@ callers.</code></pre>
         <dt id="BUILT_INS-constant" class="">BUILT_INS =
           <div class="docstring">
   <div class="discussion">
-    <p>Symbol -&gt; lazy class-name mapping. Strings (not Class constants)
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Symbol -&gt; lazy class-name mapping. Strings (not Class constants)
 so the require order doesn't force load of reporter classes
 when the Registry module itself is loaded - matches how
 <code>storage_backend</code>'s Configuration DSL defers backend resolution.</p>
@@ -157,7 +165,20 @@ when the Registry module itself is loaded - matches how
 <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="DEFAULTS-constant" class="">DEFAULTS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>terminal</span><span class='words_sep'> </span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>html</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
@@ -192,10 +213,10 @@ when the Registry module itself is loaded - matches how
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -224,10 +245,10 @@ when the Registry module itself is loaded - matches how
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -248,10 +269,10 @@ when the Registry module itself is loaded - matches how
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of Registry.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -274,7 +295,11 @@ when the Registry module itself is loaded - matches how
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of Registry.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -287,12 +312,12 @@ when the Registry module itself is loaded - matches how
       <pre class="lines">
 
 
-41
-42
-43</pre>
+49
+50
+51</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 41</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 49</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='rparen'>)</span>
   <span class='ivar'>@configuration</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span>
@@ -318,20 +343,33 @@ when the Registry module itself is loaded - matches how
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-35
-36
-37
-38
-39</pre>
+41
+42
+43
+44
+45</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 35</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 41</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='comma'>,</span> <span class='label'>snapshot:</span><span class='comma'>,</span> <span class='label'>report_dir:</span><span class='comma'>,</span> <span class='label'>run_metadata:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span>
@@ -358,22 +396,35 @@ when the Registry module itself is loaded - matches how
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-45
-46
-47
-48
-49
-50
-51</pre>
+55
+56
+57
+58
+59
+60
+61</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 45</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/registry.rb', line 55</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_emit_all'>emit_all</span><span class='lparen'>(</span><span class='label'>snapshot:</span><span class='comma'>,</span> <span class='label'>report_dir:</span><span class='comma'>,</span> <span class='label'>run_metadata:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_entries'>entries</span> <span class='op'>=</span> <span class='id identifier rubyid_resolve_entries'>resolve_entries</span>
@@ -392,7 +443,7 @@ when the Registry module itself is loaded - matches how
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

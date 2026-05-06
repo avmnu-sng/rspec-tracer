@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::Storage::JsonBackend::Merger
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Stateless snapshot union. parallel_tests partitions spec files
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Stateless snapshot union. parallel_tests partitions spec files
 across workers, so example IDs are disjoint in practice - the
 merge collision rules (first-wins for metadata, sum-of-ints for
 per-line coverage) only fire on collaborating workers that
@@ -128,7 +132,7 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Union every field from one peer snapshot into the running state.</p></div></span>
@@ -150,10 +154,10 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -172,10 +176,10 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -194,7 +198,7 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Sum per-worker reason counts.</p></div></span>
@@ -216,7 +220,7 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Per-example env attribution unions set-wise: an example that declared <code>tracks: { env: [A, B] }</code> on one worker and <code>tracks: { env: [B, C] }</code> on another (edge case; parallel_tests workers rarely run the same example) collapses to [A, B, C].</p></div></span>
@@ -238,10 +242,10 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -260,10 +264,10 @@ happened to observe the same input file.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -289,7 +293,11 @@ happened to observe the same input file.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Union every field from one peer snapshot into the running
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Union every field from one peer snapshot into the running
 state. Each field has a distinct combine rule (merge-first-wins,
 Set#merge, concat, or summing coverage strengths), so the
 branching is inherent to the shape. Decomposing per-field would
@@ -307,30 +315,30 @@ rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/Perceived
       <pre class="lines">
 
 
-414
-415
-416
-417
-418
-419
-420
-421
-422
-423
-424
-425
-426
-427
-428
-429
-430
-431
-432
-433
-434</pre>
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 414</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 446</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_absorb'>absorb</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:all_examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_merge!'>merge!</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_v'>v</span><span class='comma'>,</span> <span class='id identifier rubyid__'>_</span><span class='op'>|</span> <span class='id identifier rubyid_v'>v</span> <span class='rbrace'>}</span>
@@ -367,43 +375,56 @@ rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/Perceived
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-359
-360
-361
-362
-363
-364
-365
-366
-367
-368
-369
-370
-371
-372
-373
-374
-375
-376
-377
-378
-379
-380
-381
-382
-383
-384
-385
-386</pre>
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 359</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 389</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_call'>call</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshots'>snapshots</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_state'>state</span> <span class='op'>=</span> <span class='id identifier rubyid_empty_state'>empty_state</span>
@@ -447,34 +468,47 @@ rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/Perceived
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-388
-389
-390
-391
-392
-393
-394
-395
-396
-397
-398
-399
-400
-401
-402
-403
-404
-405
-406</pre>
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 388</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 420</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_empty_state'>empty_state</span>
   <span class='lbrace'>{</span>
@@ -511,7 +545,11 @@ rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/Perceived
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Sum per-worker reason counts. parallel_tests partitions
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Sum per-worker reason counts. parallel_tests partitions
 examples across workers; each worker's filtered_examples
 tally is disjoint by example_id, so sum is the right combine
 rule (a &quot;Files changed&quot; count from worker A plus the same
@@ -529,12 +567,12 @@ that reason across the suite).</p>
       <pre class="lines">
 
 
-454
-455
-456</pre>
+486
+487
+488</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 454</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 486</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_cache_hit_reason!'>merge_cache_hit_reason!</span><span class='lparen'>(</span><span class='id identifier rubyid_target'>target</span><span class='comma'>,</span> <span class='id identifier rubyid_source'>source</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_reason'>reason</span><span class='comma'>,</span> <span class='id identifier rubyid_count'>count</span><span class='op'>|</span> <span class='id identifier rubyid_target'>target</span><span class='lbracket'>[</span><span class='id identifier rubyid_reason'>reason</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='id identifier rubyid_count'>count</span> <span class='rbrace'>}</span>
@@ -555,7 +593,11 @@ that reason across the suite).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Per-example env attribution unions set-wise: an example that
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Per-example env attribution unions set-wise: an example that
 declared <code>tracks: { env: [A, B] }</code> on one worker and
 <code>tracks: { env: [B, C] }</code> on another (edge case; parallel_tests
 workers rarely run the same example) collapses to [A, B, C].</p>
@@ -571,15 +613,15 @@ workers rarely run the same example) collapses to [A, B, C].</p>
       <pre class="lines">
 
 
-441
-442
-443
-444
-445
-446</pre>
+473
+474
+475
+476
+477
+478</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 441</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 473</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_env_dependency!'>merge_env_dependency!</span><span class='lparen'>(</span><span class='id identifier rubyid_target'>target</span><span class='comma'>,</span> <span class='id identifier rubyid_source'>source</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_names'>names</span><span class='op'>|</span>
@@ -601,26 +643,39 @@ workers rarely run the same example) collapses to [A, B, C].</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-458
-459
-460
-461
-462
-463
-464
-465
-466
-467
-468</pre>
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 458</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 492</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_examples_coverage!'>merge_examples_coverage!</span><span class='lparen'>(</span><span class='id identifier rubyid_target'>target</span><span class='comma'>,</span> <span class='id identifier rubyid_source'>source</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_per_file'>per_file</span><span class='op'>|</span>
@@ -647,22 +702,35 @@ workers rarely run the same example) collapses to [A, B, C].</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-470
-471
-472
-473
-474
-475
-476</pre>
+506
+507
+508
+509
+510
+511
+512</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 470</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 506</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_reverse_of'>reverse_of</span><span class='lparen'>(</span><span class='id identifier rubyid_dependency'>dependency</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_reverse'>reverse</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_h'>h</span><span class='comma'>,</span> <span class='id identifier rubyid_k'>k</span><span class='op'>|</span> <span class='id identifier rubyid_h'>h</span><span class='lbracket'>[</span><span class='id identifier rubyid_k'>k</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='rbrace'>}</span>
@@ -681,7 +749,7 @@ workers rarely run the same example) collapses to [A, B, C].</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

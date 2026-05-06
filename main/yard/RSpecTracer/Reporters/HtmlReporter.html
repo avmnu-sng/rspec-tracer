@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Reporters::HtmlReporter
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -106,7 +106,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Renders a single-page HTML report at <code>&lt;report_dir&gt;/index.html</code>
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Renders a single-page HTML report at <code>&lt;report_dir&gt;/index.html</code>
 consuming the canonical payload built by <code>PayloadBuilder</code>
 (shared with <code>JsonReporter</code>).</p>
 <p>Build output - the frontend bundle at
@@ -142,29 +146,85 @@ a non-zero exit into the user's test suite.</p>
     <dl class="constants">
       
         <dt id="FILENAME-constant" class="">FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>index.html</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="ASSETS_DIR-constant" class="">ASSETS_DIR =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>assets</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="FALLBACK_MARKER-constant" class="">FALLBACK_MARKER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;!-- RSPEC_TRACER_FALLBACK --&gt;</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="REPORT_DATA_REGEX-constant" class="">REPORT_DATA_REGEX =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='regexp_beg'>%r{</span><span class='tstring_content'>&lt;script id=&quot;report-data&quot; type=&quot;application/json&quot;&gt;.*?&lt;/script&gt;</span><span class='regexp_end'>}m</span></span></pre></dd>
       
         <dt id="DIST_DIR-constant" class="">DIST_DIR =
           <div class="docstring">
   <div class="discussion">
-    <p>Absolute path to the committed frontend build under
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Absolute path to the committed frontend build under
 <code>lib/rspec_tracer/reporters/html/dist/</code>. Computed once at load
 time so tests can stub <code>DIST_DIR</code> if they need a different
 template root.</p>
@@ -203,7 +263,7 @@ template root.</p>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#generate-instance_method" title="#generate (instance method)">#<strong>generate</strong>  &#x21d2; Object </a>
+      <a href="#generate-instance_method" title="#generate (instance method)">#<strong>generate</strong>  &#x21d2; String<sup>?</sup> </a>
     
 
     
@@ -214,10 +274,10 @@ template root.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.</p></div></span>
   
 </li>
 
@@ -253,41 +313,73 @@ template root.</p>
       <div class="method_details first">
   <h3 class="signature first" id="generate-instance_method">
   
-    #<strong>generate</strong>  &#x21d2; <tt>Object</tt> 
+    #<strong>generate</strong>  &#x21d2; <tt>String</tt><sup>?</sup> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.
+Renders the bundled HTML template with the run payload and writes
+<code>index.html</code> (plus the asset directory) under <span class='object_link'><a href="Base.html#report_dir-instance_method" title="RSpecTracer::Reporters::Base#report_dir (method)">Base#report_dir</a></span>.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute path of the written index, or nil
+when there is nothing to render.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
 62
 63
 64
-65</pre>
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/html_reporter.rb', line 46</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/html_reporter.rb', line 62</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
@@ -319,7 +411,7 @@ template root.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

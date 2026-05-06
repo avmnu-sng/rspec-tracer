@@ -64,7 +64,9 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>base</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Reporters</span>
+  <span class='comment'># Internal Reporters — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Reporters</span>
     <span class='comment'># Concise stdout summary printed at finalize-time. Output is
 </span>    <span class='comment'># capped at 4 lines for a typical run (5 when duplicate /
 </span>    <span class='comment'># interrupted / flaky / pending counters are non-zero). Kind-less
@@ -80,7 +82,9 @@
 </span>    <span class='comment'>#   - The header line paints red on any failure / interrupted,
 </span>    <span class='comment'>#     yellow on pending-only, green otherwise.
 </span>    <span class='kw'>class</span> <span class='const'>TerminalReporter</span> <span class='op'>&lt;</span> <span class='const'>Base</span>
-      <span class='const'>COLORS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>COLORS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
         <span class='label'>reset:</span> <span class='int'>0</span><span class='comma'>,</span>
         <span class='label'>red:</span> <span class='int'>31</span><span class='comma'>,</span>
         <span class='label'>green:</span> <span class='int'>32</span><span class='comma'>,</span>
@@ -107,10 +111,17 @@
       <span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
       <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:TALLY_FIELDS</span>
 
-      <span class='const'>BYTES_PER_MIB</span> <span class='op'>=</span> <span class='float'>1_048_576.0</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>BYTES_PER_MIB</span> <span class='op'>=</span> <span class='float'>1_048_576.0</span>
       <span class='id identifier rubyid_private_constant'>private_constant</span> <span class='symbol'>:BYTES_PER_MIB</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
+      <span class='comment'># Concrete implementation of {RSpecTracer::Reporters::Base#generate}.
+</span>      <span class='comment'># Prints a per-run summary to the configured output stream.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @return [Array&lt;String&gt;, nil] the lines emitted, or nil when the
+</span>      <span class='comment'>#   run had no examples worth reporting.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
 
         <span class='id identifier rubyid_lines'>lines</span> <span class='op'>=</span> <span class='id identifier rubyid_build_lines'>build_lines</span>
@@ -121,11 +132,15 @@
 
       <span class='id identifier rubyid_private'>private</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_build_lines'>build_lines</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_lines'>build_lines</span>
         <span class='lbracket'>[</span><span class='id identifier rubyid_header_line'>header_line</span><span class='comma'>,</span> <span class='id identifier rubyid_tally_line'>tally_line</span><span class='comma'>,</span> <span class='id identifier rubyid_kind_breakdown_line'>kind_breakdown_line</span><span class='comma'>,</span> <span class='id identifier rubyid_cache_line'>cache_line</span><span class='comma'>,</span> <span class='id identifier rubyid_report_line'>report_line</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_compact'>compact</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_header_line'>header_line</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_header_line'>header_line</span>
         <span class='id identifier rubyid_total'>total</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
         <span class='id identifier rubyid_run'>run</span> <span class='op'>=</span> <span class='id identifier rubyid_run_count'>run_count</span>
         <span class='id identifier rubyid_skipped'>skipped</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_skipped_examples'>skipped_examples</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
@@ -137,7 +152,9 @@
         <span class='id identifier rubyid_paint'>paint</span><span class='lparen'>(</span><span class='id identifier rubyid_header_color'>header_color</span><span class='comma'>,</span> <span class='id identifier rubyid_text'>text</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_tally_line'>tally_line</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_tally_line'>tally_line</span>
         <span class='id identifier rubyid_parts'>parts</span> <span class='op'>=</span> <span class='const'>TALLY_FIELDS</span><span class='period'>.</span><span class='id identifier rubyid_filter_map'>filter_map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_field'>field</span><span class='comma'>,</span> <span class='id identifier rubyid_label'>label</span><span class='op'>|</span>
           <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
           <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -148,7 +165,9 @@
         <span class='id identifier rubyid_paint'>paint</span><span class='lparen'>(</span><span class='symbol'>:yellow</span><span class='comma'>,</span> <span class='id identifier rubyid_parts'>parts</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='const'>SEPARATOR</span><span class='rparen'>)</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_cache_line'>cache_line</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_cache_line'>cache_line</span>
         <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='lbracket'>[</span><span class='symbol'>:cache_path</span><span class='rbracket'>]</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
@@ -202,7 +221,9 @@
         <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_format_cache_suffix'>format_cache_suffix</span><span class='lparen'>(</span><span class='id identifier rubyid_current_bytes'>current_bytes</span><span class='comma'>,</span> <span class='id identifier rubyid_prior_bytes'>prior_bytes</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_format_cache_suffix'>format_cache_suffix</span><span class='lparen'>(</span><span class='id identifier rubyid_current_bytes'>current_bytes</span><span class='comma'>,</span> <span class='id identifier rubyid_prior_bytes'>prior_bytes</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_size'>size</span> <span class='op'>=</span> <span class='id identifier rubyid_format_size_bytes'>format_size_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_current_bytes'>current_bytes</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'> (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_prior_bytes'>prior_bytes</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
@@ -215,13 +236,17 @@
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'> (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'>; </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_sign'>sign</span><span class='embexpr_end'>}</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_format_size_bytes'>format_size_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_delta'>delta</span><span class='period'>.</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'> vs prev run)</span><span class='tstring_end'>&quot;</span></span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_directory_size_bytes'>directory_size_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_directory_size_bytes'>directory_size_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='rparen'>)</span>
         <span class='const'>Dir</span><span class='lbracket'>[</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>**</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>*</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_sum'>sum</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
           <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='op'>:</span> <span class='int'>0</span>
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_previous_run_dir_bytes'>previous_run_dir_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_current_id'>current_id</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_previous_run_dir_bytes'>previous_run_dir_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_current_id'>current_id</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_peer_dirs'>peer_dirs</span> <span class='op'>=</span> <span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_children'>children</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_filter_map'>filter_map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_name'>name</span><span class='op'>|</span>
           <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_name'>name</span> <span class='op'>==</span> <span class='id identifier rubyid_current_id'>current_id</span> <span class='op'>||</span> <span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>.</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
 
@@ -234,49 +259,65 @@
         <span class='id identifier rubyid_directory_size_bytes'>directory_size_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_newest_peer'>newest_peer</span><span class='rparen'>)</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_report_line'>report_line</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_report_line'>report_line</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_report_dir'>report_dir</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report: </span><span class='embexpr_beg'>#{</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span> <span class='const'>JsonReporter</span><span class='op'>::</span><span class='const'>FILENAME</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_header_color'>header_color</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_header_color'>header_color</span>
         <span class='kw'>return</span> <span class='symbol'>:red</span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_failed_examples'>failed_examples</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='op'>||</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_interrupted_examples'>interrupted_examples</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span>
         <span class='kw'>return</span> <span class='symbol'>:yellow</span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_pending_examples'>pending_examples</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span>
 
         <span class='symbol'>:green</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_run_count'>run_count</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_run_count'>run_count</span>
         <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_count'>count</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_meta'>meta</span><span class='op'>|</span>
           <span class='id identifier rubyid_meta'>meta</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Hash</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_meta'>meta</span><span class='lbracket'>[</span><span class='symbol'>:execution_result</span><span class='rbracket'>]</span>
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_duplicate_count'>duplicate_count</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_duplicate_count'>duplicate_count</span>
         <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'>duplicate_examples</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_cache_percent'>cache_percent</span><span class='lparen'>(</span><span class='id identifier rubyid_total'>total</span><span class='comma'>,</span> <span class='id identifier rubyid_skipped'>skipped</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_cache_percent'>cache_percent</span><span class='lparen'>(</span><span class='id identifier rubyid_total'>total</span><span class='comma'>,</span> <span class='id identifier rubyid_skipped'>skipped</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>if</span> <span class='id identifier rubyid_total'>total</span><span class='period'>.</span><span class='id identifier rubyid_zero?'>zero?</span>
 
         <span class='lparen'>(</span><span class='lparen'>(</span><span class='id identifier rubyid_skipped'>skipped</span><span class='period'>.</span><span class='id identifier rubyid_to_f'>to_f</span> <span class='op'>/</span> <span class='id identifier rubyid_total'>total</span><span class='rparen'>)</span> <span class='op'>*</span> <span class='int'>100</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_paint'>paint</span><span class='lparen'>(</span><span class='id identifier rubyid_color_key'>color_key</span><span class='comma'>,</span> <span class='id identifier rubyid_text'>text</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_paint'>paint</span><span class='lparen'>(</span><span class='id identifier rubyid_color_key'>color_key</span><span class='comma'>,</span> <span class='id identifier rubyid_text'>text</span><span class='rparen'>)</span>
         <span class='kw'>return</span> <span class='id identifier rubyid_text'>text</span> <span class='kw'>unless</span> <span class='id identifier rubyid_use_color?'>use_color?</span>
 
         <span class='id identifier rubyid_code'>code</span> <span class='op'>=</span> <span class='const'>COLORS</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_color_key'>color_key</span><span class='comma'>,</span> <span class='const'>COLORS</span><span class='lbracket'>[</span><span class='symbol'>:reset</span><span class='rbracket'>]</span><span class='rparen'>)</span>
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\e[</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_code'>code</span><span class='embexpr_end'>}</span><span class='tstring_content'>m</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_text'>text</span><span class='embexpr_end'>}</span><span class='tstring_content'>\e[</span><span class='embexpr_beg'>#{</span><span class='const'>COLORS</span><span class='lbracket'>[</span><span class='symbol'>:reset</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>m</span><span class='tstring_end'>&quot;</span></span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_use_color?'>use_color?</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_use_color?'>use_color?</span>
         <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>NO_COLOR</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
 
         <span class='id identifier rubyid_output_stream'>output_stream</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:tty?</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_output_stream'>output_stream</span><span class='period'>.</span><span class='id identifier rubyid_tty?'>tty?</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_output_stream'>output_stream</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_output_stream'>output_stream</span>
         <span class='id identifier rubyid_options'>options</span><span class='lbracket'>[</span><span class='symbol'>:io</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='gvar'>$stdout</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -284,7 +325,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

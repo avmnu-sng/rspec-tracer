@@ -62,7 +62,9 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>RSpec</span>
+  <span class='comment'># Internal RSpec — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>RSpec</span>
     <span class='comment'># Prepended onto `RSpec::Core::Reporter` by
 </span>    <span class='comment'># `RSpecTracer::RSpec::Installation.install!`. Replaces the 1.x
 </span>    <span class='comment'># `RSpecTracer::RSpecReporter` singleton-class prepend.
@@ -81,13 +83,17 @@
 </span>    <span class='comment'># consumes the Engine&#39;s per-example deltas + a single finalize-time
 </span>    <span class='comment'># peek through Tracker::CoverageAdapter#peek_unfiltered.
 </span>    <span class='kw'>module</span> <span class='const'>ReporterHook</span>
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_started'>example_started</span><span class='lparen'>(</span><span class='id identifier rubyid__example'>_example</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_started'>example_started</span><span class='lparen'>(</span><span class='id identifier rubyid__example'>_example</span><span class='rparen'>)</span>
         <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span><span class='op'>&amp;.</span><span class='id identifier rubyid_example_started'><span class='object_link'><a href="RSpecTracer/Engine.html#example_started-instance_method" title="RSpecTracer::Engine#example_started (method)">example_started</a></span></span>
 
         <span class='kw'>super</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_finished'>example_finished</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_finished'>example_finished</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_engine'>engine</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span>
         <span class='kw'>if</span> <span class='id identifier rubyid_engine'>engine</span>
           <span class='id identifier rubyid_example_id'>example_id</span> <span class='op'>=</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span><span class='lbracket'>[</span><span class='symbol'>:rspec_tracer_example_id</span><span class='rbracket'>]</span>
@@ -97,19 +103,25 @@
         <span class='kw'>super</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_passed'>example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_passed'>example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
         <span class='id identifier rubyid__rspec_tracer_status'>_rspec_tracer_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='symbol'>:on_example_passed</span><span class='rparen'>)</span>
 
         <span class='kw'>super</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_failed'>example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_failed'>example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
         <span class='id identifier rubyid__rspec_tracer_status'>_rspec_tracer_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='symbol'>:on_example_failed</span><span class='rparen'>)</span>
 
         <span class='kw'>super</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_example_pending'>example_pending</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_example_pending'>example_pending</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
         <span class='id identifier rubyid__rspec_tracer_status'>_rspec_tracer_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='symbol'>:on_example_pending</span><span class='rparen'>)</span>
 
         <span class='kw'>super</span>
@@ -117,7 +129,9 @@
 
       <span class='id identifier rubyid_private'>private</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_status'>_rspec_tracer_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='id identifier rubyid_method'>method</span><span class='rparen'>)</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_status'>_rspec_tracer_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='id identifier rubyid_method'>method</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_engine'>engine</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span>
         <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_engine'>engine</span>
 
@@ -131,7 +145,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::EnvSnapshot
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Observer #5 in the 2.0 tracker pipeline (WholeSuiteInvalidators
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Observer #5 in the 2.0 tracker pipeline (WholeSuiteInvalidators
 is #4). Owns the per-run snapshot of environment-variable
 values that the per-example <code>tracks: { env: ... }</code> metadata declares.</p>
 <p>Watch list is caller-provided - unlike WholeSuiteInvalidators,
@@ -155,7 +159,7 @@ names are skipped silently.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Snapshot the current ENV values for <code>names</code>.</p></div></span>
@@ -179,7 +183,7 @@ names are skipped silently.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>ENV source is injectable for testability - specs can pass a Hash double without poking the real process env.</p></div></span>
@@ -201,7 +205,7 @@ names are skipped silently.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Return the set of env names whose digest differs between <code>previous_snapshot</code> and the current ENV.</p></div></span>
@@ -227,7 +231,11 @@ names are skipped silently.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>ENV source is injectable for testability - specs can pass a
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>ENV source is injectable for testability - specs can pass a
 Hash double without poking the real process env.</p>
 
   </div>
@@ -241,12 +249,12 @@ Hash double without poking the real process env.</p>
       <pre class="lines">
 
 
-30
-31
-32</pre>
+32
+33
+34</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 30</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 32</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>env:</span> <span class='op'>::</span><span class='const'>ENV</span><span class='rparen'>)</span>
   <span class='ivar'>@env</span> <span class='op'>=</span> <span class='id identifier rubyid_env'>env</span>
@@ -274,7 +282,11 @@ Hash double without poking the real process env.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Snapshot the current ENV values for <code>names</code>. Returns
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Snapshot the current ENV values for <code>names</code>. Returns
 <code>Hash[name =&gt; md5_hex]</code>. Idempotent; callers may invoke it
 repeatedly without side effects.</p>
 
@@ -289,8 +301,6 @@ repeatedly without side effects.</p>
       <pre class="lines">
 
 
-37
-38
 39
 40
 41
@@ -298,10 +308,12 @@ repeatedly without side effects.</p>
 43
 44
 45
-46</pre>
+46
+47
+48</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span><span class='lparen'>(</span><span class='id identifier rubyid_names'>names</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -329,7 +341,11 @@ repeatedly without side effects.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Return the set of env names whose digest differs between
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Return the set of env names whose digest differs between
 <code>previous_snapshot</code> and the current ENV. Keys in either
 snapshot participate:</p>
 <pre class="code ruby"><code class="ruby">- present in both, digests differ  =&gt; invalidated
@@ -355,8 +371,6 @@ declared different env keys previously.</p>
       <pre class="lines">
 
 
-63
-64
 65
 66
 67
@@ -364,10 +378,12 @@ declared different env keys previously.</p>
 69
 70
 71
-72</pre>
+72
+73
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 63</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/env_snapshot.rb', line 65</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_invalidated_keys'>invalidated_keys</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='comma'>,</span> <span class='id identifier rubyid_names'>names</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_previous'>previous</span> <span class='op'>=</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -389,7 +405,7 @@ declared different env keys previously.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

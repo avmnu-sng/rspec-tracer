@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::RemoteCache::LocalFsBackend
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Filesystem implementation of <code>RemoteCache::Backend</code>. Target is
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Filesystem implementation of <code>RemoteCache::Backend</code>. Target is
 a shared directory: an NFS mount, a per-host dev cache, or a CI
 workspace volume. Two-tier layout mirrors <code>S3Backend</code> bit-for-bit;
 a LocalFs root directory can be rsync'd to/from S3 without any
@@ -153,32 +157,110 @@ not a backend correctness issue.</p>
     <dl class="constants">
       
         <dt id="MAIN_TIER-constant" class="">MAIN_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>main</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="PR_TIER-constant" class="">PR_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pr</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="BRANCH_REFS_FILENAME-constant" class="">BRANCH_REFS_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>branch_refs.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="LAST_RUN_FILENAME-constant" class="">LAST_RUN_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="CACHE_ARCHIVE_FILENAME-constant" class="">CACHE_ARCHIVE_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='const'><span class='object_link'><a href="Archive.html" title="RSpecTracer::RemoteCache::Archive (module)">Archive</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="Archive.html#CACHE_FILENAME-constant" title="RSpecTracer::RemoteCache::Archive::CACHE_FILENAME (constant)">CACHE_FILENAME</a></span></span></pre></dd>
       
         <dt id="ENCODING-constant" class="">ENCODING =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
@@ -213,7 +295,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Read branch_refs for the given branch.</p></div></span>
@@ -235,7 +317,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Download the cache for <code>ref</code> into <code>cache_path</code>.</p></div></span>
@@ -259,7 +341,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>rubocop:disable Metrics/ParameterLists.</p></div></span>
@@ -281,7 +363,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Apply retention to the backend's own tier.</p></div></span>
@@ -303,7 +385,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Cross-tier PR-branch cleanup.</p></div></span>
@@ -325,7 +407,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Warn when the main tier has grown beyond a soft threshold and no retention is configured.</p></div></span>
@@ -347,7 +429,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Upload the local cache to this backend's own tier under <code>ref</code>.</p></div></span>
@@ -369,7 +451,7 @@ not a backend correctness issue.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Persist branch_refs for the given branch.</p></div></span>
@@ -395,7 +477,11 @@ not a backend correctness issue.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>rubocop:disable Metrics/ParameterLists</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Metrics/ParameterLists</p>
 
   </div>
 </div>
@@ -408,21 +494,21 @@ not a backend correctness issue.</p>
       <pre class="lines">
 
 
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61</pre>
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 50</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 66</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>branch:</span><span class='comma'>,</span> <span class='label'>default_branch:</span><span class='comma'>,</span> <span class='label'>cache_path:</span><span class='comma'>,</span>
                <span class='label'>test_suite_id:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
@@ -459,7 +545,11 @@ not a backend correctness issue.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Read branch_refs for the given branch. Returns <code>{sha =&gt; ts_epoch}</code>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read branch_refs for the given branch. Returns <code>{sha =&gt; ts_epoch}</code>
 or <code>{}</code> on missing / malformed. PR tier only.</p>
 
   </div>
@@ -473,21 +563,21 @@ or <code>{}</code> on missing / malformed. PR tier only.</p>
       <pre class="lines">
 
 
-112
-113
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123</pre>
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 112</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 128</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -517,7 +607,11 @@ or <code>{}</code> on missing / malformed. PR tier only.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Download the cache for <code>ref</code> into <code>cache_path</code>. Tries the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Download the cache for <code>ref</code> into <code>cache_path</code>. Tries the
 backend's own tier first; on miss, falls back to the main tier
 for the same ref. Validates via <code>schema_version</code> before
 declaring success. Returns true on validated success, false
@@ -538,18 +632,18 @@ orchestrator already forwards the kwarg.</p>
       <pre class="lines">
 
 
-74
-75
-76
-77
-78
-79
-80
-81
-82</pre>
+90
+91
+92
+93
+94
+95
+96
+97
+98</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 74</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 90</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid__'>_</span> <span class='op'>=</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span>
@@ -576,7 +670,11 @@ orchestrator already forwards the kwarg.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Apply retention to the backend's own tier. Returns count removed.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Apply retention to the backend's own tier. Returns count removed.
 Semantics match S3Backend: count keeps newest N, duration prunes
 by mtime, pr_branch_ttl deletes the whole branch prefix when
 idle. Two or more params may be set simultaneously; all nil/0
@@ -593,16 +691,16 @@ is a no-op. Never raises on partial I/O failure.</p>
       <pre class="lines">
 
 
-150
-151
-152
-153
-154
-155
-156</pre>
+166
+167
+168
+169
+170
+171
+172</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 150</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 166</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune!'>prune!</span><span class='lparen'>(</span><span class='label'>count:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>duration_seconds:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_removed'>removed</span> <span class='op'>=</span> <span class='int'>0</span>
@@ -627,7 +725,11 @@ is a no-op. Never raises on partial I/O failure.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Cross-tier PR-branch cleanup. Enumerates every branch dir under
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Cross-tier PR-branch cleanup. Enumerates every branch dir under
 <code>pr/</code>, applies the ttl to each, deletes branches with no ref
 newer than the cutoff. Returns total refs removed. No-op on
 nil / non-positive ttl.</p>
@@ -643,18 +745,18 @@ nil / non-positive ttl.</p>
       <pre class="lines">
 
 
-162
-163
-164
-165
-166
-167
-168
-169
-170</pre>
+178
+179
+180
+181
+182
+183
+184
+185
+186</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 162</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 178</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>unless</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
@@ -681,7 +783,11 @@ nil / non-positive ttl.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Warn when the main tier has grown beyond a soft threshold and
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Warn when the main tier has grown beyond a soft threshold and
 no retention is configured. Called from the orchestrator.</p>
 
   </div>
@@ -695,16 +801,16 @@ no retention is configured. Called from the orchestrator.</p>
       <pre class="lines">
 
 
-174
-175
-176
-177
-178
-179
-180</pre>
+190
+191
+192
+193
+194
+195
+196</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 174</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 190</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_unbounded_warning'>unbounded_warning</span><span class='lparen'>(</span><span class='label'>warn_threshold:</span> <span class='int'>500</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_refs'>refs</span> <span class='op'>=</span> <span class='id identifier rubyid_list_refs_in_tier'>list_refs_in_tier</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="#MAIN_TIER-constant" title="RSpecTracer::RemoteCache::LocalFsBackend::MAIN_TIER (constant)">MAIN_TIER</a></span></span><span class='rparen'>)</span>
@@ -729,7 +835,11 @@ no retention is configured. Called from the orchestrator.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Upload the local cache to this backend's own tier under <code>ref</code>.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Upload the local cache to this backend's own tier under <code>ref</code>.
 Packs the 15-file local layout into a <code>cache.tar.gz</code> via
 <code>Archive.pack</code>, renames into place atomically. Raises on a
 malformed local cache or an I/O failure.</p>
@@ -760,27 +870,27 @@ malformed local cache or an I/O failure.</p>
       <pre class="lines">
 
 
-91
-92
-93
-94
-95
-96
-97
-98
-99
-100
-101
-102
-103
-104
-105
-106
 107
-108</pre>
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 91</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 107</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_upload'>upload</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid__'>_</span> <span class='op'>=</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span>
@@ -816,7 +926,11 @@ malformed local cache or an I/O failure.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Persist branch_refs for the given branch. No-op for main-branch
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Persist branch_refs for the given branch. No-op for main-branch
 writes. Atomic via tmp+rename. Raises on I/O failure for PR
 tier.</p>
 
@@ -831,25 +945,25 @@ tier.</p>
       <pre class="lines">
 
 
-128
-129
-130
-131
-132
-133
-134
-135
-136
-137
-138
-139
-140
-141
-142
-143</pre>
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 128</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/local_fs_backend.rb', line 144</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_write_branch_refs'>write_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='comma'>,</span> <span class='id identifier rubyid_refs'>refs</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -877,7 +991,7 @@ tier.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

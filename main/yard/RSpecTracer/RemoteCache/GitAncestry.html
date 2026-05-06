@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::RemoteCache::GitAncestry
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Git ancestry walker. Given the current branch + default branch,
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Git ancestry walker. Given the current branch + default branch,
 answers &quot;which commit should I upload cache under?&quot; and &quot;which
 prior commits should I try as cache candidates?&quot;</p>
 <p>Behavior preserved verbatim from 1.x <code>RemoteCache::Repo</code> -
@@ -170,7 +174,11 @@ RSPEC_TRACER.md &quot;Caching on CI&quot; for the user-facing rationale.</p>
         <dt id="ANCESTRY_DEPTH-constant" class="">ANCESTRY_DEPTH =
           <div class="docstring">
   <div class="discussion">
-    <p>Matches 1.x. 25 commits is a 14-year-stable tradeoff between
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Matches 1.x. 25 commits is a 14-year-stable tradeoff between
 cache hit rate on slow trunks and ancestry-walk cost.</p>
 
   </div>
@@ -210,10 +218,10 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute branch_name.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -237,10 +245,10 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute default_branch_name.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -272,7 +280,7 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Hash=> committer_timestamp of candidate ancestor commits.</p></div></span>
@@ -294,7 +302,7 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>The SHA to upload cache under, and to seed ancestry walk from.</p></div></span>
@@ -318,10 +326,10 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of GitAncestry.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -340,7 +348,7 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Materialize the PR-merged state: fetch + checkout + merge default.</p></div></span>
@@ -362,7 +370,7 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>True when HEAD has two parents (i.e., a merge commit).</p></div></span>
@@ -384,7 +392,7 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>True when this is a PR build (current branch != default branch).</p></div></span>
@@ -410,7 +418,11 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of GitAncestry.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -436,16 +448,16 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
       <pre class="lines">
 
 
-58
-59
-60
-61
-62
-63
-64</pre>
+66
+67
+68
+69
+70
+71
+72</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 58</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 66</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>default_branch:</span><span class='comma'>,</span> <span class='label'>branch:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="GitAncestry/GitAncestryError.html" title="RSpecTracer::RemoteCache::GitAncestry::GitAncestryError (class)">GitAncestryError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>default_branch is required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_default_branch'>default_branch</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_default_branch'>default_branch</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -477,7 +489,11 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute branch_name.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -490,12 +506,12 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
       <pre class="lines">
 
 
-56
-57
-58</pre>
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 56</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 62</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_branch_name'>branch_name</span>
   <span class='ivar'>@branch_name</span>
@@ -518,7 +534,11 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute default_branch_name.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -531,12 +551,12 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
       <pre class="lines">
 
 
-56
-57
-58</pre>
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 56</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 62</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_default_branch_name'>default_branch_name</span>
   <span class='ivar'>@default_branch_name</span>
@@ -564,7 +584,11 @@ cache hit rate on slow trunks and ancestry-walk cost.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Hash=> committer_timestamp of candidate ancestor commits.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Hash=> committer_timestamp of candidate ancestor commits.
 Newest-first ordering is applied by the orchestrator when merging
 with branch_refs; this method returns insertion order.</p>
 <p>Walk rule:</p>
@@ -587,20 +611,20 @@ clone shorter than 25, etc.). Not an error.</p>
       <pre class="lines">
 
 
-126
-127
-128
-129
-130
-131
-132
-133
 134
 135
-136</pre>
+136
+137
+138
+139
+140
+141
+142
+143
+144</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 126</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 134</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_ancestry_refs'>ancestry_refs</span>
   <span class='kw'>return</span> <span class='ivar'>@ancestry_refs</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@ancestry_refs</span><span class='rparen'>)</span>
@@ -629,7 +653,11 @@ clone shorter than 25, etc.). Not an error.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>The SHA to upload cache under, and to seed ancestry walk from.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>The SHA to upload cache under, and to seed ancestry walk from.
 When HEAD is a merge commit (normal PR case after merge_base_branch!
 runs), branch_ref = HEAD^1 (the real branch tip). Uploading under
 HEAD directly would key the cache under a synthetic merge SHA
@@ -646,23 +674,23 @@ that no future build's ancestry walk can reach.</p>
       <pre class="lines">
 
 
-99
-100
-101
-102
-103
-104
-105
-106
 107
 108
 109
 110
 111
-112</pre>
+112
+113
+114
+115
+116
+117
+118
+119
+120</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 99</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 107</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_branch_ref'>branch_ref</span>
   <span class='kw'>return</span> <span class='ivar'>@branch_ref</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@branch_ref</span><span class='rparen'>)</span>
@@ -694,7 +722,11 @@ that no future build's ancestry walk can reach.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Materialize the PR-merged state: fetch + checkout + merge default.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Materialize the PR-merged state: fetch + checkout + merge default.
 No-op on main builds. Idempotent on a clean tree (a subsequent
 <code>git merge origin/&lt;default&gt;</code> when already merged produces &quot;Already
 up to date&quot;, no new merge commit).</p>
@@ -713,16 +745,16 @@ cleanly with a warning but proceeds to cold-run.</p>
       <pre class="lines">
 
 
-86
-87
-88
-89
-90
-91
-92</pre>
+94
+95
+96
+97
+98
+99
+100</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 86</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 94</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_merge_base_branch!'>merge_base_branch!</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@default_branch_name</span> <span class='op'>==</span> <span class='ivar'>@branch_name</span>
@@ -747,7 +779,11 @@ cleanly with a warning but proceeds to cold-run.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>True when HEAD has two parents (i.e., a merge commit). Cached.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>True when HEAD has two parents (i.e., a merge commit). Cached.</p>
 
   </div>
 </div>
@@ -773,14 +809,14 @@ cleanly with a warning but proceeds to cold-run.</p>
       <pre class="lines">
 
 
-72
-73
-74
-75
-76</pre>
+80
+81
+82
+83
+84</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 72</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 80</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_merge_commit?'>merge_commit?</span>
   <span class='kw'>return</span> <span class='ivar'>@merge_commit</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@merge_commit</span><span class='rparen'>)</span>
@@ -803,7 +839,11 @@ cleanly with a warning but proceeds to cold-run.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>True when this is a PR build (current branch != default branch).</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>True when this is a PR build (current branch != default branch).</p>
 
   </div>
 </div>
@@ -829,12 +869,12 @@ cleanly with a warning but proceeds to cold-run.</p>
       <pre class="lines">
 
 
-67
-68
-69</pre>
+75
+76
+77</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 67</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/git_ancestry.rb', line 75</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_pr_build?'>pr_build?</span>
   <span class='ivar'>@branch_name</span> <span class='op'>!=</span> <span class='ivar'>@default_branch_name</span>
@@ -849,7 +889,7 @@ cleanly with a warning but proceeds to cold-run.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

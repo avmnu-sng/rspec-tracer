@@ -80,8 +80,12 @@
 </span>  <span class='comment'># directories resolved from the project&#39;s `.rspec-tracer` config
 </span>  <span class='comment'># (loaded lazily on first sub-command dispatch, not at CLI load time —
 </span>  <span class='comment'># `doctor` deliberately runs without requiring a configured project).
+</span>  <span class='comment'>#
+</span>  <span class='comment'># @api private
 </span>  <span class='kw'>module</span> <span class='const'>CLI</span>
-    <span class='const'>SUB_COMMANDS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+    <span class='comment'># Internal constant.
+</span>    <span class='comment'># @api private
+</span>    <span class='const'>SUB_COMMANDS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
       <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>doctor</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Doctor</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
       <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache:info</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>CacheInfo</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
       <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache:clear</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>CacheClear</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
@@ -109,7 +113,9 @@
       <span class='int'>1</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_dispatch'>dispatch</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span><span class='comma'>,</span> <span class='label'>stderr:</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_dispatch'>dispatch</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span><span class='comma'>,</span> <span class='label'>stderr:</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_sub'>sub</span> <span class='op'>=</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_shift'>shift</span>
       <span class='id identifier rubyid_klass_name'>klass_name</span> <span class='op'>=</span> <span class='const'>SUB_COMMANDS</span><span class='lbracket'>[</span><span class='id identifier rubyid_sub'>sub</span><span class='rbracket'>]</span>
       <span class='kw'>return</span> <span class='id identifier rubyid_unknown_sub_command'>unknown_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_sub'>sub</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_klass_name'>klass_name</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -118,13 +124,17 @@
       <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/CLI.html" title="RSpecTracer::CLI (module)">CLI</a></span></span><span class='period'>.</span><span class='id identifier rubyid_const_get'>const_get</span><span class='lparen'>(</span><span class='id identifier rubyid_klass_name'>klass_name</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_unknown_sub_command'>unknown_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_sub'>sub</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_unknown_sub_command'>unknown_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_sub'>sub</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: unknown sub-command </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_sub'>sub</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
       <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>  available: </span><span class='embexpr_beg'>#{</span><span class='const'>SUB_COMMANDS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>, </span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
       <span class='int'>1</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_top_level_help'>print_top_level_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_top_level_help'>print_top_level_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
 <span class='tstring_content'>        Usage: rspec-tracer &lt;sub-command&gt; [options]
 </span><span class='tstring_content'>
@@ -144,12 +154,16 @@
 </span>      <span class='int'>0</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_version'>print_version</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_version'>print_version</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
       <span class='int'>0</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_load_sub_command'>load_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_klass_name'>klass_name</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_load_sub_command'>load_sub_command</span><span class='lparen'>(</span><span class='id identifier rubyid_klass_name'>klass_name</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_filename'>filename</span> <span class='op'>=</span> <span class='id identifier rubyid_klass_name'>klass_name</span><span class='period'>.</span><span class='id identifier rubyid_gsub'>gsub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>([A-Z])</span><span class='regexp_end'>/</span></span><span class='rparen'>)</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_m'>m</span><span class='op'>|</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_m'>m</span><span class='period'>.</span><span class='id identifier rubyid_downcase'>downcase</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>^_</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
       <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>cli/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_filename'>filename</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
     <span class='kw'>rescue</span> <span class='const'>LoadError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
@@ -163,7 +177,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:41 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

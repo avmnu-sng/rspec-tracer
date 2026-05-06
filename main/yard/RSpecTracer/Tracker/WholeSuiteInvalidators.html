@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::WholeSuiteInvalidators
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Observer #4 in the 2.0 tracker pipeline. Emits the binary
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Observer #4 in the 2.0 tracker pipeline. Emits the binary
 &quot;blow it all up&quot; signal that runs before any per-example
 filtering - when any watched file changes, the filter engine
 treats every example as affected.</p>
@@ -140,12 +144,38 @@ silently. Key-presence asymmetry is the invalidation signal
     <dl class="constants">
       
         <dt id="WATCH_FILES-constant" class="">WATCH_FILES =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='tstring_content'>Gemfile.lock</span><span class='words_sep'> </span><span class='tstring_content'>.ruby-version</span><span class='words_sep'> </span><span class='tstring_content'>.rspec-tracer</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="GEM_IDENTITY_KEY-constant" class="">GEM_IDENTITY_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer-gem</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
@@ -177,10 +207,10 @@ silently. Key-presence asymmetry is the invalidation signal
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute gem_version.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -204,10 +234,10 @@ silently. Key-presence asymmetry is the invalidation signal
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute root.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -239,7 +269,7 @@ silently. Key-presence asymmetry is the invalidation signal
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Fresh snapshot on every call - callers typically take one at boot (stored as the &quot;current&quot; snapshot) and compare against a previously-loaded snapshot (returned by the storage backend).</p></div></span>
@@ -263,10 +293,10 @@ silently. Key-presence asymmetry is the invalidation signal
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of WholeSuiteInvalidators.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -285,7 +315,7 @@ silently. Key-presence asymmetry is the invalidation signal
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>nil previous_snapshot = first-run case (no cache); treat as invalidated so the filter engine runs every example.</p></div></span>
@@ -311,7 +341,11 @@ silently. Key-presence asymmetry is the invalidation signal
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of WholeSuiteInvalidators.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -324,13 +358,13 @@ silently. Key-presence asymmetry is the invalidation signal
       <pre class="lines">
 
 
-39
-40
-41
-42</pre>
+49
+50
+51
+52</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 39</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 49</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>gem_version:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -359,7 +393,11 @@ silently. Key-presence asymmetry is the invalidation signal
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute gem_version.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -372,12 +410,12 @@ silently. Key-presence asymmetry is the invalidation signal
       <pre class="lines">
 
 
-37
-38
-39</pre>
+45
+46
+47</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 45</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_gem_version'>gem_version</span>
   <span class='ivar'>@gem_version</span>
@@ -400,7 +438,11 @@ silently. Key-presence asymmetry is the invalidation signal
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute root.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -413,12 +455,12 @@ silently. Key-presence asymmetry is the invalidation signal
       <pre class="lines">
 
 
-37
-38
-39</pre>
+45
+46
+47</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 45</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -446,7 +488,11 @@ silently. Key-presence asymmetry is the invalidation signal
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Fresh snapshot on every call - callers typically take one at
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Fresh snapshot on every call - callers typically take one at
 boot (stored as the &quot;current&quot; snapshot) and compare against a
 previously-loaded snapshot (returned by the storage backend).
 Unlike DeclaredGlobs.walk, this is not memoized: the caller
@@ -463,18 +509,18 @@ chooses when to sample.</p>
       <pre class="lines">
 
 
-49
-50
-51
-52
-53
-54
-55
-56
-57</pre>
+59
+60
+61
+62
+63
+64
+65
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 49</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 59</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span>
   <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -501,7 +547,11 @@ chooses when to sample.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>nil previous_snapshot = first-run case (no cache); treat as
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>nil previous_snapshot = first-run case (no cache); treat as
 invalidated so the filter engine runs every example. Any
 subsequent run with a stored snapshot compares value-equality
 across the whole Hash, which captures added/removed/changed
@@ -531,14 +581,14 @@ watch files in one check.</p>
       <pre class="lines">
 
 
-64
-65
-66
-67
-68</pre>
+74
+75
+76
+77
+78</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 64</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/whole_suite_invalidators.rb', line 74</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_invalidated?'>invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>true</span> <span class='kw'>if</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -555,7 +605,7 @@ watch files in one check.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

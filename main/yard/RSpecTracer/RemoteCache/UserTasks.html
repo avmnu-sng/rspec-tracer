@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::RemoteCache::UserTasks
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Orchestrator for the user-facing <code>rspec_tracer:remote_cache:*</code>
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Orchestrator for the user-facing <code>rspec_tracer:remote_cache:*</code>
 Rake tasks. Composes <code>GitAncestry</code> + a <code>Backend</code> implementation,
 drives the download (candidate-ref walk + first-valid wins) and
 upload (branch_ref + branch_refs update + retention prune) flows.</p>
@@ -134,7 +138,20 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
     <dl class="constants">
       
         <dt id="BUILT_IN_BACKENDS-constant" class="">BUILT_IN_BACKENDS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='lbrace'>{</span>
   <span class='label'>s3:</span> <span class='const'><span class='object_link'><a href="S3Backend.html" title="RSpecTracer::RemoteCache::S3Backend (class)">S3Backend</a></span></span><span class='comma'>,</span>
@@ -162,7 +179,7 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#download!-class_method" title="download! (class method)">.<strong>download!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; Object </a>
+      <a href="#download!-class_method" title="download! (class method)">.<strong>download!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; Boolean </a>
     
 
     
@@ -173,10 +190,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Module-level convenience for <span class='object_link'><a href="#download!-instance_method" title="RSpecTracer::RemoteCache::UserTasks#download! (method)">#download!</a></span>.</p></div></span>
   
 </li>
 
@@ -195,10 +212,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -217,10 +234,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -228,7 +245,7 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#upload!-class_method" title="upload! (class method)">.<strong>upload!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; Object </a>
+      <a href="#upload!-class_method" title="upload! (class method)">.<strong>upload!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; Boolean </a>
     
 
     
@@ -239,10 +256,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Module-level convenience for <span class='object_link'><a href="#upload!-instance_method" title="RSpecTracer::RemoteCache::UserTasks#upload! (method)">#upload!</a></span>.</p></div></span>
   
 </li>
 
@@ -260,7 +277,7 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#download!-instance_method" title="#download! (instance method)">#<strong>download!</strong>  &#x21d2; Object </a>
+      <a href="#download!-instance_method" title="#download! (instance method)">#<strong>download!</strong>  &#x21d2; Boolean </a>
     
 
     
@@ -271,10 +288,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Pull the closest matching cache for the current branch + commit ancestry from the configured backend.</p></div></span>
   
 </li>
 
@@ -295,10 +312,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of UserTasks.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -317,7 +334,7 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Cross-tier PR-branch prune.</p></div></span>
@@ -328,7 +345,7 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#upload!-instance_method" title="#upload! (instance method)">#<strong>upload!</strong>  &#x21d2; Object </a>
+      <a href="#upload!-instance_method" title="#upload! (instance method)">#<strong>upload!</strong>  &#x21d2; Boolean </a>
     
 
     
@@ -339,10 +356,10 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Push the local cache directory for the current branch + commit to the configured backend, refresh the per-branch ref index, and apply retention pruning.</p></div></span>
   
 </li>
 
@@ -365,7 +382,11 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of UserTasks.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -378,14 +399,14 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
       <pre class="lines">
 
 
-54
-55
-56
-57
-58</pre>
+87
+88
+89
+90
+91</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 54</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 87</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>configuration:</span><span class='comma'>,</span> <span class='label'>env:</span><span class='rparen'>)</span>
   <span class='ivar'>@config</span> <span class='op'>=</span> <span class='id identifier rubyid_configuration'>configuration</span>
@@ -407,24 +428,96 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
       <div class="method_details first">
   <h3 class="signature first" id="download!-class_method">
   
-    .<strong>download!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; <tt>Object</tt> 
+    .<strong>download!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; <tt>Boolean</tt> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Module-level convenience for <span class='object_link'><a href="#download!-instance_method" title="RSpecTracer::RemoteCache::UserTasks#download! (method)">#download!</a></span>. Equivalent to
+<code>UserTasks.new(configuration: ..., env: ...).download!</code>. Invoked
+by the bundled <code>rspec_tracer/remote_cache/Rakefile</code> shim that
+users <code>import</code> from their own <code>Rakefile</code>.</p>
+
+  </div>
+</div>
+<div class="tags">
+  <p class="tag_title">Parameters:</p>
+<ul class="param">
+  
+    <li>
+      
+        <span class='name'>configuration</span>
+      
+      
+        <span class='type'>(<tt>Object</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>RSpecTracer</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>anything responding to the
+<code>cache_path</code> / <code>logger</code> / <code>remote_cache_*</code> config surface
+(defaults to the <span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> top-level module).</p></div>
+      
+    </li>
+  
+    <li>
+      
+        <span class='name'>env</span>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>ENV</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>env hash to read <code>GIT_BRANCH</code> /
+<code>GIT_DEFAULT_BRANCH</code> from (defaults to <code>ENV</code>).</p></div>
+      
+    </li>
+  
+</ul>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>true on a successful cache hit, false on cold
+run or graceful failure.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+54
+55
+56</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 54</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_download!'>download!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_download!'>download!</span>
@@ -445,7 +538,11 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
 
   </div>
 </div>
@@ -471,12 +568,12 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
       <pre class="lines">
 
 
-50
-51
-52</pre>
+81
+82
+83</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 50</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 81</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_git_repo?'>git_repo?</span>
   <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>git</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rev-parse</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>HEAD</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
@@ -495,18 +592,31 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-46
-47
-48</pre>
+75
+76
+77</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 46</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 75</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span>
@@ -519,24 +629,95 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
       <div class="method_details ">
   <h3 class="signature " id="upload!-class_method">
   
-    .<strong>upload!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; <tt>Object</tt> 
+    .<strong>upload!</strong>(configuration: RSpecTracer, env: ENV)  &#x21d2; <tt>Boolean</tt> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Module-level convenience for <span class='object_link'><a href="#upload!-instance_method" title="RSpecTracer::RemoteCache::UserTasks#upload! (method)">#upload!</a></span>. Equivalent to
+<code>UserTasks.new(configuration: ..., env: ...).upload!</code>. Invoked
+by the bundled <code>rspec_tracer/remote_cache/Rakefile</code> shim.</p>
+
+  </div>
+</div>
+<div class="tags">
+  <p class="tag_title">Parameters:</p>
+<ul class="param">
+  
+    <li>
+      
+        <span class='name'>configuration</span>
+      
+      
+        <span class='type'>(<tt>Object</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>RSpecTracer</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>anything responding to the
+<code>cache_path</code> / <code>logger</code> / <code>remote_cache_*</code> config surface
+(defaults to the <span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> top-level module).</p></div>
+      
+    </li>
+  
+    <li>
+      
+        <span class='name'>env</span>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>ENV</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>env hash to read <code>GIT_BRANCH</code> /
+<code>GIT_DEFAULT_BRANCH</code> from (defaults to <code>ENV</code>).</p></div>
+      
+    </li>
+  
+</ul>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>true on a successful upload, false on
+graceful failure (logged but not raised).</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-42
-43
-44</pre>
+69
+70
+71</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 42</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 69</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_upload!'>upload!</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span> <span class='label'>env:</span> <span class='const'>ENV</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='comma'>,</span> <span class='label'>env:</span> <span class='id identifier rubyid_env'>env</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_upload!'>upload!</span>
@@ -555,44 +736,91 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
       <div class="method_details first">
   <h3 class="signature first" id="download!-instance_method">
   
-    #<strong>download!</strong>  &#x21d2; <tt>Object</tt> 
+    #<strong>download!</strong>  &#x21d2; <tt>Boolean</tt> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Pull the closest matching cache for the current branch + commit
+ancestry from the configured backend. Walks the candidate refs
+produced by <span class='object_link'><a href="GitAncestry.html" title="RSpecTracer::RemoteCache::GitAncestry (class)">GitAncestry</a></span>, downloads + extracts the first ref
+whose archive validates, and returns true. Cold-run on miss.</p>
+<p>Errors are caught and logged; a failed download never propagates
+a non-zero exit into the test suite (graceful degradation).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+  <div class="examples">
+    <h4 class="tag_title">Examples:</h4>
+    
+      
+        <h5 class="example_title"><div class='inline'><p>In a Rakefile</p></div></h5>
+      
+      <pre class="example code"><code><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/remote_cache/Rakefile</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'># provides `rake rspec_tracer:remote_cache:download` which
+</span><span class='comment'># invokes RSpecTracer::RemoteCache::UserTasks.download!</span></code></pre>
+    
+  </div>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>true on a successful download, false on cold
+run / graceful failure.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-60
-61
-62
-63
-64
-65
-66
-67
-68
-69
-70
-71
-72
-73
-74
-75
-76
-77
-78
-79
-80
-81
-82</pre>
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 60</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 108</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_download!'>download!</span>
   <span class='id identifier rubyid_ancestry'>ancestry</span> <span class='op'>=</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
@@ -633,7 +861,11 @@ the tests already passed; cache miss is recoverable next run.</code></pre>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Cross-tier PR-branch prune. Walks every branch under the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Cross-tier PR-branch prune. Walks every branch under the
 configured prefix and deletes whole branches idle longer than
 <code>cache_retention_pr_branch_ttl_seconds</code>. Designed as a periodic
 maintenance task (nightly cron) - dead PR branches whose tip is
@@ -653,24 +885,24 @@ failure.</p>
       <pre class="lines">
 
 
-107
-108
-109
-110
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120
-121</pre>
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 107</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 168</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span>
   <span class='id identifier rubyid_ttl'>ttl</span> <span class='op'>=</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='symbol'>:cache_retention_pr_branch_ttl_seconds</span><span class='rparen'>)</span>
@@ -695,35 +927,80 @@ failure.</p>
       <div class="method_details ">
   <h3 class="signature " id="upload!-instance_method">
   
-    #<strong>upload!</strong>  &#x21d2; <tt>Object</tt> 
+    #<strong>upload!</strong>  &#x21d2; <tt>Boolean</tt> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Push the local cache directory for the current branch + commit
+to the configured backend, refresh the per-branch ref index, and
+apply retention pruning.</p>
+<p>Errors are caught and logged; a failed upload never propagates
+non-zero into the test suite (the tests already passed).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+  <div class="examples">
+    <h4 class="tag_title">Examples:</h4>
+    
+      
+        <h5 class="example_title"><div class='inline'><p>In a Rakefile</p></div></h5>
+      
+      <pre class="example code"><code><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/remote_cache/Rakefile</span><span class='tstring_end'>&#39;</span></span>
+<span class='comment'># provides `rake rspec_tracer:remote_cache:upload` which
+</span><span class='comment'># invokes RSpecTracer::RemoteCache::UserTasks.upload!</span></code></pre>
+    
+  </div>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>true on success, false on graceful failure.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-94
-95
-96
-97</pre>
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 84</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 145</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_upload!'>upload!</span>
   <span class='id identifier rubyid_ancestry'>ancestry</span> <span class='op'>=</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
@@ -749,7 +1026,7 @@ failure.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

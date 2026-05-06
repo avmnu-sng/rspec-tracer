@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::Tracker::FileDigest
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Process-wide SHA256 file-digest cache. Keyed on absolute path
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Process-wide SHA256 file-digest cache. Keyed on absolute path
 with [mtime_ns, size] as the freshness check — when the file's
 stat timestamps + size match the cached values, the prior
 digest is reused; otherwise the digest is recomputed and the
@@ -140,7 +144,7 @@ with the rest of the tracer's threading model).</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Returns the SHA256 hex digest of <code>path</code>, or nil when the file can't be stat'd (missing / permission denied / racey delete).</p></div></span>
@@ -162,7 +166,7 @@ with the rest of the tracer's threading model).</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Drop the cache.</p></div></span>
@@ -191,7 +195,11 @@ with the rest of the tracer's threading model).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the SHA256 hex digest of <code>path</code>, or nil when the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Returns the SHA256 hex digest of <code>path</code>, or nil when the
 file can't be stat'd (missing / permission denied / racey
 delete). Subsequent calls for the same path with unchanged
 stat skip the digest computation entirely.</p>
@@ -207,8 +215,6 @@ stat skip the digest computation entirely.</p>
       <pre class="lines">
 
 
-33
-34
 35
 36
 37
@@ -220,10 +226,12 @@ stat skip the digest computation entirely.</p>
 43
 44
 45
-46</pre>
+46
+47
+48</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/file_digest.rb', line 33</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/file_digest.rb', line 35</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_compute'>compute</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stat'>stat</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_stat'>stat</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
@@ -255,7 +263,11 @@ stat skip the digest computation entirely.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Drop the cache. Tests that mutate file content in-place at
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Drop the cache. Tests that mutate file content in-place at
 nanosecond granularity (and so might collide on the
 mtime+size key) should call this between scenarios. Normal
 tracer runs never need it — the cache lives for one
@@ -272,12 +284,12 @@ rspec invocation only.</p>
       <pre class="lines">
 
 
-53
-54
-55</pre>
+55
+56
+57</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/file_digest.rb', line 53</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/file_digest.rb', line 55</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_reset!'>reset!</span>
   <span class='ivar'>@cache</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -292,7 +304,7 @@ rspec invocation only.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

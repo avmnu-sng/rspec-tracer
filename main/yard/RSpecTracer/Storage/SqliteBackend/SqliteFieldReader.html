@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Storage::SqliteBackend::SqliteFieldReader
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Binds a SqliteBackend so LazySnapshot readers can dispatch
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Binds a SqliteBackend so LazySnapshot readers can dispatch
 one field at a time without threading a connection through.</p>
 
   </div>
@@ -143,10 +147,10 @@ one field at a time without threading a connection through.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of SqliteFieldReader.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -165,10 +169,10 @@ one field at a time without threading a connection through.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -191,7 +195,11 @@ one field at a time without threading a connection through.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of SqliteFieldReader.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -204,12 +212,12 @@ one field at a time without threading a connection through.</p>
       <pre class="lines">
 
 
-105
-106
-107</pre>
+119
+120
+121</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 105</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 119</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>backend:</span><span class='rparen'>)</span>
   <span class='ivar'>@backend</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span>
@@ -235,18 +243,31 @@ one field at a time without threading a connection through.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-109
-110
-111</pre>
+125
+126
+127</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 109</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 125</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='ivar'>@backend</span><span class='period'>.</span><span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
@@ -261,7 +282,7 @@ one field at a time without threading a connection through.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

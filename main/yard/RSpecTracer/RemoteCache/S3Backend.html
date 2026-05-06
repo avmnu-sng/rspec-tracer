@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::RemoteCache::S3Backend
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>S3 implementation of <code>RemoteCache::Backend</code>. Shells out to the
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>S3 implementation of <code>RemoteCache::Backend</code>. Shells out to the
 <code>aws</code> / <code>awslocal</code> CLI for every operation - matches 1.x's
 behavior and avoids pulling <code>aws-sdk-s3</code> into the gem's runtime
 deps. Users on 1.x already have <code>aws</code> on PATH per the documented
@@ -176,37 +180,128 @@ rubocop:disable Metrics/ClassLength</p>
     <dl class="constants">
       
         <dt id="MAIN_TIER-constant" class="">MAIN_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>main</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="PR_TIER-constant" class="">PR_TIER =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pr</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="BRANCH_REFS_FILENAME-constant" class="">BRANCH_REFS_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>branch_refs.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="LAST_RUN_FILENAME-constant" class="">LAST_RUN_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="CACHE_ARCHIVE_FILENAME-constant" class="">CACHE_ARCHIVE_FILENAME =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='const'><span class='object_link'><a href="Archive.html" title="RSpecTracer::RemoteCache::Archive (module)">Archive</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="Archive.html#CACHE_FILENAME-constant" title="RSpecTracer::RemoteCache::Archive::CACHE_FILENAME (constant)">CACHE_FILENAME</a></span></span></pre></dd>
       
         <dt id="ENCODING-constant" class="">ENCODING =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
       
         <dt id="REQUIRED_OPTS-constant" class="">REQUIRED_OPTS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>bucket</span><span class='words_sep'> </span><span class='tstring_content'>prefix</span><span class='words_sep'> </span><span class='tstring_content'>branch</span><span class='words_sep'> </span><span class='tstring_content'>default_branch</span><span class='words_sep'> </span><span class='tstring_content'>cache_path</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
@@ -241,7 +336,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Read branch_refs for the given branch.</p></div></span>
@@ -263,7 +358,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Download the cache for <code>ref</code> into <code>cache_path</code>.</p></div></span>
@@ -287,7 +382,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>rubocop:disable Metrics/ParameterLists.</p></div></span>
@@ -309,7 +404,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Apply retention policy to the backend's own tier.</p></div></span>
@@ -331,7 +426,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Cross-tier PR-branch cleanup.</p></div></span>
@@ -353,7 +448,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Check whether the backend's own tier has accumulated more than <code>warn_threshold</code> refs without retention configured.</p></div></span>
@@ -375,7 +470,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Upload the local cache to this backend's own tier under <code>ref</code>.</p></div></span>
@@ -397,7 +492,7 @@ rubocop:disable Metrics/ClassLength</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Persist branch_refs for the given branch.</p></div></span>
@@ -423,7 +518,11 @@ rubocop:disable Metrics/ClassLength</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>rubocop:disable Metrics/ParameterLists</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Metrics/ParameterLists</p>
 
   </div>
 </div>
@@ -436,23 +535,23 @@ rubocop:disable Metrics/ClassLength</p>
       <pre class="lines">
 
 
-79
-80
-81
-82
-83
-84
-85
-86
-87
-88
-89
-90
-91
-92</pre>
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 79</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 97</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>bucket:</span><span class='comma'>,</span> <span class='label'>prefix:</span><span class='comma'>,</span> <span class='label'>branch:</span><span class='comma'>,</span> <span class='label'>default_branch:</span><span class='comma'>,</span>
                <span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>test_suite_id:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>local:</span> <span class='kw'>false</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
@@ -491,7 +590,11 @@ rubocop:disable Metrics/ClassLength</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Read branch_refs for the given branch. Returns <code>{sha =&gt; ts_epoch}</code>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read branch_refs for the given branch. Returns <code>{sha =&gt; ts_epoch}</code>
 or <code>{}</code> when the file is missing / malformed. PR tier only -
 main branch doesn't track branch_refs (rewrites not expected on
 the default branch).</p>
@@ -507,26 +610,26 @@ the default branch).</p>
       <pre class="lines">
 
 
-148
-149
-150
-151
-152
-153
-154
-155
-156
-157
-158
-159
-160
-161
-162
-163
-164</pre>
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 148</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 166</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -561,7 +664,11 @@ the default branch).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Download the cache for <code>ref</code> into <code>cache_path</code>. Tries the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Download the cache for <code>ref</code> into <code>cache_path</code>. Tries the
 backend's own tier first; on miss, falls back to the main tier
 for the same ref. Validates the downloaded <code>last_run.json</code> via
 schema_version before declaring success.</p>
@@ -587,15 +694,15 @@ load doesn't see stale data.</p>
       <pre class="lines">
 
 
-111
-112
-113
-114
-115
-116</pre>
+129
+130
+131
+132
+133
+134</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 111</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 129</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_ref'>ref</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_ref'>ref</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -619,7 +726,11 @@ load doesn't see stale data.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Apply retention policy to the backend's own tier. Returns the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Apply retention policy to the backend's own tier. Returns the
 number of refs removed. Never raises on a partial failure; logs
 and returns the count it managed to delete.</p>
 <p>Semantics:</p>
@@ -644,16 +755,16 @@ All nil/0 =&gt; no-op.</p>
       <pre class="lines">
 
 
-200
-201
-202
-203
-204
-205
-206</pre>
+218
+219
+220
+221
+222
+223
+224</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 200</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 218</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune!'>prune!</span><span class='lparen'>(</span><span class='label'>count:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>duration_seconds:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_removed'>removed</span> <span class='op'>=</span> <span class='int'>0</span>
@@ -678,7 +789,11 @@ All nil/0 =&gt; no-op.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Cross-tier PR-branch cleanup. Enumerates every PR branch under
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Cross-tier PR-branch cleanup. Enumerates every PR branch under
 the configured prefix by listing the <code>pr/</code> subtree, applies the
 TTL to each branch, deletes dead branches whole. Returns total
 refs removed. No-op on nil / non-positive TTL. Never raises
@@ -695,19 +810,19 @@ refs removed. No-op on nil / non-positive TTL. Never raises
       <pre class="lines">
 
 
-213
-214
-215
-216
-217
-218
-219
-220
-221
-222</pre>
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 213</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 231</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>unless</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
@@ -735,7 +850,11 @@ refs removed. No-op on nil / non-positive TTL. Never raises
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Check whether the backend's own tier has accumulated more than
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Check whether the backend's own tier has accumulated more than
 <code>warn_threshold</code> refs without retention configured. Callable
 from orchestrator for the &quot;S3 growing unbounded&quot; diagnostic.</p>
 
@@ -750,16 +869,16 @@ from orchestrator for the &quot;S3 growing unbounded&quot; diagnostic.</p>
       <pre class="lines">
 
 
-227
-228
-229
-230
-231
-232
-233</pre>
+245
+246
+247
+248
+249
+250
+251</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 227</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 245</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_unbounded_warning'>unbounded_warning</span><span class='lparen'>(</span><span class='label'>warn_threshold:</span> <span class='int'>500</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_refs'>refs</span> <span class='op'>=</span> <span class='id identifier rubyid_list_own_tier_refs'>list_own_tier_refs</span>
@@ -784,7 +903,11 @@ from orchestrator for the &quot;S3 growing unbounded&quot; diagnostic.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Upload the local cache to this backend's own tier under <code>ref</code>.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Upload the local cache to this backend's own tier under <code>ref</code>.
 Packs the 15-file local layout into a single <code>cache.tar.gz</code> and
 uploads that one object. Raises on wire failure. Idempotent.</p>
 <p>When <code>tree_sha</code> is provided, ALSO writes a small pointer file
@@ -817,25 +940,25 @@ the same tree.</p>
       <pre class="lines">
 
 
-127
-128
-129
-130
-131
-132
-133
-134
-135
-136
-137
-138
-139
-140
-141
-142</pre>
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 127</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 145</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_upload'>upload</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ref is required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='rparen'>)</span>
@@ -869,7 +992,11 @@ the same tree.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Persist branch_refs for the given branch. No-op for main-branch
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Persist branch_refs for the given branch. No-op for main-branch
 writes (main-branch doesn't use branch_refs). Raises on wire
 failure for PR tier.</p>
 
@@ -884,25 +1011,25 @@ failure for PR tier.</p>
       <pre class="lines">
 
 
-169
-170
-171
-172
-173
-174
-175
-176
-177
-178
-179
-180
-181
-182
-183
-184</pre>
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 169</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 187</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_write_branch_refs'>write_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='comma'>,</span> <span class='id identifier rubyid_refs'>refs</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
@@ -930,7 +1057,7 @@ failure for PR tier.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

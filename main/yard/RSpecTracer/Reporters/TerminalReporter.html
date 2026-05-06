@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Reporters::TerminalReporter
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -106,7 +106,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Concise stdout summary printed at finalize-time. Output is
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Concise stdout summary printed at finalize-time. Output is
 capped at 4 lines for a typical run (5 when duplicate /
 interrupted / flaky / pending counters are non-zero). Kind-less
 taxonomy by design - the in-memory Input#kind enum does not
@@ -148,7 +152,7 @@ yellow on pending-only, green otherwise.</code></pre>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#generate-instance_method" title="#generate (instance method)">#<strong>generate</strong>  &#x21d2; Object </a>
+      <a href="#generate-instance_method" title="#generate (instance method)">#<strong>generate</strong>  &#x21d2; Array&lt;String&gt;<sup>?</sup> </a>
     
 
     
@@ -159,10 +163,10 @@ yellow on pending-only, green otherwise.</code></pre>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.</p></div></span>
   
 </li>
 
@@ -198,29 +202,60 @@ yellow on pending-only, green otherwise.</code></pre>
       <div class="method_details first">
   <h3 class="signature first" id="generate-instance_method">
   
-    #<strong>generate</strong>  &#x21d2; <tt>Object</tt> 
+    #<strong>generate</strong>  &#x21d2; <tt>Array&lt;String&gt;</tt><sup>?</sup> 
   
 
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.
+Prints a per-run summary to the configured output stream.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Array&lt;String&gt;</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>the lines emitted, or nil when the
+run had no examples worth reporting.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-52
-53
-54
-55
-56
-57
-58
-59</pre>
+63
+64
+65
+66
+67
+68
+69
+70</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/terminal_reporter.rb', line 52</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/terminal_reporter.rb', line 63</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
@@ -240,7 +275,7 @@ yellow on pending-only, green otherwise.</code></pre>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

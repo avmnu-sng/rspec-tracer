@@ -64,7 +64,9 @@
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Tracker</span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
     <span class='comment'># Closed taxonomy of input sources. The kinds correspond to the
 </span>    <span class='comment'># observation surface: `:ruby` (Coverage-observed source), `:data`
 </span>    <span class='comment'># (I/O hooks), `:declared` / `:lockfile` (declared globs), `:env`
@@ -99,8 +101,12 @@
 </span>    <span class='comment'># singleton and mutant reports Subjects: 0 for them.
 </span>    <span class='const'>Input</span> <span class='op'>=</span> <span class='const'>Struct</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='symbol'>:path</span><span class='comma'>,</span> <span class='symbol'>:kind</span><span class='comma'>,</span> <span class='symbol'>:digest</span><span class='comma'>,</span> <span class='symbol'>:identity</span><span class='comma'>,</span> <span class='label'>keyword_init:</span> <span class='kw'>true</span><span class='rparen'>)</span>
 
-    <span class='kw'>class</span> <span class='const'>Input</span>
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span><span class='comma'>,</span> <span class='label'>kind:</span><span class='comma'>,</span> <span class='label'>digest:</span><span class='comma'>,</span> <span class='label'>root:</span><span class='rparen'>)</span>
+    <span class='comment'># Internal Input — see {RSpecTracer} for the user-facing surface.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>class</span> <span class='const'>Input</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span><span class='comma'>,</span> <span class='label'>kind:</span><span class='comma'>,</span> <span class='label'>digest:</span><span class='comma'>,</span> <span class='label'>root:</span><span class='rparen'>)</span>
         <span class='kw'>unless</span> <span class='const'>ALLOWED_INPUT_KINDS</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_kind'>kind</span><span class='rparen'>)</span>
           <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span>
                 <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>invalid Input kind: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_kind'>kind</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>; </span><span class='tstring_end'>&quot;</span></span> \
@@ -144,7 +150,9 @@
 
       <span class='kw'>alias</span> <span class='id identifier rubyid_eql?'>eql?</span> <span class='op'>==</span>
 
-      <span class='kw'>def</span> <span class='id identifier rubyid_hash'>hash</span>
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_hash'>hash</span>
         <span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_hash'>hash</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -152,7 +160,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

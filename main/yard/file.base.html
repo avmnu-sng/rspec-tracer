@@ -62,7 +62,11 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Reporters</span>
+  <span class='comment'># Reporters subsystem. Houses the default reporters (terminal,
+</span>  <span class='comment'># JSON, HTML, coverage.json) plus the protocol class
+</span>  <span class='comment'># ({Base}) that users subclass when shipping custom reporters
+</span>  <span class='comment'># via `add_reporter MyReporter`.
+</span>  <span class='kw'>module</span> <span class='const'>Reporters</span>
     <span class='comment'># Abstract base for every reporter rspec-tracer ships. Takes the
 </span>    <span class='comment'># finalized Storage::Snapshot + report_dir + run_metadata triplet
 </span>    <span class='comment'># (architectural decision (b), Option X - raw Snapshot, no
@@ -96,7 +100,12 @@
 </span>    <span class='comment'>#     add_reporter MyReporter, my_option: true
 </span>    <span class='comment'>#   end
 </span>    <span class='kw'>class</span> <span class='const'>Base</span>
-      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:snapshot</span><span class='comma'>,</span> <span class='symbol'>:report_dir</span><span class='comma'>,</span> <span class='symbol'>:run_metadata</span><span class='comma'>,</span> <span class='symbol'>:logger</span><span class='comma'>,</span> <span class='symbol'>:options</span>
+      <span class='comment'># @return [RSpecTracer::Storage::Snapshot, nil] finalized run snapshot.
+</span>      <span class='comment'># @return [String] absolute report directory.
+</span>      <span class='comment'># @return [Hash] run_metadata hash (pid / run_time / etc).
+</span>      <span class='comment'># @return [#info, #warn, nil] tracer logger.
+</span>      <span class='comment'># @return [Hash] reporter-specific options.
+</span>      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:snapshot</span><span class='comma'>,</span> <span class='symbol'>:report_dir</span><span class='comma'>,</span> <span class='symbol'>:run_metadata</span><span class='comma'>,</span> <span class='symbol'>:logger</span><span class='comma'>,</span> <span class='symbol'>:options</span>
 
       <span class='comment'># @param snapshot [RSpecTracer::Storage::Snapshot] the finalized
 </span>      <span class='comment'>#   per-run snapshot (`nil` only on early-abort paths)
@@ -139,7 +148,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

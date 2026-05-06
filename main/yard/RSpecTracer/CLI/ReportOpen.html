@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::CLI::ReportOpen
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p><code>rspec-tracer report:open</code> — open the HTML report in the default
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p><code>rspec-tracer report:open</code> — open the HTML report in the default
 browser. Resolves <code>report_path/index.html</code> and dispatches via
 <code>open</code> (macOS) / <code>xdg-open</code> (Linux). Falls back to printing the
 path when no opener is available.</p>
@@ -127,7 +131,7 @@ path when no opener is available.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Returns the opener binary name on PATH, or nil.</p></div></span>
@@ -149,10 +153,10 @@ path when no opener is available.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -171,7 +175,7 @@ path when no opener is available.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Exit status (0 = opened or path printed, 1 = report missing).</p></div></span>
@@ -193,10 +197,10 @@ path when no opener is available.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -222,7 +226,11 @@ path when no opener is available.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the opener binary name on PATH, or nil. Checked in
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Returns the opener binary name on PATH, or nil. Checked in
 priority order: macOS <code>open</code>, then Linux <code>xdg-open</code>. Windows
 is unsupported per <code>COMPATIBILITY_MATRIX.md</code>'s explicit drop;
 users on Windows see the print-the-path fallback.</p>
@@ -238,12 +246,12 @@ users on Windows see the print-the-path fallback.</p>
       <pre class="lines">
 
 
-63
-64
-65</pre>
+67
+68
+69</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 63</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 67</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_detect_opener'>detect_opener</span>
   <span class='qwords_beg'>%w[</span><span class='tstring_content'>open</span><span class='words_sep'> </span><span class='tstring_content'>xdg-open</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_find'>find</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_bin'>bin</span><span class='op'>|</span> <span class='id identifier rubyid_which'>which</span><span class='lparen'>(</span><span class='id identifier rubyid_bin'>bin</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
@@ -262,25 +270,38 @@ users on Windows see the print-the-path fallback.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-48
-49
-50
-51
 52
 53
 54
 55
 56
-57</pre>
+57
+58
+59
+60
+61</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 48</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 52</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
@@ -308,7 +329,11 @@ users on Windows see the print-the-path fallback.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns exit status (0 = opened or path printed,
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Returns exit status (0 = opened or path printed,
 1 = report missing).</p>
 
   </div>
@@ -383,8 +408,6 @@ users on Windows see the print-the-path fallback.</p>
       <pre class="lines">
 
 
-15
-16
 17
 18
 19
@@ -414,10 +437,12 @@ users on Windows see the print-the-path fallback.</p>
 43
 44
 45
-46</pre>
+46
+47
+48</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 15</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 17</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-h</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--help</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -465,22 +490,35 @@ users on Windows see the print-the-path fallback.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-67
-68
-69
-70
-71
-72
-73</pre>
+73
+74
+75
+76
+77
+78
+79</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 67</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 73</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_which'>which</span><span class='lparen'>(</span><span class='id identifier rubyid_binary'>binary</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_found'>found</span> <span class='op'>=</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PATH</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_split'>split</span><span class='lparen'>(</span><span class='const'>File</span><span class='op'>::</span><span class='const'>PATH_SEPARATOR</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_dir'>dir</span><span class='op'>|</span>
@@ -499,7 +537,7 @@ users on Windows see the print-the-path fallback.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

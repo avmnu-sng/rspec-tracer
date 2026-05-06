@@ -161,7 +161,7 @@ Storage backends per ARCHITECTURE.md).</p>
       <li class="public ">
   <span class="summary_signature">
     
-      <a href="#logger-instance_method" title="#logger (instance method)">#<strong>logger</strong>  &#x21d2; Object </a>
+      <a href="#logger-instance_method" title="#logger (instance method)">#<strong>logger</strong>  &#x21d2; RSpecTracer::Storage::Snapshot, ... </a>
     
 
     
@@ -180,7 +180,7 @@ Storage backends per ARCHITECTURE.md).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute logger.</p></div></span>
+    <span class="summary_desc"><div class='inline'></div></span>
   
 </li>
 
@@ -188,7 +188,7 @@ Storage backends per ARCHITECTURE.md).</p>
       <li class="public ">
   <span class="summary_signature">
     
-      <a href="#options-instance_method" title="#options (instance method)">#<strong>options</strong>  &#x21d2; Object </a>
+      <a href="#options-instance_method" title="#options (instance method)">#<strong>options</strong>  &#x21d2; RSpecTracer::Storage::Snapshot, ... </a>
     
 
     
@@ -207,7 +207,7 @@ Storage backends per ARCHITECTURE.md).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute options.</p></div></span>
+    <span class="summary_desc"><div class='inline'></div></span>
   
 </li>
 
@@ -215,7 +215,7 @@ Storage backends per ARCHITECTURE.md).</p>
       <li class="public ">
   <span class="summary_signature">
     
-      <a href="#report_dir-instance_method" title="#report_dir (instance method)">#<strong>report_dir</strong>  &#x21d2; Object </a>
+      <a href="#report_dir-instance_method" title="#report_dir (instance method)">#<strong>report_dir</strong>  &#x21d2; RSpecTracer::Storage::Snapshot, ... </a>
     
 
     
@@ -234,7 +234,7 @@ Storage backends per ARCHITECTURE.md).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute report_dir.</p></div></span>
+    <span class="summary_desc"><div class='inline'></div></span>
   
 </li>
 
@@ -242,7 +242,7 @@ Storage backends per ARCHITECTURE.md).</p>
       <li class="public ">
   <span class="summary_signature">
     
-      <a href="#run_metadata-instance_method" title="#run_metadata (instance method)">#<strong>run_metadata</strong>  &#x21d2; Object </a>
+      <a href="#run_metadata-instance_method" title="#run_metadata (instance method)">#<strong>run_metadata</strong>  &#x21d2; RSpecTracer::Storage::Snapshot, ... </a>
     
 
     
@@ -261,7 +261,7 @@ Storage backends per ARCHITECTURE.md).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute run_metadata.</p></div></span>
+    <span class="summary_desc"><div class='inline'></div></span>
   
 </li>
 
@@ -269,7 +269,7 @@ Storage backends per ARCHITECTURE.md).</p>
       <li class="public ">
   <span class="summary_signature">
     
-      <a href="#snapshot-instance_method" title="#snapshot (instance method)">#<strong>snapshot</strong>  &#x21d2; Object </a>
+      <a href="#snapshot-instance_method" title="#snapshot (instance method)">#<strong>snapshot</strong>  &#x21d2; RSpecTracer::Storage::Snapshot, ... </a>
     
 
     
@@ -288,7 +288,7 @@ Storage backends per ARCHITECTURE.md).</p>
   
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute snapshot.</p></div></span>
+    <span class="summary_desc"><div class='inline'></div></span>
   
 </li>
 
@@ -485,16 +485,16 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-49
-50
-51
-52
-53
-54
-55</pre>
+58
+59
+60
+61
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 49</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 58</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>snapshot:</span><span class='comma'>,</span> <span class='label'>report_dir:</span><span class='comma'>,</span> <span class='label'>run_metadata:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_options'>options</span><span class='rparen'>)</span>
   <span class='ivar'>@snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span>
@@ -518,7 +518,7 @@ cache_path / parallel_tests / rails flags</p></div>
       <div class="method_details first">
   <h3 class="signature first" id="logger-instance_method">
   
-    #<strong>logger</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+    #<strong>logger</strong>  &#x21d2; <tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, ...  <span class="extras">(readonly)</span>
   
 
   
@@ -526,12 +526,76 @@ cache_path / parallel_tests / rails flags</p></div>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute logger.</p>
+    
 
   </div>
 </div>
 <div class="tags">
   
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>finalized run snapshot.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute report directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>run_metadata hash (pid / run_time / etc).</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>#info</tt>, <tt>#warn</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>tracer logger.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>reporter-specific options.</p></div>
+      
+    </li>
+  
+</ul>
 
 </div><table class="source_code">
   <tr>
@@ -539,12 +603,12 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 47</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_logger'>logger</span>
   <span class='ivar'>@logger</span>
@@ -559,7 +623,7 @@ cache_path / parallel_tests / rails flags</p></div>
       <div class="method_details ">
   <h3 class="signature " id="options-instance_method">
   
-    #<strong>options</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+    #<strong>options</strong>  &#x21d2; <tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, ...  <span class="extras">(readonly)</span>
   
 
   
@@ -567,12 +631,76 @@ cache_path / parallel_tests / rails flags</p></div>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute options.</p>
+    
 
   </div>
 </div>
 <div class="tags">
   
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>finalized run snapshot.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute report directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>run_metadata hash (pid / run_time / etc).</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>#info</tt>, <tt>#warn</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>tracer logger.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>reporter-specific options.</p></div>
+      
+    </li>
+  
+</ul>
 
 </div><table class="source_code">
   <tr>
@@ -580,12 +708,12 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 47</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_options'>options</span>
   <span class='ivar'>@options</span>
@@ -600,7 +728,7 @@ cache_path / parallel_tests / rails flags</p></div>
       <div class="method_details ">
   <h3 class="signature " id="report_dir-instance_method">
   
-    #<strong>report_dir</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+    #<strong>report_dir</strong>  &#x21d2; <tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, ...  <span class="extras">(readonly)</span>
   
 
   
@@ -608,12 +736,76 @@ cache_path / parallel_tests / rails flags</p></div>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute report_dir.</p>
+    
 
   </div>
 </div>
 <div class="tags">
   
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>finalized run snapshot.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute report directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>run_metadata hash (pid / run_time / etc).</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>#info</tt>, <tt>#warn</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>tracer logger.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>reporter-specific options.</p></div>
+      
+    </li>
+  
+</ul>
 
 </div><table class="source_code">
   <tr>
@@ -621,12 +813,12 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 47</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_report_dir'>report_dir</span>
   <span class='ivar'>@report_dir</span>
@@ -641,7 +833,7 @@ cache_path / parallel_tests / rails flags</p></div>
       <div class="method_details ">
   <h3 class="signature " id="run_metadata-instance_method">
   
-    #<strong>run_metadata</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+    #<strong>run_metadata</strong>  &#x21d2; <tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, ...  <span class="extras">(readonly)</span>
   
 
   
@@ -649,12 +841,76 @@ cache_path / parallel_tests / rails flags</p></div>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute run_metadata.</p>
+    
 
   </div>
 </div>
 <div class="tags">
   
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>finalized run snapshot.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute report directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>run_metadata hash (pid / run_time / etc).</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>#info</tt>, <tt>#warn</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>tracer logger.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>reporter-specific options.</p></div>
+      
+    </li>
+  
+</ul>
 
 </div><table class="source_code">
   <tr>
@@ -662,12 +918,12 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 47</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span>
   <span class='ivar'>@run_metadata</span>
@@ -682,7 +938,7 @@ cache_path / parallel_tests / rails flags</p></div>
       <div class="method_details ">
   <h3 class="signature " id="snapshot-instance_method">
   
-    #<strong>snapshot</strong>  &#x21d2; <tt>Object</tt>  <span class="extras">(readonly)</span>
+    #<strong>snapshot</strong>  &#x21d2; <tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, ...  <span class="extras">(readonly)</span>
   
 
   
@@ -690,12 +946,76 @@ cache_path / parallel_tests / rails flags</p></div>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute snapshot.</p>
+    
 
   </div>
 </div>
 <div class="tags">
   
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="../Storage/Snapshot.html" title="RSpecTracer::Storage::Snapshot (class)">RSpecTracer::Storage::Snapshot</a></span></tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>finalized run snapshot.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute report directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>run_metadata hash (pid / run_time / etc).</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>#info</tt>, <tt>#warn</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>tracer logger.</p></div>
+      
+    </li>
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Hash</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>reporter-specific options.</p></div>
+      
+    </li>
+  
+</ul>
 
 </div><table class="source_code">
   <tr>
@@ -703,12 +1023,12 @@ cache_path / parallel_tests / rails flags</p></div>
       <pre class="lines">
 
 
-38
-39
-40</pre>
+47
+48
+49</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 47</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_snapshot'>snapshot</span>
   <span class='ivar'>@snapshot</span>
@@ -765,12 +1085,12 @@ the suite).</p>
       <pre class="lines">
 
 
-63
-64
-65</pre>
+72
+73
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 63</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 72</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>NotImplementedError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>#generate must be implemented</span><span class='tstring_end'>&quot;</span></span>
@@ -818,14 +1138,14 @@ do not produce empty artifacts.</p>
       <pre class="lines">
 
 
-71
-72
-73
-74
-75</pre>
+80
+81
+82
+83
+84</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 71</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/base.rb', line 80</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
   <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span>
@@ -842,7 +1162,7 @@ do not produce empty artifacts.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

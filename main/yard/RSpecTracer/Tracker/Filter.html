@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::Tracker::Filter
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Pure function that computes the filter result for a suite run:
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Pure function that computes the filter result for a suite run:
 given the previous dependency graph, the current change set,
 the example registry, the whole-suite invalidation signal, and
 the full list of example ids that exist this run, return the
@@ -132,7 +136,20 @@ statuses.</p>
     <dl class="constants">
       
         <dt id="REASONS-constant" class="">REASONS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>whole_suite_invalidator</span><span class='words_sep'>
@@ -147,7 +164,11 @@ statuses.</p>
         <dt id="STATUS_TO_REASON-constant" class="">STATUS_TO_REASON =
           <div class="docstring">
   <div class="discussion">
-    <p>Map from registry status to filter reason. Keyed in
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Map from registry status to filter reason. Keyed in
 precedence order so iteration preserves the precedence when
 first-match wins in #assign_once.</p>
 
@@ -196,10 +217,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -218,10 +239,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -240,10 +261,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -262,10 +283,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -284,10 +305,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -306,7 +327,7 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Convenience: Set&lt;example_id&gt; view of a select() result.</p></div></span>
@@ -328,10 +349,10 @@ first-match wins in #assign_once.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -355,24 +376,37 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-79
-80
-81
-82
-83
-84
-85
-86
-87</pre>
+89
+90
+91
+92
+93
+94
+95
+96
+97</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 79</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 89</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_add_always_re_run'>add_always_re_run</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='comma'>,</span> <span class='id identifier rubyid_registry'>registry</span><span class='comma'>,</span> <span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="#STATUS_TO_REASON-constant" title="RSpecTracer::Tracker::Filter::STATUS_TO_REASON (constant)">STATUS_TO_REASON</a></span></span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_status'>status</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='op'>|</span>
@@ -397,22 +431,35 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-98
-99
-100
-101
-102
-103
-104</pre>
+112
+113
+114
+115
+116
+117
+118</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 98</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 112</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_add_files_changed'>add_files_changed</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='comma'>,</span> <span class='id identifier rubyid_graph'>graph</span><span class='comma'>,</span> <span class='id identifier rubyid_change_set'>change_set</span><span class='comma'>,</span> <span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_graph'>graph</span><span class='period'>.</span><span class='id identifier rubyid_examples_depending_on'>examples_depending_on</span><span class='lparen'>(</span><span class='id identifier rubyid_change_set'>change_set</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span>
@@ -435,23 +482,36 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-89
-90
-91
-92
-93
-94
-95
-96</pre>
+101
+102
+103
+104
+105
+106
+107
+108</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 89</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 101</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_add_new_examples'>add_new_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='comma'>,</span> <span class='id identifier rubyid_graph'>graph</span><span class='comma'>,</span> <span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_known'>known</span> <span class='op'>=</span> <span class='id identifier rubyid_graph'>graph</span><span class='period'>.</span><span class='id identifier rubyid_example_ids'>example_ids</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
@@ -475,18 +535,31 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-106
-107
-108</pre>
+122
+123
+124</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 106</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 122</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_assign_once'>assign_once</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='comma'>,</span> <span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_result'>result</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_reason'>reason</span>
@@ -505,25 +578,38 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-59
-60
-61
-62
-63
-64
 65
 66
 67
-68</pre>
+68
+69
+70
+71
+72
+73
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 59</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 65</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span><span class='lparen'>(</span><span class='label'>graph:</span><span class='comma'>,</span> <span class='label'>change_set:</span><span class='comma'>,</span> <span class='label'>registry:</span><span class='comma'>,</span> <span class='label'>whole_suite_invalidated:</span><span class='comma'>,</span> <span class='label'>all_example_ids:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='id identifier rubyid_all_example_ids'>all_example_ids</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
@@ -551,7 +637,11 @@ first-match wins in #assign_once.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Convenience: Set&lt;example_id&gt; view of a select() result.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Convenience: Set&lt;example_id&gt; view of a select() result.</p>
 
   </div>
 </div>
@@ -564,12 +654,12 @@ first-match wins in #assign_once.</p>
       <pre class="lines">
 
 
-71
-72
-73</pre>
+77
+78
+79</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 71</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 77</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_to_run_set'>to_run_set</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_result'>result</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
@@ -588,18 +678,31 @@ first-match wins in #assign_once.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-75
-76
-77</pre>
+83
+84
+85</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 75</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/filter.rb', line 83</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_whole_suite_result'>whole_suite_result</span><span class='lparen'>(</span><span class='id identifier rubyid_ids'>ids</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_to_h'>to_h</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='symbol'>:whole_suite_invalidator</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
@@ -614,7 +717,7 @@ first-match wins in #assign_once.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

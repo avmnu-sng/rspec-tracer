@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Rails::Notifications
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>ActiveSupport::Notifications observer for Rails-side inputs that
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>ActiveSupport::Notifications observer for Rails-side inputs that
 Coverage and IOHooks can't see directly. Subscribes to:</p>
 <pre class="code ruby"><code class="ruby">- render_template.action_view   -&gt; :template
 - render_partial.action_view    -&gt; :template
@@ -145,12 +149,38 @@ event stream is ignored.</p>
     <dl class="constants">
       
         <dt id="BUCKET_KEY-constant" class="">BUCKET_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='symbol'>:rspec_tracer_rails_bucket</span></pre></dd>
       
         <dt id="AR_FLAG_KEY-constant" class="">AR_FLAG_KEY =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='symbol'>:rspec_tracer_rails_ar_emitted</span></pre></dd>
       
@@ -182,10 +212,10 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute root.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -217,7 +247,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>rubocop:enable Naming/AccessorMethodName.</p></div></span>
@@ -239,10 +269,10 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -261,7 +291,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Pure-logic entry point for the render_*.action_view subscribers.</p></div></span>
@@ -283,7 +313,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Pure-logic entry point for the sql.active_record subscriber.</p></div></span>
@@ -305,10 +335,10 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -327,10 +357,10 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -349,7 +379,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Emit the pre-digested schema Inputs into the bucket on the first sql.active_record event per example.</p></div></span>
@@ -371,7 +401,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Record a :template Input for the observed render identifier.</p></div></span>
@@ -393,7 +423,7 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>rubocop:disable Naming/AccessorMethodName.</p></div></span>
@@ -415,10 +445,10 @@ event stream is ignored.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -444,7 +474,11 @@ event stream is ignored.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute root.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -457,12 +491,12 @@ event stream is ignored.</p>
       <pre class="lines">
 
 
-42
-43
-44</pre>
+50
+51
+52</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 42</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 50</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -490,7 +524,11 @@ event stream is ignored.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>rubocop:enable Naming/AccessorMethodName</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:enable Naming/AccessorMethodName</p>
 
   </div>
 </div>
@@ -503,13 +541,13 @@ event stream is ignored.</p>
       <pre class="lines">
 
 
-80
-81
-82
-83</pre>
+94
+95
+96
+97</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 80</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 94</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_clear_bucket'>clear_bucket</span>
   <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'><span class='object_link'><a href="#BUCKET_KEY-constant" title="RSpecTracer::Rails::Notifications::BUCKET_KEY (constant)">BUCKET_KEY</a></span></span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='kw'>nil</span>
@@ -529,18 +567,31 @@ event stream is ignored.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-85
-86
-87</pre>
+101
+102
+103</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 85</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 101</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_current_bucket'>current_bucket</span>
   <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'><span class='object_link'><a href="#BUCKET_KEY-constant" title="RSpecTracer::Rails::Notifications::BUCKET_KEY (constant)">BUCKET_KEY</a></span></span><span class='rbracket'>]</span>
@@ -561,7 +612,11 @@ event stream is ignored.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Pure-logic entry point for the render_*.action_view
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Pure-logic entry point for the render_*.action_view
 subscribers. Extracted so mutation smoke can exercise
 payload parsing without driving AS::Notifications.</p>
 
@@ -576,17 +631,17 @@ payload parsing without driving AS::Notifications.</p>
       <pre class="lines">
 
 
-92
-93
-94
-95
-96
-97
-98
-99</pre>
+108
+109
+110
+111
+112
+113
+114
+115</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 92</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 108</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_handle_render_event'>handle_render_event</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_payload'>payload</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span>
@@ -612,7 +667,11 @@ payload parsing without driving AS::Notifications.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Pure-logic entry point for the sql.active_record subscriber.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Pure-logic entry point for the sql.active_record subscriber.
 Payload contents are ignored - the event itself is the
 &quot;this example touched AR&quot; signal.</p>
 
@@ -627,12 +686,12 @@ Payload contents are ignored - the event itself is the
       <pre class="lines">
 
 
-104
-105
-106</pre>
+120
+121
+122</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 104</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 120</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_handle_sql_event'>handle_sql_event</span><span class='lparen'>(</span><span class='id identifier rubyid__payload'>_payload</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_record_ar_schema'>record_ar_schema</span>
@@ -651,29 +710,42 @@ Payload contents are ignored - the event itself is the
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
 54
 55
 56
-57</pre>
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 44</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 54</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_install'>install</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>filter:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid__path'>_path</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='kw'>true</span> <span class='rbrace'>}</span><span class='comma'>,</span> <span class='label'>ar_schema_paths:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -705,7 +777,11 @@ Payload contents are ignored - the event itself is the
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -731,12 +807,12 @@ Payload contents are ignored - the event itself is the
       <pre class="lines">
 
 
-69
-70
-71</pre>
+83
+84
+85</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 69</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 83</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_installed?'>installed?</span>
   <span class='op'>!</span><span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -757,7 +833,11 @@ Payload contents are ignored - the event itself is the
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Emit the pre-digested schema Inputs into the bucket on the
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Emit the pre-digested schema Inputs into the bucket on the
 first sql.active_record event per example. Subsequent events
 short-circuit via AR_FLAG_KEY - O(1) after the first query.</p>
 
@@ -772,24 +852,24 @@ short-circuit via AR_FLAG_KEY - O(1) after the first query.</p>
       <pre class="lines">
 
 
-142
-143
-144
-145
-146
-147
-148
-149
-150
-151
-152
-153
-154
-155
-156</pre>
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 142</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 158</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_record_ar_schema'>record_ar_schema</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='ivar'>@ar_schema_inputs</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='ivar'>@ar_schema_inputs</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -822,7 +902,11 @@ short-circuit via AR_FLAG_KEY - O(1) after the first query.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Record a :template Input for the observed render identifier.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Record a :template Input for the observed render identifier.
 Guarded by the same fast-reject ladder as IOHooks: install
 state, bucket presence, path-under-root, filter callable,
 identity dedup. The early-return ladder looks complex to
@@ -840,32 +924,32 @@ rubocop:disable Metrics/PerceivedComplexity</p>
       <pre class="lines">
 
 
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123
-124
-125
-126
-127
-128
-129
 130
 131
 132
 133
 134
 135
-136</pre>
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 114</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 130</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_record_template'>record_template</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -906,7 +990,11 @@ rubocop:disable Metrics/PerceivedComplexity</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>rubocop:disable Naming/AccessorMethodName</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Naming/AccessorMethodName</p>
 
   </div>
 </div>
@@ -919,13 +1007,13 @@ rubocop:disable Metrics/PerceivedComplexity</p>
       <pre class="lines">
 
 
-74
-75
-76
-77</pre>
+88
+89
+90
+91</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 74</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 88</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_set_bucket'>set_bucket</span><span class='lparen'>(</span><span class='id identifier rubyid_bucket'>bucket</span><span class='rparen'>)</span>
   <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'><span class='object_link'><a href="#BUCKET_KEY-constant" title="RSpecTracer::Rails::Notifications::BUCKET_KEY (constant)">BUCKET_KEY</a></span></span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_bucket'>bucket</span>
@@ -945,24 +1033,37 @@ rubocop:disable Metrics/PerceivedComplexity</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-59
-60
-61
-62
-63
-64
-65
-66
-67</pre>
+71
+72
+73
+74
+75
+76
+77
+78
+79</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 59</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/notifications.rb', line 71</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_uninstall'>uninstall</span>
   <span class='lparen'>(</span><span class='ivar'>@handles</span> <span class='op'>||</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_handle'>handle</span><span class='op'>|</span> <span class='id identifier rubyid_safely_unsubscribe'>safely_unsubscribe</span><span class='lparen'>(</span><span class='id identifier rubyid_handle'>handle</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
@@ -983,7 +1084,7 @@ rubocop:disable Metrics/PerceivedComplexity</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

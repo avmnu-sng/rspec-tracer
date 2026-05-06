@@ -62,14 +62,20 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Tracker</span>
-    <span class='kw'>module</span> <span class='const'>IOHooks</span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
+    <span class='comment'># Internal IOHooks — see {RSpecTracer} for the user-facing surface.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>module</span> <span class='const'>IOHooks</span>
       <span class='comment'># Prepended onto IO.singleton_class. IO.read is the only method
 </span>      <span class='comment'># the brief asks for here - File.read covers the bulk of the
 </span>      <span class='comment'># use cases; IO.read exists mostly for compatibility with older
 </span>      <span class='comment'># code paths and third-party libraries that reach through IO.
 </span>      <span class='kw'>module</span> <span class='const'>IOReads</span>
-        <span class='kw'>def</span> <span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
+        <span class='comment'># Internal method on the tracer pipeline.
+</span>        <span class='comment'># @api private
+</span>        <span class='kw'>def</span> <span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='op'>...</span><span class='rparen'>)</span>
           <span class='const'>IOHooks</span><span class='period'>.</span><span class='id identifier rubyid_record'>record</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_current'>current</span><span class='lbracket'>[</span><span class='const'>BUCKET_KEY</span><span class='rbracket'>]</span>
           <span class='kw'>super</span>
         <span class='kw'>end</span>
@@ -79,7 +85,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

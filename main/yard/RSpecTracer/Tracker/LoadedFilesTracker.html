@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Tracker::LoadedFilesTracker
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Observer #5 in the 2.0 tracker pipeline. Closes the constants-
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Observer #5 in the 2.0 tracker pipeline. Closes the constants-
 lookup blind spot documented in KNOWN_ISSUES.md B10.</p>
 <p>The bug: when file A defines constants at load time and example E2
 references them without triggering a re-require, E2's coverage
@@ -174,7 +178,20 @@ over-approximation is too aggressive.</p>
     <dl class="constants">
       
         <dt id="DEFAULT_PEEK-constant" class="">DEFAULT_PEEK =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='tlambda'>-&gt;</span> <span class='tlambeg'>{</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_peek_result'>peek_result</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='rbrace'>}</span></pre></dd>
       
@@ -206,7 +223,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>boot_set is exposed as an attr_reader rather than a hand- rolled method so RuboCop's Style/TrivialAccessors stays quiet; nil is a valid &quot;not yet captured&quot; state callers rely on.</p></div></span>
@@ -233,7 +250,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>boot_set is exposed as an attr_reader rather than a hand- rolled method so RuboCop's Style/TrivialAccessors stays quiet; nil is a valid &quot;not yet captured&quot; state callers rely on.</p></div></span>
@@ -268,7 +285,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Hash[relative_path =&gt; sha256_hex] for every file in the boot set.</p></div></span>
@@ -290,7 +307,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Compare the current boot set's digest snapshot against a previously-stored one.</p></div></span>
@@ -312,7 +329,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Capture the boot set once.</p></div></span>
@@ -334,10 +351,10 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -358,10 +375,10 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>A new instance of LoadedFilesTracker.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -380,7 +397,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Defensive copy for external callers / property specs.</p></div></span>
@@ -402,7 +419,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Set<Input> covering the full @loaded_set.</p></div></span>
@@ -424,10 +441,10 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -446,7 +463,7 @@ over-approximation is too aggressive.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Diff-and-grow.</p></div></span>
@@ -472,7 +489,11 @@ over-approximation is too aggressive.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns a new instance of LoadedFilesTracker.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -485,12 +506,6 @@ over-approximation is too aggressive.</p>
       <pre class="lines">
 
 
-82
-83
-84
-85
-86
-87
 88
 89
 90
@@ -500,10 +515,16 @@ over-approximation is too aggressive.</p>
 94
 95
 96
-97</pre>
+97
+98
+99
+100
+101
+102
+103</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 82</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 88</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>peek:</span> <span class='const'><span class='object_link'><a href="#DEFAULT_PEEK-constant" title="RSpecTracer::Tracker::LoadedFilesTracker::DEFAULT_PEEK (constant)">DEFAULT_PEEK</a></span></span><span class='comma'>,</span> <span class='label'>enabled:</span> <span class='kw'>true</span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -544,7 +565,11 @@ over-approximation is too aggressive.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>boot_set is exposed as an attr_reader rather than a hand-
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>boot_set is exposed as an attr_reader rather than a hand-
 rolled method so RuboCop's Style/TrivialAccessors stays quiet;
 nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
 
@@ -559,12 +584,12 @@ nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
       <pre class="lines">
 
 
-80
-81
-82</pre>
+84
+85
+86</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 80</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 84</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_boot_set'>boot_set</span>
   <span class='ivar'>@boot_set</span>
@@ -587,7 +612,11 @@ nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>boot_set is exposed as an attr_reader rather than a hand-
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>boot_set is exposed as an attr_reader rather than a hand-
 rolled method so RuboCop's Style/TrivialAccessors stays quiet;
 nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
 
@@ -602,12 +631,12 @@ nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
       <pre class="lines">
 
 
-80
-81
-82</pre>
+84
+85
+86</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 80</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 84</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -635,7 +664,11 @@ nil is a valid &quot;not yet captured&quot; state callers rely on.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Hash[relative_path =&gt; sha256_hex] for every file in the boot
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Hash[relative_path =&gt; sha256_hex] for every file in the boot
 set. The engine compares this against the previous run's
 stored <code>Snapshot.boot_set</code> - any inequality is a whole-suite
 invalidator.</p>
@@ -655,14 +688,14 @@ so the enumeration naturally returns {} without a guard.</p>
       <pre class="lines">
 
 
-142
-143
-144
-145
-146</pre>
+150
+151
+152
+153
+154</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 142</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 150</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span>
   <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -685,7 +718,11 @@ so the enumeration naturally returns {} without a guard.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Compare the current boot set's digest snapshot against a
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Compare the current boot set's digest snapshot against a
 previously-stored one. <code>nil</code> previous_snapshot (first run, no
 cache) is treated as &quot;not invalidated by this signal&quot; - first
 run is already a cold run for unrelated reasons.</p>
@@ -717,15 +754,15 @@ the tracker silent when the feature is off.</p>
       <pre class="lines">
 
 
-156
-157
-158
-159
-160
-161</pre>
+164
+165
+166
+167
+168
+169</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 156</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 164</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_boot_set_invalidated?'>boot_set_invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
@@ -749,7 +786,11 @@ the tracker silent when the feature is off.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Capture the boot set once. Idempotent: subsequent calls return
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Capture the boot set once. Idempotent: subsequent calls return
 the frozen Set captured on the first call. When disabled,
 returns an empty frozen Set without touching ::Coverage.</p>
 <p>Paths whose digest fails (unreadable files) are dropped on the
@@ -770,14 +811,6 @@ invalidation signal anyway).</p>
       <pre class="lines">
 
 
-113
-114
-115
-116
-117
-118
-119
-120
 121
 122
 123
@@ -788,10 +821,18 @@ invalidation signal anyway).</p>
 128
 129
 130
-131</pre>
+131
+132
+133
+134
+135
+136
+137
+138
+139</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 113</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 121</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_capture_boot_set!'>capture_boot_set!</span>
   <span class='kw'>return</span> <span class='ivar'>@boot_set</span> <span class='kw'>unless</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -828,7 +869,11 @@ invalidation signal anyway).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -854,12 +899,12 @@ invalidation signal anyway).</p>
       <pre class="lines">
 
 
-99
-100
-101</pre>
+107
+108
+109</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 99</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 107</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_enabled?'>enabled?</span>
   <span class='ivar'>@enabled</span>
@@ -880,7 +925,11 @@ invalidation signal anyway).</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Defensive copy for external callers / property specs. Callers
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Defensive copy for external callers / property specs. Callers
 that want read-only size should use <code>loaded_set_size</code> instead -
 avoids the dup allocation.</p>
 
@@ -895,12 +944,12 @@ avoids the dup allocation.</p>
       <pre class="lines">
 
 
-202
-203
-204</pre>
+210
+211
+212</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 202</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 210</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set'>loaded_set</span>
   <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span>
@@ -921,7 +970,11 @@ avoids the dup allocation.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Set<Input> covering the full @loaded_set. Callers merge this
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Set<Input> covering the full @loaded_set. Callers merge this
 into an example's Input bucket at start_example time - every
 file loaded up to this point is a transitive dependency.
 Returns a fresh Set per call so mutation stays local.</p>
@@ -940,12 +993,12 @@ needed - the enumeration naturally yields Set.new.</p>
       <pre class="lines">
 
 
-171
-172
-173</pre>
+179
+180
+181</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 171</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 179</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_inputs'>loaded_set_inputs</span>
   <span class='ivar'>@input_cache</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
@@ -964,18 +1017,31 @@ needed - the enumeration naturally yields Set.new.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-206
-207
-208</pre>
+216
+217
+218</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 206</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 216</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_size'>loaded_set_size</span>
   <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
@@ -996,7 +1062,11 @@ needed - the enumeration naturally yields Set.new.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Diff-and-grow. Called after an example finishes: peeks
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Diff-and-grow. Called after an example finishes: peeks
 ::Coverage, finds paths the tracker hadn't seen yet, digests
 them, adds them to @loaded_set + @input_cache, and returns the
 new-paths-only Input set so the caller can attribute them to
@@ -1019,19 +1089,19 @@ with no digest work.</p>
       <pre class="lines">
 
 
-188
-189
-190
-191
-192
-193
-194
-195
 196
-197</pre>
+197
+198
+199
+200
+201
+202
+203
+204
+205</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 188</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/tracker/loaded_files_tracker.rb', line 196</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_stop_example'>stop_example</span><span class='lparen'>(</span><span class='id identifier rubyid__example_id'>_example_id</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
@@ -1053,7 +1123,7 @@ with no digest work.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:44 2026 by
+  Generated on Wed May  6 13:34:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -62,7 +62,9 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Rails</span>
+  <span class='comment'># Internal Rails — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Rails</span>
     <span class='comment'># Rails lifecycle adapter. Only required by `lib/rspec_tracer/rails.rb`
 </span>    <span class='comment'># when `defined?(::Rails::Railtie)` is true, so loading this file in
 </span>    <span class='comment'># a non-Rails process is not expected and will raise NameError.
@@ -81,7 +83,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:41 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

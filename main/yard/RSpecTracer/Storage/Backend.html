@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::Storage::Backend
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Protocol every storage backend must satisfy. JsonBackend is the
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Protocol every storage backend must satisfy. JsonBackend is the
 default; SqliteBackend is an opt-in alternative on MRI. The
 <code>spec/contracts/storage_backend.rb</code> shared-examples group asserts
 the full contract on every implementation.</p>
@@ -148,7 +152,20 @@ kill it. The shared-examples contract is the real gate.</p>
     <dl class="constants">
       
         <dt id="REQUIRED_METHODS-constant" class="">REQUIRED_METHODS =
-          
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
         </dt>
         <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>load_graph</span><span class='words_sep'>
@@ -189,7 +206,7 @@ kill it. The shared-examples contract is the real gate.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Verifies a candidate object satisfies the backend protocol.</p></div></span>
@@ -218,7 +235,11 @@ kill it. The shared-examples contract is the real gate.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Verifies a candidate object satisfies the backend protocol.
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Verifies a candidate object satisfies the backend protocol.
 Used by <span class='object_link'>Configuration#storage_backend</span> to gate
 custom-backend registration at config-load time.</p>
 
@@ -268,12 +289,12 @@ responded to</p></div>
       <pre class="lines">
 
 
-59
-60
-61</pre>
+63
+64
+65</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 59</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 63</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_conforms?'>conforms?</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="#REQUIRED_METHODS-constant" title="RSpecTracer::Storage::Backend::REQUIRED_METHODS (constant)">REQUIRED_METHODS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_all?'>all?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_m'>m</span><span class='op'>|</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='id identifier rubyid_m'>m</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
@@ -288,7 +309,7 @@ responded to</p></div>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -72,7 +72,9 @@
 </span>  <span class='comment'># runner-hook spec drive; the three private helpers stay reachable
 </span>  <span class='comment'># only from `from` itself.
 </span>  <span class='kw'>module</span> <span class='const'>Example</span>
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_from'>from</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_from'>from</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_data'>data</span> <span class='op'>=</span> <span class='lbrace'>{</span>
         <span class='label'>example_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span>
         <span class='label'>description:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_description'>description</span><span class='comma'>,</span>
@@ -84,7 +86,9 @@
       <span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_metadata'>metadata</span> <span class='op'>=</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span>
 
       <span class='id identifier rubyid_location'>location</span> <span class='op'>=</span> <span class='lbrace'>{</span>
@@ -102,7 +106,9 @@
       <span class='id identifier rubyid_location'>location</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_example_rerun_location'>example_rerun_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_parent_groups'>parent_groups</span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_rerun_location'>example_rerun_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_rerun_location'>example_rerun_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_example_groups'>example_groups</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_group'>example_group</span><span class='op'>|</span>
         <span class='id identifier rubyid_metadata'>metadata</span> <span class='op'>=</span> <span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span>
 
@@ -115,7 +121,9 @@
       <span class='kw'>end</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_location_file_name'>location_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rspec_file_name'>rspec_file_name</span><span class='rparen'>)</span>
+    <span class='comment'># Internal helper for the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_location_file_name'>location_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_rspec_file_name'>rspec_file_name</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_file_path'>file_path</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/SourceFile.html" title="RSpecTracer::SourceFile (module)">SourceFile</a></span></span><span class='period'>.</span><span class='id identifier rubyid_file_path'><span class='object_link'><a href="RSpecTracer/SourceFile.html#file_path-class_method" title="RSpecTracer::SourceFile.file_path (method)">file_path</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_rspec_file_name'>rspec_file_name</span><span class='rparen'>)</span>
 
       <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/SourceFile.html" title="RSpecTracer::SourceFile (module)">SourceFile</a></span></span><span class='period'>.</span><span class='id identifier rubyid_file_name'><span class='object_link'><a href="RSpecTracer/SourceFile.html#file_name-class_method" title="RSpecTracer::SourceFile.file_name (method)">file_name</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
@@ -126,7 +134,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:41 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

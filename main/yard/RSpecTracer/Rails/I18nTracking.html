@@ -64,7 +64,7 @@
       <div id="content"><h1>Class: RSpecTracer::Rails::I18nTracking
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -104,7 +104,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>I18n backend observer. Covers custom backends (Redis-backed,
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>I18n backend observer. Covers custom backends (Redis-backed,
 DB-backed, Chain) that bypass YAML.load_file and would otherwise
 miss the IOHooks YAML hook.</p>
 <p>Mechanism: Module#prepend onto ::I18n::Backend::Base - every
@@ -165,10 +169,10 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Returns the value of attribute root.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal attribute.</p></div></span>
   
 </li>
 
@@ -200,10 +204,10 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -222,10 +226,10 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -244,7 +248,7 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Pure-logic entry point.</p></div></span>
@@ -266,7 +270,7 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Called from LoadTranslationsHook for every filename passed to I18n::Backend::Base#load_translations.</p></div></span>
@@ -288,7 +292,7 @@ the user's test run.</li>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
     <span class="summary_desc"><div class='inline'><p>Prepended modules cannot be removed from the ancestry chain (Ruby has no public API), mirroring IOHooks.uninstall.</p></div></span>
@@ -317,7 +321,11 @@ the user's test run.</li>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Returns the value of attribute root.</p>
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal attribute.</p>
 
   </div>
 </div>
@@ -330,12 +338,12 @@ the user's test run.</li>
       <pre class="lines">
 
 
-31
-32
-33</pre>
+35
+36
+37</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 31</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 35</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span>
   <span class='ivar'>@root</span>
@@ -361,23 +369,36 @@ the user's test run.</li>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-33
-34
-35
-36
-37
-38
 39
-40</pre>
+40
+41
+42
+43
+44
+45
+46</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 33</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 39</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_install'>install</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>filter:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid__path'>_path</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='kw'>true</span> <span class='rbrace'>}</span><span class='rparen'>)</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'><span class='object_link'><a href="../../top-level-namespace.html" title="Top Level Namespace (root)">root</a></span></span><span class='rparen'>)</span>
@@ -403,7 +424,11 @@ the user's test run.</li>
   
 </h3><div class="docstring">
   <div class="discussion">
-    
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
 
   </div>
 </div>
@@ -429,12 +454,12 @@ the user's test run.</li>
       <pre class="lines">
 
 
-54
-55
-56</pre>
+62
+63
+64</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 54</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 62</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_installed?'>installed?</span>
   <span class='op'>!</span><span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -455,7 +480,11 @@ the user's test run.</li>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Pure-logic entry point. Same fast-reject ladder as
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Pure-logic entry point. Same fast-reject ladder as
 Notifications#record_template. Emits :notification kind
 so the I18n source is distinguishable from template events
 in downstream reporters. The ladder is longer than rubocop's
@@ -474,14 +503,6 @@ rubocop:disable Metrics/PerceivedComplexity</p>
       <pre class="lines">
 
 
-75
-76
-77
-78
-79
-80
-81
-82
 83
 84
 85
@@ -496,10 +517,18 @@ rubocop:disable Metrics/PerceivedComplexity</p>
 94
 95
 96
-97</pre>
+97
+98
+99
+100
+101
+102
+103
+104
+105</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 75</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 83</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_record_translation'>record_translation</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -540,7 +569,11 @@ rubocop:disable Metrics/PerceivedComplexity</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Called from LoadTranslationsHook for every filename passed
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Called from LoadTranslationsHook for every filename passed
 to I18n::Backend::Base#load_translations. Array form keeps
 the hook a single call site.</p>
 
@@ -555,15 +588,15 @@ the hook a single call site.</p>
       <pre class="lines">
 
 
-61
-62
-63
-64
-65
-66</pre>
+69
+70
+71
+72
+73
+74</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 61</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 69</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_record_translations'>record_translations</span><span class='lparen'>(</span><span class='id identifier rubyid_filenames'>filenames</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -587,7 +620,11 @@ the hook a single call site.</p>
   
 </h3><div class="docstring">
   <div class="discussion">
-    <p>Prepended modules cannot be removed from the ancestry chain
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Prepended modules cannot be removed from the ancestry chain
 (Ruby has no public API), mirroring IOHooks.uninstall. Every
 hook entry point fast-rejects on @root_prefix nil once
 install state clears, so post-uninstall the hook is a no-op.</p>
@@ -603,16 +640,16 @@ install state clears, so post-uninstall the hook is a no-op.</p>
       <pre class="lines">
 
 
-46
-47
-48
-49
-50
-51
-52</pre>
+52
+53
+54
+55
+56
+57
+58</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 46</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rails/i18n_tracking.rb', line 52</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_uninstall'>uninstall</span>
   <span class='ivar'>@root</span> <span class='op'>=</span> <span class='kw'>nil</span>
@@ -631,7 +668,7 @@ install state clears, so post-uninstall the hook is a no-op.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:05 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

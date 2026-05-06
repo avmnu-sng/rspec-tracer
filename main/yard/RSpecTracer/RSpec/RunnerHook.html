@@ -64,7 +64,7 @@
       <div id="content"><h1>Module: RSpecTracer::RSpec::RunnerHook
   
   
-  
+  <span class="private note title">Private</span>
 </h1>
 <div class="box_info">
   
@@ -88,7 +88,11 @@
 
 <h2>Overview</h2><div class="docstring">
   <div class="discussion">
-    <p>Prepended onto <code>RSpec::Core::Runner</code> by
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Prepended onto <code>RSpec::Core::Runner</code> by
 <code>RSpecTracer::RSpec::Installation.install!</code>. Replaces the 1.x
 <code>RSpecTracer::RSpecRunner</code> singleton-class prepend that the
 ObjectSpace loop in <code>setup_rspec?</code> used to install.</p>
@@ -145,10 +149,10 @@ cucumber scenarios and CI log parsers keep working.</p>
   
   
   
-  
+  <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'></div></span>
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
   
 </li>
 
@@ -172,16 +176,25 @@ cucumber scenarios and CI log parsers keep working.</p>
   
 
   
-</h3><table class="source_code">
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
   <tr>
     <td>
       <pre class="lines">
 
 
-32
-33
-34
-35
 36
 37
 38
@@ -212,10 +225,14 @@ cucumber scenarios and CI log parsers keep working.</p>
 63
 64
 65
-66</pre>
+66
+67
+68
+69
+70</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/runner_hook.rb', line 32</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/runner_hook.rb', line 36</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_run_specs'>run_specs</span><span class='lparen'>(</span><span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="../../RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span>
@@ -262,7 +279,7 @@ cucumber scenarios and CI log parsers keep working.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:43 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

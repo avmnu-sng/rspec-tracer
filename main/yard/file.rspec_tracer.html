@@ -113,7 +113,9 @@
 </span><span class='comment'>#   ParallelTests#finalize! merges per-worker caches on the last worker.
 </span><span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
-    <span class='id identifier rubyid_attr_accessor'>attr_accessor</span> <span class='symbol'>:running</span><span class='comma'>,</span> <span class='symbol'>:pid</span><span class='comma'>,</span> <span class='symbol'>:no_examples</span><span class='comma'>,</span> <span class='symbol'>:duplicate_examples</span>
+    <span class='comment'># Internal attribute.
+</span>    <span class='comment'># @api private
+</span>    <span class='id identifier rubyid_attr_accessor'>attr_accessor</span> <span class='symbol'>:running</span><span class='comma'>,</span> <span class='symbol'>:pid</span><span class='comma'>,</span> <span class='symbol'>:no_examples</span><span class='comma'>,</span> <span class='symbol'>:duplicate_examples</span>
 
     <span class='comment'># Boot the tracer. Idempotent — safe to call multiple times in a
 </span>    <span class='comment'># single process (subsequent calls return without re-installing
@@ -170,7 +172,9 @@
       <span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_at_exit_behavior'>at_exit_behavior</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_at_exit_behavior'>at_exit_behavior</span>
       <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span> <span class='op'>==</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span> <span class='op'>&amp;&amp;</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span>
 
       <span class='op'>::</span><span class='const'>Kernel</span><span class='period'>.</span><span class='id identifier rubyid_exit'>exit</span><span class='lparen'>(</span><span class='int'>1</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_duplicate_examples'>duplicate_examples</span>
@@ -226,7 +230,9 @@
 
     <span class='id identifier rubyid_private'>private</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_initial_setup'>initial_setup</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_initial_setup'>initial_setup</span>
       <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/RSpec/Installation.html" title="RSpecTracer::RSpec::Installation (module)">Installation</a></span></span><span class='period'>.</span><span class='id identifier rubyid_install!'><span class='object_link'><a href="RSpecTracer/RSpec/Installation.html#install!-class_method" title="RSpecTracer::RSpec::Installation.install! (method)">install!</a></span></span>
 
       <span class='id identifier rubyid_setup_coverage'>setup_coverage</span>
@@ -236,7 +242,9 @@
       <span class='ivar'>@engine</span><span class='period'>.</span><span class='id identifier rubyid_setup'>setup</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_setup_coverage'>setup_coverage</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_setup_coverage'>setup_coverage</span>
       <span class='ivar'>@simplecov</span> <span class='op'>=</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='const'>SimpleCov</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_running'>running</span>
 
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_simplecov?'>simplecov?</span>
@@ -255,7 +263,9 @@
       <span class='ivar'>@rails</span> <span class='op'>=</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_run_exit_tasks'>run_exit_tasks</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_exit_tasks'>run_exit_tasks</span>
       <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_no_examples'><span class='object_link'><a href="RSpecTracer.html#no_examples-class_method" title="RSpecTracer.no_examples (method)">no_examples</a></span></span>
         <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_info'><span class='object_link'><a href="RSpecTracer/Logger.html#info-instance_method" title="RSpecTracer::Logger#info (method)">info</a></span></span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Skipped reports generation since all examples were filtered out</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>else</span>
@@ -328,7 +338,9 @@
       <span class='rparen'>)</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_build_run_metadata'>build_run_metadata</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_build_run_metadata'>build_run_metadata</span>
       <span class='lbrace'>{</span>
         <span class='label'>pid:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pid'><span class='object_link'><a href="RSpecTracer.html#pid-class_method" title="RSpecTracer.pid (method)">pid</a></span></span><span class='comma'>,</span>
         <span class='label'>run_time:</span> <span class='id identifier rubyid_run_elapsed_seconds'>run_elapsed_seconds</span><span class='comma'>,</span>
@@ -339,7 +351,9 @@
       <span class='rbrace'>}</span>
     <span class='kw'>end</span>
 
-    <span class='kw'>def</span> <span class='id identifier rubyid_run_elapsed_seconds'>run_elapsed_seconds</span>
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_run_elapsed_seconds'>run_elapsed_seconds</span>
       <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@run_monotonic_start</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@run_monotonic_start</span>
 
       <span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span> <span class='op'>-</span> <span class='ivar'>@run_monotonic_start</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_round'>round</span><span class='lparen'>(</span><span class='int'>4</span><span class='rparen'>)</span>
@@ -370,7 +384,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:42 2026 by
+  Generated on Wed May  6 13:34:04 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

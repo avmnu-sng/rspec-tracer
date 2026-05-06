@@ -66,7 +66,13 @@
 <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>../configuration</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='kw'>module</span> <span class='const'>Rails</span>
+  <span class='comment'># Internal Rails — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Internal Rails-integration subsystem (Railtie + ActiveSupport
+</span>  <span class='comment'># notifications + I18n hooks + the default-glob preset). Activated
+</span>  <span class='comment'># when the user&#39;s spec_helper requires `rspec_tracer/rails`.
+</span>  <span class='kw'>module</span> <span class='const'>Rails</span>
     <span class='comment'># Default Rails glob preset - the Coverage-invisible surface that
 </span>    <span class='comment'># rspec-tracer cannot auto-observe via its standard Ruby-execution
 </span>    <span class='comment'># tracking. Enabled by `track_rails_defaults` in .rspec-tracer.
@@ -95,7 +101,9 @@
 </span>    <span class='comment'># Unknown `except:` keys raise Configuration::InvalidUsageError, same
 </span>    <span class='comment'># pattern as `storage_backend(:bogus)`.
 </span>    <span class='kw'>class</span> <span class='const'>Preset</span>
-      <span class='const'>DEFAULTS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>DEFAULTS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
         <span class='label'>views:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>app/views/**/*</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
         <span class='label'>helpers:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>app/helpers/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
         <span class='label'>locales:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>config/locales/**/*.yml</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
@@ -108,9 +116,13 @@
 </span><span class='words_sep'>        </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
       <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-      <span class='const'>ALLOWED_KEYS</span> <span class='op'>=</span> <span class='const'>DEFAULTS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>ALLOWED_KEYS</span> <span class='op'>=</span> <span class='const'>DEFAULTS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_globs'>globs</span><span class='lparen'>(</span><span class='label'>except:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_globs'>globs</span><span class='lparen'>(</span><span class='label'>except:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_excluded'>excluded</span> <span class='op'>=</span> <span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
 
@@ -122,11 +134,15 @@
           <span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
         <span class='const'>Array</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_compact'>compact</span>
       <span class='kw'>end</span>
 
-      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_unknown'>unknown</span> <span class='op'>=</span> <span class='id identifier rubyid_excluded'>excluded</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_key'>key</span><span class='op'>|</span> <span class='const'>ALLOWED_KEYS</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
         <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_unknown'>unknown</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
@@ -139,7 +155,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May  6 11:05:41 2026 by
+  Generated on Wed May  6 13:34:03 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
