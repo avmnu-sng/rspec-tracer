@@ -90,6 +90,41 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       end
     end
 
+    describe 'Time + Symbol round-trip via Snapshot (regression for #182)' do
+      # Inner Hash keys are Symbols (Ruby `key:` shorthand), matching
+      # how RSpec example metadata gets populated on the in-memory
+      # snapshot. The Symbol type extension preserves both keys and
+      # values across the cache boundary.
+      it 'round-trips a Snapshot containing Time values losslessly' do
+        snap_with_time = build_sample_snapshot('run-time')
+        snap_with_time.all_examples = {
+          'ex1' => {
+            id: 'ex1',
+            description: 'desc',
+            recorded_at: Time.utc(2026, 5, 13, 12, 0, 0)
+          }
+        }
+        backend.save_graph(snap_with_time, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+        loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+        expect(loaded.all_examples['ex1'][:recorded_at]).to eq(Time.utc(2026, 5, 13, 12, 0, 0))
+      end
+
+      it 'round-trips a Snapshot containing Symbol values losslessly' do
+        snap_with_symbols = build_sample_snapshot('run-sym')
+        snap_with_symbols.all_examples = {
+          'ex1' => { id: 'ex1', status: :flaky, tags: %i[slow integration] }
+        }
+        backend.save_graph(snap_with_symbols, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+        loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+        expect(loaded.all_examples['ex1'][:status]).to eq(:flaky)
+        expect(loaded.all_examples['ex1'][:tags]).to eq(%i[slow integration])
+      end
+    end
+
     describe 'disk size reduction' do
       it 'is noticeably smaller than the :json equivalent on a path-repetitive cache' do
         fat_snap = build_sample_snapshot('run-fat')
