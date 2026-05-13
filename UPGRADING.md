@@ -73,6 +73,12 @@ you call `SimpleCov.start` after `require 'simplecov'` but before
 `RSpecTracer.start`, you'll see a one-line boot-time warn pointing this
 out.
 
+On the standalone (no-SimpleCov) path, rspec-tracer enables Ruby's
+`lines` coverage mode only by default. Opt into branches / methods /
+oneshot / eval via `coverage_modes`; see
+[`COOKBOOK.md` § "Coverage modes (rspec-tracer + SimpleCov interop)"](COOKBOOK.md)
+for the per-mode matrix.
+
 ## Deprecated config — keeps working with one warning
 
 Each entry below still functions in 2.0 and warns once at first use.
