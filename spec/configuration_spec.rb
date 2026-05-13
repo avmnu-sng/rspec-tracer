@@ -1008,6 +1008,36 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
+  describe '#reports_s3_path_set? (probe-path predicate)' do
+    it 'returns false when neither the DSL nor the env var is set' do
+      stub_const('ENV', ENV.to_hash.except('RSPEC_TRACER_REPORTS_S3_PATH'))
+
+      expect(config.reports_s3_path_set?).to be(false)
+    end
+
+    it 'returns true after the DSL set a valid s3:// URI' do
+      allow(config.logger).to receive(:warn)
+      config.reports_s3_path('s3://bucket/prefix')
+
+      expect(config.reports_s3_path_set?).to be(true)
+    end
+
+    it 'returns true when only the env var is set (no DSL call yet)' do
+      stub_const('ENV', ENV.to_hash.merge('RSPEC_TRACER_REPORTS_S3_PATH' => 's3://env-bucket/env-prefix'))
+
+      expect(config.reports_s3_path_set?).to be(true)
+    end
+
+    it 'does not emit a deprecation warning when probed' do
+      stub_const('ENV', ENV.to_hash.except('RSPEC_TRACER_REPORTS_S3_PATH'))
+      allow(config.logger).to receive(:warn)
+
+      config.reports_s3_path_set?
+
+      expect(config.logger).not_to have_received(:warn)
+    end
+  end
+
   describe '#use_local_aws (deprecated)' do
     it 'still stores a boolean' do
       allow(config.logger).to receive(:warn)

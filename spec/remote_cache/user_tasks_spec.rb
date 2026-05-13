@@ -111,6 +111,7 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       cache_path: cache_path,
       remote_cache_backend_entry: nil,
       reports_s3_path: nil,
+      reports_s3_path_set?: false,
       use_local_aws: false,
       upload_non_ci_reports: false,
       cache_retention_count: nil,
@@ -269,6 +270,80 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       _ = ancestry
     end
 
+    it 'emits an INFO log line naming the ref on a successful main-tier download' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'main', default_branch: 'main', ancestry_refs: { 'main-sha' => 100 })
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        instance = original.call(**opts)
+        instance.stub_downloads('main-sha' => true)
+      end
+
+      described_class.new(configuration: config, env: build_env).download!
+
+      info_messages = captured_logs.select { |(level, _)| level == :info }.map(&:last)
+      expect(info_messages).to include('rspec-tracer remote_cache: restored cache from main-sha')
+    end
+
+    it 'qualifies the INFO log with "(cross-branch fallback)" when a PR build hits an ancestry ref' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      # PR build with NO branch_refs (so a hit goes through the ancestry path).
+      stub_ancestry(branch: 'feat', default_branch: 'main', ancestry_refs: { 'main-sha' => 100 })
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        instance = original.call(**opts)
+        instance.stub_branch_refs({}).stub_downloads('main-sha' => true)
+      end
+
+      described_class.new(configuration: config, env: build_env(branch: 'feat')).download!
+
+      info_messages = captured_logs.select { |(level, _)| level == :info }.map(&:last)
+      expect(info_messages).to include(
+        'rspec-tracer remote_cache: restored cache from main-sha (cross-branch fallback)'
+      )
+    end
+
+    it 'omits the cross-branch qualifier when a PR build hits its own branch_refs' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'feat', default_branch: 'main', ancestry_refs: { 'anc1' => 100 })
+      allow(fake_backend_class).to receive(:new).and_wrap_original do |original, **opts|
+        instance = original.call(**opts)
+        # br1 has the newest ts so it's tried first and hits — PR-tier (branch_refs) origin.
+        instance.stub_branch_refs('br1' => 200).stub_downloads('br1' => true)
+      end
+
+      described_class.new(configuration: config, env: build_env(branch: 'feat')).download!
+
+      info_messages = captured_logs.select { |(level, _)| level == :info }.map(&:last)
+      expect(info_messages).to include('rspec-tracer remote_cache: restored cache from br1')
+      expect(info_messages).not_to(include(a_string_including('cross-branch fallback')))
+    end
+
+    it 'does not probe the deprecated reports_s3_path when reports_s3_path_set? is false' do
+      config = build_config(remote_cache_backend_entry: nil, reports_s3_path_set?: false)
+      stub_ancestry
+
+      described_class.new(configuration: config, env: build_env).download!
+
+      expect(config).not_to have_received(:reports_s3_path)
+    end
+
+    it 'returns nil from the legacy probe when the getter yields a nil/empty value' do
+      # Edge case: reports_s3_path_set? returns true (env was set), but the
+      # getter returns nil (the env value failed valid_s3_path? in Configuration
+      # and never populated @reports_s3_path). The probe defensively bails out.
+      config = build_config(
+        remote_cache_backend_entry: nil,
+        reports_s3_path: nil,
+        reports_s3_path_set?: true
+      )
+      stub_ancestry
+
+      result = described_class.new(configuration: config, env: build_env).download!
+
+      expect(result).to be(false)
+      warns = captured_logs.select { |(level, _)| level == :warn }.map(&:last)
+      expect(warns).to include(a_string_including('no remote_cache_backend configured'))
+    end
+
     it 'merges branch_refs with ancestry on PR builds' do
       config = build_config(remote_cache_backend_entry: backend_entry)
       stub_ancestry(branch: 'feat', default_branch: 'main', ancestry_refs: { 'anc1' => 100 })
@@ -289,6 +364,7 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       config = build_config(
         remote_cache_backend_entry: nil,
         reports_s3_path: 's3://legacy-bucket/legacy-prefix',
+        reports_s3_path_set?: true,
         use_local_aws: true
       )
       stub_ancestry(ancestry_refs: { 'sha1' => 100 })
@@ -305,7 +381,8 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
     it 'rejects a legacy reports_s3_path with a non-s3 scheme (returns nil → unconfigured)' do
       config = build_config(
         remote_cache_backend_entry: nil,
-        reports_s3_path: 'http://example.com/cache'
+        reports_s3_path: 'http://example.com/cache',
+        reports_s3_path_set?: true
       )
       stub_ancestry
 
@@ -340,6 +417,16 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       backend = fake_backend_class.all_instances.last
       expect(backend.calls[:upload]).to eq(['main-sha'])
       expect(backend.calls[:write_branch_refs]).to be_empty
+    end
+
+    it 'emits an INFO log line naming the ref on successful upload' do
+      config = build_config(remote_cache_backend_entry: backend_entry)
+      stub_ancestry(branch: 'main', default_branch: 'main', branch_ref: 'main-sha')
+
+      described_class.new(configuration: config, env: build_env).upload!
+
+      info_messages = captured_logs.select { |(level, _)| level == :info }.map(&:last)
+      expect(info_messages).to include('rspec-tracer remote_cache: uploaded cache to main-sha')
     end
 
     it 'uploads and updates branch_refs on pr tier' do
@@ -655,6 +742,19 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
       allow_any_instance_of(fake_backend_class).to receive(:prune_all!).and_return(5) # rubocop:disable RSpec/AnyInstance
 
       expect(tasks.prune_all!).to eq(5)
+    end
+
+    it 'emits an INFO log line with the removed count on a successful run' do
+      config = build_config(remote_cache_backend_entry: backend_entry,
+                            cache_retention_pr_branch_ttl_seconds: 7200)
+      stub_ancestry
+      tasks = described_class.new(configuration: config, env: build_env)
+      allow_any_instance_of(fake_backend_class).to receive(:prune_all!).and_return(3) # rubocop:disable RSpec/AnyInstance
+
+      tasks.prune_all!
+
+      info_messages = captured_logs.select { |(level, _)| level == :info }.map(&:last)
+      expect(info_messages).to include('rspec-tracer remote_cache: prune_all removed 3 refs')
     end
 
     it 'returns 0 and logs on StandardError from the backend' do

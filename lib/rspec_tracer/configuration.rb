@@ -554,6 +554,25 @@ module RSpecTracer
       @reports_s3_path = path if valid_s3_path?(path)
     end
 
+    # Probe-path predicate. True when the user explicitly set
+    # `reports_s3_path` via the DSL OR the `RSPEC_TRACER_REPORTS_S3_PATH`
+    # environment variable. Distinct from {#reports_s3_path} (the
+    # getter), which fires a one-time deprecation warning on every
+    # call from an unconfigured state — including the
+    # `RemoteCache::UserTasks#derive_from_legacy_dsl` probe that runs
+    # whenever any `rake rspec_tracer:remote_cache:*` task fires.
+    # Callers that need to detect whether the legacy DSL was actually
+    # used (vs probing) should read this predicate first.
+    #
+    # @return [Boolean]
+    def reports_s3_path_set?
+      return true if defined?(@reports_s3_path) && @reports_s3_path
+      return false unless ENV.key?('RSPEC_TRACER_REPORTS_S3_PATH')
+
+      env_value = ENV.fetch('RSPEC_TRACER_REPORTS_S3_PATH', nil)
+      !env_value.nil? && !env_value.empty?
+    end
+
     # Deprecated in 2.0. Migration: `remote_cache_backend :s3, ...,
     # local: true`. Kept for backward compat; UserTasks derives the
     # `local:` opt from this when `remote_cache_backend` is absent.
