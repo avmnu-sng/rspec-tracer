@@ -84,14 +84,26 @@
         <span class='kw'>return</span> <span class='id identifier rubyid_nothing_to_remove'>nothing_to_remove</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_existing'>existing</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
         <span class='id identifier rubyid_announce'>announce</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_force'>force</span> <span class='op'>=</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--yes</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-y</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-        <span class='kw'>return</span> <span class='id identifier rubyid_aborted'>aborted</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_force'>force</span> <span class='op'>||</span> <span class='id identifier rubyid_confirm?'>confirm?</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_aborted'>aborted</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_skip_confirmation?'>skip_confirmation?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_confirm?'>confirm?</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
 
         <span class='id identifier rubyid_remove_each'>remove_each</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
         <span class='int'>0</span>
       <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>cache:clear: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
         <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Returns true when any of the documented skip-confirmation
+</span>      <span class='comment'># flags is present. `--yes` / `-y` is the canonical form;
+</span>      <span class='comment'># `--force` / `-f` is the Unix-conventional synonym accepted
+</span>      <span class='comment'># so users&#39; muscle memory works. Either form skips the
+</span>      <span class='comment'># interactive `Proceed? [y/N]` prompt.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>SKIP_CONFIRMATION_FLAGS</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>--yes</span><span class='words_sep'> </span><span class='tstring_content'>-y</span><span class='words_sep'> </span><span class='tstring_content'>--force</span><span class='words_sep'> </span><span class='tstring_content'>-f</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_skip_confirmation?'>skip_confirmation?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_arg'>arg</span><span class='op'>|</span> <span class='const'>SKIP_CONFIRMATION_FLAGS</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_arg'>arg</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal helper for the tracer pipeline.
@@ -144,13 +156,14 @@
 </span>      <span class='comment'># @api private
 </span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
-<span class='tstring_content'>          Usage: rspec-tracer cache:clear [--yes]
+<span class='tstring_content'>          Usage: rspec-tracer cache:clear [--yes | --force]
 </span><span class='tstring_content'>
 </span><span class='tstring_content'>          Remove cache, coverage, and report directories. The next rspec
 </span><span class='tstring_content'>          run will be a cold run (full re-execution + cache rebuild).
 </span><span class='tstring_content'>
 </span><span class='tstring_content'>          Options:
-</span><span class='tstring_content'>            -y, --yes   Skip the confirmation prompt.
+</span><span class='tstring_content'>            -y, --yes     Skip the confirmation prompt.
+</span><span class='tstring_content'>            -f, --force   Synonym for --yes.
 </span><span class='heredoc_end'>        HELP
 </span>        <span class='int'>0</span>
       <span class='kw'>end</span>
@@ -159,7 +172,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:33:56 2026 by
+  Generated on Wed May 13 21:45:13 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

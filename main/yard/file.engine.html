@@ -524,11 +524,39 @@
 
     <span class='comment'># Install the Rails-observer family (ActionView notifications +
 </span>    <span class='comment'># I18n backend prepend) when Rails is detected in the process.
-</span>    <span class='comment'># Runs at setup time so the subscribers are attached before the
-</span>    <span class='comment'># first example fires. Errors here never propagate - the tracer
-</span>    <span class='comment'># gracefully degrades to IOHooks-only behavior.
+</span>    <span class='comment'># Errors here never propagate - the tracer gracefully degrades to
+</span>    <span class='comment'># IOHooks-only behavior.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Two-mode dispatch handles the canonical README setup order
+</span>    <span class='comment'># (RSpecTracer.start BEFORE `require_relative &#39;../config/environment&#39;`,
+</span>    <span class='comment'># so Rails is not yet loaded at engine.setup time):
+</span>    <span class='comment'>#
+</span>    <span class='comment'># - **Eager** (Rails already loaded): install subscribers + arm the
+</span>    <span class='comment'>#   AR-schema warn directly.
+</span>    <span class='comment'># - **Late-bind** (Rails not yet loaded): register a `before(:suite)`
+</span>    <span class='comment'>#   hook that re-checks `defined?(::Rails::VERSION)` after Rails has
+</span>    <span class='comment'>#   loaded (typically via the user&#39;s `rails_helper.rb` requiring
+</span>    <span class='comment'>#   `config/environment` later in the boot chain). The hook installs
+</span>    <span class='comment'>#   subscribers + the inline AR-schema warn at suite time.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Without the late-bind path, `track_ar_schema_notifications` was
+</span>    <span class='comment'># silently inert under the canonical README setup -- the documented
+</span>    <span class='comment'># `use_transactional_fixtures` warn never fired and the
+</span>    <span class='comment'># `sql.active_record` subscriber never attached.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_install_rails_observers'>install_rails_observers</span>
-      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_rails?'>rails?</span>
+      <span class='kw'>if</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_rails?'>rails?</span>
+        <span class='id identifier rubyid_do_install_rails_observers'>do_install_rails_observers</span>
+        <span class='id identifier rubyid_arm_ar_schema_setup_warn'>arm_ar_schema_setup_warn</span> <span class='kw'>if</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span>
+      <span class='kw'>else</span>
+        <span class='id identifier rubyid_arm_rails_late_bind_install'>arm_rails_late_bind_install</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Subscriber-install body. Idempotent via `@rails_observers_installed`
+</span>    <span class='comment'># so a re-call (e.g. eager path then late-bind firing on a slow Rails
+</span>    <span class='comment'># load) is a no-op. Shared between the eager and late-bind paths.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_do_install_rails_observers'>do_install_rails_observers</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
 
       <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rails/notifications</span><span class='tstring_end'>&#39;</span></span>
       <span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rails/i18n_tracking</span><span class='tstring_end'>&#39;</span></span>
@@ -544,14 +572,46 @@
         <span class='label'>root:</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='comma'>,</span> <span class='label'>filter:</span> <span class='id identifier rubyid_filter'>filter</span>
       <span class='rparen'>)</span>
 
-      <span class='id identifier rubyid_arm_ar_schema_setup_warn'>arm_ar_schema_setup_warn</span> <span class='kw'>if</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span>
-
       <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>true</span>
     <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
       <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: Rails observer install failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
       <span class='rparen'>)</span>
       <span class='ivar'>@rails_observers_installed</span> <span class='op'>=</span> <span class='kw'>false</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Late-bind: at engine.setup `defined?(::Rails::VERSION)` was false,
+</span>    <span class='comment'># so register a `before(:suite)` hook that re-checks Rails-loaded
+</span>    <span class='comment'># state at suite time. By that point the user&#39;s `rails_helper.rb`
+</span>    <span class='comment'># has typically required `config/environment` and Rails IS loaded.
+</span>    <span class='comment'># Installs subscribers + inline-fires the AR-schema warn so the
+</span>    <span class='comment'># documented behavior holds end-to-end under the canonical README
+</span>    <span class='comment'># setup order. No-op when Rails still hasn&#39;t loaded by suite start.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_arm_rails_late_bind_install'>arm_rails_late_bind_install</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>RSpec</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:configure</span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_engine'>engine</span> <span class='op'>=</span> <span class='kw'>self</span>
+      <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configure'>configure</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_config'>config</span><span class='op'>|</span>
+        <span class='id identifier rubyid_config'>config</span><span class='period'>.</span><span class='id identifier rubyid_before'>before</span><span class='lparen'>(</span><span class='symbol'>:suite</span><span class='rparen'>)</span> <span class='lbrace'>{</span> <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:rails_late_bind_install_hook</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: rails late-bind install failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Body of the late-bind `before(:suite)` hook. Extracted so the
+</span>    <span class='comment'># registration shape stays flat and the per-fire logic is testable
+</span>    <span class='comment'># without invoking RSpec&#39;s suite machinery.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_rails_late_bind_install_hook'>rails_late_bind_install_hook</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+
+      <span class='id identifier rubyid_do_install_rails_observers'>do_install_rails_observers</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_rails_observers_installed?'>rails_observers_installed?</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='id identifier rubyid_ar_schema_notifications_enabled?'>ar_schema_notifications_enabled?</span>
+
+      <span class='id identifier rubyid_emit_ar_schema_setup_warn_if_needed'>emit_ar_schema_setup_warn_if_needed</span>
     <span class='kw'>end</span>
 
     <span class='comment'># `track_ar_schema_notifications` promises per-example attribution
@@ -567,33 +627,46 @@
 </span>    <span class='comment'>#   - DatabaseCleaner :truncation / :deletion / :transaction in
 </span>    <span class='comment'>#     around hooks: same outcome.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># Defer the check to before(:suite): at engine.setup the user has
-</span>    <span class='comment'># not run their RSpec.configure block yet, so
-</span>    <span class='comment'># `use_transactional_fixtures` is unset.
+</span>    <span class='comment'># Eager path: defer the check to before(:suite) -- at engine.setup
+</span>    <span class='comment'># the user has not run their RSpec.configure block yet, so
+</span>    <span class='comment'># `use_transactional_fixtures` is unset. The late-bind path
+</span>    <span class='comment'># short-circuits this method and inline-fires
+</span>    <span class='comment'># `emit_ar_schema_setup_warn_if_needed` from inside its own
+</span>    <span class='comment'># before(:suite) hook (no nested registration).
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_arm_ar_schema_setup_warn'>arm_ar_schema_setup_warn</span>
       <span class='kw'>return</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>RSpec</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:configure</span><span class='rparen'>)</span>
 
-      <span class='id identifier rubyid_logger'>logger</span> <span class='op'>=</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
+      <span class='id identifier rubyid_engine'>engine</span> <span class='op'>=</span> <span class='kw'>self</span>
       <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configure'>configure</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_config'>config</span><span class='op'>|</span>
         <span class='id identifier rubyid_config'>config</span><span class='period'>.</span><span class='id identifier rubyid_before'>before</span><span class='lparen'>(</span><span class='symbol'>:suite</span><span class='rparen'>)</span> <span class='kw'>do</span>
-          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:use_transactional_fixtures</span><span class='rparen'>)</span>
-          <span class='kw'>next</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_use_transactional_fixtures'>use_transactional_fixtures</span> <span class='op'>==</span> <span class='kw'>false</span>
-
-          <span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer: track_ar_schema_notifications is enabled but </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures defaults to true; per-example </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>BEGIN/COMMIT fires sql.active_record so db/schema.rb gets </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>attributed to every AR-touching example (safe, but widens </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>invalidation). For narrow attribution, set </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures = false and use sequence-based </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>factories (or another non-AR cleanup mechanism). See </span><span class='tstring_end'>&#39;</span></span> \
-            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>README section &quot;Narrow AR-schema attribution&quot;.</span><span class='tstring_end'>&#39;</span></span>
-          <span class='rparen'>)</span>
+          <span class='id identifier rubyid_engine'>engine</span><span class='period'>.</span><span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:emit_ar_schema_setup_warn_if_needed</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
       <span class='kw'>end</span>
     <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
       <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: ar-schema warn install failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+      <span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Inline check for the AR-schema attribution-widening precondition.
+</span>    <span class='comment'># Reused by `arm_ar_schema_setup_warn` (registered from engine.setup
+</span>    <span class='comment'># under the eager path) and `arm_rails_late_bind_install` (fired
+</span>    <span class='comment'># from inside its own before(:suite) hook). The shared helper
+</span>    <span class='comment'># avoids registering a nested before(:suite) under the late-bind
+</span>    <span class='comment'># path, which is unsafe across RSpec versions.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_emit_ar_schema_setup_warn_if_needed'>emit_ar_schema_setup_warn_if_needed</span>
+      <span class='kw'>return</span> <span class='kw'>unless</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:use_transactional_fixtures</span><span class='rparen'>)</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_use_transactional_fixtures'>use_transactional_fixtures</span> <span class='op'>==</span> <span class='kw'>false</span>
+
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer: track_ar_schema_notifications is enabled but </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures defaults to true; per-example </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>BEGIN/COMMIT fires sql.active_record so db/schema.rb gets </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>attributed to every AR-touching example (safe, but widens </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>invalidation). For narrow attribution, set </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>use_transactional_fixtures = false and use sequence-based </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>factories (or another non-AR cleanup mechanism). See </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>README section &quot;Narrow AR-schema attribution&quot;.</span><span class='tstring_end'>&#39;</span></span>
       <span class='rparen'>)</span>
     <span class='kw'>end</span>
 
@@ -1118,7 +1191,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:33:57 2026 by
+  Generated on Wed May 13 21:45:13 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

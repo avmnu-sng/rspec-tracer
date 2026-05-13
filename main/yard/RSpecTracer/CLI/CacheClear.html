@@ -102,6 +102,39 @@ The next rspec run is a cold run.</p>
   
 
 </div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="SKIP_CONFIRMATION_FLAGS-constant" class="">SKIP_CONFIRMATION_FLAGS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Returns true when any of the documented skip-confirmation
+flags is present. <code>--yes</code> / <code>-y</code> is the canonical form;
+<code>--force</code> / <code>-f</code> is the Unix-conventional synonym accepted
+so users' muscle memory works. Either form skips the
+interactive <code>Proceed? [y/N]</code> prompt.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='tstring_content'>--yes</span><span class='words_sep'> </span><span class='tstring_content'>-y</span><span class='words_sep'> </span><span class='tstring_content'>--force</span><span class='words_sep'> </span><span class='tstring_content'>-f</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+    </dl>
+  
+
 
 
 
@@ -292,6 +325,28 @@ The next rspec run is a cold run.</p>
 </li>
 
       
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#skip_confirmation%3F-class_method" title="skip_confirmation? (class method)">.<strong>skip_confirmation?</strong>(args)  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'></div></span>
+  
+</li>
+
+      
     </ul>
     
   
@@ -330,13 +385,13 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-68
-69
-70
-71</pre>
+80
+81
+82
+83</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 68</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 80</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_aborted'>aborted</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache:clear: aborted</span><span class='tstring_end'>&#39;</span></span>
@@ -375,13 +430,13 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-52
-53
-54
-55</pre>
+64
+65
+66
+67</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 52</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 64</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_announce'>announce</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache:clear: will remove:</span><span class='tstring_end'>&#39;</span></span>
@@ -433,15 +488,15 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-59
-60
-61
-62
-63
-64</pre>
+71
+72
+73
+74
+75
+76</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 59</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 71</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_confirm?'>confirm?</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_print'>print</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Proceed? [y/N] </span><span class='tstring_end'>&#39;</span></span>
@@ -482,13 +537,13 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-38
-39
-40
-41</pre>
+50
+51
+52
+53</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 38</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 50</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_existing_targets'>existing_targets</span>
   <span class='lbracket'>[</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage_path'>coverage_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='rbracket'>]</span>
@@ -527,13 +582,13 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-45
-46
-47
-48</pre>
+57
+58
+59
+60</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 45</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 57</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_nothing_to_remove'>nothing_to_remove</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache:clear: nothing to remove (cache directories do not exist)</span><span class='tstring_end'>&#39;</span></span>
@@ -572,31 +627,33 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-94
-95</pre>
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 84</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 96</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
-<span class='tstring_content'>    Usage: rspec-tracer cache:clear [--yes]
+<span class='tstring_content'>    Usage: rspec-tracer cache:clear [--yes | --force]
 </span><span class='tstring_content'>
 </span><span class='tstring_content'>    Remove cache, coverage, and report directories. The next rspec
 </span><span class='tstring_content'>    run will be a cold run (full re-execution + cache rebuild).
 </span><span class='tstring_content'>
 </span><span class='tstring_content'>    Options:
-</span><span class='tstring_content'>      -y, --yes   Skip the confirmation prompt.
+</span><span class='tstring_content'>      -y, --yes     Skip the confirmation prompt.
+</span><span class='tstring_content'>      -f, --force   Synonym for --yes.
 </span><span class='heredoc_end'>  HELP
 </span>  <span class='int'>0</span>
 <span class='kw'>end</span></pre>
@@ -633,15 +690,15 @@ The next rspec run is a cold run.</p>
       <pre class="lines">
 
 
-75
-76
-77
-78
-79
-80</pre>
+87
+88
+89
+90
+91
+92</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 75</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 87</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remove_each'>remove_each</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_existing'>existing</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
@@ -758,8 +815,7 @@ skips confirmation; <code>-h</code> / <code>--help</code> prints help).</p></div
 30
 31
 32
-33
-34</pre>
+33</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 18</span>
@@ -772,8 +828,7 @@ skips confirmation; <code>-h</code> / <code>--help</code> prints help).</p></div
   <span class='kw'>return</span> <span class='id identifier rubyid_nothing_to_remove'>nothing_to_remove</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_existing'>existing</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
   <span class='id identifier rubyid_announce'>announce</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_force'>force</span> <span class='op'>=</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--yes</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-y</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-  <span class='kw'>return</span> <span class='id identifier rubyid_aborted'>aborted</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_force'>force</span> <span class='op'>||</span> <span class='id identifier rubyid_confirm?'>confirm?</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='id identifier rubyid_aborted'>aborted</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_skip_confirmation?'>skip_confirmation?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_confirm?'>confirm?</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
 
   <span class='id identifier rubyid_remove_each'>remove_each</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_existing'>existing</span><span class='rparen'>)</span>
   <span class='int'>0</span>
@@ -786,12 +841,68 @@ skips confirmation; <code>-h</code> / <code>--help</code> prints help).</p></div
 </table>
 </div>
     
+      <div class="method_details ">
+  <h3 class="signature " id="skip_confirmation?-class_method">
+  
+    .<strong>skip_confirmation?</strong>(args)  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+44
+45
+46</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 44</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_skip_confirmation?'>skip_confirmation?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_arg'>arg</span><span class='op'>|</span> <span class='const'><span class='object_link'><a href="#SKIP_CONFIRMATION_FLAGS-constant" title="RSpecTracer::CLI::CacheClear::SKIP_CONFIRMATION_FLAGS (constant)">SKIP_CONFIRMATION_FLAGS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_arg'>arg</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
   </div>
 
 </div>
 
       <div id="footer">
-  Generated on Wed May 13 21:33:58 2026 by
+  Generated on Wed May 13 21:45:14 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
