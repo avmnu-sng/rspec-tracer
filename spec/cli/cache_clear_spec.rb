@@ -47,6 +47,32 @@ RSpec.describe RSpecTracer::CLI::CacheClear do
       end
     end
 
+    it 'accepts every documented skip-confirmation flag form' do
+      %w[--yes -y --force -f].each do |flag|
+        Dir.mktmpdir do |dir|
+          cache = File.join(dir, 'cache')
+          coverage = File.join(dir, 'coverage')
+          report = File.join(dir, 'report')
+          [cache, coverage, report].each { |p| FileUtils.mkdir_p(p) }
+          allow(RSpecTracer).to receive_messages(
+            cache_path: cache, coverage_path: coverage, report_path: report
+          )
+          out = StringIO.new
+
+          message = "flag #{flag.inspect} should skip the prompt"
+          expect(described_class.run([flag], stdout: out, stderr: stderr)).to eq(0), message
+          expect(File.directory?(cache)).to be(false), "flag #{flag.inspect} should remove cache"
+        end
+      end
+    end
+
+    it 'documents both --yes and --force in the help output' do
+      out = StringIO.new
+      described_class.run(['--help'], stdout: out, stderr: stderr)
+
+      expect(out.string).to include('--yes').and(include('--force'))
+    end
+
     it 'aborts when user declines the confirmation prompt' do
       Dir.mktmpdir do |dir|
         cache = File.join(dir, 'cache')
