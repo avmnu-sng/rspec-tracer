@@ -94,6 +94,24 @@ RSpec.describe RSpecTracer::CLI::CacheInfo do
       end
     end
 
+    context 'with a cache whose schema_version does not match the gem' do
+      # last_run_id resolves (the stored run is real), but load_graph
+      # returns nil because the schema doesn't match Schema::CURRENT.
+      # The CLI must surface the mismatch without crashing or printing
+      # a misleading example count.
+      it 'prints the schema-mismatch banner and exits 0' do
+        Dir.mktmpdir do |dir|
+          File.write(File.join(dir, 'last_run.json'),
+                     JSON.dump('schema_version' => 9999, 'run_id' => 'stale_run'))
+          allow(RSpecTracer).to receive_messages(cache_path: dir, storage_backend: :json)
+
+          expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
+          expect(stdout.string).to include('last_run:   stale_run')
+          expect(stdout.string).to include('schema mismatch')
+        end
+      end
+    end
+
     it 'rescues StandardError and returns 1 with a clear error' do
       allow(RSpecTracer).to receive(:cache_path).and_raise(StandardError, 'cache resolve boom')
 
