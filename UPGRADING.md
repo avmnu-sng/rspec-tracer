@@ -206,8 +206,8 @@ These are additive — your existing config keeps working without them.
 - **`storage_backend :sqlite`** — single-file SQLite database instead
   of the 10-file JSON layout. Faster on cold reads when you have
   >5,000 examples. JRuby falls back to `:json` automatically.
-- **`bin/rspec-tracer`** — opt-in CLI: `bin/rspec-tracer doctor`
-  diagnoses config issues; `bin/rspec-tracer explain <example_id>`
+- **`rspec-tracer` CLI** — opt-in: `bundle exec rspec-tracer doctor`
+  diagnoses config issues; `bundle exec rspec-tracer explain <example_id>`
   answers "why did this test (re-)run?" The rake-task flow remains
   first-class for CI.
 
