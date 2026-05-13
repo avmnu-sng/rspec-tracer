@@ -577,10 +577,12 @@ tasks:
 
   test:mutation:storage:json-backend-shard-9:
     desc: >-
-      M8.6 JsonBackend shard 9 of 9 — Merger.call (1 subject).
-      Split out from shard-8; Merger.call is the entry point that
-      orchestrates the merge across multiple peer caches and is the
-      densest single subject in JsonBackend.
+      JsonBackend shard 9 of 9 — Merger.call + Merger.build_merged_snapshot
+      (2 subjects). Merger.call orchestrates the merge across peer caches
+      and re-derives cache_hit_reason from the merged filtered_examples
+      values-tally per the #193 fix; build_merged_snapshot was extracted
+      from call to keep the orchestration method under the AbcSize cap.
+      Split out from shard-8; both are entry-point density.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -593,7 +595,8 @@ tasks:
         out=$(bundle exec mutant run --use rspec --usage opensource \
           --jobs 8 \
           --include lib --require rspec_tracer/storage/json_backend \
-          "RSpecTracer::Storage::JsonBackend::Merger.call" 2>&1 || true)
+          "RSpecTracer::Storage::JsonBackend::Merger.call" \
+          "RSpecTracer::Storage::JsonBackend::Merger.build_merged_snapshot" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
         if [ -z "$cov" ]; then
@@ -609,9 +612,16 @@ tasks:
 
   test:mutation:storage:json-backend-shard-6:
     desc: >-
-      M8.6 JsonBackend shard 6 of 6 — Merger second half (4 subjects):
+      JsonBackend shard 6 of 6 — Merger second half (5 subjects):
       Merger.empty_state, Merger.merge_env_dependency!,
-      Merger.merge_examples_coverage!, Merger.reverse_of. Split out
+      Merger.merge_examples_coverage!, Merger.merge_filtered_examples!,
+      Merger.reverse_of. merge_filtered_examples! added in the #193
+      parallel-merge fix (each parallel_tests worker computes identical
+      filtered_examples hashes because the filter walks the global
+      previous-run snapshot; first-write-wins collapses duplicate ids
+      so Merger.call's re-derive of cache_hit_reason from
+      filtered_examples.values.tally produces correct totals, not the
+      N-fold inflated sum of identical per-worker tallies). Split out
       from shard-5 to enforce the per-shard step cap (4-min when
       decided, 5-min after M8.6-B's bump).
     env:
@@ -629,6 +639,7 @@ tasks:
           "RSpecTracer::Storage::JsonBackend::Merger.empty_state" \
           "RSpecTracer::Storage::JsonBackend::Merger.merge_env_dependency!" \
           "RSpecTracer::Storage::JsonBackend::Merger.merge_examples_coverage!" \
+          "RSpecTracer::Storage::JsonBackend::Merger.merge_filtered_examples!" \
           "RSpecTracer::Storage::JsonBackend::Merger.reverse_of" 2>&1 || true)
         echo "$out"
         cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)

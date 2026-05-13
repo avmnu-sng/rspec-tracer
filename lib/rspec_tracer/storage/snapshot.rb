@@ -71,6 +71,18 @@ module RSpecTracer
     # require a meta-table column / schema bump); SqliteBackend users
     # see the field as `{}` on read until a future enhancement
     # extends the meta table.
+    #
+    # `filtered_examples` is the PER-EXAMPLE source-of-truth that
+    # backs `cache_hit_reason`: a Hash[example_id => reason_string]
+    # ("ex_abc" => "Failed previously"). The engine writes this at
+    # finalize; `cache_hit_reason` is the values-tally. Persisting
+    # both lets the parallel-tests merge collapse per-worker
+    # duplicates by id (every worker computes the same hash because
+    # the filter walks the global previous-run snapshot) and re-tally
+    # at merge time, instead of sum-merging identical per-worker
+    # tallies and inflating counts N-fold. Same optional-in-JSON
+    # treatment as cache_hit_reason: missing file coerces to `{}`,
+    # no schema_version bump, JSON-backend-only surface.
     Snapshot = Struct.new(
       :schema_version,
       :run_id,
@@ -90,6 +102,7 @@ module RSpecTracer
       :env_snapshot,
       :env_dependency,
       :cache_hit_reason,
+      :filtered_examples,
       keyword_init: true
     )
 
@@ -119,7 +132,8 @@ module RSpecTracer
           wsi_snapshot: {},
           env_snapshot: {},
           env_dependency: {},
-          cache_hit_reason: {}
+          cache_hit_reason: {},
+          filtered_examples: {}
         )
       end
     end
