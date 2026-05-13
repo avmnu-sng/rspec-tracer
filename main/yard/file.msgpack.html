@@ -92,7 +92,34 @@
 </span>      <span class='comment'># The require is lazy so pure-Ruby suites that stay on :json
 </span>      <span class='comment'># do not pay the msgpack load cost and so the LoadError path
 </span>      <span class='comment'># is exercisable in unit specs (hide_const-based).
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Type extensions: Ruby `Time` and `Symbol` values surface in
+</span>      <span class='comment'># example metadata (RSpec&#39;s `execution_result.started_at` is a
+</span>      <span class='comment'># Time; status values like `:passed` / `:failed` / `:flaky` are
+</span>      <span class='comment'># Symbols on the in-memory snapshot). The bare msgpack default
+</span>      <span class='comment'># registry has no `Time` packer (crashes
+</span>      <span class='comment'># `NoMethodError: undefined method &#39;to_msgpack&#39;`) and silently
+</span>      <span class='comment'># coerces `Symbol` to `String` (lossy round-trip). Both
+</span>      <span class='comment'># behaviors broke the cache on the first run a user followed
+</span>      <span class='comment'># the 50 MiB warning&#39;s `:msgpack` recommendation. Registering
+</span>      <span class='comment'># `Factory` type extensions for `Time` (ID 0x00, 12-byte
+</span>      <span class='comment'># seconds+nanoseconds payload) and `Symbol` (ID 0x01, UTF-8
+</span>      <span class='comment'># string payload) gives lossless round-trip. The factory is
+</span>      <span class='comment'># memoized so the extension registration is one-shot per
+</span>      <span class='comment'># process.
 </span>      <span class='kw'>class</span> <span class='const'>Msgpack</span>
+        <span class='comment'># Internal constant — `MessagePack::Factory#register_type`
+</span>        <span class='comment'># ID for Ruby `Time`. Codepoint chosen from the user-space
+</span>        <span class='comment'># range (0x00–0x7F per msgpack ext spec); collision-safe with
+</span>        <span class='comment'># the built-in timestamp ext (ID -1 / 0xFF) since IDs are
+</span>        <span class='comment'># disjoint.
+</span>        <span class='comment'># @api private
+</span>        <span class='const'>TIME_EXTENSION_TYPE</span> <span class='op'>=</span> <span class='int'>0x00</span>
+        <span class='comment'># Internal constant — `MessagePack::Factory#register_type` ID
+</span>        <span class='comment'># for Ruby `Symbol`. See {TIME_EXTENSION_TYPE} rationale.
+</span>        <span class='comment'># @api private
+</span>        <span class='const'>SYMBOL_EXTENSION_TYPE</span> <span class='op'>=</span> <span class='int'>0x01</span>
+
         <span class='comment'># Internal helper for the tracer pipeline.
 </span>        <span class='comment'># @api private
 </span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_extension'>extension</span>
@@ -102,15 +129,13 @@
         <span class='comment'># Internal helper for the tracer pipeline.
 </span>        <span class='comment'># @api private
 </span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_encode'>encode</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span>
-          <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
-          <span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Deflate</span><span class='period'>.</span><span class='id identifier rubyid_deflate'>deflate</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>MessagePack</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span><span class='rparen'>)</span>
+          <span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Deflate</span><span class='period'>.</span><span class='id identifier rubyid_deflate'>deflate</span><span class='lparen'>(</span><span class='id identifier rubyid_factory'>factory</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
 
         <span class='comment'># Internal helper for the tracer pipeline.
 </span>        <span class='comment'># @api private
 </span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_decode'>decode</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span>
-          <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
-          <span class='op'>::</span><span class='const'>MessagePack</span><span class='period'>.</span><span class='id identifier rubyid_unpack'>unpack</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Inflate</span><span class='period'>.</span><span class='id identifier rubyid_inflate'>inflate</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_factory'>factory</span><span class='period'>.</span><span class='id identifier rubyid_unpack'>unpack</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Inflate</span><span class='period'>.</span><span class='id identifier rubyid_inflate'>inflate</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
 
         <span class='comment'># Probe used by JsonBackend#initialize to decide whether to
@@ -133,6 +158,58 @@
         <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
           <span class='id identifier rubyid_private'>private</span>
 
+          <span class='comment'># `MessagePack::Factory` with `Time` and `Symbol` type
+</span>          <span class='comment'># extensions registered. Memoized for the process lifetime;
+</span>          <span class='comment'># the factory&#39;s `register_type` calls are not idempotent
+</span>          <span class='comment'># (re-registering would double-register the codepoint), so
+</span>          <span class='comment'># one-shot construction is the simplest correctness
+</span>          <span class='comment'># contract.
+</span>          <span class='kw'>def</span> <span class='id identifier rubyid_factory'>factory</span>
+            <span class='kw'>return</span> <span class='ivar'>@factory</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@factory</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@factory</span>
+
+            <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
+            <span class='ivar'>@factory</span> <span class='op'>=</span> <span class='id identifier rubyid_build_factory'>build_factory</span>
+          <span class='kw'>end</span>
+
+          <span class='comment'># `Time` and `Symbol` packers / unpackers. Packers are
+</span>          <span class='comment'># called by `factory.pack` whenever a Ruby `Time` /
+</span>          <span class='comment'># `Symbol` appears at any depth in the payload (top-level
+</span>          <span class='comment'># value, nested Hash value, Array element). Unpackers are
+</span>          <span class='comment'># called by `factory.unpack` on the ext-typed bytes.
+</span>          <span class='comment'># Symbol pack/unpack maps to `to_s` / `to_sym` directly
+</span>          <span class='comment'># via `Symbol#to_proc`; Time is more involved so it gets
+</span>          <span class='comment'># named `pack_time` / `unpack_time` helpers below.
+</span>          <span class='kw'>def</span> <span class='id identifier rubyid_build_factory'>build_factory</span>
+            <span class='id identifier rubyid_f'>f</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>MessagePack</span><span class='op'>::</span><span class='const'>Factory</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+            <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_register_type'>register_type</span><span class='lparen'>(</span>
+              <span class='const'>TIME_EXTENSION_TYPE</span><span class='comma'>,</span> <span class='op'>::</span><span class='const'>Time</span><span class='comma'>,</span>
+              <span class='label'>packer:</span> <span class='id identifier rubyid_method'>method</span><span class='lparen'>(</span><span class='symbol'>:pack_time</span><span class='rparen'>)</span><span class='comma'>,</span>
+              <span class='label'>unpacker:</span> <span class='id identifier rubyid_method'>method</span><span class='lparen'>(</span><span class='symbol'>:unpack_time</span><span class='rparen'>)</span>
+            <span class='rparen'>)</span>
+            <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_register_type'>register_type</span><span class='lparen'>(</span>
+              <span class='const'>SYMBOL_EXTENSION_TYPE</span><span class='comma'>,</span> <span class='op'>::</span><span class='const'>Symbol</span><span class='comma'>,</span>
+              <span class='label'>packer:</span> <span class='symbol'>:to_s</span><span class='period'>.</span><span class='id identifier rubyid_to_proc'>to_proc</span><span class='comma'>,</span>
+              <span class='label'>unpacker:</span> <span class='symbol'>:to_sym</span><span class='period'>.</span><span class='id identifier rubyid_to_proc'>to_proc</span>
+            <span class='rparen'>)</span>
+            <span class='id identifier rubyid_f'>f</span>
+          <span class='kw'>end</span>
+
+          <span class='comment'># Time encoding: 64-bit signed seconds (`tv_sec`) + 32-bit
+</span>          <span class='comment'># signed nanoseconds (`tv_nsec`), little-endian, 12 bytes
+</span>          <span class='comment'># total. Round-trip canonicalizes to UTC — rspec-tracer
+</span>          <span class='comment'># never re-uses the Time as a user-facing wall-clock value
+</span>          <span class='comment'># (cache entries are compared, not displayed), and UTC
+</span>          <span class='comment'># makes the on-disk bytes timezone-independent so a cache
+</span>          <span class='comment'># built in one tz reads back identically in another.
+</span>          <span class='kw'>def</span> <span class='id identifier rubyid_pack_time'>pack_time</span><span class='lparen'>(</span><span class='id identifier rubyid_time'>time</span><span class='rparen'>)</span>
+            <span class='lbracket'>[</span><span class='id identifier rubyid_time'>time</span><span class='period'>.</span><span class='id identifier rubyid_tv_sec'>tv_sec</span><span class='comma'>,</span> <span class='id identifier rubyid_time'>time</span><span class='period'>.</span><span class='id identifier rubyid_tv_nsec'>tv_nsec</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>q&lt;l&lt;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+          <span class='kw'>end</span>
+
+          <span class='kw'>def</span> <span class='id identifier rubyid_unpack_time'>unpack_time</span><span class='lparen'>(</span><span class='id identifier rubyid_data'>data</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_sec'>sec</span><span class='comma'>,</span> <span class='id identifier rubyid_nsec'>nsec</span> <span class='op'>=</span> <span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_unpack'>unpack</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>q&lt;l&lt;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+            <span class='op'>::</span><span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_at'>at</span><span class='lparen'>(</span><span class='id identifier rubyid_sec'>sec</span><span class='comma'>,</span> <span class='id identifier rubyid_nsec'>nsec</span><span class='comma'>,</span> <span class='symbol'>:nanosecond</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span>
+          <span class='kw'>end</span>
+
           <span class='comment'># Internal method on the tracer pipeline.
 </span>          <span class='comment'># @api private
 </span>          <span class='kw'>def</span> <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
@@ -151,7 +228,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Fri May  8 13:55:14 2026 by
+  Generated on Wed May 13 19:36:26 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

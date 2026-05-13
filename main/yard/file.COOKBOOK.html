@@ -328,8 +328,8 @@ cold-read time.</p>
 falls back to <code>:json</code> automatically.</p>
 <hr />
 <h2 id="10__Debug__why_did_this_test_re_run__">10. Debug &quot;why did this test re-run?&quot;</h2>
-<p>Use <code>bin/rspec-tracer explain &lt;example_id_or_substring&gt;</code>:</p>
-<pre class="code sh"><code class="sh">bin/rspec-tracer explain &#39;AdminController#create&#39;
+<p>Use <code>bundle exec rspec-tracer explain &lt;example_id_or_substring&gt;</code>:</p>
+<pre class="code sh"><code class="sh">bundle exec rspec-tracer explain &#39;AdminController#create&#39;
 </code></pre>
 <p>Prints the example's last-run status, dependency set, and the run-
 decision reason (e.g. <code>&quot;Files changed: app/controllers/admin_controller.rb&quot;</code>,
@@ -340,7 +340,7 @@ top-level reasons after each run:</p>
 <pre class="code ruby"><code class="ruby">rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
 by reason: 38 Files changed · 4 Failed previously
 </code></pre>
-<p>For deeper config-level debugging, <code>bin/rspec-tracer doctor</code>
+<p>For deeper config-level debugging, <code>bundle exec rspec-tracer doctor</code>
 diagnoses the boot-time state of every contract (SimpleCov load
 order, schema version, remote-cache reachability, AR-schema config).</p>
 <hr />
@@ -452,7 +452,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Fri May  8 13:55:13 2026 by
+  Generated on Wed May 13 19:36:25 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

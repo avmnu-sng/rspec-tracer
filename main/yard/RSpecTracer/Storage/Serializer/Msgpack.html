@@ -121,6 +121,20 @@ USER_FACING_SURFACE.md optional-dep convention.</p>
 <p>The require is lazy so pure-Ruby suites that stay on :json
 do not pay the msgpack load cost and so the LoadError path
 is exercisable in unit specs (hide_const-based).</p>
+<p>Type extensions: Ruby <code>Time</code> and <code>Symbol</code> values surface in
+example metadata (RSpec's <code>execution_result.started_at</code> is a
+Time; status values like <code>:passed</code> / <code>:failed</code> / <code>:flaky</code> are
+Symbols on the in-memory snapshot). The bare msgpack default
+registry has no <code>Time</code> packer (crashes
+<code>NoMethodError: undefined method 'to_msgpack'</code>) and silently
+coerces <code>Symbol</code> to <code>String</code> (lossy round-trip). Both
+behaviors broke the cache on the first run a user followed
+the 50 MiB warning's <code>:msgpack</code> recommendation. Registering
+<code>Factory</code> type extensions for <code>Time</code> (ID 0x00, 12-byte
+seconds+nanoseconds payload) and <code>Symbol</code> (ID 0x01, UTF-8
+string payload) gives lossless round-trip. The factory is
+memoized so the extension registration is one-shot per
+process.</p>
 
   </div>
 </div>
@@ -128,6 +142,58 @@ is exercisable in unit specs (hide_const-based).</p>
   
 
 </div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="TIME_EXTENSION_TYPE-constant" class="">TIME_EXTENSION_TYPE =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant — <code>MessagePack::Factory#register_type</code>
+ID for Ruby <code>Time</code>. Codepoint chosen from the user-space
+range (0x00–0x7F per msgpack ext spec); collision-safe with
+the built-in timestamp ext (ID -1 / 0xFF) since IDs are
+disjoint.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>0x00</span></pre></dd>
+      
+        <dt id="SYMBOL_EXTENSION_TYPE-constant" class="">SYMBOL_EXTENSION_TYPE =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant — <code>MessagePack::Factory#register_type</code> ID
+for Ruby <code>Symbol</code>. See <span class='object_link'><a href="#TIME_EXTENSION_TYPE-constant" title="RSpecTracer::Storage::Serializer::Msgpack::TIME_EXTENSION_TYPE (constant)">TIME_EXTENSION_TYPE</a></span> rationale.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>0x01</span></pre></dd>
+      
+    </dl>
+  
+
 
 
 
@@ -290,15 +356,15 @@ observably equivalent.</p>
       <pre class="lines">
 
 
-65
-66
-67
-68
-69
-70</pre>
+90
+91
+92
+93
+94
+95</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 65</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 90</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_available?'>available?</span>
   <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
@@ -339,17 +405,15 @@ observably equivalent.</p>
       <pre class="lines">
 
 
-50
-51
-52
-53</pre>
+76
+77
+78</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 50</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 76</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_decode'>decode</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
-  <span class='op'>::</span><span class='const'>MessagePack</span><span class='period'>.</span><span class='id identifier rubyid_unpack'>unpack</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Inflate</span><span class='period'>.</span><span class='id identifier rubyid_inflate'>inflate</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_factory'>factory</span><span class='period'>.</span><span class='id identifier rubyid_unpack'>unpack</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Inflate</span><span class='period'>.</span><span class='id identifier rubyid_inflate'>inflate</span><span class='lparen'>(</span><span class='id identifier rubyid_bytes'>bytes</span><span class='rparen'>)</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -384,17 +448,15 @@ observably equivalent.</p>
       <pre class="lines">
 
 
-43
-44
-45
-46</pre>
+70
+71
+72</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 43</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 70</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_encode'>encode</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_ensure_available!'>ensure_available!</span>
-  <span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Deflate</span><span class='period'>.</span><span class='id identifier rubyid_deflate'>deflate</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>MessagePack</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='op'>::</span><span class='const'>Zlib</span><span class='op'>::</span><span class='const'>Deflate</span><span class='period'>.</span><span class='id identifier rubyid_deflate'>deflate</span><span class='lparen'>(</span><span class='id identifier rubyid_factory'>factory</span><span class='period'>.</span><span class='id identifier rubyid_pack'>pack</span><span class='lparen'>(</span><span class='id identifier rubyid_payload'>payload</span><span class='rparen'>)</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -429,12 +491,12 @@ observably equivalent.</p>
       <pre class="lines">
 
 
-37
-38
-39</pre>
+64
+65
+66</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 37</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/serializer/msgpack.rb', line 64</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_extension'>extension</span>
   <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>msgpack.gz</span><span class='tstring_end'>&#39;</span></span>
@@ -449,7 +511,7 @@ observably equivalent.</p>
 </div>
 
       <div id="footer">
-  Generated on Fri May  8 13:55:17 2026 by
+  Generated on Wed May 13 19:36:29 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
