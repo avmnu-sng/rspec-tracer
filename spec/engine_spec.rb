@@ -369,6 +369,96 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
+  describe 'flaky-test detection (issue #194)' do
+    let(:dep_file) { File.join(root, 'lib/a.rb') }
+
+    def prime_previous_cache_with(failed: [], flaky: [])
+      ids = (Array(failed) + Array(flaky)).uniq
+      snapshot = RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+        s.all_examples = ids.to_h { |id| [id, build_example(id)] }
+        s.failed_examples = Set.new(Array(failed))
+        s.flaky_examples = Set.new(Array(flaky))
+        s.dependency = ids.to_h { |id| [id, Set.new([dep_file])] }
+        s.all_files = {
+          dep_file => { file_name: '/lib/a.rb', file_path: dep_file,
+                        digest: Digest::SHA256.file(dep_file).hexdigest }
+        }
+      end
+      RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
+        .save_graph(snapshot, schema_version: 3)
+    end
+
+    def run_one(tracker, id, outcome)
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+      tracker.register_example(build_example(id))
+      tracker.example_started
+      tracker.example_finished(id)
+      tracker.public_send(:"on_example_#{outcome}", id, build_execution_result(status: outcome))
+    end
+
+    it 'transitions previously-failed -> passed-this-run into :flaky' do
+      prime_previous_cache_with(failed: ['ex_F'])
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_F', :passed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.flaky_examples).to include('ex_F')
+      expect(snapshot.failed_examples).not_to include('ex_F')
+    end
+
+    it 'keeps previously-flaky -> passed-this-run as :flaky (sticky)' do
+      prime_previous_cache_with(flaky: ['ex_K'])
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_K', :passed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.flaky_examples).to include('ex_K')
+    end
+
+    it 'keeps previously-flaky -> failed-this-run as :flaky (sticky on failure)' do
+      prime_previous_cache_with(flaky: ['ex_K'])
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_K', :failed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.flaky_examples).to include('ex_K')
+      expect(snapshot.failed_examples).not_to include('ex_K')
+    end
+
+    it 'records previously-failed -> failed-this-run as :failed (no promotion to flaky)' do
+      prime_previous_cache_with(failed: ['ex_F'])
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_F', :failed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.failed_examples).to include('ex_F')
+      expect(snapshot.flaky_examples).not_to include('ex_F')
+    end
+
+    it 'records a new passing example (no previous snapshot) as :passed (not flaky)' do
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_new', :passed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.flaky_examples).not_to include('ex_new')
+    end
+
+    it 'records a new failing example (no previous snapshot) as :failed (not flaky)' do
+      tracker = build_tracker.tap(&:setup)
+
+      run_one(tracker, 'ex_new', :failed)
+      snapshot = tracker.finalize
+
+      expect(snapshot.failed_examples).to include('ex_new')
+      expect(snapshot.flaky_examples).not_to include('ex_new')
+    end
+  end
+
   describe 'examples_coverage finalize-time merge (M3.8 Part B)' do
     let(:previous_coverage) do
       { 'prev_only' => { '/lib/a.rb' => { '0' => 1, '1' => 2 } },

@@ -300,7 +300,8 @@ module RSpecTracer
     def on_example_passed(example_id, result)
       return if @duplicate_examples[example_id]&.count.to_i > 1
 
-      @registry.update_status(example_id, :passed)
+      status = flaky_history?(example_id) ? :flaky : :passed
+      @registry.update_status(example_id, status)
       record_execution_result(example_id, result)
       self
     end
@@ -310,7 +311,8 @@ module RSpecTracer
     def on_example_failed(example_id, result)
       return if @duplicate_examples[example_id]&.count.to_i > 1
 
-      @registry.update_status(example_id, :failed)
+      status = previously_flaky?(example_id) ? :flaky : :failed
+      @registry.update_status(example_id, status)
       record_execution_result(example_id, result)
       self
     end
@@ -938,6 +940,30 @@ module RSpecTracer
       return unless @all_examples.key?(example_id)
 
       @all_examples[example_id][:execution_result] = formatted_execution_result(result)
+    end
+
+    # Ports the 1.x flaky-detection contract: an example transitions
+    # into `:flaky` when it (a) failed on the previous run and passes
+    # on this run (the canonical "intermittent" signal) OR (b) was
+    # already flaky on the previous run, regardless of this run's
+    # outcome (sticky once detected). Mirrors 1.x's
+    # `ReportGenerator#generate_flaky_examples_report` which iterated
+    # `prev_failed | prev_flaky` and registered the example as flaky
+    # unless the prev_failed branch failed again this run.
+    def flaky_history?(id)
+      previously_failed?(id) || previously_flaky?(id)
+    end
+
+    # Internal method on the tracer pipeline.
+    # @api private
+    def previously_failed?(id)
+      @previous_snapshot&.failed_examples&.include?(id)
+    end
+
+    # Internal method on the tracer pipeline.
+    # @api private
+    def previously_flaky?(id)
+      @previous_snapshot&.flaky_examples&.include?(id)
     end
 
     # Internal method on the tracer pipeline.
