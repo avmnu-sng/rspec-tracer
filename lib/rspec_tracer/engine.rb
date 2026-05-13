@@ -463,11 +463,39 @@ module RSpecTracer
 
     # Install the Rails-observer family (ActionView notifications +
     # I18n backend prepend) when Rails is detected in the process.
-    # Runs at setup time so the subscribers are attached before the
-    # first example fires. Errors here never propagate - the tracer
-    # gracefully degrades to IOHooks-only behavior.
+    # Errors here never propagate - the tracer gracefully degrades to
+    # IOHooks-only behavior.
+    #
+    # Two-mode dispatch handles the canonical README setup order
+    # (RSpecTracer.start BEFORE `require_relative '../config/environment'`,
+    # so Rails is not yet loaded at engine.setup time):
+    #
+    # - **Eager** (Rails already loaded): install subscribers + arm the
+    #   AR-schema warn directly.
+    # - **Late-bind** (Rails not yet loaded): register a `before(:suite)`
+    #   hook that re-checks `defined?(::Rails::VERSION)` after Rails has
+    #   loaded (typically via the user's `rails_helper.rb` requiring
+    #   `config/environment` later in the boot chain). The hook installs
+    #   subscribers + the inline AR-schema warn at suite time.
+    #
+    # Without the late-bind path, `track_ar_schema_notifications` was
+    # silently inert under the canonical README setup -- the documented
+    # `use_transactional_fixtures` warn never fired and the
+    # `sql.active_record` subscriber never attached.
     def install_rails_observers
-      return unless @configuration.rails?
+      if @configuration.rails?
+        do_install_rails_observers
+        arm_ar_schema_setup_warn if ar_schema_notifications_enabled?
+      else
+        arm_rails_late_bind_install
+      end
+    end
+
+    # Subscriber-install body. Idempotent via `@rails_observers_installed`
+    # so a re-call (e.g. eager path then late-bind firing on a slow Rails
+    # load) is a no-op. Shared between the eager and late-bind paths.
+    def do_install_rails_observers
+      return if rails_observers_installed?
 
       require_relative 'rails/notifications'
       require_relative 'rails/i18n_tracking'
@@ -483,14 +511,46 @@ module RSpecTracer
         root: @configuration.root, filter: filter
       )
 
-      arm_ar_schema_setup_warn if ar_schema_notifications_enabled?
-
       @rails_observers_installed = true
     rescue StandardError => e
       @configuration.logger.warn(
         "rspec-tracer: Rails observer install failed (#{e.class}: #{e.message})"
       )
       @rails_observers_installed = false
+    end
+
+    # Late-bind: at engine.setup `defined?(::Rails::VERSION)` was false,
+    # so register a `before(:suite)` hook that re-checks Rails-loaded
+    # state at suite time. By that point the user's `rails_helper.rb`
+    # has typically required `config/environment` and Rails IS loaded.
+    # Installs subscribers + inline-fires the AR-schema warn so the
+    # documented behavior holds end-to-end under the canonical README
+    # setup order. No-op when Rails still hasn't loaded by suite start.
+    def arm_rails_late_bind_install
+      return unless defined?(::RSpec) && ::RSpec.respond_to?(:configure)
+
+      engine = self
+      ::RSpec.configure do |config|
+        config.before(:suite) { engine.send(:rails_late_bind_install_hook) }
+      end
+    rescue StandardError => e
+      @configuration.logger.warn(
+        "rspec-tracer: rails late-bind install failed (#{e.class}: #{e.message})"
+      )
+    end
+
+    # Body of the late-bind `before(:suite)` hook. Extracted so the
+    # registration shape stays flat and the per-fire logic is testable
+    # without invoking RSpec's suite machinery.
+    def rails_late_bind_install_hook
+      return unless defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
+      return if rails_observers_installed?
+
+      do_install_rails_observers
+      return unless rails_observers_installed?
+      return unless ar_schema_notifications_enabled?
+
+      emit_ar_schema_setup_warn_if_needed
     end
 
     # `track_ar_schema_notifications` promises per-example attribution
@@ -506,33 +566,46 @@ module RSpecTracer
     #   - DatabaseCleaner :truncation / :deletion / :transaction in
     #     around hooks: same outcome.
     #
-    # Defer the check to before(:suite): at engine.setup the user has
-    # not run their RSpec.configure block yet, so
-    # `use_transactional_fixtures` is unset.
+    # Eager path: defer the check to before(:suite) -- at engine.setup
+    # the user has not run their RSpec.configure block yet, so
+    # `use_transactional_fixtures` is unset. The late-bind path
+    # short-circuits this method and inline-fires
+    # `emit_ar_schema_setup_warn_if_needed` from inside its own
+    # before(:suite) hook (no nested registration).
     def arm_ar_schema_setup_warn
       return unless defined?(::RSpec) && ::RSpec.respond_to?(:configure)
 
-      logger = @configuration.logger
+      engine = self
       ::RSpec.configure do |config|
         config.before(:suite) do
-          next unless ::RSpec.configuration.respond_to?(:use_transactional_fixtures)
-          next if ::RSpec.configuration.use_transactional_fixtures == false
-
-          logger.warn(
-            'rspec-tracer: track_ar_schema_notifications is enabled but ' \
-            'use_transactional_fixtures defaults to true; per-example ' \
-            'BEGIN/COMMIT fires sql.active_record so db/schema.rb gets ' \
-            'attributed to every AR-touching example (safe, but widens ' \
-            'invalidation). For narrow attribution, set ' \
-            'use_transactional_fixtures = false and use sequence-based ' \
-            'factories (or another non-AR cleanup mechanism). See ' \
-            'README section "Narrow AR-schema attribution".'
-          )
+          engine.send(:emit_ar_schema_setup_warn_if_needed)
         end
       end
     rescue StandardError => e
       @configuration.logger.warn(
         "rspec-tracer: ar-schema warn install failed (#{e.class}: #{e.message})"
+      )
+    end
+
+    # Inline check for the AR-schema attribution-widening precondition.
+    # Reused by `arm_ar_schema_setup_warn` (registered from engine.setup
+    # under the eager path) and `arm_rails_late_bind_install` (fired
+    # from inside its own before(:suite) hook). The shared helper
+    # avoids registering a nested before(:suite) under the late-bind
+    # path, which is unsafe across RSpec versions.
+    def emit_ar_schema_setup_warn_if_needed
+      return unless ::RSpec.configuration.respond_to?(:use_transactional_fixtures)
+      return if ::RSpec.configuration.use_transactional_fixtures == false
+
+      @configuration.logger.warn(
+        'rspec-tracer: track_ar_schema_notifications is enabled but ' \
+        'use_transactional_fixtures defaults to true; per-example ' \
+        'BEGIN/COMMIT fires sql.active_record so db/schema.rb gets ' \
+        'attributed to every AR-touching example (safe, but widens ' \
+        'invalidation). For narrow attribution, set ' \
+        'use_transactional_fixtures = false and use sequence-based ' \
+        'factories (or another non-AR cleanup mechanism). See ' \
+        'README section "Narrow AR-schema attribution".'
       )
     end
 
