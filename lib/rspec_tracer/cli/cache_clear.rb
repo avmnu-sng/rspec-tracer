@@ -23,14 +23,26 @@ module RSpecTracer
         return nothing_to_remove(stdout) if existing.empty?
 
         announce(stdout, existing)
-        force = args.include?('--yes') || args.include?('-y')
-        return aborted(stdout) unless force || confirm?(stdout)
+        return aborted(stdout) unless skip_confirmation?(args) || confirm?(stdout)
 
         remove_each(stdout, existing)
         0
       rescue StandardError => e
         stderr.puts "cache:clear: #{e.class}: #{e.message}"
         1
+      end
+
+      # Returns true when any of the documented skip-confirmation
+      # flags is present. `--yes` / `-y` is the canonical form;
+      # `--force` / `-f` is the Unix-conventional synonym accepted
+      # so users' muscle memory works. Either form skips the
+      # interactive `Proceed? [y/N]` prompt.
+      # @api private
+      SKIP_CONFIRMATION_FLAGS = %w[--yes -y --force -f].freeze
+
+      # @api private
+      def self.skip_confirmation?(args)
+        args.any? { |arg| SKIP_CONFIRMATION_FLAGS.include?(arg) }
       end
 
       # Internal helper for the tracer pipeline.
@@ -83,13 +95,14 @@ module RSpecTracer
       # @api private
       def self.print_help(stdout)
         stdout.puts <<~HELP
-          Usage: rspec-tracer cache:clear [--yes]
+          Usage: rspec-tracer cache:clear [--yes | --force]
 
           Remove cache, coverage, and report directories. The next rspec
           run will be a cold run (full re-execution + cache rebuild).
 
           Options:
-            -y, --yes   Skip the confirmation prompt.
+            -y, --yes     Skip the confirmation prompt.
+            -f, --force   Synonym for --yes.
         HELP
         0
       end
