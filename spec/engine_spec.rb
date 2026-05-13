@@ -972,5 +972,57 @@ RSpec.describe RSpecTracer::Engine do
       expect(file_names).to include('/lib/keep.rb', '/excluded_dir/old.rb')
     end
   end
+
+  # On warm runs, seed_all_examples_from_previous populates @all_examples
+  # with the prior snapshot's metadata (including the prior run_reason).
+  # When the RunnerHook later calls register_example with a freshly-tagged
+  # tracer_example carrying this run's run_reason, register_example must
+  # overwrite the seeded entry; otherwise the persisted snapshot keeps
+  # carrying forward the stale prior reason and `report.json#run_reason`
+  # reads "No cache" for examples re-run because they failed / pended /
+  # were interrupted / had files change / had env change. Confirmed via
+  # field testing across all five reason paths.
+  describe 'register_example overwrites prior-run metadata on warm runs' do
+    let(:previous_snapshot) do
+      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |snap|
+        snap.all_examples = {
+          'ex_failed' => build_example('ex_failed').merge(run_reason: 'No cache')
+        }
+        snap.failed_examples = Set.new(['ex_failed'])
+      end
+    end
+
+    def prime_previous_cache
+      backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
+      backend.save_graph(previous_snapshot, schema_version: 3)
+    end
+
+    it "replaces the seeded run_reason with this run's freshly-tagged value" do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      # Sanity: setup seeded the prior metadata into @all_examples.
+      expect(tracker.all_examples['ex_failed'][:run_reason]).to eq('No cache')
+
+      fresh_example = build_example('ex_failed').merge(run_reason: 'Failed previously')
+      tracker.register_example(fresh_example)
+
+      expect(tracker.all_examples['ex_failed'][:run_reason]).to eq('Failed previously')
+    end
+
+    it 'persists the fresh run_reason through finalize' do
+      prime_previous_cache
+      tracker = build_tracker.tap(&:setup)
+      fresh_example = build_example('ex_failed').merge(run_reason: 'Failed previously')
+      allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
+
+      tracker.register_example(fresh_example)
+      tracker.example_started
+      tracker.example_finished('ex_failed')
+      tracker.on_example_passed('ex_failed', build_execution_result(status: :passed))
+      snapshot = tracker.finalize
+
+      expect(snapshot.all_examples['ex_failed'][:run_reason]).to eq('Failed previously')
+    end
+  end
 end
 # rubocop:enable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/MultipleMemoizedHelpers
