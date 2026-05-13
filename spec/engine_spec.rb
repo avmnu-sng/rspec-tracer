@@ -1022,6 +1022,87 @@ RSpec.describe RSpecTracer::Engine do
 
       expect([installed_first, installed_second]).to eq([true, true])
     end
+
+    it 'rescues StandardError raised by RSpec.configure during the late-bind install' do
+      allow(RSpec).to receive(:configure).and_raise(StandardError, 'rspec wedge')
+
+      expect { build_tracker(stub_configuration(rails?: false)).tap(&:setup) }.not_to raise_error
+      expect(logger).to have_received(:warn).with(a_string_including('rails late-bind install failed'))
+    end
+  end
+
+  # Eager-path arm_ar_schema_setup_warn registers a `before(:suite)`
+  # hook that fires `emit_ar_schema_setup_warn_if_needed` at suite-
+  # start time. The captured-block pattern from the late-bind tests
+  # exercises the registered hook body so the body-line and the
+  # graceful-degradation rescue both have coverage.
+  describe 'arm_ar_schema_setup_warn (eager path) hook body + rescue' do
+    let(:captured_suite_blocks) { [] }
+    let(:fake_rspec_config) do
+      blocks = captured_suite_blocks
+      cfg = Object.new
+      cfg.define_singleton_method(:before) do |scope, &block|
+        blocks << block if scope == :suite
+      end
+      cfg
+    end
+
+    let(:fake_as_notifications) do
+      Class.new do
+        def initialize
+          @subscribers = {}
+        end
+
+        def subscribe(event_name, &block)
+          handle = Object.new
+          (@subscribers[event_name] ||= {})[handle] = block
+          handle
+        end
+
+        def unsubscribe(handle)
+          @subscribers.each_value { |blocks| blocks.delete(handle) }
+        end
+      end.new
+    end
+
+    before do
+      stub_const('ActiveSupport', Module.new)
+      stub_const('ActiveSupport::Notifications', fake_as_notifications)
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+    end
+
+    after do
+      if defined?(RSpecTracer::Rails::Notifications) && RSpecTracer::Rails::Notifications.installed?
+        RSpecTracer::Rails::Notifications.uninstall
+      end
+      if defined?(RSpecTracer::Rails::I18nTracking) && RSpecTracer::Rails::I18nTracking.installed?
+        RSpecTracer::Rails::I18nTracking.uninstall
+      end
+    end
+
+    it 'fires emit_ar_schema_setup_warn_if_needed when the registered hook runs' do
+      allow(RSpec).to receive(:configure).and_yield(fake_rspec_config)
+      configuration = stub_configuration(rails?: true, track_ar_schema_notifications?: true)
+      build_tracker(configuration).tap(&:setup)
+      hook = captured_suite_blocks.first
+      allow(RSpec.configuration).to receive_messages(respond_to?: true, use_transactional_fixtures: true)
+
+      hook.call
+
+      expect(logger).to have_received(:warn).with(
+        a_string_including('use_transactional_fixtures defaults to true')
+      )
+    end
+
+    it 'rescues StandardError raised by RSpec.configure during the warn install' do
+      allow(RSpec).to receive(:configure).and_raise(StandardError, 'rspec wedge')
+      configuration = stub_configuration(rails?: true, track_ar_schema_notifications?: true)
+
+      expect { build_tracker(configuration).tap(&:setup) }.not_to raise_error
+      expect(logger).to have_received(:warn).with(a_string_including('ar-schema warn install failed'))
+    end
   end
 
   # M8.0 acceptance criterion #4: per-example hot path invokes
