@@ -117,9 +117,12 @@ module RSpecTracer
         end
 
         tree_sha = head_tree_sha
-        refs.each do |ref|
+        refs.each do |ref, origin|
           @logger.debug "rspec-tracer remote_cache: trying ref #{ref}"
-          return true if backend.download(ref, tree_sha: tree_sha)
+          next unless backend.download(ref, tree_sha: tree_sha)
+
+          log_download_success(ref, origin, ancestry)
+          return true
         end
 
         @logger.warn 'rspec-tracer remote_cache: no suitable cache found; cold run'
@@ -148,6 +151,7 @@ module RSpecTracer
         backend = build_backend(ancestry)
 
         backend.upload(ancestry.branch_ref, tree_sha: head_tree_sha)
+        @logger.info "rspec-tracer remote_cache: uploaded cache to #{ancestry.branch_ref}"
         maybe_update_branch_refs(backend, ancestry)
         maybe_prune(backend, ancestry)
         maybe_warn_unbounded(backend)
@@ -174,7 +178,7 @@ module RSpecTracer
 
         backend = build_backend(build_admin_ancestry)
         removed = backend.prune_all!(pr_branch_ttl_seconds: ttl)
-        @logger.debug "rspec-tracer remote_cache: prune_all removed #{removed} refs"
+        @logger.info "rspec-tracer remote_cache: prune_all removed #{removed} refs"
         removed
       rescue StandardError => e
         @logger.warn "rspec-tracer remote_cache: prune_all failed (#{e.class}: #{e.message})"
@@ -235,9 +239,15 @@ module RSpecTracer
         derive_from_legacy_dsl
       end
 
-      # Internal method on the tracer pipeline.
+      # Probe the legacy `reports_s3_path` DSL when no explicit
+      # `remote_cache_backend` is configured. Gated on
+      # {Configuration#reports_s3_path_set?} so the deprecation
+      # warning fires only when the user actually set the DSL or its
+      # env var — never on the probe path when neither is configured.
       # @api private
       def derive_from_legacy_dsl
+        return nil unless safe_config(:reports_s3_path_set?)
+
         s3_uri = safe_config(:reports_s3_path)
         return nil if s3_uri.nil? || s3_uri.to_s.empty?
 
@@ -285,13 +295,42 @@ module RSpecTracer
         runtime.merge(user_opts)
       end
 
-      # Internal method on the tracer pipeline.
+      # Returns a timestamp-sorted (newest first) list of
+      # `[ref, origin]` tuples where origin is `:branch` (PR-tier
+      # branch_refs upload) or `:ancestry` (commit-ancestry fallback,
+      # which on PR builds means a cross-branch hit on the
+      # default-branch tier). Same merge order as before — on PR
+      # builds branch_refs come first, ancestry refs second; on
+      # collision ancestry wins, so the origin reflects the winning
+      # source. The info-log shape in {#download!} reads the origin
+      # tag to qualify cross-branch fallback hits in the INFO line.
       # @api private
       def candidate_refs(ancestry, backend)
         refs = {}
-        refs.merge!(backend.branch_refs(ancestry.branch_name)) if ancestry.pr_build?
-        refs.merge!(ancestry.ancestry_refs)
-        refs.sort_by { |_, ts| -ts }.map(&:first)
+        origins = {}
+        if ancestry.pr_build?
+          backend.branch_refs(ancestry.branch_name).each do |sha, ts|
+            refs[sha] = ts
+            origins[sha] = :branch
+          end
+        end
+        ancestry.ancestry_refs.each do |sha, ts|
+          refs[sha] = ts
+          origins[sha] = :ancestry
+        end
+        refs.sort_by { |_, ts| -ts }.map { |sha, _| [sha, origins[sha]] }
+      end
+
+      # Emit an INFO log line on a successful download. Distinguishes
+      # PR-tier branch_refs hits ("restored cache from <ref>") from
+      # ancestry-fallback hits on PR builds, which get the explicit
+      # "(cross-branch fallback)" qualifier so the user can tell at
+      # a glance whether the PR-tier cache existed or whether the
+      # restore traversed the default branch.
+      # @api private
+      def log_download_success(ref, origin, ancestry)
+        qualifier = origin == :ancestry && ancestry.pr_build? ? ' (cross-branch fallback)' : ''
+        @logger.info "rspec-tracer remote_cache: restored cache from #{ref}#{qualifier}"
       end
 
       # Internal method on the tracer pipeline.
