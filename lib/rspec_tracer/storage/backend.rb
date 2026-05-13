@@ -93,9 +93,16 @@ module RSpecTracer
       end
 
       # Internal helper for the tracer pipeline.
+      # JsonBackend / SqliteBackend constants are pre-required by
+      # every call site that loads {Backend} — Engine at gem-boot
+      # time, CLI sub-commands at their own require chain — so the
+      # method body stays focused on the construction shape mutant
+      # can actually verify. Returning a `require_relative` call to
+      # the method would be a structurally-unkillable mutation
+      # (Ruby caches requires; the test process always has both
+      # backends loaded).
       # @api private
       def self.build_json(cache_path:, configuration:)
-        require_relative 'json_backend'
         JsonBackend.new(
           cache_path: cache_path,
           logger: configuration.logger,
@@ -107,9 +114,10 @@ module RSpecTracer
       end
 
       # Internal helper for the tracer pipeline.
+      # See {build_json} for why the SqliteBackend require is at the
+      # call site rather than inside the method body.
       # @api private
       def self.build_sqlite(cache_path:, configuration:)
-        require_relative 'sqlite_backend'
         SqliteBackend.new(cache_path: cache_path, logger: configuration.logger)
       rescue SqliteBackend::SqliteBackendError => e
         configuration.logger.warn(

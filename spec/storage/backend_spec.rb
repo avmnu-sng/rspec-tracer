@@ -98,6 +98,39 @@ RSpec.describe RSpecTracer::Storage::Backend do
 
         expect(backend.serializer).to eq(RSpecTracer::Storage::Serializer::Msgpack)
       end
+
+      # Mutant kwarg-threading kill: each of these knobs (logger,
+      # retention_local_count, warn_per_file_mb, warn_total_mb,
+      # serializer default) is a separate JsonBackend init opt; any
+      # drop/replace mutation in `build_json` flips the args here.
+      # `with(hash_including(...))` is stricter than `with(anything)`
+      # so each kwarg gets its own kill signal.
+      it 'threads logger / retention / warn knobs + default :json serializer through to JsonBackend.new' do
+        config = build_config(backend: :json)
+        allow(RSpecTracer::Storage::JsonBackend).to receive(:new).and_call_original
+
+        described_class.build(cache_path: cache_path, configuration: config)
+
+        expect(RSpecTracer::Storage::JsonBackend).to have_received(:new).with(
+          cache_path: cache_path,
+          logger: config.logger,
+          retention_local_count: 5,
+          warn_per_file_mb: 10,
+          warn_total_mb: 50,
+          serializer: :json
+        )
+      end
+
+      it 'threads the storage_backend_opts[:serializer] override through to JsonBackend.new' do
+        config = build_config(backend: :json, opts: { serializer: :msgpack })
+        allow(RSpecTracer::Storage::JsonBackend).to receive(:new).and_call_original
+
+        described_class.build(cache_path: cache_path, configuration: config)
+
+        expect(RSpecTracer::Storage::JsonBackend).to have_received(:new).with(
+          hash_including(serializer: :msgpack)
+        )
+      end
     end
 
     context 'when storage_backend is :sqlite', :sqlite do
@@ -107,6 +140,16 @@ RSpec.describe RSpecTracer::Storage::Backend do
         backend = described_class.build(cache_path: cache_path, configuration: build_config(backend: :sqlite))
 
         expect(backend).to be_a(RSpecTracer::Storage::SqliteBackend)
+      end
+
+      it 'threads cache_path + logger through to SqliteBackend.new' do
+        config = build_config(backend: :sqlite)
+        allow(RSpecTracer::Storage::SqliteBackend).to receive(:new).and_call_original
+
+        described_class.build(cache_path: cache_path, configuration: config)
+
+        expect(RSpecTracer::Storage::SqliteBackend)
+          .to have_received(:new).with(cache_path: cache_path, logger: config.logger)
       end
 
       it 'falls back to JsonBackend with a warn when SqliteBackend raises SqliteBackendError' do

@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require 'rspec_tracer/storage/backend'
+require 'rspec_tracer/storage/json_backend'
 require 'rspec_tracer/storage/schema'
+require 'rspec_tracer/storage/sqlite_backend' if RUBY_ENGINE == 'ruby'
 
 module RSpecTracer
   # Internal CLI — see {RSpecTracer} for the user-facing surface.
