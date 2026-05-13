@@ -215,12 +215,24 @@
       <span class='ivar'>@filtered_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>EXAMPLE_RUN_REASON</span><span class='lbracket'>[</span><span class='symbol'>:no_cache</span><span class='rbracket'>]</span>
     <span class='kw'>end</span>
 
-    <span class='comment'># Internal method on the tracer pipeline.
+    <span class='comment'># Records one example registration into the engine&#39;s per-run
+</span>    <span class='comment'># state. Overwrites any prior `@all_examples[id]` entry on
+</span>    <span class='comment'># purpose: on warm runs, `seed_all_examples_from_previous` seeds
+</span>    <span class='comment'># `@all_examples` with the prior snapshot&#39;s metadata (including
+</span>    <span class='comment'># the prior `:run_reason`), and the RunnerHook&#39;s per-example
+</span>    <span class='comment'># call here carries this run&#39;s freshly-tagged value. Preserving
+</span>    <span class='comment'># the seeded entry via `||=` would persist the stale prior
+</span>    <span class='comment'># reason and surface &quot;No cache&quot; in `report.json#run_reason` for
+</span>    <span class='comment'># examples re-run because they failed / pended / were
+</span>    <span class='comment'># interrupted / had files change / had env change. Duplicate
+</span>    <span class='comment'># detection is unaffected: duplicates accumulate in
+</span>    <span class='comment'># `@duplicate_examples`, and `deregister_duplicate_examples`
+</span>    <span class='comment'># drops them from `@all_examples` outright.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_register_example'>register_example</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_example_id'>example_id</span> <span class='op'>=</span> <span class='id identifier rubyid_example'>example</span><span class='lbracket'>[</span><span class='symbol'>:example_id</span><span class='rbracket'>]</span>
       <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_register'>register</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='label'>metadata:</span> <span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='label'>identity_hash:</span> <span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span>
-      <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_example'>example</span>
+      <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_example'>example</span>
       <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span>
       <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_example'>example</span>
       <span class='kw'>self</span>
@@ -1106,7 +1118,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 19:54:55 2026 by
+  Generated on Wed May 13 21:07:29 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
