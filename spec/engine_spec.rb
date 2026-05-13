@@ -876,6 +876,154 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
+  # Late-bind path (#192): when the user follows the canonical
+  # README setup order -- RSpecTracer.start before
+  # `require_relative '../config/environment'` -- Rails is not yet
+  # loaded at engine.setup time. arm_rails_late_bind_install
+  # registers a before(:suite) hook that re-checks
+  # defined?(::Rails::VERSION) once Rails has had a chance to load,
+  # then installs subscribers + emits the AR-schema warn inline.
+  # Without this, track_ar_schema_notifications was silently inert
+  # under the documented setup order.
+  describe 'Rails late-bind when rails? is false at setup' do
+    let(:captured_suite_blocks) { [] }
+    let(:fake_rspec_config) do
+      blocks = captured_suite_blocks
+      cfg = Object.new
+      cfg.define_singleton_method(:before) do |scope, &block|
+        blocks << block if scope == :suite
+      end
+      cfg
+    end
+
+    let(:fake_as_notifications) do
+      Class.new do
+        def initialize
+          @subscribers = {}
+        end
+
+        def subscribe(event_name, &block)
+          handle = Object.new
+          (@subscribers[event_name] ||= {})[handle] = block
+          handle
+        end
+
+        def unsubscribe(handle)
+          @subscribers.each_value { |blocks| blocks.delete(handle) }
+        end
+
+        attr_reader :subscribers
+      end.new
+    end
+
+    before do
+      allow(RSpec).to receive(:configure).and_yield(fake_rspec_config)
+      stub_const('ActiveSupport', Module.new)
+      stub_const('ActiveSupport::Notifications', fake_as_notifications)
+    end
+
+    after do
+      if defined?(RSpecTracer::Rails::Notifications) && RSpecTracer::Rails::Notifications.installed?
+        RSpecTracer::Rails::Notifications.uninstall
+      end
+      if defined?(RSpecTracer::Rails::I18nTracking) && RSpecTracer::Rails::I18nTracking.installed?
+        RSpecTracer::Rails::I18nTracking.uninstall
+      end
+    end
+
+    it 'registers a before(:suite) hook instead of installing eagerly' do
+      build_tracker(stub_configuration(rails?: false)).tap(&:setup)
+
+      expect(captured_suite_blocks.size).to eq(1)
+      expect(
+        defined?(RSpecTracer::Rails::Notifications) &&
+          RSpecTracer::Rails::Notifications.installed?
+      ).to be_falsey
+    end
+
+    it 'installs Rails observers when the hook fires after Rails has loaded' do
+      tracker = build_tracker(stub_configuration(rails?: false)).tap(&:setup)
+      hook = captured_suite_blocks.first
+
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+
+      hook.call
+
+      expect(RSpecTracer::Rails::Notifications).to be_installed
+      expect(tracker.send(:rails_observers_installed?)).to be(true)
+    end
+
+    it 'is a no-op when Rails still has not loaded by suite-start time' do
+      build_tracker(stub_configuration(rails?: false)).tap(&:setup)
+      hook = captured_suite_blocks.first
+      # Intentionally do NOT stub Rails::VERSION -- the hook fires
+      # before Rails was ever required (rare but possible in pure-Ruby
+      # suites that opt into track_ar_schema_notifications by mistake).
+      hide_const('Rails::VERSION') if defined?(Rails::VERSION)
+
+      hook.call
+
+      expect(
+        defined?(RSpecTracer::Rails::Notifications) &&
+          RSpecTracer::Rails::Notifications.installed?
+      ).to be_falsey
+    end
+
+    it 'fires the AR-schema warn inline when track_ar_schema_notifications is enabled' do
+      configuration = stub_configuration(rails?: false, track_ar_schema_notifications?: true)
+      tracker = build_tracker(configuration).tap(&:setup)
+      hook = captured_suite_blocks.first
+
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+      allow(RSpec.configuration).to receive_messages(respond_to?: true, use_transactional_fixtures: true)
+
+      hook.call
+
+      expect(logger).to have_received(:warn).with(
+        a_string_including('track_ar_schema_notifications is enabled')
+          .and(a_string_including('use_transactional_fixtures defaults to true'))
+      )
+      _ = tracker
+    end
+
+    it 'does not fire the AR-schema warn when use_transactional_fixtures is false' do
+      configuration = stub_configuration(rails?: false, track_ar_schema_notifications?: true)
+      build_tracker(configuration).tap(&:setup)
+      hook = captured_suite_blocks.first
+
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+      allow(RSpec.configuration).to receive_messages(respond_to?: true, use_transactional_fixtures: false)
+
+      hook.call
+
+      expect(logger).not_to have_received(:warn).with(
+        a_string_including('use_transactional_fixtures defaults to true')
+      )
+    end
+
+    it 'is idempotent: re-firing the hook after a successful install does not double-install' do
+      build_tracker(stub_configuration(rails?: false)).tap(&:setup)
+      hook = captured_suite_blocks.first
+
+      stub_const('Rails', Module.new) unless defined?(Rails)
+      stub_const('Rails::VERSION', Module.new)
+      stub_const('Rails::VERSION::STRING', '7.2.3.1')
+
+      hook.call
+      installed_first = RSpecTracer::Rails::Notifications.installed?
+      expect { hook.call }.not_to raise_error
+      installed_second = RSpecTracer::Rails::Notifications.installed?
+
+      expect([installed_first, installed_second]).to eq([true, true])
+    end
+  end
+
   # M8.0 acceptance criterion #4: per-example hot path invokes
   # ::Coverage.peek_result exactly twice (once at example_started for
   # the baseline, once at example_finished for the diff). The legacy
