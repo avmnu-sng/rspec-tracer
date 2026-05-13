@@ -111,6 +111,50 @@ recover per-example precision, set `config.eager_load = false` in
 `config/environments/test.rb`. See README "How it works" for the
 full rationale.
 
+### Rails engines: `lib/` always lands in the boot set
+
+A gem-loaded engine's own `lib/` files are `require`d at gem load
+time (via the Gemfile.lock cascade) and land in the boot set
+**regardless of `eager_load`**. Editing any `lib/<engine_name>/...`
+file re-runs every example in the engine's spec suite. This is
+**safe** (never misses a dep) but **coarser** than per-example
+attribution. The behavior is deliberate: it closes the
+constants-lookup blind spot that pure coverage-diff tracking
+misses (an example that references a constant defined in a loaded
+file produces no coverage delta against that file, even though the
+example depends on it).
+
+If your engine's `lib/`-edit cycle is bottlenecked by whole-suite
+re-runs and you've audited that your suite doesn't exercise the
+constants-lookup pattern, opt out with:
+
+```ruby
+# .rspec-tracer
+RSpecTracer.configure do
+  transitive_load_tracking false
+end
+```
+
+Trade-off: this restores 1.x's pure coverage-diff behavior. The
+constants-lookup blind spot returns — an example that only
+references a constant from a loaded file (without exercising any
+of its lines) will not be tagged as depending on that file, so
+editing the file may not re-run the example. Most suites are
+unaffected (any line execution against the file already attributes
+the dep correctly); audit yours before flipping. The 2.1
+`track_class_attribution` work will close this gap more precisely.
+
+### Sub-rspec summaries (engine + dummy-app)
+
+If your engine fixture does sub-process rspec invocations — e.g.,
+acceptance specs that `chdir` into a generated dummy app and run
+a nested `rspec` — you'll see two rspec summary totals in the
+same `bundle exec rspec` invocation (one from the inner sub-rspec,
+one from the outer). rspec-tracer tracks the **outer** process
+and is the authoritative example count for your cache; the inner
+summary belongs to the dummy-app sub-process and is not visible
+to the tracer.
+
 ---
 
 ## 3. Migrate a 1.x project to 2.0
