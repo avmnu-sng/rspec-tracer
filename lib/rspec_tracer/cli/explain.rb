@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
-require 'json'
+require 'rspec_tracer/storage/backend'
+require 'rspec_tracer/storage/schema'
 
 module RSpecTracer
   # Internal CLI — see {RSpecTracer} for the user-facing surface.
   # @api private
   module CLI
     # `rspec-tracer explain <example>` — show why a given example is
-    # scheduled to run or skip on the next rspec invocation. Reads the
-    # most recent run's JSON files (all_examples.json + dependency.json
-    # + failed_examples.json + flaky_examples.json) to surface the
-    # dependency set, last-run status, and the run-decision reason.
+    # scheduled to run or skip on the next rspec invocation. Backend-
+    # agnostic: dispatches through {RSpecTracer::Storage::Backend.build}
+    # so `storage_backend :sqlite` resolves the latest run from the
+    # meta table instead of the JsonBackend-only `last_run.json` file.
     module Explain
       # @param args [Array<String>] sub-command args. First positional
       #   arg is the example_id (or substring) to explain.
@@ -24,14 +25,13 @@ module RSpecTracer
         require 'rspec_tracer/load_config'
         cache_path = RSpecTracer.cache_path
 
-        run_dir = resolve_run_dir(cache_path, stderr)
-        return 1 if run_dir.nil?
+        snapshot = load_snapshot(cache_path, stderr)
+        return 1 if snapshot.nil?
 
-        all_examples = read_json(File.join(run_dir, 'all_examples.json'))
-        match = find_example(all_examples, args.first)
-        return no_match(args.first, all_examples, stderr) if match.nil?
+        match = find_example(snapshot.all_examples, args.first)
+        return no_match(args.first, snapshot.all_examples, stderr) if match.nil?
 
-        print_explanation(stdout, match, run_dir)
+        print_explanation(stdout, match, snapshot)
         0
       rescue StandardError => e
         stderr.puts "explain: #{e.class}: #{e.message}"
@@ -40,21 +40,21 @@ module RSpecTracer
 
       # Internal helper for the tracer pipeline.
       # @api private
-      def self.resolve_run_dir(cache_path, stderr)
-        last_run_path = File.join(cache_path, 'last_run.json')
-        unless File.file?(last_run_path)
-          stderr.puts "explain: no last_run.json at #{cache_path} — run rspec first"
+      def self.load_snapshot(cache_path, stderr)
+        backend = Storage::Backend.build(cache_path: cache_path, configuration: RSpecTracer)
+        run_id = backend.last_run_id
+        if run_id.nil? || run_id.to_s.empty?
+          stderr.puts "explain: no cache yet at #{cache_path} — run rspec first"
           return nil
         end
 
-        run_id = JSON.parse(File.read(last_run_path, encoding: 'UTF-8'))['run_id']
-        run_dir = File.join(cache_path, run_id.to_s)
-        unless File.directory?(run_dir)
-          stderr.puts "explain: run_id #{run_id} directory missing at #{run_dir}"
+        snapshot = backend.load_graph(schema_version: Storage::Schema::CURRENT)
+        if snapshot.nil?
+          stderr.puts "explain: cache at #{cache_path} is incompatible with this rspec-tracer; next rspec run is cold"
           return nil
         end
 
-        run_dir
+        snapshot
       end
 
       # Internal helper for the tracer pipeline.
@@ -73,18 +73,11 @@ module RSpecTracer
 
           Show why an example is scheduled to run or skip. Matches against
           example_id exactly first, then falls back to a substring match
-          on the example's full_description. Requires a prior rspec run.
+          on the example's full_description. Backend-aware: works under
+          `storage_backend :json` (default) and `storage_backend :sqlite`.
+          Requires a prior rspec run.
         HELP
         0
-      end
-
-      # Internal helper for the tracer pipeline.
-      # @api private
-      def self.read_json(path)
-        return {} unless File.file?(path)
-
-        parsed = JSON.parse(File.read(path, encoding: 'UTF-8'))
-        parsed.is_a?(Hash) ? parsed : {}
       end
 
       # Internal helper for the tracer pipeline.
@@ -94,50 +87,65 @@ module RSpecTracer
 
         all_examples.find do |id, meta|
           meta = {} unless meta.is_a?(::Hash)
-          desc = meta['full_description'] || meta['description'] || ''
+          desc = fetch_meta(meta, 'full_description') || fetch_meta(meta, 'description') || ''
           id.include?(query) || desc.include?(query)
         end&.last
       end
 
       # Internal helper for the tracer pipeline.
       # @api private
-      def self.print_explanation(stdout, meta, run_dir)
+      def self.print_explanation(stdout, meta, snapshot)
         meta = {} unless meta.is_a?(::Hash)
         format_lines(meta).each { |line| stdout.puts line }
-        print_dependency_summary(stdout, meta, run_dir)
+        print_dependency_summary(stdout, meta, snapshot)
       end
 
       # Internal helper for the tracer pipeline.
       # @api private
       def self.format_lines(meta)
-        id = first_non_nil(meta, 'example_id', 'id') || '<unknown>'
-        file = first_non_nil(meta, 'rerun_file_name', 'file_name')
-        line = first_non_nil(meta, 'rerun_line_number', 'line_number')
-        status = meta.dig('execution_result', 'status') || meta['status'] || 'unknown'
+        id = fetch_meta(meta, 'example_id', 'id') || '<unknown>'
+        file = fetch_meta(meta, 'rerun_file_name', 'file_name')
+        line = fetch_meta(meta, 'rerun_line_number', 'line_number')
+        status = dig_meta(meta, 'execution_result', 'status') || fetch_meta(meta, 'status') || 'unknown'
         [
           "id:           #{id}",
-          "description:  #{first_non_nil(meta, 'full_description', 'description')}",
+          "description:  #{fetch_meta(meta, 'full_description', 'description')}",
           "location:     #{file}:#{line}",
           "last status:  #{status}",
-          "run reason:   #{meta['run_reason'] || '<not recorded>'}"
+          "run reason:   #{fetch_meta(meta, 'run_reason') || '<not recorded>'}"
         ]
       end
 
-      # Internal helper for the tracer pipeline.
-      # @api private
-      def self.first_non_nil(meta, *keys)
-        keys.each { |k| return meta[k] unless meta[k].nil? }
+      # Look up a key from a Hash, tolerating both String and Symbol
+      # storage. Snapshot Hashes round-tripped through JSON yield
+      # String keys; the post-#182 msgpack serializer preserves
+      # Symbol keys end-to-end, so callers can't assume either shape.
+      def self.fetch_meta(meta, *keys)
+        keys.each do |k|
+          v = meta[k]
+          return v unless v.nil?
+
+          sym_value = meta[k.to_sym]
+          return sym_value unless sym_value.nil?
+        end
         nil
+      end
+
+      # Look up a nested key from a Hash, tolerating both String and
+      # Symbol storage at each level. See {.fetch_meta} for rationale.
+      def self.dig_meta(meta, *keys)
+        keys.reduce(meta) do |acc, k|
+          break nil if acc.nil? || !acc.is_a?(::Hash)
+
+          acc[k] || acc[k.to_sym]
+        end
       end
 
       # Internal helper for the tracer pipeline.
       # @api private
-      def self.print_dependency_summary(stdout, meta, run_dir)
-        deps_path = File.join(run_dir, 'dependency.json')
-        return unless File.file?(deps_path)
-
-        deps = read_json(deps_path)
-        id = meta['example_id'] || meta['id']
+      def self.print_dependency_summary(stdout, meta, snapshot)
+        id = fetch_meta(meta, 'example_id', 'id')
+        deps = snapshot.dependency || {}
         files = Array(deps[id])
         stdout.puts "dependencies: #{files.size} files tracked"
         files.first(10).each { |f| stdout.puts "  - #{f}" }

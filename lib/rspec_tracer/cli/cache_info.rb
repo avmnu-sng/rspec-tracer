@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
-require 'json'
+require 'rspec_tracer/storage/backend'
+require 'rspec_tracer/storage/schema'
 
 module RSpecTracer
   # Internal CLI — see {RSpecTracer} for the user-facing surface.
   # @api private
   module CLI
     # `rspec-tracer cache:info` — show cache size, last run, and
-    # invalidation stats. Reads `last_run.json` + the run-id'd JSON
-    # files written by Storage::JsonBackend.
+    # invalidation stats. Backend-agnostic: dispatches through
+    # {RSpecTracer::Storage::Backend.build} so `storage_backend
+    # :sqlite` reports the populated cache instead of the false
+    # "no cache yet" the JsonBackend-only path used to emit.
     module CacheInfo
       # @param args [Array<String>] sub-command args (`-h` / `--help`).
       # @param stdout [IO]
@@ -23,18 +26,15 @@ module RSpecTracer
         stdout.puts "cache_path: #{cache_path}"
         stdout.puts "size:       #{format_bytes(directory_size(cache_path))}"
 
-        last_run_path = File.join(cache_path, 'last_run.json')
-        unless File.file?(last_run_path)
-          stdout.puts 'last_run:   no last_run.json yet (run rspec first)'
+        backend = Storage::Backend.build(cache_path: cache_path, configuration: RSpecTracer)
+        run_id = backend.last_run_id
+        if run_id.nil? || run_id.to_s.empty?
+          stdout.puts 'last_run:   no cache yet (run rspec first)'
           return 0
         end
 
-        manifest = JSON.parse(File.read(last_run_path, encoding: 'UTF-8'))
-        run_id = manifest['run_id']
         stdout.puts "last_run:   #{run_id}"
-        stdout.puts "generated:  #{manifest['generated_at']}" if manifest['generated_at']
-
-        print_run_summary(stdout, cache_path, run_id) if run_id
+        print_example_count(stdout, backend)
         0
       rescue StandardError => e
         stderr.puts "cache:info: #{e.class}: #{e.message}"
@@ -48,24 +48,23 @@ module RSpecTracer
           Usage: rspec-tracer cache:info
 
           Show the on-disk cache size, the last run id, and example counts
-          for the most recent run. Reads `last_run.json` plus the run-id'd
-          JSON files; does not modify any files.
+          for the most recent run. Backend-aware: works under
+          `storage_backend :json` (default) and `storage_backend :sqlite`.
+          Read-only; does not modify the cache.
         HELP
         0
       end
 
       # Internal helper for the tracer pipeline.
       # @api private
-      def self.print_run_summary(stdout, cache_path, run_id)
-        run_dir = File.join(cache_path, run_id)
-        return unless File.directory?(run_dir)
+      def self.print_example_count(stdout, backend)
+        snapshot = backend.load_graph(schema_version: Storage::Schema::CURRENT)
+        if snapshot.nil?
+          stdout.puts 'examples:   <unknown> (schema mismatch; next rspec run will be cold)'
+          return
+        end
 
-        all_examples_path = File.join(run_dir, 'all_examples.json')
-        return unless File.file?(all_examples_path)
-
-        data = JSON.parse(File.read(all_examples_path, encoding: 'UTF-8'))
-        total = data.size
-        stdout.puts "examples:   #{total} tracked"
+        stdout.puts "examples:   #{snapshot.all_examples.size} tracked"
       end
 
       # Internal helper for the tracer pipeline.

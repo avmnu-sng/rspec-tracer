@@ -63,6 +63,60 @@ module RSpecTracer
       def self.conforms?(backend)
         REQUIRED_METHODS.all? { |m| backend.respond_to?(m) }
       end
+
+      # Construct the configured storage backend instance. Single
+      # source of truth for the json/sqlite dispatch + sqlite-gem-
+      # missing graceful fallback to :json, used by both
+      # {RSpecTracer::Engine} (runtime) and the
+      # {RSpecTracer::CLI::CacheInfo} / {RSpecTracer::CLI::Explain}
+      # sub-commands (post-run inspection). Pre-refactor, the
+      # dispatch lived only on Engine and the CLI sub-commands
+      # hardcoded the JsonBackend on-disk layout — so
+      # `bin/rspec-tracer cache:info` / `explain` reported "no
+      # last_run.json" even when `storage_backend :sqlite` had
+      # persisted a working cache.
+      #
+      # @param cache_path [String] root cache directory.
+      # @param configuration [Object] anything responding to the
+      #   `storage_backend` / `storage_backend_opts` /
+      #   `cache_retention_local_count` / `cache_size_warn_*` /
+      #   `logger` accessors (defaults to the {RSpecTracer}
+      #   top-level module).
+      # @return [Object] a backend instance satisfying {REQUIRED_METHODS}.
+      def self.build(cache_path:, configuration: RSpecTracer)
+        case configuration.storage_backend
+        when :sqlite
+          build_sqlite(cache_path: cache_path, configuration: configuration)
+        else
+          build_json(cache_path: cache_path, configuration: configuration)
+        end
+      end
+
+      # Internal helper for the tracer pipeline.
+      # @api private
+      def self.build_json(cache_path:, configuration:)
+        require_relative 'json_backend'
+        JsonBackend.new(
+          cache_path: cache_path,
+          logger: configuration.logger,
+          retention_local_count: configuration.cache_retention_local_count,
+          warn_per_file_mb: configuration.cache_size_warn_per_file_mb,
+          warn_total_mb: configuration.cache_size_warn_total_mb,
+          serializer: configuration.storage_backend_opts[:serializer] || :json
+        )
+      end
+
+      # Internal helper for the tracer pipeline.
+      # @api private
+      def self.build_sqlite(cache_path:, configuration:)
+        require_relative 'sqlite_backend'
+        SqliteBackend.new(cache_path: cache_path, logger: configuration.logger)
+      rescue SqliteBackend::SqliteBackendError => e
+        configuration.logger.warn(
+          "rspec-tracer: sqlite backend unavailable (#{e.message}); falling back to :json"
+        )
+        build_json(cache_path: cache_path, configuration: configuration)
+      end
     end
   end
 end

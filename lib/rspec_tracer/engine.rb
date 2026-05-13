@@ -18,6 +18,7 @@ require_relative 'tracker/io_hooks'
 require_relative 'tracker/loaded_files_tracker'
 require_relative 'tracker/new_file_detector'
 require_relative 'tracker/whole_suite_invalidators'
+require_relative 'storage/backend'
 require_relative 'storage/json_backend'
 require_relative 'storage/schema'
 require_relative 'storage/snapshot'
@@ -429,45 +430,13 @@ module RSpecTracer
     end
 
     # Resolve the configured storage backend to a concrete instance.
-    # JsonBackend threads the retention / size-budget knobs and the
-    # serializer opt; SqliteBackend ignores them (single-file,
-    # latest-run only). A missing sqlite3 gem or JRuby / MRI < 3.2
-    # host raises SqliteBackendError; we warn and fall back to the
-    # default :json backend so the user's suite still runs - same
-    # graceful-degradation contract as the remote cache backends.
+    # Delegates to {RSpecTracer::Storage::Backend.build}, the single
+    # factory shared with the CLI sub-commands so `cache:info` /
+    # `explain` compose correctly with `storage_backend :sqlite`.
     def build_storage_backend(cache_path)
-      case @configuration.storage_backend
-      when :sqlite
-        build_sqlite_backend(cache_path)
-      else
-        build_json_backend(cache_path)
-      end
-    end
-
-    # Internal method on the tracer pipeline.
-    # @api private
-    def build_json_backend(cache_path)
-      RSpecTracer::Storage::JsonBackend.new(
-        cache_path: cache_path,
-        logger: @configuration.logger,
-        retention_local_count: @configuration.cache_retention_local_count,
-        warn_per_file_mb: @configuration.cache_size_warn_per_file_mb,
-        warn_total_mb: @configuration.cache_size_warn_total_mb,
-        serializer: @configuration.storage_backend_opts[:serializer] || :json
+      RSpecTracer::Storage::Backend.build(
+        cache_path: cache_path, configuration: @configuration
       )
-    end
-
-    # Internal method on the tracer pipeline.
-    # @api private
-    def build_sqlite_backend(cache_path)
-      RSpecTracer::Storage::SqliteBackend.new(
-        cache_path: cache_path, logger: @configuration.logger
-      )
-    rescue RSpecTracer::Storage::SqliteBackend::SqliteBackendError => e
-      @configuration.logger.warn(
-        "rspec-tracer: sqlite backend unavailable (#{e.message}); falling back to :json"
-      )
-      build_json_backend(cache_path)
     end
 
     # Internal method on the tracer pipeline.
