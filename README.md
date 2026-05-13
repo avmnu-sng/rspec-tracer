@@ -144,6 +144,17 @@ eager-loaded test environments — see
 [`CHANGELOG.md`](CHANGELOG.md) "Deferred to 2.1" for the planned
 contract.
 
+**Rails engines:** a gem-loaded engine's own `lib/` files are
+`require`d at gem-load time via the Gemfile.lock cascade and land
+in the boot set **regardless of `eager_load`**. Editing them
+re-runs every example — same SAFE-but-coarser shape as the
+`eager_load = true` case above. The rationale (closing the
+constants-lookup blind spot) lives in
+[`lib/rspec_tracer/tracker/loaded_files_tracker.rb`](lib/rspec_tracer/tracker/loaded_files_tracker.rb).
+Teams that want tighter per-example precision and accept the blind
+spot can set `transitive_load_tracking false` — see
+[`COOKBOOK.md`](COOKBOOK.md) recipe 2 for the trade-off.
+
 ## Per-example `tracks:` DSL
 
 Annotate any describe / context / example with extra inputs the

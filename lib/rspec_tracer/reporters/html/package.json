@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Frontend bundle for RSpec-Tracer's HTML reporter (M6.2). Built output is committed to dist/; users never run npm.",
+  "description": "Frontend bundle for RSpec-Tracer's HTML reporter. Built output is committed to dist/; users never run npm.",
   "scripts": {
     "build": "vite build",
     "dev": "vite",
