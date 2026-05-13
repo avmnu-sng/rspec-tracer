@@ -3,10 +3,12 @@
 require 'spec_helper'
 require 'stringio'
 require 'tmpdir'
-require 'json'
-require 'fileutils'
+require 'set'
 
 require 'rspec_tracer/cli/cache_info'
+require 'rspec_tracer/storage/json_backend'
+require 'rspec_tracer/storage/snapshot'
+require 'rspec_tracer/storage/schema'
 
 # rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations, RSpec/InstanceVariable
 RSpec.describe RSpecTracer::CLI::CacheInfo do
@@ -22,37 +24,90 @@ RSpec.describe RSpecTracer::CLI::CacheInfo do
       end
     end
 
-    context 'with a populated cache' do
+    context 'with a populated cache (json backend)' do
       before do
         @tmp_dir = Dir.mktmpdir
-        run_id = 'run_abc123'
-        run_dir = File.join(@tmp_dir, run_id)
-        FileUtils.mkdir_p(run_dir)
-        File.write(File.join(@tmp_dir, 'last_run.json'),
-                   JSON.dump('run_id' => run_id, 'generated_at' => '2026-05-02T17:00:00Z'))
-        File.write(File.join(run_dir, 'all_examples.json'),
-                   JSON.dump('a' => { 'description' => 'one' }, 'b' => { 'description' => 'two' }))
-        allow(RSpecTracer).to receive(:cache_path).and_return(@tmp_dir)
+        snapshot = RSpecTracer::Storage::Snapshot.empty(
+          schema_version: RSpecTracer::Storage::Schema::CURRENT, run_id: 'run_abc123'
+        )
+        snapshot.all_examples = { 'a' => { 'description' => 'one' }, 'b' => { 'description' => 'two' } }
+        RSpecTracer::Storage::JsonBackend.new(cache_path: @tmp_dir).save_graph(
+          snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT
+        )
+        allow(RSpecTracer).to receive_messages(cache_path: @tmp_dir, storage_backend: :json)
       end
 
       after { FileUtils.rm_rf(@tmp_dir) if @tmp_dir }
 
-      it 'prints cache_path, size, last_run id, generated_at, and example count' do
+      it 'prints cache_path, size, last_run id, and example count' do
         expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
         expect(stdout.string).to include('cache_path:')
         expect(stdout.string).to include('size:')
         expect(stdout.string).to include('last_run:   run_abc123')
-        expect(stdout.string).to include('generated:  2026-05-02T17:00:00Z')
         expect(stdout.string).to include('examples:   2 tracked')
       end
     end
 
-    context 'with no last_run.json' do
+    context 'with a populated cache (sqlite backend)', :sqlite do
+      before do
+        skip 'sqlite backend unavailable on this Ruby' unless sqlite_available?
+        @tmp_dir = Dir.mktmpdir
+        snapshot = RSpecTracer::Storage::Snapshot.empty(
+          schema_version: RSpecTracer::Storage::Schema::CURRENT, run_id: 'run_sqlite_xyz'
+        )
+        snapshot.all_examples = { 'a' => { 'description' => 'one' }, 'b' => { 'description' => 'two' } }
+        RSpecTracer::Storage::SqliteBackend.new(cache_path: @tmp_dir).save_graph(
+          snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT
+        )
+        allow(RSpecTracer).to receive_messages(cache_path: @tmp_dir, storage_backend: :sqlite)
+      end
+
+      after { FileUtils.rm_rf(@tmp_dir) if @tmp_dir }
+
+      # Regression for #183: the CLI must read the latest run via
+      # backend.last_run_id (sqlite's meta table), not assume the
+      # JsonBackend on-disk last_run.json layout.
+      it 'resolves last_run + example count under storage_backend :sqlite' do
+        expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
+        expect(stdout.string).to include('last_run:   run_sqlite_xyz')
+        expect(stdout.string).to include('examples:   2 tracked')
+      end
+
+      def sqlite_available?
+        return false unless RUBY_ENGINE == 'ruby'
+
+        require 'sqlite3'
+        require 'rspec_tracer/storage/sqlite_backend'
+        true
+      rescue LoadError
+        false
+      end
+    end
+
+    context 'with no cache' do
       it 'reports the empty-cache state and exits 0' do
         Dir.mktmpdir do |dir|
-          allow(RSpecTracer).to receive(:cache_path).and_return(dir)
+          allow(RSpecTracer).to receive_messages(cache_path: dir, storage_backend: :json)
           expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
-          expect(stdout.string).to include('no last_run.json yet')
+          expect(stdout.string).to include('no cache yet')
+        end
+      end
+    end
+
+    context 'with a cache whose schema_version does not match the gem' do
+      # last_run_id resolves (the stored run is real), but load_graph
+      # returns nil because the schema doesn't match Schema::CURRENT.
+      # The CLI must surface the mismatch without crashing or printing
+      # a misleading example count.
+      it 'prints the schema-mismatch banner and exits 0' do
+        Dir.mktmpdir do |dir|
+          File.write(File.join(dir, 'last_run.json'),
+                     JSON.dump('schema_version' => 9999, 'run_id' => 'stale_run'))
+          allow(RSpecTracer).to receive_messages(cache_path: dir, storage_backend: :json)
+
+          expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
+          expect(stdout.string).to include('last_run:   stale_run')
+          expect(stdout.string).to include('schema mismatch')
         end
       end
     end
