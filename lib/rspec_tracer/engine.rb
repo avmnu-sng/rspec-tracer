@@ -154,12 +154,24 @@ module RSpecTracer
       @filtered_examples[example_id] || EXAMPLE_RUN_REASON[:no_cache]
     end
 
-    # Internal method on the tracer pipeline.
+    # Records one example registration into the engine's per-run
+    # state. Overwrites any prior `@all_examples[id]` entry on
+    # purpose: on warm runs, `seed_all_examples_from_previous` seeds
+    # `@all_examples` with the prior snapshot's metadata (including
+    # the prior `:run_reason`), and the RunnerHook's per-example
+    # call here carries this run's freshly-tagged value. Preserving
+    # the seeded entry via `||=` would persist the stale prior
+    # reason and surface "No cache" in `report.json#run_reason` for
+    # examples re-run because they failed / pended / were
+    # interrupted / had files change / had env change. Duplicate
+    # detection is unaffected: duplicates accumulate in
+    # `@duplicate_examples`, and `deregister_duplicate_examples`
+    # drops them from `@all_examples` outright.
     # @api private
     def register_example(example)
       example_id = example[:example_id]
       @registry.register(example_id, metadata: example, identity_hash: example_id)
-      @all_examples[example_id] ||= example
+      @all_examples[example_id] = example
       @duplicate_examples[example_id] ||= []
       @duplicate_examples[example_id] << example
       self
