@@ -187,6 +187,16 @@ class-dispatch tracking to trim the invalidator scope under
 eager-loaded test environments — see
 <a href="CHANGELOG.md"><code>CHANGELOG.md</code></a> &quot;Deferred to 2.1&quot; for the planned
 contract.</p>
+<p><strong>Rails engines:</strong> a gem-loaded engine's own <code>lib/</code> files are
+<code>require</code>d at gem-load time via the Gemfile.lock cascade and land
+in the boot set <strong>regardless of <code>eager_load</code></strong>. Editing them
+re-runs every example — same SAFE-but-coarser shape as the
+<code>eager_load = true</code> case above. The rationale (closing the
+constants-lookup blind spot) lives in
+<a href="lib/rspec_tracer/tracker/loaded_files_tracker.rb"><code>lib/rspec_tracer/tracker/loaded_files_tracker.rb</code></a>.
+Teams that want tighter per-example precision and accept the blind
+spot can set <code>transitive_load_tracking false</code> — see
+<a href="COOKBOOK.md"><code>COOKBOOK.md</code></a> recipe 2 for the trade-off.</p>
 <h2 id="Per_example__tracks___DSL">Per-example <code>tracks:</code> DSL</h2>
 <p>Annotate any describe / context / example with extra inputs the
 tracker can't auto-observe — config files baked at boot, env-var
@@ -538,7 +548,7 @@ here's where its content lives now:</p>
 </table></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:07:28 2026 by
+  Generated on Wed May 13 21:33:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

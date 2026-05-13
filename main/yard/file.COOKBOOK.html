@@ -143,6 +143,42 @@ load at boot and any <code>app/</code> edit triggers a whole-suite re-run. To
 recover per-example precision, set <code>config.eager_load = false</code> in
 <code>config/environments/test.rb</code>. See README &quot;How it works&quot; for the
 full rationale.</p>
+<h3 id="Rails_engines___lib___always_lands_in_the_boot_set">Rails engines: <code>lib/</code> always lands in the boot set</h3>
+<p>A gem-loaded engine's own <code>lib/</code> files are <code>require</code>d at gem load
+time (via the Gemfile.lock cascade) and land in the boot set
+<strong>regardless of <code>eager_load</code></strong>. Editing any <code>lib/&lt;engine_name&gt;/...</code>
+file re-runs every example in the engine's spec suite. This is
+<strong>safe</strong> (never misses a dep) but <strong>coarser</strong> than per-example
+attribution. The behavior is deliberate: it closes the
+constants-lookup blind spot that pure coverage-diff tracking
+misses (an example that references a constant defined in a loaded
+file produces no coverage delta against that file, even though the
+example depends on it).</p>
+<p>If your engine's <code>lib/</code>-edit cycle is bottlenecked by whole-suite
+re-runs and you've audited that your suite doesn't exercise the
+constants-lookup pattern, opt out with:</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
+</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_transitive_load_tracking'>transitive_load_tracking</span> <span class='kw'>false</span>
+<span class='kw'>end</span>
+</code></pre>
+<p>Trade-off: this restores 1.x's pure coverage-diff behavior. The
+constants-lookup blind spot returns — an example that only
+references a constant from a loaded file (without exercising any
+of its lines) will not be tagged as depending on that file, so
+editing the file may not re-run the example. Most suites are
+unaffected (any line execution against the file already attributes
+the dep correctly); audit yours before flipping. The 2.1
+<code>track_class_attribution</code> work will close this gap more precisely.</p>
+<h3 id="Sub_rspec_summaries__engine___dummy_app_">Sub-rspec summaries (engine + dummy-app)</h3>
+<p>If your engine fixture does sub-process rspec invocations — e.g.,
+acceptance specs that <code>chdir</code> into a generated dummy app and run
+a nested <code>rspec</code> — you'll see two rspec summary totals in the
+same <code>bundle exec rspec</code> invocation (one from the inner sub-rspec,
+one from the outer). rspec-tracer tracks the <strong>outer</strong> process
+and is the authoritative example count for your cache; the inner
+summary belongs to the dummy-app sub-process and is not visible
+to the tracer.</p>
 <hr />
 <h2 id="3__Migrate_a_1_x_project_to_2_0">3. Migrate a 1.x project to 2.0</h2>
 <p>Goal: zero-touch upgrade preserving every 1.x behavior + adopting
@@ -452,7 +488,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:07:29 2026 by
+  Generated on Wed May 13 21:33:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

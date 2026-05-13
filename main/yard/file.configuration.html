@@ -615,6 +615,25 @@
       <span class='ivar'>@reports_s3_path</span> <span class='op'>=</span> <span class='id identifier rubyid_path'>path</span> <span class='kw'>if</span> <span class='id identifier rubyid_valid_s3_path?'>valid_s3_path?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
+    <span class='comment'># Probe-path predicate. True when the user explicitly set
+</span>    <span class='comment'># `reports_s3_path` via the DSL OR the `RSPEC_TRACER_REPORTS_S3_PATH`
+</span>    <span class='comment'># environment variable. Distinct from {#reports_s3_path} (the
+</span>    <span class='comment'># getter), which fires a one-time deprecation warning on every
+</span>    <span class='comment'># call from an unconfigured state — including the
+</span>    <span class='comment'># `RemoteCache::UserTasks#derive_from_legacy_dsl` probe that runs
+</span>    <span class='comment'># whenever any `rake rspec_tracer:remote_cache:*` task fires.
+</span>    <span class='comment'># Callers that need to detect whether the legacy DSL was actually
+</span>    <span class='comment'># used (vs probing) should read this predicate first.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># @return [Boolean]
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_reports_s3_path_set?'>reports_s3_path_set?</span>
+      <span class='kw'>return</span> <span class='kw'>true</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@reports_s3_path</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='ivar'>@reports_s3_path</span>
+      <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_REPORTS_S3_PATH</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+
+      <span class='id identifier rubyid_env_value'>env_value</span> <span class='op'>=</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_REPORTS_S3_PATH</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+      <span class='op'>!</span><span class='id identifier rubyid_env_value'>env_value</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='id identifier rubyid_env_value'>env_value</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+    <span class='kw'>end</span>
+
     <span class='comment'># Deprecated in 2.0. Migration: `remote_cache_backend :s3, ...,
 </span>    <span class='comment'># local: true`. Kept for backward compat; UserTasks derives the
 </span>    <span class='comment'># `local:` opt from this when `remote_cache_backend` is absent.
@@ -1433,7 +1452,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:07:29 2026 by
+  Generated on Wed May 13 21:33:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

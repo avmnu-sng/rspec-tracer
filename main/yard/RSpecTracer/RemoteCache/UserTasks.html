@@ -817,7 +817,10 @@ run / graceful failure.</p></div>
 127
 128
 129
-130</pre>
+130
+131
+132
+133</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 108</span>
@@ -834,9 +837,12 @@ run / graceful failure.</p></div>
   <span class='kw'>end</span>
 
   <span class='id identifier rubyid_tree_sha'>tree_sha</span> <span class='op'>=</span> <span class='id identifier rubyid_head_tree_sha'>head_tree_sha</span>
-  <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_ref'>ref</span><span class='op'>|</span>
+  <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='id identifier rubyid_origin'>origin</span><span class='op'>|</span>
     <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'>debug</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: trying ref </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_ref'>ref</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
-    <span class='kw'>return</span> <span class='kw'>true</span> <span class='kw'>if</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span><span class='rparen'>)</span>
+    <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span><span class='rparen'>)</span>
+
+    <span class='id identifier rubyid_log_download_success'>log_download_success</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='id identifier rubyid_origin'>origin</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
+    <span class='kw'>return</span> <span class='kw'>true</span>
   <span class='kw'>end</span>
 
   <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer remote_cache: no suitable cache found; cold run</span><span class='tstring_end'>&#39;</span></span>
@@ -885,10 +891,6 @@ failure.</p>
       <pre class="lines">
 
 
-168
-169
-170
-171
 172
 173
 174
@@ -899,10 +901,14 @@ failure.</p>
 179
 180
 181
-182</pre>
+182
+183
+184
+185
+186</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 168</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 172</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span>
   <span class='id identifier rubyid_ttl'>ttl</span> <span class='op'>=</span> <span class='id identifier rubyid_safe_config'>safe_config</span><span class='lparen'>(</span><span class='symbol'>:cache_retention_pr_branch_ttl_seconds</span><span class='rparen'>)</span>
@@ -913,7 +919,7 @@ failure.</p>
 
   <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_build_admin_ancestry'>build_admin_ancestry</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_removed'>removed</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>pr_branch_ttl_seconds:</span> <span class='id identifier rubyid_ttl'>ttl</span><span class='rparen'>)</span>
-  <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'>debug</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: prune_all removed </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_removed'>removed</span><span class='embexpr_end'>}</span><span class='tstring_content'> refs</span><span class='tstring_end'>&quot;</span></span>
+  <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_info'>info</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: prune_all removed </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_removed'>removed</span><span class='embexpr_end'>}</span><span class='tstring_content'> refs</span><span class='tstring_end'>&quot;</span></span>
   <span class='id identifier rubyid_removed'>removed</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: prune_all failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
@@ -984,9 +990,6 @@ non-zero into the test suite (the tests already passed).</p>
       <pre class="lines">
 
 
-145
-146
-147
 148
 149
 150
@@ -997,10 +1000,14 @@ non-zero into the test suite (the tests already passed).</p>
 155
 156
 157
-158</pre>
+158
+159
+160
+161
+162</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 145</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/user_tasks.rb', line 148</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_upload!'>upload!</span>
   <span class='id identifier rubyid_ancestry'>ancestry</span> <span class='op'>=</span> <span class='id identifier rubyid_build_ancestry'>build_ancestry</span>
@@ -1008,6 +1015,7 @@ non-zero into the test suite (the tests already passed).</p>
   <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='id identifier rubyid_build_backend'>build_backend</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
 
   <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_upload'>upload</span><span class='lparen'>(</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_branch_ref'>branch_ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='id identifier rubyid_head_tree_sha'>head_tree_sha</span><span class='rparen'>)</span>
+  <span class='ivar'>@logger</span><span class='period'>.</span><span class='id identifier rubyid_info'>info</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote_cache: uploaded cache to </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_ancestry'>ancestry</span><span class='period'>.</span><span class='id identifier rubyid_branch_ref'>branch_ref</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
   <span class='id identifier rubyid_maybe_update_branch_refs'>maybe_update_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_maybe_prune'>maybe_prune</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='comma'>,</span> <span class='id identifier rubyid_ancestry'>ancestry</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_maybe_warn_unbounded'>maybe_warn_unbounded</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
@@ -1026,7 +1034,7 @@ non-zero into the test suite (the tests already passed).</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May 13 21:07:32 2026 by
+  Generated on Wed May 13 21:34:00 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
