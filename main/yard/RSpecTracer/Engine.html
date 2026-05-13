@@ -1939,12 +1939,12 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
-369
-370
-371</pre>
+371
+372
+373</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 369</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 371</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_filtered_example_ids'>filtered_example_ids</span>
   <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
@@ -1978,8 +1978,6 @@ already run via the no_cache path; no special-casing needed.</p>
       <pre class="lines">
 
 
-330
-331
 332
 333
 334
@@ -1989,10 +1987,12 @@ already run via the no_cache path; no special-casing needed.</p>
 338
 339
 340
-341</pre>
+341
+342
+343</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 330</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 332</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_finalize'>finalize</span>
   <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_all_example_ids'>all_example_ids</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span>
@@ -2041,8 +2041,6 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
-351
-352
 353
 354
 355
@@ -2055,10 +2053,12 @@ carries forward the contribution of skipped examples.</p>
 362
 363
 364
-365</pre>
+365
+366
+367</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 351</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 353</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_merge_skipped_coverage'>merge_skipped_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_skipped_ids'>skipped_ids</span><span class='comma'>,</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_source'>source</span> <span class='op'>=</span> <span class='id identifier rubyid_previous_examples_coverage'>previous_examples_coverage</span> <span class='op'>||</span> <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_examples_coverage'>examples_coverage</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
@@ -2108,21 +2108,23 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
-310
 311
 312
 313
 314
 315
-316</pre>
+316
+317
+318</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 310</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 311</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_failed'>on_example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
 
-  <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:failed</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_status'>status</span> <span class='op'>=</span> <span class='id identifier rubyid_previously_flaky?'>previously_flaky?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='symbol'>:flaky</span> <span class='op'>:</span> <span class='symbol'>:failed</span>
+  <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>self</span>
 <span class='kw'>end</span></pre>
@@ -2165,7 +2167,8 @@ carries forward the contribution of skipped examples.</p>
 303
 304
 305
-306</pre>
+306
+307</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 300</span>
@@ -2173,7 +2176,8 @@ carries forward the contribution of skipped examples.</p>
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_passed'>on_example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
 
-  <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:passed</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_status'>status</span> <span class='op'>=</span> <span class='id identifier rubyid_flaky_history?'>flaky_history?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='symbol'>:flaky</span> <span class='op'>:</span> <span class='symbol'>:passed</span>
+  <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>self</span>
 <span class='kw'>end</span></pre>
@@ -2210,16 +2214,16 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
-320
-321
 322
 323
 324
 325
-326</pre>
+326
+327
+328</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 320</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 322</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_on_example_pending'>on_example_pending</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
@@ -2321,12 +2325,12 @@ carries forward the contribution of skipped examples.</p>
       <pre class="lines">
 
 
-375
-376
-377</pre>
+377
+378
+379</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 375</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/engine.rb', line 377</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_previous_snapshot_loaded?'>previous_snapshot_loaded?</span>
   <span class='op'>!</span><span class='ivar'>@previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -2653,7 +2657,7 @@ rubocop:disable Metrics/PerceivedComplexity</li>
 </div>
 
       <div id="footer">
-  Generated on Wed May 13 21:45:15 2026 by
+  Generated on Wed May 13 22:54:45 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

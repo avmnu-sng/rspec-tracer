@@ -361,7 +361,8 @@
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_passed'>on_example_passed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
 
-      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:passed</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_status'>status</span> <span class='op'>=</span> <span class='id identifier rubyid_flaky_history?'>flaky_history?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='symbol'>:flaky</span> <span class='op'>:</span> <span class='symbol'>:passed</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
       <span class='kw'>self</span>
     <span class='kw'>end</span>
@@ -371,7 +372,8 @@
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_on_example_failed'>on_example_failed</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='ivar'>@duplicate_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='op'>&amp;.</span><span class='id identifier rubyid_count'>count</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>&gt;</span> <span class='int'>1</span>
 
-      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='symbol'>:failed</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_status'>status</span> <span class='op'>=</span> <span class='id identifier rubyid_previously_flaky?'>previously_flaky?</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='symbol'>:flaky</span> <span class='op'>:</span> <span class='symbol'>:failed</span>
+      <span class='ivar'>@registry</span><span class='period'>.</span><span class='id identifier rubyid_update_status'>update_status</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='rparen'>)</span>
       <span class='id identifier rubyid_record_execution_result'>record_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
       <span class='kw'>self</span>
     <span class='kw'>end</span>
@@ -1001,6 +1003,30 @@
       <span class='ivar'>@all_examples</span><span class='lbracket'>[</span><span class='id identifier rubyid_example_id'>example_id</span><span class='rbracket'>]</span><span class='lbracket'>[</span><span class='symbol'>:execution_result</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_formatted_execution_result'>formatted_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
+    <span class='comment'># Ports the 1.x flaky-detection contract: an example transitions
+</span>    <span class='comment'># into `:flaky` when it (a) failed on the previous run and passes
+</span>    <span class='comment'># on this run (the canonical &quot;intermittent&quot; signal) OR (b) was
+</span>    <span class='comment'># already flaky on the previous run, regardless of this run&#39;s
+</span>    <span class='comment'># outcome (sticky once detected). Mirrors 1.x&#39;s
+</span>    <span class='comment'># `ReportGenerator#generate_flaky_examples_report` which iterated
+</span>    <span class='comment'># `prev_failed | prev_flaky` and registered the example as flaky
+</span>    <span class='comment'># unless the prev_failed branch failed again this run.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_flaky_history?'>flaky_history?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_previously_failed?'>previously_failed?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_previously_flaky?'>previously_flaky?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_previously_failed?'>previously_failed?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+      <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_failed_examples'>failed_examples</span><span class='op'>&amp;.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Internal method on the tracer pipeline.
+</span>    <span class='comment'># @api private
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_previously_flaky?'>previously_flaky?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+      <span class='ivar'>@previous_snapshot</span><span class='op'>&amp;.</span><span class='id identifier rubyid_flaky_examples'>flaky_examples</span><span class='op'>&amp;.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+
     <span class='comment'># Internal method on the tracer pipeline.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_formatted_execution_result'>formatted_execution_result</span><span class='lparen'>(</span><span class='id identifier rubyid_result'>result</span><span class='rparen'>)</span>
@@ -1191,7 +1217,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 21:45:13 2026 by
+  Generated on Wed May 13 22:54:42 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
