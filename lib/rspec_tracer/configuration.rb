@@ -76,6 +76,18 @@ module RSpecTracer
     # Internal constant.
     # @api private
     STORAGE_BACKEND_SERIALIZERS = %i[json msgpack].freeze
+    # Default Ruby `Coverage` modes when the user has not called the
+    # `coverage_modes` DSL. Matches bare `Coverage.start` semantics so
+    # legacy configs continue to emit lines-only `coverage.json` shape.
+    DEFAULT_COVERAGE_MODES = %i[lines].freeze
+    # Allowed Ruby `Coverage` modes accepted by the `coverage_modes`
+    # DSL. The set tracks Ruby 3.1+ `Coverage.start` keyword args.
+    # `coverage.json` ships the lines-only `Array<Integer|nil>` shape
+    # per file regardless — branches / methods / oneshot_lines / eval
+    # data is collected by Ruby but the user-facing artifact stays on
+    # the documented 1.x shape (see UPGRADING `#SimpleCov branch
+    # coverage now works` for SimpleCov interop).
+    COVERAGE_MODES = %i[lines branches methods oneshot_lines eval].freeze
     # Per-save retention on the local cache's run-id directories.
     # 5 keeps enough history for rollback debugging without letting
     # the cache grow unbounded (issue #20). 0 opts out entirely.
@@ -1126,6 +1138,70 @@ module RSpecTracer
     # @api private
     EMPTY_STORAGE_BACKEND_OPTS = {}.freeze
     private_constant :EMPTY_STORAGE_BACKEND_OPTS
+
+    # Configure which Ruby `Coverage` modes rspec-tracer enables on
+    # the standalone path (when SimpleCov is not running). Pass a
+    # Symbol Array drawn from {COVERAGE_MODES}; `coverage_modes [:lines,
+    # :branches]` translates to `Coverage.start(lines: true, branches:
+    # true)`.
+    #
+    # When SimpleCov is loaded and running at `RSpecTracer.start`
+    # time, the DSL is inert — SimpleCov owns `Coverage.start` and
+    # controls modes via its own `enable_coverage :branch` etc. (the
+    # documented load-order contract; see UPGRADING `#SimpleCov branch
+    # coverage now works`).
+    #
+    # The default `[:lines]` matches the pre-#195 bare `Coverage.start`
+    # semantics so existing configs continue to emit the lines-only
+    # `coverage.json` shape. The `coverage.json` artifact itself stays
+    # on the 1.x `Array<Integer|nil>` per-file format regardless of
+    # modes (storage-format stability). Branches / methods / etc.
+    # data is available to SimpleCov via the documented interop and
+    # to downstream consumers via `Coverage.peek_result` directly.
+    #
+    # @param modes [Array<Symbol>, Symbol, nil] one or more entries
+    #   from {COVERAGE_MODES} (`:lines`, `:branches`, `:methods`,
+    #   `:oneshot_lines`, `:eval`); a single Symbol is wrapped to
+    #   an Array.
+    # @return [Array<Symbol>] the resolved (frozen) modes array. The
+    #   no-arg call returns the current setting (or
+    #   {DEFAULT_COVERAGE_MODES} if unset).
+    # @raise [InvalidUsageError] when `modes` is empty or contains an
+    #   unknown mode.
+    # @example Branch coverage on top of the default lines
+    #   coverage_modes [:lines, :branches]
+    # @example Methods coverage in addition (for downstream tooling)
+    #   coverage_modes [:lines, :methods]
+    def coverage_modes(*args)
+      return read_coverage_modes if args.empty?
+
+      modes_array = Array(args.length == 1 ? args.first : args).flatten.map(&:to_sym)
+      raise InvalidUsageError, 'coverage_modes requires at least one mode (e.g. [:lines])' if modes_array.empty?
+
+      unknown = modes_array - COVERAGE_MODES
+      unless unknown.empty?
+        raise InvalidUsageError,
+              "unknown coverage modes: #{unknown.inspect}; allowed: #{COVERAGE_MODES.inspect}"
+      end
+
+      @coverage_modes = modes_array.uniq.freeze
+    end
+
+    # Hash form of {#coverage_modes} for splatting into
+    # `Coverage.start`. `[:lines, :branches]` becomes
+    # `{lines: true, branches: true}`.
+    def coverage_modes_for_start
+      coverage_modes.to_h { |m| [m, true] }.freeze
+    end
+
+    # Internal method on the tracer pipeline.
+    # @api private
+    def read_coverage_modes
+      return @coverage_modes if defined?(@coverage_modes) && @coverage_modes
+
+      DEFAULT_COVERAGE_MODES
+    end
+    private :read_coverage_modes
 
     # Internal method on the tracer pipeline.
     # @api private

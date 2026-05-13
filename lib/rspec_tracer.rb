@@ -190,7 +190,14 @@ module RSpecTracer
 
       require 'coverage'
 
-      ::Coverage.start
+      return if ::Coverage.respond_to?(:running?) && ::Coverage.running?
+
+      ::Coverage.start(**coverage_modes_for_start)
+    rescue RuntimeError
+      # ::Coverage.start raises if already started on some Rubies
+      # without a running? predicate; safe to ignore (matches
+      # Engine#ensure_coverage_started behavior).
+      nil
     end
 
     # Detects Rails by the presence of `::Rails::VERSION`. Users who

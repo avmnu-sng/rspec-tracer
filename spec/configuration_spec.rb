@@ -452,6 +452,80 @@ RSpec.describe RSpecTracer::Configuration do
   end
 
   # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength
+  describe '#coverage_modes' do
+    it 'defaults to [:lines] when never configured' do
+      expect(config.coverage_modes).to eq(%i[lines])
+    end
+
+    it 'accepts a Symbol Array' do
+      config.coverage_modes(%i[lines branches])
+
+      expect(config.coverage_modes).to eq(%i[lines branches])
+    end
+
+    it 'coerces strings to symbols' do
+      config.coverage_modes(%w[lines branches])
+
+      expect(config.coverage_modes).to eq(%i[lines branches])
+    end
+
+    it 'accepts a single Symbol (wrapped to Array)' do
+      config.coverage_modes(:lines)
+
+      expect(config.coverage_modes).to eq(%i[lines])
+    end
+
+    it 'accepts variadic Symbols' do
+      config.coverage_modes(:lines, :branches, :methods)
+
+      expect(config.coverage_modes).to eq(%i[lines branches methods])
+    end
+
+    it 'de-duplicates the modes array' do
+      config.coverage_modes(%i[lines lines branches])
+
+      expect(config.coverage_modes).to eq(%i[lines branches])
+    end
+
+    it 'freezes the resolved modes array' do
+      config.coverage_modes(%i[lines branches])
+
+      expect(config.coverage_modes).to be_frozen
+    end
+
+    it 'accepts every documented mode' do
+      config.coverage_modes(%i[lines branches methods oneshot_lines eval])
+
+      expect(config.coverage_modes).to eq(%i[lines branches methods oneshot_lines eval])
+    end
+
+    it 'raises InvalidUsageError for an unknown mode' do
+      expect { config.coverage_modes(%i[lines bogus]) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /unknown coverage modes/)
+    end
+
+    it 'raises InvalidUsageError on an empty array' do
+      expect { config.coverage_modes([]) }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /at least one mode/)
+    end
+  end
+
+  describe '#coverage_modes_for_start' do
+    it 'maps the default lines-only Array into a kwarg Hash' do
+      expect(config.coverage_modes_for_start).to eq(lines: true)
+    end
+
+    it 'maps every set mode to `true` (kwarg form for Coverage.start)' do
+      config.coverage_modes(%i[lines branches methods])
+
+      expect(config.coverage_modes_for_start).to eq(lines: true, branches: true, methods: true)
+    end
+
+    it 'freezes the hash so it cannot drift between cached lookups' do
+      expect(config.coverage_modes_for_start).to be_frozen
+    end
+  end
+
   describe '#ignore_spec_files' do
     it 'returns a frozen empty array when never configured' do
       result = config.ignore_spec_files
