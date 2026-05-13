@@ -359,10 +359,10 @@ falls back to `:json` automatically.
 
 ## 10. Debug "why did this test re-run?"
 
-Use `bin/rspec-tracer explain <example_id_or_substring>`:
+Use `bundle exec rspec-tracer explain <example_id_or_substring>`:
 
 ```sh
-bin/rspec-tracer explain 'AdminController#create'
+bundle exec rspec-tracer explain 'AdminController#create'
 ```
 
 Prints the example's last-run status, dependency set, and the run-
@@ -378,7 +378,7 @@ rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
 by reason: 38 Files changed · 4 Failed previously
 ```
 
-For deeper config-level debugging, `bin/rspec-tracer doctor`
+For deeper config-level debugging, `bundle exec rspec-tracer doctor`
 diagnoses the boot-time state of every contract (SimpleCov load
 order, schema version, remote-cache reachability, AR-schema config).
 

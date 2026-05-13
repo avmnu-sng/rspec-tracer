@@ -365,19 +365,23 @@ Or override per-run via env: `RSPEC_TRACER_STORAGE=sqlite`.
 
 ## Command-line tools
 
-`bin/rspec-tracer` exposes five sub-commands:
+`rspec-tracer` exposes five sub-commands. Run them via Bundler so the
+gem's executable resolves cleanly without needing `bundle binstubs
+rspec-tracer` first:
 
 ```sh
-bin/rspec-tracer doctor         # diagnose config + environment
-bin/rspec-tracer cache:info     # size, last run, invalidation stats
-bin/rspec-tracer cache:clear    # rm cache dirs
-bin/rspec-tracer report:open    # open the HTML report
-bin/rspec-tracer explain <id>   # why is <example_id> scheduled to (re-)run?
+bundle exec rspec-tracer doctor         # diagnose config + environment
+bundle exec rspec-tracer cache:info     # size, last run, invalidation stats
+bundle exec rspec-tracer cache:clear    # rm cache dirs
+bundle exec rspec-tracer report:open    # open the HTML report
+bundle exec rspec-tracer explain <id>   # why is <example_id> scheduled to (re-)run?
 ```
 
-The CLI is opt-in for local-dev convenience. The
-`rake rspec_tracer:remote_cache:*` tasks remain first-class for CI
-integration — nothing in the CLI replaces them.
+Generated binstubs (`bin/rspec-tracer …`) work too once you've run
+`bundle binstubs rspec-tracer` in your project. The CLI is opt-in for
+local-dev convenience; the `rake rspec_tracer:remote_cache:*` tasks
+remain first-class for CI integration — nothing in the CLI replaces
+them.
 
 ## SimpleCov interop
 

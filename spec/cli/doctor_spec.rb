@@ -169,26 +169,54 @@ RSpec.describe RSpecTracer::CLI::Doctor do
   end
 
   describe '.simplecov_check / .rails_check' do
-    it 'reports SimpleCov as INFO when not loaded' do
-      hide_const('::SimpleCov')
-      expect(described_class.simplecov_check).to start_with('INFO SimpleCov:')
-    end
-
-    it 'reports SimpleCov as OK when loaded' do
+    it 'reports SimpleCov as OK when loaded in this process' do
       stub_const('::SimpleCov', Module.new)
       expect(described_class.simplecov_check).to start_with('OK   SimpleCov:')
     end
 
-    it 'reports Rails as INFO when not loaded' do
-      hide_const('::Rails')
-      expect(described_class.rails_check).to start_with('INFO Rails:')
+    # Regression for #184: doctor runs in its own process via the
+    # binstub, so a project that DOES have SimpleCov in its Gemfile
+    # but isn't loading it inside doctor's boot used to get a
+    # false "not loaded" line. Probe Gem.loaded_specs first.
+    it 'reports SimpleCov as installed-but-not-loaded when its gem spec is present' do
+      hide_const('::SimpleCov')
+      sim_spec = instance_double(Gem::Specification, version: Gem::Version.new('0.22.0'))
+      allow(Gem.loaded_specs).to receive(:[]).and_call_original
+      allow(Gem.loaded_specs).to receive(:[]).with('simplecov').and_return(sim_spec)
+
+      expect(described_class.simplecov_check).to include('installed (v0.22.0')
     end
 
-    it 'reports Rails version when loaded' do
+    it 'reports SimpleCov as not-installed only when its gem spec is absent' do
+      hide_const('::SimpleCov')
+      allow(Gem.loaded_specs).to receive(:[]).and_call_original
+      allow(Gem.loaded_specs).to receive(:[]).with('simplecov').and_return(nil)
+
+      expect(described_class.simplecov_check).to include('not installed')
+    end
+
+    it 'reports Rails version when loaded in this process' do
       stub_const('::Rails', Module.new)
       stub_const('::Rails::VERSION', Module.new)
       stub_const('::Rails::VERSION::STRING', '8.0.1')
       expect(described_class.rails_check).to include('8.0.1')
+    end
+
+    it 'reports Rails as installed-but-not-loaded when its gem spec is present' do
+      hide_const('::Rails')
+      rails_spec = instance_double(Gem::Specification, version: Gem::Version.new('8.0.1'))
+      allow(Gem.loaded_specs).to receive(:[]).and_call_original
+      allow(Gem.loaded_specs).to receive(:[]).with('rails').and_return(rails_spec)
+
+      expect(described_class.rails_check).to include('installed (v8.0.1')
+    end
+
+    it 'reports Rails as not-installed only when its gem spec is absent' do
+      hide_const('::Rails')
+      allow(Gem.loaded_specs).to receive(:[]).and_call_original
+      allow(Gem.loaded_specs).to receive(:[]).with('rails').and_return(nil)
+
+      expect(described_class.rails_check).to include('not installed')
     end
   end
 end

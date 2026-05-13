@@ -109,24 +109,33 @@ module RSpecTracer
         end
       end
 
-      # Internal helper for the tracer pipeline.
-      # @api private
+      # `bundle exec rspec-tracer doctor` runs in its own process via
+      # the gem's `bin/rspec-tracer` binstub, NOT inside the user's
+      # rspec boot — so app code never loads here and a bare
+      # `defined?(::SimpleCov)` check would falsely report "not
+      # loaded" on projects that DO have SimpleCov in their
+      # Gemfile. Probe `Gem.loaded_specs` first to surface the
+      # "installed but not loaded in doctor's process" case
+      # separately from "actually not installed."
       def self.simplecov_check
-        if defined?(::SimpleCov)
-          'OK   SimpleCov:   loaded (interop active)'
-        else
-          'INFO SimpleCov:   not loaded (this is fine; SimpleCov is optional)'
-        end
+        return 'OK   SimpleCov:   loaded (interop active)' if defined?(::SimpleCov)
+
+        spec = Gem.loaded_specs['simplecov']
+        return "INFO SimpleCov:   installed (v#{spec.version}; not loaded in doctor's process)" if spec
+
+        'INFO SimpleCov:   not installed (this is fine; SimpleCov is optional)'
       end
 
-      # Internal helper for the tracer pipeline.
-      # @api private
+      # See {.simplecov_check} for the doctor-runs-in-its-own-
+      # process rationale. Same three-state probe shape: loaded in
+      # this process / installed but not loaded / not installed.
       def self.rails_check
-        if defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
-          "OK   Rails:       #{::Rails::VERSION::STRING}"
-        else
-          'INFO Rails:       not loaded (this is fine for non-Rails projects)'
-        end
+        return "OK   Rails:       #{::Rails::VERSION::STRING}" if defined?(::Rails::VERSION) && !::Rails::VERSION.nil?
+
+        spec = Gem.loaded_specs['rails']
+        return "INFO Rails:       installed (v#{spec.version}; not loaded in doctor's process)" if spec
+
+        'INFO Rails:       not installed (this is fine for non-Rails projects)'
       end
 
       # Surface a 1.x->2.0 cache mismatch BEFORE the user runs
