@@ -61,15 +61,20 @@
 
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
-<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/backend</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/json_backend</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/schema</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/sqlite_backend</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='const'>RUBY_ENGINE</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ruby</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
   <span class='comment'># Internal CLI — see {RSpecTracer} for the user-facing surface.
 </span>  <span class='comment'># @api private
 </span>  <span class='kw'>module</span> <span class='const'>CLI</span>
     <span class='comment'># `rspec-tracer cache:info` — show cache size, last run, and
-</span>    <span class='comment'># invalidation stats. Reads `last_run.json` + the run-id&#39;d JSON
-</span>    <span class='comment'># files written by Storage::JsonBackend.
+</span>    <span class='comment'># invalidation stats. Backend-agnostic: dispatches through
+</span>    <span class='comment'># {RSpecTracer::Storage::Backend.build} so `storage_backend
+</span>    <span class='comment'># :sqlite` reports the populated cache instead of the false
+</span>    <span class='comment'># &quot;no cache yet&quot; the JsonBackend-only path used to emit.
 </span>    <span class='kw'>module</span> <span class='const'>CacheInfo</span>
       <span class='comment'># @param args [Array&lt;String&gt;] sub-command args (`-h` / `--help`).
 </span>      <span class='comment'># @param stdout [IO]
@@ -84,18 +89,15 @@
         <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>cache_path: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
         <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>size:       </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_format_bytes'>format_bytes</span><span class='lparen'>(</span><span class='id identifier rubyid_directory_size'>directory_size</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
 
-        <span class='id identifier rubyid_last_run_path'>last_run_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-        <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_last_run_path'>last_run_path</span><span class='rparen'>)</span>
-          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run:   no last_run.json yet (run rspec first)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='const'>Storage</span><span class='op'>::</span><span class='const'>Backend</span><span class='period'>.</span><span class='id identifier rubyid_build'>build</span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_last_run_id'>last_run_id</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run:   no cache yet (run rspec first)</span><span class='tstring_end'>&#39;</span></span>
           <span class='kw'>return</span> <span class='int'>0</span>
         <span class='kw'>end</span>
 
-        <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_last_run_path'>last_run_path</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>run_id</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
         <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>last_run:   </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_run_id'>run_id</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
-        <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>generated:  </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>generated_at</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_manifest'>manifest</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>generated_at</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
-
-        <span class='id identifier rubyid_print_run_summary'>print_run_summary</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span>
+        <span class='id identifier rubyid_print_example_count'>print_example_count</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
         <span class='int'>0</span>
       <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>cache:info: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -109,24 +111,23 @@
 <span class='tstring_content'>          Usage: rspec-tracer cache:info
 </span><span class='tstring_content'>
 </span><span class='tstring_content'>          Show the on-disk cache size, the last run id, and example counts
-</span><span class='tstring_content'>          for the most recent run. Reads `last_run.json` plus the run-id&#39;d
-</span><span class='tstring_content'>          JSON files; does not modify any files.
+</span><span class='tstring_content'>          for the most recent run. Backend-aware: works under
+</span><span class='tstring_content'>          `storage_backend :json` (default) and `storage_backend :sqlite`.
+</span><span class='tstring_content'>          Read-only; does not modify the cache.
 </span><span class='heredoc_end'>        HELP
 </span>        <span class='int'>0</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal helper for the tracer pipeline.
 </span>      <span class='comment'># @api private
-</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_run_summary'>print_run_summary</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_run_dir'>run_dir</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
-        <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='id identifier rubyid_run_dir'>run_dir</span><span class='rparen'>)</span>
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_example_count'>print_example_count</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_snapshot'>snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span> <span class='const'>Storage</span><span class='op'>::</span><span class='const'>Schema</span><span class='op'>::</span><span class='const'>CURRENT</span><span class='rparen'>)</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>examples:   &lt;unknown&gt; (schema mismatch; next rspec run will be cold)</span><span class='tstring_end'>&#39;</span></span>
+          <span class='kw'>return</span>
+        <span class='kw'>end</span>
 
-        <span class='id identifier rubyid_all_examples_path'>all_examples_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_run_dir'>run_dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>all_examples.json</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-        <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_all_examples_path'>all_examples_path</span><span class='rparen'>)</span>
-
-        <span class='id identifier rubyid_data'>data</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_all_examples_path'>all_examples_path</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_total'>total</span> <span class='op'>=</span> <span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
-        <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>examples:   </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_total'>total</span><span class='embexpr_end'>}</span><span class='tstring_content'> tracked</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>examples:   </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'> tracked</span><span class='tstring_end'>&quot;</span></span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal helper for the tracer pipeline.
@@ -164,7 +165,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 19:36:25 2026 by
+  Generated on Wed May 13 19:54:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
