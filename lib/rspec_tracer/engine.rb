@@ -662,16 +662,27 @@ module RSpecTracer
 
     # Delegate to the legacy ::Coverage bootstrap if SimpleCov isn't
     # already running. Matches RSpecTracer.setup_coverage behavior so
-    # v2 and legacy agree on when to call ::Coverage.start.
+    # the two entry points agree on when to call ::Coverage.start
+    # AND on which Ruby Coverage modes are enabled.
     def ensure_coverage_started
       return if defined?(SimpleCov) && SimpleCov.running
       return if ::Coverage.respond_to?(:running?) && ::Coverage.running?
 
-      ::Coverage.start
+      ::Coverage.start(**configuration_coverage_modes)
     rescue RuntimeError
       # ::Coverage.start raises if already started on some Rubies
       # without a running? predicate; safe to ignore.
       nil
+    end
+
+    # Reads `coverage_modes` off the configuration when available
+    # (extended with `RSpecTracer::Configuration`). Defaults to an
+    # empty Hash for stubbed-configuration unit tests so the splat
+    # `Coverage.start(**{})` keeps lines-only legacy behavior.
+    def configuration_coverage_modes
+      return {} unless @configuration.respond_to?(:coverage_modes_for_start)
+
+      @configuration.coverage_modes_for_start
     end
 
     # Under parallel_tests, each worker writes to its own per-worker

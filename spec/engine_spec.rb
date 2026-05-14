@@ -155,6 +155,32 @@ RSpec.describe RSpecTracer::Engine do
       tracker_instance = build_tracker
       expect(tracker_instance.setup).to be(tracker_instance)
     end
+
+    # Coverage + SimpleCov are both running in the test env (rspec-tracer
+    # self-tracking + SimpleCov dogfood), so ensure_coverage_started normally
+    # short-circuits at the SimpleCov guard. These two specs stub both
+    # predicates false so the new #195 path that threads
+    # configuration_coverage_modes through to Coverage.start is reachable.
+    it 'threads configuration.coverage_modes_for_start through to Coverage.start' do
+      allow(SimpleCov).to receive(:running).and_return(false)
+      allow(Coverage).to receive_messages(running?: false, start: nil)
+      config_with_modes = stub_configuration.tap do |c|
+        allow(c).to receive(:coverage_modes_for_start).and_return(lines: true, branches: true)
+      end
+
+      build_tracker(config_with_modes).tap(&:setup)
+
+      expect(Coverage).to have_received(:start).with(lines: true, branches: true)
+    end
+
+    it 'passes an empty kwarg splat when the configuration does not expose coverage_modes_for_start' do
+      allow(SimpleCov).to receive(:running).and_return(false)
+      allow(Coverage).to receive_messages(running?: false, start: nil)
+
+      build_tracker.tap(&:setup)
+
+      expect(Coverage).to have_received(:start).with(no_args)
+    end
   end
 
   describe '#run_example? / #run_example_reason' do
