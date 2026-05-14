@@ -4,8 +4,8 @@ require 'rspec_tracer/storage/schema'
 
 RSpec.describe RSpecTracer::Storage::Schema do
   describe 'CURRENT' do
-    it 'is 4 (schema 4 reshaped the example-identity payload; schema-3 caches no longer match)' do
-      expect(described_class::CURRENT).to eq(4)
+    it 'is 5 (schema 5 reshaped unnamed-example identity; schema-4 caches no longer match)' do
+      expect(described_class::CURRENT).to eq(5)
     end
   end
 

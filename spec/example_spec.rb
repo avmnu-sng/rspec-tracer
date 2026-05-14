@@ -12,6 +12,14 @@ require 'rspec_tracer'
 # location columns but are excluded from the digest, so a no-op
 # line-shifting edit must not flip the id (issue #196).
 #
+# For an UNNAMED example (it { } / specify { } / example { }) RSpec's
+# `description` is the line-bearing "example at <path>:<line>"
+# fallback, which would re-leak the line number into the digest; the
+# digest substitutes the example's ordinal among its group's unnamed
+# examples instead (issue #210). The it-side variant matrix below
+# exercises every shape: named/unnamed, the ordinal's line-
+# independence, within-group uniqueness, and the reorder carve-out.
+#
 # rubocop:disable RSpec/VerifiedDoubles, RSpec/MultipleExpectations, RSpec/ExampleLength
 RSpec.describe RSpecTracer::Example do
   # An RSpec::Core::Example-shaped double. The overrides Hash lets
@@ -19,30 +27,41 @@ RSpec.describe RSpecTracer::Example do
   # stub_configuration pattern). The example_group double responds
   # to `description` but NOT `name`: `from` must read `.description`,
   # and a `.description` -> `.name` mutation raises here.
+  #
+  # `raw_description` is metadata[:description] - RSpec's RAW explicit
+  # description string ('' or nil for an unnamed it { } / specify { }
+  # / example { }). It defaults to `description`, so a plain
+  # build_example models a NAMED example; pass `raw_description: ''`
+  # for an unnamed one. `siblings` overrides example_group.examples
+  # (default [self]) so `Example.unnamed_description` can take the
+  # intra-group ordinal.
   def build_example(overrides = {})
     opts = {
       group_description: 'Calculator', parent_groups: [],
-      description: 'adds two numbers',
-      full_description: 'Calculator adds two numbers',
+      description: 'adds two numbers', full_description: 'Calculator adds two numbers',
       file_path: '/proj/spec/calculator_spec.rb', rerun_file_path: nil,
       line_number: 7, shared_backtrace: []
     }.merge(overrides)
 
+    raw_description = overrides.key?(:raw_description) ? overrides[:raw_description] : opts[:description]
     example_group = double(
       'ExampleGroup', description: opts[:group_description], parent_groups: opts[:parent_groups]
     )
-    double(
+    example = double(
       'Example',
       example_group: example_group,
       description: opts[:description],
       full_description: opts[:full_description],
       metadata: {
+        description: raw_description,
         file_path: opts[:file_path],
         rerun_file_path: opts[:rerun_file_path] || opts[:file_path],
         line_number: opts[:line_number],
         shared_group_inclusion_backtrace: opts[:shared_backtrace]
       }
     )
+    allow(example_group).to receive(:examples).and_return(overrides[:siblings] || [example])
+    example
   end
 
   def build_parent_group(file_path:, line_number:, rerun_file_path: nil)
@@ -58,6 +77,50 @@ RSpec.describe RSpecTracer::Example do
 
   def shared_frame(location)
     double('SharedFrame', formatted_inclusion_location: location)
+  end
+
+  # Builds N example doubles sharing one example_group, for the
+  # intra-group-ordinal tests. Each entry in `raw_descriptions` is one
+  # example's metadata[:description] ('' / nil => unnamed). Every
+  # example's example_group.examples is the full ordered list, so
+  # `Example.unnamed_description` can take ordinals. `line_base`
+  # shifts every line number uniformly (a no-op-edit simulation)
+  # without changing definition order.
+  def build_group(raw_descriptions, group_description: 'G', file_path: '/proj/spec/g_spec.rb', line_base: 0)
+    examples = []
+    example_group = double('ExampleGroup', description: group_description, parent_groups: [])
+    allow(example_group).to receive(:examples).and_return(examples)
+    raw_descriptions.each_with_index do |raw, idx|
+      line = line_base + ((idx + 1) * 10)
+      unnamed = raw.to_s.strip.empty?
+      examples << double(
+        "Example#{idx}",
+        example_group: example_group,
+        description: unnamed ? "example at #{file_path}:#{line}" : raw,
+        full_description: unnamed ? "#{group_description} " : "#{group_description} #{raw}",
+        metadata: {
+          description: raw,
+          file_path: file_path,
+          rerun_file_path: file_path,
+          line_number: line,
+          shared_group_inclusion_backtrace: []
+        }
+      )
+    end
+    examples
+  end
+
+  # An unnamed-example double (it { } / specify { } / example { }):
+  # empty metadata[:description], with `description` modelling RSpec's
+  # line-bearing "example at <path>:<line>" pre-run fallback.
+  def unnamed_example(line:, siblings: nil)
+    build_example(
+      raw_description: '',
+      description: "example at /proj/spec/calculator_spec.rb:#{line}",
+      full_description: 'Calculator ',
+      line_number: line,
+      siblings: siblings
+    )
   end
 
   describe '.from payload shape' do
@@ -238,6 +301,92 @@ RSpec.describe RSpecTracer::Example do
       b = described_class.from(build_example(group_description: '', full_description: 'anon does Y'))
 
       expect(a[:example_id]).not_to eq(b[:example_id])
+    end
+  end
+
+  describe '.from unnamed examples (it { } / specify { } / example { } — issue #210)' do
+    # An unnamed example has no explicit description string, so RSpec's
+    # `description` method returns the line-bearing
+    # "example at <path>:<line>" fallback (computed pre-run, before any
+    # matcher description exists). `Example.from` must not let that
+    # line number reach the digest: it substitutes the example's
+    # ordinal among its group's UNNAMED examples. `it`, `specify` and
+    # `example` are indistinguishable here (all yield an empty
+    # metadata[:description]); alias coverage lives in
+    # spec/integration/example_id_stability_spec.rb.
+
+    it 'still produces a valid 32-char hex example_id' do
+      expect(described_class.from(unnamed_example(line: 7))[:example_id])
+        .to match(/\A[0-9a-f]{32}\z/)
+    end
+
+    it 'is line-independent — a no-op edit above an it { } no longer flips the id (#210)' do
+      at7 = described_class.from(unnamed_example(line: 7))
+      at99 = described_class.from(unnamed_example(line: 99))
+
+      expect(at7[:example_id]).to eq(at99[:example_id])
+    end
+
+    it 'stays line-independent even with a named sibling present and a large line shift' do
+      shifted = build_group(['', 'a named sibling'], line_base: 500).first
+      unshifted = build_group(['', 'a named sibling'], line_base: 0).first
+
+      expect(described_class.from(shifted)[:example_id])
+        .to eq(described_class.from(unshifted)[:example_id])
+    end
+
+    it 'keeps RSpec description / full_description in the stored payload (digest-input only)' do
+      result = described_class.from(unnamed_example(line: 7))
+
+      # the line-bearing description never enters the digest, but it
+      # IS carried through for the reporter + `explain` columns.
+      expect(result[:description]).to eq('example at /proj/spec/calculator_spec.rb:7')
+      expect(result[:full_description]).to eq('Calculator ')
+    end
+
+    it 'gives two unnamed siblings distinct ids — positional, so reordering them re-keys (carve-out)' do
+      # unnamed identity is the ordinal among unnamed siblings, so the
+      # 1st and 2nd unnamed examples get distinct ids; the documented
+      # cost is that swapping two unnamed examples swaps their ids.
+      first, second = build_group(['', ''])
+
+      expect(described_class.from(first)[:example_id])
+        .not_to eq(described_class.from(second)[:example_id])
+    end
+
+    it 'counts the ordinal among UNNAMED siblings only — a named sibling does not shift it' do
+      # the unnamed example sits at all-index 1 here, all-index 2 here,
+      # but unnamed-index 0 in both => identical id.
+      after_one_named = build_group(['a named example', ''])[1]
+      after_two_named = build_group(['a named example', 'another named one', ''])[2]
+
+      expect(described_class.from(after_one_named)[:example_id])
+        .to eq(described_class.from(after_two_named)[:example_id])
+    end
+
+    it 'treats a nil metadata[:description] as unnamed (kills the .to_s guard mutation)' do
+      at7 = build_example(raw_description: nil, description: 'example at /x:7', line_number: 7)
+      at9 = build_example(raw_description: nil, description: 'example at /x:9', line_number: 9)
+
+      expect(described_class.from(at7)[:example_id]).to eq(described_class.from(at9)[:example_id])
+    end
+
+    it 'treats an all-whitespace metadata[:description] as unnamed (kills the .strip mutation)' do
+      at7 = build_example(raw_description: '   ', description: 'example at /x:7', line_number: 7)
+      at9 = build_example(raw_description: '   ', description: 'example at /x:9', line_number: 9)
+
+      expect(described_class.from(at7)[:example_id]).to eq(described_class.from(at9)[:example_id])
+    end
+
+    it 'leaves named examples on the #209 digest path — the ordinal branch never touches them' do
+      # the unnamed-ordinal path reads example_group.examples; a named
+      # example must never consult it. Identical named identity inputs
+      # + wildly different sibling lists => identical example_id.
+      lonely = build_example(siblings: [])
+      crowded = build_example(siblings: [double('x'), double('y'), double('z')])
+
+      expect(described_class.from(lonely)[:example_id])
+        .to eq(described_class.from(crowded)[:example_id])
     end
   end
 end

@@ -23,13 +23,17 @@ module RSpecTracer
     module Schema
       # 1.x caches were unstamped; schema_version 2 was the first
       # versioned schema, and 2.0 bumped to 3 when `Snapshot.boot_set`
-      # landed. schema_version 4 changes the example-identity payload:
-      # `example_id` now hashes the describe block's *description*
-      # (not RSpec's load-order-dependent class name) and excludes
-      # line numbers, so a 3-stamped cache's example_ids no longer
-      # match. The change is breaking, so SUPPORTED stays `[CURRENT]`
-      # and the caller pays one cold run on upgrade.
-      CURRENT = 4
+      # landed. schema_version 4 reshaped the example-identity payload:
+      # `example_id` hashes the describe block's *description* (not
+      # RSpec's load-order-dependent class name) and excludes line
+      # numbers. schema_version 5 closes the remaining gap for unnamed
+      # examples (`it { }` / `specify { }` / `example { }`): their
+      # `example_id` now derives from an intra-group ordinal instead
+      # of RSpec's line-bearing `"example at <path>:<line>"` fallback,
+      # so a 4-stamped cache's unnamed-example ids no longer match.
+      # Each bump is breaking, so SUPPORTED stays `[CURRENT]` and the
+      # caller pays one cold run on upgrade.
+      CURRENT = 5
       # Internal constant.
       # @api private
       SUPPORTED = [CURRENT].freeze

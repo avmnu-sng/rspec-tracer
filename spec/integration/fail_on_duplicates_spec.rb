@@ -14,20 +14,24 @@ require 'tmpdir'
 #   2. ENV path - `RSPEC_TRACER_FAIL_ON_DUPLICATES=true` overrides
 #      the DSL value at config-load time.
 #
-# Behavioral contract:
-#   - When duplicates detected AND fail_on_duplicates=true:
-#       runner_hook drops every group from the run; at_exit_behavior
-#       calls Kernel.exit(1) BEFORE engine.finalize fires - so NO
-#       cache is written, and stderr carries the "N duplicate
-#       example(s) across M identity hash(es)" error log.
-#   - When duplicates detected AND fail_on_duplicates=false:
-#       runner_hook still drops the colliding groups but exits 0;
-#       cache (including duplicate_examples.json) IS written.
+# Behavioral contract (rspec-tracer drops the colliding examples but
+# still runs the rest of the suite - issue #210):
+#   - duplicates detected, fail_on_duplicates=true:
+#       the colliding examples are dropped, the non-duplicate
+#       examples still run, and at_exit_behavior calls Kernel.exit(1)
+#       BEFORE the cache is written - so NO cache, and the
+#       "N duplicate example(s) across M identity hash(es)" error log
+#       names the colliding examples.
+#   - duplicates detected, fail_on_duplicates=false:
+#       same prune, but the run exits 0 and the cache (including
+#       duplicate_examples.json + the non-duplicate examples) IS
+#       written.
+#   In both cases the rspec-tracer banner reports the surviving
+#   example count - the suite is NOT aborted to zero examples.
 #
-# Assertion shape per `feedback_v2_integration_exit_status`: cache
-# state is the load-bearing check on the exit-0 path; on the exit-1
-# path the cache write is intentionally skipped, so the log message
-# in stderr is the load-bearing assertion.
+# Assertion shape per `feedback_v2_integration_exit_status`: the
+# load-bearing checks are the exit code, the banner's surviving-
+# example count, and (on the exit-0 path) the written cache.
 #
 # Fixture: a parameterized `.each` loop wrapping a single `it` block
 # produces N examples that share example_group + description +
@@ -84,8 +88,12 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
         'GIT_DEFAULT_BRANCH' => nil,
         'GIT_BRANCH' => nil
       }.merge(env_overrides)
-      Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color', 'duplicates_spec.rb',
-                      chdir: dir)
+      out, status = Open3.capture2e(env, 'bundle', 'exec', 'rspec', '--no-color',
+                                    'duplicates_spec.rb', chdir: dir)
+      # rspec-tracer's run summary carries a non-ASCII '·'; force UTF-8
+      # + scrub so callers can match against `out` regardless of the
+      # parent process's default external encoding.
+      [out.dup.force_encoding('UTF-8').scrub, status]
     end
   end
 
@@ -96,8 +104,15 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
     JSON.parse(File.read(File.join(cache_dir, run_id, 'duplicate_examples.json'), encoding: 'UTF-8'))
   end
 
+  def read_all_examples(dir)
+    cache_dir = File.join(dir, 'rspec_tracer_cache')
+    manifest = JSON.parse(File.read(File.join(cache_dir, 'last_run.json'), encoding: 'UTF-8'))
+    run_id = manifest.fetch('run_id')
+    JSON.parse(File.read(File.join(cache_dir, run_id, 'all_examples.json'), encoding: 'UTF-8'))
+  end
+
   context 'when fail_on_duplicates is true via the DSL' do
-    it 'exits non-zero AND emits the duplicate-detection error log' do
+    it 'drops the duplicates, runs the rest, then exits non-zero with the error log' do
       Dir.mktmpdir do |dir|
         write_fixture(dir, dsl_body: "fail_on_duplicates true\n")
 
@@ -108,12 +123,15 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           "expected non-zero exit when fail_on_duplicates is true, got 0:\n#{out}"
         )
         expect(out).to match(duplicate_log_re)
+        # the non-duplicate baseline still runs - the suite is not
+        # aborted to zero examples (issue #210).
+        expect(out).to include('running 1 examples')
       end
     end
   end
 
   context 'when fail_on_duplicates is false via the DSL' do
-    it 'exits zero AND writes duplicate_examples.json with the colliding identity' do
+    it 'drops the duplicates, runs + caches the rest, and exits zero' do
       Dir.mktmpdir do |dir|
         write_fixture(dir, dsl_body: "fail_on_duplicates false\n")
 
@@ -123,9 +141,13 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           be(true),
           "expected zero exit when fail_on_duplicates is false, got #{status.exitstatus}:\n#{out}"
         )
+        expect(out).to include('running 1 examples')
         duplicates = read_duplicate_examples(dir)
         expect(duplicates).not_to be_empty
         expect(duplicates.values.flatten.size).to be >= 2
+        # the non-duplicate baseline ran and was cached; the colliding
+        # examples were dropped from all_examples by deregistration.
+        expect(read_all_examples(dir).size).to eq(1)
       end
     end
   end
@@ -142,6 +164,7 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           "expected non-zero exit when env=true overrides DSL=false, got 0:\n#{out}"
         )
         expect(out).to match(duplicate_log_re)
+        expect(out).to include('running 1 examples')
       end
     end
   end
@@ -157,6 +180,7 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           be(true),
           "expected zero exit when env=false overrides DSL=true, got #{status.exitstatus}:\n#{out}"
         )
+        expect(out).to include('running 1 examples')
         duplicates = read_duplicate_examples(dir)
         expect(duplicates).not_to be_empty
       end

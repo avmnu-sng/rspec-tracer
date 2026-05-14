@@ -20,7 +20,7 @@ RSpec.describe RSpecTracer::RemoteCache::Archive do
     src = File.join(@dir, 'src')
     FileUtils.mkdir_p(File.join(src, run_id))
     File.write(File.join(src, 'last_run.json'),
-               JSON.pretty_generate('schema_version' => 4, 'run_id' => run_id))
+               JSON.pretty_generate('schema_version' => 5, 'run_id' => run_id))
     file_count.times do |i|
       File.write(File.join(src, run_id, "file#{i}.json"),
                  JSON.pretty_generate('k' => 'v' * 100))

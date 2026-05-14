@@ -15,7 +15,8 @@ module RSpecTracer
   #
   # Identity is PRESERVED when:
   # - blank lines or comments are added/removed around the example
-  # - examples are reordered within a describe block
+  # - examples are reordered within a describe block (named
+  #   examples only - see "Unnamed examples" below)
   # - a sibling describe / example in the same file is renamed
   # - metadata changes (`skip:`, tags, `tracks: { ... }`) - the
   #   spec-file digest still triggers the re-run and status history
@@ -27,6 +28,25 @@ module RSpecTracer
   # - the file is renamed or moved
   # - the `describe` / `it` / shared-example name is changed
   # - the example moves to a different describe block
+  #
+  # == Unnamed examples (`it { }`, `specify { }`, `example { }`)
+  #
+  # An example with no description string has no stable name to hash,
+  # and identity must be computed pre-run (for the filter decision),
+  # before RSpec generates a matcher-derived description. The only
+  # line-independent signal RSpec exposes pre-run is position, so an
+  # unnamed example's identity is derived from its ordinal among the
+  # *unnamed* examples of its group. (RSpec's `description` for an
+  # unnamed example is the line-bearing `"example at <path>:<line>"`
+  # fallback, which would otherwise leak the line number straight
+  # back into the digest - issue #210.)
+  #
+  # For unnamed examples the contract above is amended: identity is
+  # still PRESERVED across blank-line / comment edits, sibling
+  # renames, and adding or removing *named* siblings - but it CHANGES
+  # when the unnamed examples are reordered, or one is inserted or
+  # removed ahead of it. Give an example an explicit description
+  # (`it 'does X' do`) for a fully reorder-stable identity.
   #
   # `line_number` / `rerun_file_name` / `rerun_line_number` stay in
   # the returned Hash for the reporter + `explain` location columns,
@@ -41,10 +61,10 @@ module RSpecTracer
   # attributes mutations through the singleton call path.
   module Example
     # Builds the identity payload for one RSpec example. The MD5 is
-    # taken over `identity` only (the stability-contract subset);
-    # `line_number` / `rerun_*` ride along in the returned Hash for
-    # the reporters but never enter the digest. See the module
-    # comment for the full stability contract.
+    # taken over the stability-contract subset (see `digest_identity`
+    # for the named-vs-unnamed split); `line_number` / `rerun_*` ride
+    # along in the returned Hash for the reporters but never enter the
+    # digest. See the module comment for the full stability contract.
     # @api private
     def self.from(example)
       location = example_location(example)
@@ -59,7 +79,46 @@ module RSpecTracer
 
       identity
         .merge(location)
-        .merge(example_id: Digest::MD5.hexdigest(identity.to_json))
+        .merge(example_id: Digest::MD5.hexdigest(digest_identity(example, identity).to_json))
+    end
+
+    # The Hash actually fed to the MD5. For a named example this is
+    # `identity` unchanged - byte-identical to the pre-#210 digest.
+    # For an unnamed example (`it { }` / `specify { }` / `example { }`)
+    # RSpec's `description` is the line-bearing location fallback
+    # `"example at <path>:<line>"`, so `description` is swapped for a
+    # line-independent positional discriminator before hashing. The
+    # returned/stored payload still carries RSpec's `description` /
+    # `full_description` untouched - only the digest input differs.
+    # @api private
+    def self.digest_identity(example, identity)
+      return identity unless unnamed?(example)
+
+      identity.merge(description: unnamed_description(example))
+    end
+
+    # True when the example has no explicit description string. RSpec's
+    # raw `metadata[:description]` is `""` for `it { }` / `specify { }`
+    # / `example { }`; the `description` *method* would instead return
+    # the line-bearing `"example at <path>:<line>"` fallback, so the
+    # raw metadata value is what cleanly tells named from unnamed.
+    # @api private
+    def self.unnamed?(example)
+      example.metadata[:description].to_s.strip.empty?
+    end
+
+    # Line-independent identity discriminator for an unnamed example:
+    # its 0-based ordinal among the *unnamed* examples of its group.
+    # Stable across blank-line / comment edits and across adding or
+    # renaming *named* siblings; changes only when the unnamed examples
+    # are reordered or one is inserted / removed ahead of it (the
+    # documented carve-out - see the module comment). Closes the
+    # remaining #196 gap reported in #210.
+    # @api private
+    def self.unnamed_description(example)
+      unnamed_siblings = example.example_group.examples.select { |sibling| unnamed?(sibling) }
+
+      "example at unnamed index #{unnamed_siblings.index(example)}"
     end
 
     # Internal helper for the tracer pipeline.
@@ -105,6 +164,7 @@ module RSpecTracer
       RSpecTracer::SourceFile.file_name(file_path)
     end
 
-    private_class_method :example_location, :example_rerun_location, :location_file_name
+    private_class_method :digest_identity, :unnamed?, :unnamed_description,
+                         :example_location, :example_rerun_location, :location_file_name
   end
 end

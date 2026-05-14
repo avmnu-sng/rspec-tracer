@@ -29,6 +29,13 @@
 #   6. class describe (RSpec.describe SomeClass) -> stable id
 #   7. anonymous describe (RSpec.describe do ... end) -> valid,
 #      distinct ids; full_description disambiguates
+#   8. it { } / specify { } / example { } (unnamed) -> id stable
+#      across a no-op line-shift; #209's fix didn't reach these
+#      because RSpec's pre-run `description` for an unnamed example
+#      is the line-bearing "example at <path>:<line>" fallback (#210)
+#   9. N sibling it { } blocks -> N distinct ids, suite runs all N
+#      (the intra-group ordinal keeps them from colliding)
+#  10. specify { } / example { } behave identically to it { }
 
 require 'bundler'
 require 'fileutils'
@@ -84,10 +91,15 @@ RSpec.describe 'example_id stability across runs (issue #196)' do
   # the child env so a parent-runner setting can't leak in.
   def run_rspec_cold(*spec_files)
     FileUtils.rm_rf([cache_dir, report_dir, coverage_dir])
-    Open3.capture2e(
+    out, status = Open3.capture2e(
       { 'RSPEC_TRACER_DISABLE' => nil },
       'bundle', 'exec', 'rspec', '--no-color', *spec_files, chdir: fixture_root
     )
+    # rspec-tracer's run summary carries a non-ASCII '·'; force UTF-8 +
+    # scrub so callers can `match` against `out` regardless of the
+    # parent process's default external encoding (US-ASCII under a
+    # bare LANG).
+    [out.dup.force_encoding('UTF-8').scrub, status]
   end
 
   def report_payload
@@ -254,6 +266,80 @@ RSpec.describe 'example_id stability across runs (issue #196)' do
     expect(one_id).to match(/\A[0-9a-f]{32}\z/)
     expect(two_id).to match(/\A[0-9a-f]{32}\z/)
     expect(one_id).not_to eq(two_id)
+  end
+
+  # --- issue #210: unnamed examples (it { } / specify { } / example { }) ---
+  #
+  # An unnamed example's report description is its group's
+  # full_description ("<group> "), since RSpec's pre-run example
+  # description is the line-bearing location fallback — so these
+  # cases key example_id_for on a distinctive GROUP name.
+
+  it 'keeps an it { } example_id stable across a no-op line-shifting edit (#210)' do
+    body = <<~RUBY
+      RSpec.describe 'Unnamed Line Shift Fixture' do
+        it { expect(1).to eq(1) }
+      end
+    RUBY
+    spec = write_spec('unnamed_line_shift_spec', body)
+    run_rspec_cold(spec)
+    before_id = example_id_for('Unnamed Line Shift Fixture')
+
+    # Three blank lines above the describe — a pure cosmetic edit that
+    # shifts the it { } block's line number. Pre-#210 this flipped the
+    # id: RSpec's "example at <path>:<line>" fallback leaked the line.
+    write_spec('unnamed_line_shift_spec', "\n\n\n#{body}")
+    run_rspec_cold(spec)
+    after_id = example_id_for('Unnamed Line Shift Fixture')
+
+    expect(before_id).not_to be_nil
+    expect(before_id).to eq(after_id)
+  end
+
+  it 'gives N sibling it { } blocks N distinct ids and runs all N (no false collision)' do
+    spec = write_spec('unnamed_siblings_spec', <<~RUBY)
+      RSpec.describe 'Unnamed Siblings Fixture' do
+        it { expect(1).to eq(1) }
+        it { expect(2).to eq(2) }
+        it { expect(3).to eq(3) }
+      end
+    RUBY
+
+    out, status = run_rspec_cold(spec)
+
+    # Each it { } gets a distinct intra-group ordinal, so the three do
+    # NOT collide into one identity hash. A naive line-strip would
+    # have collided them and tripped duplicate detection, which would
+    # then drop them from the run.
+    expect(status.exitstatus).to eq(0), "expected all three to run:\n#{out}"
+    expect(out).not_to match(/duplicate example\(s\)/)
+    ids = report_payload['reports']['all_examples'].map { |entry| entry['id'] }
+    expect(ids.size).to eq(3)
+    expect(ids.uniq.size).to eq(3)
+  end
+
+  it 'treats specify { } and example { } like it { } — line-shift-stable' do
+    body = <<~RUBY
+      RSpec.describe 'Specify Alias Fixture' do
+        specify { expect(1).to eq(1) }
+      end
+
+      RSpec.describe 'Example Alias Fixture' do
+        example { expect(2).to eq(2) }
+      end
+    RUBY
+    spec = write_spec('unnamed_aliases_spec', body)
+    run_rspec_cold(spec)
+    specify_before = example_id_for('Specify Alias Fixture')
+    example_before = example_id_for('Example Alias Fixture')
+
+    write_spec('unnamed_aliases_spec', "\n\n\n#{body}")
+    run_rspec_cold(spec)
+
+    expect(specify_before).not_to be_nil
+    expect(example_before).not_to be_nil
+    expect(specify_before).to eq(example_id_for('Specify Alias Fixture'))
+    expect(example_before).to eq(example_id_for('Example Alias Fixture'))
   end
 end
 # rubocop:enable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/ExampleLength
