@@ -90,12 +90,40 @@
   <div class="discussion">
     <p>Builds the identity-hash payload (<code>:example_id</code>-keyed Hash) that
 RSpec::RunnerHook attaches to every example pre-run.</p>
-<p>All methods declared <code>def self.x</code> + <code>private_class_method</code> for
-the private helpers per feedback_mutation_friendly_modules:
-mutant maps tests to the singleton form. Public API
-(<code>Example.from</code>) is the only call site <code>runner_hook.rb</code> + the
-runner-hook spec drive; the three private helpers stay reachable
-only from <code>from</code> itself.</p>
+<h2 id="Identity_stability_contract">Identity stability contract</h2>
+<p><code>example_id</code> is the MD5 of a stable subset of the payload:
+<code>example_group</code> (the describe block's <em>description</em> string),
+<code>description</code>, <code>full_description</code>, <code>shared_group</code> (inclusion
+locations with the trailing line number stripped), and
+<code>file_name</code>. The contract, in one line: <em>rename = new identity;
+restructure = same identity.</em></p>
+<p>Identity is PRESERVED when:</p>
+<ul>
+<li>blank lines or comments are added/removed around the example</li>
+<li>examples are reordered within a describe block</li>
+<li>a sibling describe / example in the same file is renamed</li>
+<li>metadata changes (<code>skip:</code>, tags, <code>tracks: { ... }</code>) - the
+spec-file digest still triggers the re-run and status history
+is kept</li>
+<li>the example body or its hooks (<code>before</code>, <code>let</code>) are edited -
+again, the file digest triggers the re-run</li>
+</ul>
+<p>Identity CHANGES (one cold &quot;No cache&quot; run) when:</p>
+<ul>
+<li>the file is renamed or moved</li>
+<li>the <code>describe</code> / <code>it</code> / shared-example name is changed</li>
+<li>the example moves to a different describe block</li>
+</ul>
+<p><code>line_number</code> / <code>rerun_file_name</code> / <code>rerun_line_number</code> stay in
+the returned Hash for the reporter + <code>explain</code> location columns,
+but are DELIBERATELY EXCLUDED from the digest - a no-op edit that
+shifts line numbers must not invalidate the cache. <code>example_group</code>
+uses <code>example_group.description</code> (the user's string) rather than
+<code>example_group.name</code>: RSpec's generated class name carries a
+load-order-dependent <code>_2</code> / <code>_3</code> suffix when two files share a
+describe name, which would otherwise flip the id across runs.</p>
+<p>Helpers are <code>def self.x</code> + <code>private_class_method</code> so mutant
+attributes mutations through the singleton call path.</p>
 
   </div>
 </div>
@@ -134,7 +162,7 @@ only from <code>from</code> itself.</p>
   <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Builds the identity payload for one RSpec example.</p></div></span>
   
 </li>
 
@@ -164,7 +192,11 @@ only from <code>from</code> itself.</p>
   <strong>This method is part of a private API.</strong>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
-<p>Internal helper for the tracer pipeline.</p>
+<p>Builds the identity payload for one RSpec example. The MD5 is
+taken over <code>identity</code> only (the stability-contract subset);
+<code>line_number</code> / <code>rerun_*</code> ride along in the returned Hash for
+the reporters but never enter the digest. See the module
+comment for the full stability contract.</p>
 
   </div>
 </div>
@@ -177,31 +209,39 @@ only from <code>from</code> itself.</p>
       <pre class="lines">
 
 
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26</pre>
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/example.rb', line 16</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/example.rb', line 49</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_from'>from</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_data'>data</span> <span class='op'>=</span> <span class='lbrace'>{</span>
-    <span class='label'>example_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span>
+  <span class='id identifier rubyid_location'>location</span> <span class='op'>=</span> <span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_identity'>identity</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+    <span class='label'>example_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_description'>description</span><span class='comma'>,</span>
     <span class='label'>description:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_description'>description</span><span class='comma'>,</span>
     <span class='label'>full_description:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_full_description'>full_description</span><span class='comma'>,</span>
     <span class='label'>shared_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span><span class='lbracket'>[</span><span class='symbol'>:shared_group_inclusion_backtrace</span><span class='rbracket'>]</span>
-      <span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:formatted_inclusion_location</span><span class='rparen'>)</span>
-  <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span><span class='rparen'>)</span>
+      <span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_frame'>frame</span><span class='op'>|</span> <span class='id identifier rubyid_frame'>frame</span><span class='period'>.</span><span class='id identifier rubyid_formatted_inclusion_location'>formatted_inclusion_location</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>:\d+\z</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+    <span class='label'>file_name:</span> <span class='id identifier rubyid_location'>location</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span>
+  <span class='rbrace'>}</span>
 
-  <span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_identity'>identity</span>
+    <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_location'>location</span><span class='rparen'>)</span>
+    <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -213,7 +253,7 @@ only from <code>from</code> itself.</p>
 </div>
 
       <div id="footer">
-  Generated on Thu May 14 06:21:33 2026 by
+  Generated on Thu May 14 12:21:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

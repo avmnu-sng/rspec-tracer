@@ -65,25 +65,62 @@
   <span class='comment'># Builds the identity-hash payload (`:example_id`-keyed Hash) that
 </span>  <span class='comment'># RSpec::RunnerHook attaches to every example pre-run.
 </span>  <span class='comment'>#
-</span>  <span class='comment'># All methods declared `def self.x` + `private_class_method` for
-</span>  <span class='comment'># the private helpers per feedback_mutation_friendly_modules:
-</span>  <span class='comment'># mutant maps tests to the singleton form. Public API
-</span>  <span class='comment'># (`Example.from`) is the only call site `runner_hook.rb` + the
-</span>  <span class='comment'># runner-hook spec drive; the three private helpers stay reachable
-</span>  <span class='comment'># only from `from` itself.
+</span>  <span class='comment'># == Identity stability contract
+</span>  <span class='comment'>#
+</span>  <span class='comment'># `example_id` is the MD5 of a stable subset of the payload:
+</span>  <span class='comment'># `example_group` (the describe block&#39;s *description* string),
+</span>  <span class='comment'># `description`, `full_description`, `shared_group` (inclusion
+</span>  <span class='comment'># locations with the trailing line number stripped), and
+</span>  <span class='comment'># `file_name`. The contract, in one line: *rename = new identity;
+</span>  <span class='comment'># restructure = same identity.*
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Identity is PRESERVED when:
+</span>  <span class='comment'># - blank lines or comments are added/removed around the example
+</span>  <span class='comment'># - examples are reordered within a describe block
+</span>  <span class='comment'># - a sibling describe / example in the same file is renamed
+</span>  <span class='comment'># - metadata changes (`skip:`, tags, `tracks: { ... }`) - the
+</span>  <span class='comment'>#   spec-file digest still triggers the re-run and status history
+</span>  <span class='comment'>#   is kept
+</span>  <span class='comment'># - the example body or its hooks (`before`, `let`) are edited -
+</span>  <span class='comment'>#   again, the file digest triggers the re-run
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Identity CHANGES (one cold &quot;No cache&quot; run) when:
+</span>  <span class='comment'># - the file is renamed or moved
+</span>  <span class='comment'># - the `describe` / `it` / shared-example name is changed
+</span>  <span class='comment'># - the example moves to a different describe block
+</span>  <span class='comment'>#
+</span>  <span class='comment'># `line_number` / `rerun_file_name` / `rerun_line_number` stay in
+</span>  <span class='comment'># the returned Hash for the reporter + `explain` location columns,
+</span>  <span class='comment'># but are DELIBERATELY EXCLUDED from the digest - a no-op edit that
+</span>  <span class='comment'># shifts line numbers must not invalidate the cache. `example_group`
+</span>  <span class='comment'># uses `example_group.description` (the user&#39;s string) rather than
+</span>  <span class='comment'># `example_group.name`: RSpec&#39;s generated class name carries a
+</span>  <span class='comment'># load-order-dependent `_2` / `_3` suffix when two files share a
+</span>  <span class='comment'># describe name, which would otherwise flip the id across runs.
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Helpers are `def self.x` + `private_class_method` so mutant
+</span>  <span class='comment'># attributes mutations through the singleton call path.
 </span>  <span class='kw'>module</span> <span class='const'>Example</span>
-    <span class='comment'># Internal helper for the tracer pipeline.
+    <span class='comment'># Builds the identity payload for one RSpec example. The MD5 is
+</span>    <span class='comment'># taken over `identity` only (the stability-contract subset);
+</span>    <span class='comment'># `line_number` / `rerun_*` ride along in the returned Hash for
+</span>    <span class='comment'># the reporters but never enter the digest. See the module
+</span>    <span class='comment'># comment for the full stability contract.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_from'>from</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
-      <span class='id identifier rubyid_data'>data</span> <span class='op'>=</span> <span class='lbrace'>{</span>
-        <span class='label'>example_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span>
+      <span class='id identifier rubyid_location'>location</span> <span class='op'>=</span> <span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_identity'>identity</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+        <span class='label'>example_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_description'>description</span><span class='comma'>,</span>
         <span class='label'>description:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_description'>description</span><span class='comma'>,</span>
         <span class='label'>full_description:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_full_description'>full_description</span><span class='comma'>,</span>
         <span class='label'>shared_group:</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span><span class='lbracket'>[</span><span class='symbol'>:shared_group_inclusion_backtrace</span><span class='rbracket'>]</span>
-          <span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:formatted_inclusion_location</span><span class='rparen'>)</span>
-      <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span><span class='rparen'>)</span>
+          <span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_frame'>frame</span><span class='op'>|</span> <span class='id identifier rubyid_frame'>frame</span><span class='period'>.</span><span class='id identifier rubyid_formatted_inclusion_location'>formatted_inclusion_location</span><span class='period'>.</span><span class='id identifier rubyid_sub'>sub</span><span class='lparen'>(</span><span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>:\d+\z</span><span class='regexp_end'>/</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+        <span class='label'>file_name:</span> <span class='id identifier rubyid_location'>location</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span>
+      <span class='rbrace'>}</span>
 
-      <span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_data'>data</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
+      <span class='id identifier rubyid_identity'>identity</span>
+        <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_location'>location</span><span class='rparen'>)</span>
+        <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Internal helper for the tracer pipeline.
@@ -134,7 +171,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Thu May 14 06:21:33 2026 by
+  Generated on Thu May 14 12:21:06 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
