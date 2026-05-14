@@ -40,6 +40,10 @@ RSpec.describe 'gem-generated example with phantom file_path (regression for ups
       file_path: phantom_file_path,
       rerun_file_path: phantom_file_path,
       line_number: 1,
+      # RSpec's raw explicit description — present (non-empty) for a
+      # named example, which is what `Example.from` reads to tell
+      # named from unnamed (issue #210).
+      description: 'phantom-source example',
       shared_group_inclusion_backtrace: []
     }
   end
