@@ -105,6 +105,24 @@ RSpec.describe 'Storage::JsonBackend 1.x -> 2.0 cache schema cold-run upgrade ce
     end
   end
 
+  context 'when the on-disk cache carries the 2.0.0.pre.1 schema (3)' do
+    before do
+      write_legacy_manifest('schema_version' => 3, 'run_id' => 'pre1-run')
+      write_legacy_run_dir('pre1-run', 'all_examples.json' => JSON.dump({}))
+    end
+
+    # The 2.0.0.pre.1 -> pre.2 example-identity change reshaped the
+    # cache; a pre.1 cache (schema_version 3) must trigger one clean
+    # cold run, not a crash, on the pre.2 upgrade.
+    it 'falls back to cold run + logs the version delta' do
+      result = build_backend.load_graph(schema_version: current_schema)
+
+      expect(result).to be_nil
+      expect(logger).to have_received(:info)
+        .with(a_string_including('stored=3').and(a_string_including('cold run')))
+    end
+  end
+
   context 'when the on-disk cache carries a future / unsupported schema' do
     before do
       write_legacy_manifest('schema_version' => 999_999, 'run_id' => 'future-run')

@@ -49,6 +49,18 @@ implicitly: `Gemfile.lock` is a whole-suite invalidator, so the lockfile
 delta from a Rails major bump triggers a full cold run. Same one-time
 expectation applies.
 
+**The 2.0.0.pre.1 → pre.2 upgrade also costs one cold run.** pre.2
+reshaped how `example_id` is computed: it no longer depends on RSpec's
+load-order-dependent example-group class name or on line numbers, so
+cached ids from pre.1 no longer match. The `schema_version` bump makes a
+pre.1 cache cold-load cleanly; after that one run, cache hits are *more*
+stable than they were under pre.1 — a no-op edit that shifts line
+numbers, or loading two spec files that share a `describe` name, no
+longer flips an example's identity. As a rule of thumb from pre.2 on:
+renaming a file, `describe`, or `it` gives an example a new identity
+(one cold run); restructuring around it — blank lines, reordering,
+metadata edits — keeps it warm.
+
 ## SimpleCov branch coverage now works
 
 The 1.x README warned: *"If you use RSpec Tracer with SimpleCov, then

@@ -4,8 +4,8 @@
 # ruby_app fixture. Runs the fixture via subprocess and asserts that:
 #
 #   - the suite exits green cold and warm
-#   - the 13-file cache is written under run_id/, with schema_version 3
-#     in last_run.json
+#   - the 13-file cache is written under run_id/, stamped with the
+#     current schema_version in last_run.json
 #   - dependency + boot_set maps are populated
 #
 # Post-M5.1 there is no "legacy engine" path to compare against -
@@ -64,10 +64,10 @@ RSpec.describe 'ruby_app v2 engine integration' do
       expect(out).to include('RSpec tracer')
     end
 
-    it 'writes a v2 cache with schema_version 3' do
+    it 'writes a v2 cache stamped with the current schema_version' do
       run_rspec
 
-      expect(load_last_run_manifest['schema_version']).to eq(3)
+      expect(load_last_run_manifest['schema_version']).to eq(RSpecTracer::Storage::Schema::CURRENT)
     end
 
     it 'writes every FILENAMES entry under the run-id directory' do

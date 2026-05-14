@@ -31,7 +31,7 @@ require 'tmpdir'
 #
 # Fixture: a parameterized `.each` loop wrapping a single `it` block
 # produces N examples that share example_group + description +
-# full_description + file_name + line_number - which is exactly the
+# full_description + shared_group + file_name - which is exactly the
 # tuple `RSpecTracer::Example.from` MD5-hashes into example_id. So
 # the two iterations collide on rspec-tracer's identity hash even
 # though RSpec itself treats them as distinct examples.

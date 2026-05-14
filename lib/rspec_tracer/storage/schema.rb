@@ -21,12 +21,15 @@ module RSpecTracer
     # caller pays one cold run on upgrade - the deal 1.x users already
     # expect for any rspec-tracer version bump.
     module Schema
-      # schema_version 2 was the first versioned schema (1.x was
-      # unstamped). 2.0 adds `Snapshot.boot_set` - breaking for any
-      # reader that assumed the v2 field list - so CURRENT bumps to 3
-      # and SUPPORTED narrows to only the new version. No v2 caches
-      # were ever persisted in user land.
-      CURRENT = 3
+      # 1.x caches were unstamped; schema_version 2 was the first
+      # versioned schema, and 2.0 bumped to 3 when `Snapshot.boot_set`
+      # landed. schema_version 4 changes the example-identity payload:
+      # `example_id` now hashes the describe block's *description*
+      # (not RSpec's load-order-dependent class name) and excludes
+      # line numbers, so a 3-stamped cache's example_ids no longer
+      # match. The change is breaking, so SUPPORTED stays `[CURRENT]`
+      # and the caller pays one cold run on upgrade.
+      CURRENT = 4
       # Internal constant.
       # @api private
       SUPPORTED = [CURRENT].freeze

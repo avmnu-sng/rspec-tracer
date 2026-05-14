@@ -44,7 +44,7 @@ RSpec.describe 'gem-generated example with phantom file_path (regression for ups
     }
   end
   let(:phantom_example_group) do
-    double('ExampleGroup', name: 'GemGeneratedExamples', parent_groups: [])
+    double('ExampleGroup', description: 'GemGeneratedExamples', parent_groups: [])
   end
   let(:phantom_example) do
     double('Example',
