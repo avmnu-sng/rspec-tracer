@@ -399,6 +399,49 @@ cold-read time.
 **JRuby**: `:sqlite` is unsupported; the engine warns once and
 falls back to `:json` automatically.
 
+### Coverage modes (rspec-tracer + SimpleCov interop)
+
+By default, rspec-tracer enables Ruby's `lines` coverage mode only.
+The `coverage_modes` DSL opts into additional Ruby `Coverage` modes
+on the standalone (non-SimpleCov) path:
+
+```ruby
+# .rspec-tracer
+RSpecTracer.configure do
+  coverage_modes [:lines, :branches]
+end
+```
+
+Allowed modes: `:lines`, `:branches`, `:methods`, `:oneshot_lines`,
+`:eval`. The default is `[:lines]` (matches pre-#195 bare
+`Coverage.start` behavior).
+
+When SimpleCov is loaded and running at `RSpecTracer.start` time, the
+DSL is inert — SimpleCov owns `::Coverage.start` and exposes its own
+knobs (`enable_coverage :branch`, `enable_coverage_for_eval`). See
+[`UPGRADING.md` § "SimpleCov branch coverage now works"](UPGRADING.md)
+for the SimpleCov load-order contract.
+
+`coverage.json` stays on the 1.x `Array<Integer|nil>` per-file shape
+regardless of modes (storage-format stability). Branch / method data
+is tracked by Ruby and available via `Coverage.peek_result` directly
+for downstream tooling that reads it; the canonical user-facing
+artifact remains lines-only.
+
+#### Per-mode interop matrix
+
+| Mode | Ruby support | rspec-tracer standalone | rspec-tracer + SimpleCov 0.22 |
+|---|---|---|---|
+| `lines` | yes | yes (default) | yes (SimpleCov default) |
+| `branches` | yes | yes — `coverage_modes [:lines, :branches]` | yes — `SimpleCov.start { enable_coverage :branch }` |
+| `methods` | yes | yes — `coverage_modes [:lines, :methods]` | no (SimpleCov 0.22 has no API to enable) |
+| `oneshot_lines` | yes (alternative to `lines`) | yes — `coverage_modes [:oneshot_lines]` | no (no SimpleCov API) |
+| `eval` | yes | yes — `coverage_modes [:lines, :eval]` | partial — SimpleCov forwards `enable_coverage_for_eval` to `Coverage.start` but `coverage/.resultset.json` strips the `(eval at /path:line)` virtual-file entries |
+
+Validated empirically on Ruby 3.4.8 and Ruby 4.1.0dev with SimpleCov
+0.22.0; check `Coverage.respond_to?(:start)`'s keyword arguments on
+your Ruby version for the authoritative supported set.
+
 ---
 
 ## 10. Debug "why did this test re-run?"
