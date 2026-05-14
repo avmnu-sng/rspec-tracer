@@ -152,6 +152,11 @@ re-enable it:</p>
 you call <code>SimpleCov.start</code> after <code>require 'simplecov'</code> but before
 <code>RSpecTracer.start</code>, you'll see a one-line boot-time warn pointing this
 out.</p>
+<p>On the standalone (no-SimpleCov) path, rspec-tracer enables Ruby's
+<code>lines</code> coverage mode only by default. Opt into branches / methods /
+oneshot / eval via <code>coverage_modes</code>; see
+<a href="COOKBOOK.md"><code>COOKBOOK.md</code> § &quot;Coverage modes (rspec-tracer + SimpleCov interop)&quot;</a>
+for the per-mode matrix.</p>
 <h2 id="Deprecated_config___keeps_working_with_one_warning">Deprecated config — keeps working with one warning</h2>
 <p>Each entry below still functions in 2.0 and warns once at first use.
 All four are slated for removal in 3.0.</p>
@@ -314,7 +319,7 @@ RSpec / SimpleCov versions and your <code>.rspec-tracer</code> config.</li>
 </ul></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:41 2026 by
+  Generated on Thu May 14 06:21:31 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

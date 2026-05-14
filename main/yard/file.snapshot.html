@@ -132,6 +132,18 @@
 </span>    <span class='comment'># require a meta-table column / schema bump); SqliteBackend users
 </span>    <span class='comment'># see the field as `{}` on read until a future enhancement
 </span>    <span class='comment'># extends the meta table.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># `filtered_examples` is the PER-EXAMPLE source-of-truth that
+</span>    <span class='comment'># backs `cache_hit_reason`: a Hash[example_id =&gt; reason_string]
+</span>    <span class='comment'># (&quot;ex_abc&quot; =&gt; &quot;Failed previously&quot;). The engine writes this at
+</span>    <span class='comment'># finalize; `cache_hit_reason` is the values-tally. Persisting
+</span>    <span class='comment'># both lets the parallel-tests merge collapse per-worker
+</span>    <span class='comment'># duplicates by id (every worker computes the same hash because
+</span>    <span class='comment'># the filter walks the global previous-run snapshot) and re-tally
+</span>    <span class='comment'># at merge time, instead of sum-merging identical per-worker
+</span>    <span class='comment'># tallies and inflating counts N-fold. Same optional-in-JSON
+</span>    <span class='comment'># treatment as cache_hit_reason: missing file coerces to `{}`,
+</span>    <span class='comment'># no schema_version bump, JSON-backend-only surface.
 </span>    <span class='const'>Snapshot</span> <span class='op'>=</span> <span class='const'>Struct</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
       <span class='symbol'>:schema_version</span><span class='comma'>,</span>
       <span class='symbol'>:run_id</span><span class='comma'>,</span>
@@ -151,6 +163,7 @@
       <span class='symbol'>:env_snapshot</span><span class='comma'>,</span>
       <span class='symbol'>:env_dependency</span><span class='comma'>,</span>
       <span class='symbol'>:cache_hit_reason</span><span class='comma'>,</span>
+      <span class='symbol'>:filtered_examples</span><span class='comma'>,</span>
       <span class='label'>keyword_init:</span> <span class='kw'>true</span>
     <span class='rparen'>)</span>
 
@@ -180,7 +193,8 @@
           <span class='label'>wsi_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
           <span class='label'>env_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
           <span class='label'>env_dependency:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
-          <span class='label'>cache_hit_reason:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+          <span class='label'>cache_hit_reason:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='label'>filtered_examples:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
         <span class='rparen'>)</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
@@ -188,7 +202,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:43 2026 by
+  Generated on Thu May 14 06:21:33 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

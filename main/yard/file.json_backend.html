@@ -152,6 +152,7 @@
 </span><span class='words_sep'>        </span><span class='tstring_content'>env_snapshot.json</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>env_dependency.json</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>cache_hit_reason.json</span><span class='words_sep'>
+</span><span class='words_sep'>        </span><span class='tstring_content'>filtered_examples.json</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
       <span class='comment'># Internal constant.
@@ -187,6 +188,7 @@
 </span><span class='words_sep'>        </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>env_dependency</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>        </span><span class='tstring_content'>filtered_examples</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
       <span class='comment'># Binds a backend + run directory so `LazySnapshot` readers
@@ -222,6 +224,7 @@
 </span>      <span class='const'>HASH_FIELDS</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>all_examples</span><span class='words_sep'> </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'> </span><span class='tstring_content'>all_files</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'>
 </span><span class='words_sep'>        </span><span class='tstring_content'>boot_set</span><span class='words_sep'> </span><span class='tstring_content'>wsi_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>        </span><span class='tstring_content'>filtered_examples</span><span class='words_sep'>
 </span><span class='words_sep'>      </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
       <span class='comment'># Internal constant.
 </span>      <span class='comment'># @api private
@@ -254,7 +257,8 @@
         <span class='label'>wsi_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
         <span class='label'>env_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
         <span class='label'>env_dependency:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
-        <span class='label'>cache_hit_reason:</span> <span class='symbol'>:plain_hash</span>
+        <span class='label'>cache_hit_reason:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+        <span class='label'>filtered_examples:</span> <span class='symbol'>:plain_hash</span>
       <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
       <span class='comment'># Internal attribute.
@@ -453,7 +457,14 @@
 
           <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:reverse_dependency</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_reverse_of'>reverse_of</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:dependency</span><span class='rbracket'>]</span><span class='rparen'>)</span>
           <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:run_id</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:all_examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_sort'>sort</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:cache_hit_reason</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:filtered_examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_tally'>tally</span>
 
+          <span class='id identifier rubyid_build_merged_snapshot'>build_merged_snapshot</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='comma'>,</span> <span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+
+        <span class='comment'># Internal helper for the tracer pipeline.
+</span>        <span class='comment'># @api private
+</span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_build_merged_snapshot'>build_merged_snapshot</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
           <span class='const'>Snapshot</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
             <span class='label'>schema_version:</span> <span class='id identifier rubyid_schema_version'>schema_version</span><span class='comma'>,</span>
             <span class='label'>run_id:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:run_id</span><span class='rbracket'>]</span><span class='comma'>,</span>
@@ -472,7 +483,8 @@
             <span class='label'>wsi_snapshot:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:wsi_snapshot</span><span class='rbracket'>]</span><span class='comma'>,</span>
             <span class='label'>env_snapshot:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:env_snapshot</span><span class='rbracket'>]</span><span class='comma'>,</span>
             <span class='label'>env_dependency:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:env_dependency</span><span class='rbracket'>]</span><span class='comma'>,</span>
-            <span class='label'>cache_hit_reason:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:cache_hit_reason</span><span class='rbracket'>]</span>
+            <span class='label'>cache_hit_reason:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:cache_hit_reason</span><span class='rbracket'>]</span><span class='comma'>,</span>
+            <span class='label'>filtered_examples:</span> <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:filtered_examples</span><span class='rbracket'>]</span>
           <span class='rparen'>)</span>
         <span class='kw'>end</span>
 
@@ -494,7 +506,7 @@
             <span class='label'>wsi_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
             <span class='label'>env_snapshot:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
             <span class='label'>env_dependency:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='comma'>,</span>
-            <span class='label'>cache_hit_reason:</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='int'>0</span><span class='rparen'>)</span>
+            <span class='label'>filtered_examples:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
           <span class='rbrace'>}</span>
         <span class='kw'>end</span>
 
@@ -523,7 +535,7 @@
           <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:wsi_snapshot</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_merge!'>merge!</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_wsi_snapshot'>wsi_snapshot</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
           <span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:env_snapshot</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_merge!'>merge!</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_env_snapshot'>env_snapshot</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
           <span class='id identifier rubyid_merge_env_dependency!'>merge_env_dependency!</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:env_dependency</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_env_dependency'>env_dependency</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
-          <span class='id identifier rubyid_merge_cache_hit_reason!'>merge_cache_hit_reason!</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:cache_hit_reason</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_cache_hit_reason'>cache_hit_reason</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_merge_filtered_examples!'>merge_filtered_examples!</span><span class='lparen'>(</span><span class='id identifier rubyid_state'>state</span><span class='lbracket'>[</span><span class='symbol'>:filtered_examples</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_filtered_examples'>filtered_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
         <span class='comment'># rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 </span>
@@ -538,14 +550,20 @@
           <span class='kw'>end</span>
         <span class='kw'>end</span>
 
-        <span class='comment'># Sum per-worker reason counts. parallel_tests partitions
-</span>        <span class='comment'># examples across workers; each worker&#39;s filtered_examples
-</span>        <span class='comment'># tally is disjoint by example_id, so sum is the right combine
-</span>        <span class='comment'># rule (a &quot;Files changed&quot; count from worker A plus the same
-</span>        <span class='comment'># reason&#39;s count from worker B = total examples that ran for
-</span>        <span class='comment'># that reason across the suite).
-</span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_cache_hit_reason!'>merge_cache_hit_reason!</span><span class='lparen'>(</span><span class='id identifier rubyid_target'>target</span><span class='comma'>,</span> <span class='id identifier rubyid_source'>source</span><span class='rparen'>)</span>
-          <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_reason'>reason</span><span class='comma'>,</span> <span class='id identifier rubyid_count'>count</span><span class='op'>|</span> <span class='id identifier rubyid_target'>target</span><span class='lbracket'>[</span><span class='id identifier rubyid_reason'>reason</span><span class='rbracket'>]</span> <span class='op'>+=</span> <span class='id identifier rubyid_count'>count</span> <span class='rbrace'>}</span>
+        <span class='comment'># Merge per-worker filtered_examples by example_id. Every
+</span>        <span class='comment'># parallel_tests worker independently runs Filter.select
+</span>        <span class='comment'># against the same global previous-run snapshot
+</span>        <span class='comment'># (Engine#compute_filter_decisions walks the registry seeded
+</span>        <span class='comment'># from `prev` and the filter intersects against
+</span>        <span class='comment'># `prev.all_examples.keys`), so every worker&#39;s filtered_examples
+</span>        <span class='comment'># hash is IDENTICAL. First-write-wins collapses the duplicate
+</span>        <span class='comment'># ids; `Merger.call` re-derives `cache_hit_reason` as the
+</span>        <span class='comment'># values-tally of the merged hash so the merged
+</span>        <span class='comment'># cache_hit_reason is the per-id-correct count (not the
+</span>        <span class='comment'># N-fold-inflated sum of identical per-worker tallies that
+</span>        <span class='comment'># the pre-#193 merge produced).
+</span>        <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_filtered_examples!'>merge_filtered_examples!</span><span class='lparen'>(</span><span class='id identifier rubyid_target'>target</span><span class='comma'>,</span> <span class='id identifier rubyid_source'>source</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_source'>source</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_reason'>reason</span><span class='op'>|</span> <span class='id identifier rubyid_target'>target</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_reason'>reason</span> <span class='rbrace'>}</span>
         <span class='kw'>end</span>
 
         <span class='comment'># Internal helper for the tracer pipeline.
@@ -927,7 +945,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:43 2026 by
+  Generated on Thu May 14 06:21:33 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

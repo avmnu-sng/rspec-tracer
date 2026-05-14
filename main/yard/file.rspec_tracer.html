@@ -251,7 +251,14 @@
 
       <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage</span><span class='tstring_end'>&#39;</span></span>
 
-      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+      <span class='kw'>return</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:running?</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_running?'>running?</span>
+
+      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span><span class='lparen'>(</span><span class='op'>**</span><span class='id identifier rubyid_coverage_modes_for_start'>coverage_modes_for_start</span><span class='rparen'>)</span>
+    <span class='kw'>rescue</span> <span class='const'>RuntimeError</span>
+      <span class='comment'># ::Coverage.start raises if already started on some Rubies
+</span>      <span class='comment'># without a running? predicate; safe to ignore (matches
+</span>      <span class='comment'># Engine#ensure_coverage_started behavior).
+</span>      <span class='kw'>nil</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Detects Rails by the presence of `::Rails::VERSION`. Users who
@@ -384,7 +391,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:43 2026 by
+  Generated on Thu May 14 06:21:33 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

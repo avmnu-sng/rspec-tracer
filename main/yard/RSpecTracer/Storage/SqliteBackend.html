@@ -303,7 +303,8 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
         </dt>
         <dd><pre class="code"><span class='lparen'>(</span>
   <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>all_examples</span><span class='words_sep'> </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'> </span><span class='tstring_content'>all_files</span><span class='words_sep'> </span><span class='tstring_content'>dependency</span><span class='words_sep'>
-</span><span class='words_sep'>     </span><span class='tstring_content'>reverse_dependency</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='tstring_end'>]</span></span> <span class='op'>+</span>
+</span><span class='words_sep'>     </span><span class='tstring_content'>reverse_dependency</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>     </span><span class='tstring_content'>filtered_examples</span><span class='tstring_end'>]</span></span> <span class='op'>+</span>
     <span class='const'><span class='object_link'><a href="#STATUS_FIELDS-constant" title="RSpecTracer::Storage::SqliteBackend::STATUS_FIELDS (constant)">STATUS_FIELDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='op'>+</span> <span class='const'><span class='object_link'><a href="#DIGEST_MAP_KINDS-constant" title="RSpecTracer::Storage::SqliteBackend::DIGEST_MAP_KINDS (constant)">DIGEST_MAP_KINDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
 <span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
@@ -547,14 +548,14 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-136
 137
 138
 139
-140</pre>
+140
+141</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 136</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 137</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='ivar'>@cache_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
@@ -601,12 +602,12 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-132
 133
-134</pre>
+134
+135</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 132</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 133</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_cache_path'>cache_path</span>
   <span class='ivar'>@cache_path</span>
@@ -651,14 +652,14 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-204
 205
 206
 207
-208</pre>
+208
+209</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 204</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 205</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span>
   <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
@@ -698,7 +699,6 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-144
 145
 146
 147
@@ -708,10 +708,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
 151
 152
 153
-154</pre>
+154
+155</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 144</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 145</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
@@ -757,7 +758,6 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-158
 159
 160
 161
@@ -779,10 +779,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
 177
 178
 179
-180</pre>
+180
+181</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 158</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 159</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
@@ -859,7 +860,6 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-231
 232
 233
 234
@@ -868,10 +868,11 @@ failures on the DB itself.</p>
 237
 238
 239
-240</pre>
+240
+241</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 231</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 232</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown snapshot field: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="#READABLE_FIELDS-constant" title="RSpecTracer::Storage::SqliteBackend::READABLE_FIELDS (constant)">READABLE_FIELDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
@@ -929,7 +930,6 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-184
 185
 186
 187
@@ -945,10 +945,11 @@ failures on the DB itself.</p>
 197
 198
 199
-200</pre>
+200
+201</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 184</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 185</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot must not be nil</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1013,7 +1014,6 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-212
 213
 214
 215
@@ -1023,10 +1023,11 @@ failures on the DB itself.</p>
 219
 220
 221
-222</pre>
+222
+223</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 212</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 213</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_block'>block</span>
@@ -1049,7 +1050,7 @@ failures on the DB itself.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:45 2026 by
+  Generated on Thu May 14 06:21:35 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

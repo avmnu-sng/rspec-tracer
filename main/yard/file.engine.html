@@ -723,16 +723,27 @@
 
     <span class='comment'># Delegate to the legacy ::Coverage bootstrap if SimpleCov isn&#39;t
 </span>    <span class='comment'># already running. Matches RSpecTracer.setup_coverage behavior so
-</span>    <span class='comment'># v2 and legacy agree on when to call ::Coverage.start.
+</span>    <span class='comment'># the two entry points agree on when to call ::Coverage.start
+</span>    <span class='comment'># AND on which Ruby Coverage modes are enabled.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_ensure_coverage_started'>ensure_coverage_started</span>
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='const'>SimpleCov</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_running'>running</span>
       <span class='kw'>return</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:running?</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_running?'>running?</span>
 
-      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span>
+      <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span><span class='lparen'>(</span><span class='op'>**</span><span class='id identifier rubyid_configuration_coverage_modes'>configuration_coverage_modes</span><span class='rparen'>)</span>
     <span class='kw'>rescue</span> <span class='const'>RuntimeError</span>
       <span class='comment'># ::Coverage.start raises if already started on some Rubies
 </span>      <span class='comment'># without a running? predicate; safe to ignore.
 </span>      <span class='kw'>nil</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># Reads `coverage_modes` off the configuration when available
+</span>    <span class='comment'># (extended with `RSpecTracer::Configuration`). Defaults to an
+</span>    <span class='comment'># empty Hash for stubbed-configuration unit tests so the splat
+</span>    <span class='comment'># `Coverage.start(**{})` keeps lines-only legacy behavior.
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_configuration_coverage_modes'>configuration_coverage_modes</span>
+      <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>unless</span> <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:coverage_modes_for_start</span><span class='rparen'>)</span>
+
+      <span class='ivar'>@configuration</span><span class='period'>.</span><span class='id identifier rubyid_coverage_modes_for_start'>coverage_modes_for_start</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Under parallel_tests, each worker writes to its own per-worker
@@ -1062,7 +1073,8 @@
         <span class='label'>wsi_snapshot:</span> <span class='ivar'>@whole_suite_invalidators</span><span class='period'>.</span><span class='id identifier rubyid_digest_snapshot'>digest_snapshot</span><span class='comma'>,</span>
         <span class='label'>env_snapshot:</span> <span class='id identifier rubyid_env_snapshot_for_persistence'>env_snapshot_for_persistence</span><span class='comma'>,</span>
         <span class='label'>env_dependency:</span> <span class='id identifier rubyid_env_dependency_for_persistence'>env_dependency_for_persistence</span><span class='comma'>,</span>
-        <span class='label'>cache_hit_reason:</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_tally'>tally</span>
+        <span class='label'>cache_hit_reason:</span> <span class='ivar'>@filtered_examples</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_tally'>tally</span><span class='comma'>,</span>
+        <span class='label'>filtered_examples:</span> <span class='ivar'>@filtered_examples</span>
       <span class='rparen'>)</span>
     <span class='kw'>end</span>
 
@@ -1217,7 +1229,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:42 2026 by
+  Generated on Thu May 14 06:21:33 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

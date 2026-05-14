@@ -362,6 +362,74 @@ same data; the SQLite backend avoids the per-file open overhead at
 cold-read time.</p>
 <p><strong>JRuby</strong>: <code>:sqlite</code> is unsupported; the engine warns once and
 falls back to <code>:json</code> automatically.</p>
+<h3 id="Coverage_modes__rspec_tracer___SimpleCov_interop_">Coverage modes (rspec-tracer + SimpleCov interop)</h3>
+<p>By default, rspec-tracer enables Ruby's <code>lines</code> coverage mode only.
+The <code>coverage_modes</code> DSL opts into additional Ruby <code>Coverage</code> modes
+on the standalone (non-SimpleCov) path:</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
+</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_coverage_modes'>coverage_modes</span> <span class='lbracket'>[</span><span class='symbol'>:lines</span><span class='comma'>,</span> <span class='symbol'>:branches</span><span class='rbracket'>]</span>
+<span class='kw'>end</span>
+</code></pre>
+<p>Allowed modes: <code>:lines</code>, <code>:branches</code>, <code>:methods</code>, <code>:oneshot_lines</code>,
+<code>:eval</code>. The default is <code>[:lines]</code> (matches pre-#195 bare
+<code>Coverage.start</code> behavior).</p>
+<p>When SimpleCov is loaded and running at <code>RSpecTracer.start</code> time, the
+DSL is inert — SimpleCov owns <code>::Coverage.start</code> and exposes its own
+knobs (<code>enable_coverage :branch</code>, <code>enable_coverage_for_eval</code>). See
+<a href="UPGRADING.md"><code>UPGRADING.md</code> § &quot;SimpleCov branch coverage now works&quot;</a>
+for the SimpleCov load-order contract.</p>
+<p><code>coverage.json</code> stays on the 1.x <code>Array&lt;Integer|nil&gt;</code> per-file shape
+regardless of modes (storage-format stability). Branch / method data
+is tracked by Ruby and available via <code>Coverage.peek_result</code> directly
+for downstream tooling that reads it; the canonical user-facing
+artifact remains lines-only.</p>
+<h4 id="Per_mode_interop_matrix">Per-mode interop matrix</h4>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Ruby support</th>
+<th>rspec-tracer standalone</th>
+<th>rspec-tracer + SimpleCov 0.22</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lines</code></td>
+<td>yes</td>
+<td>yes (default)</td>
+<td>yes (SimpleCov default)</td>
+</tr>
+<tr>
+<td><code>branches</code></td>
+<td>yes</td>
+<td>yes — <code>coverage_modes [:lines, :branches]</code></td>
+<td>yes — <code>SimpleCov.start { enable_coverage :branch }</code></td>
+</tr>
+<tr>
+<td><code>methods</code></td>
+<td>yes</td>
+<td>yes — <code>coverage_modes [:lines, :methods]</code></td>
+<td>no (SimpleCov 0.22 has no API to enable)</td>
+</tr>
+<tr>
+<td><code>oneshot_lines</code></td>
+<td>yes (alternative to <code>lines</code>)</td>
+<td>yes — <code>coverage_modes [:oneshot_lines]</code></td>
+<td>no (no SimpleCov API)</td>
+</tr>
+<tr>
+<td><code>eval</code></td>
+<td>yes</td>
+<td>yes — <code>coverage_modes [:lines, :eval]</code></td>
+<td>partial — SimpleCov forwards <code>enable_coverage_for_eval</code> to <code>Coverage.start</code> but <code>coverage/.resultset.json</code> strips the <code>(eval at /path:line)</code> virtual-file entries</td>
+</tr>
+</tbody>
+</table>
+<p>Validated empirically on Ruby 3.4.8 and Ruby 4.1.0dev with SimpleCov
+0.22.0; check <code>Coverage.respond_to?(:start)</code>'s keyword arguments on
+your Ruby version for the authoritative supported set.</p>
 <hr />
 <h2 id="10__Debug__why_did_this_test_re_run__">10. Debug &quot;why did this test re-run?&quot;</h2>
 <p>Use <code>bundle exec rspec-tracer explain &lt;example_id_or_substring&gt;</code>:</p>
@@ -488,7 +556,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:42 2026 by
+  Generated on Thu May 14 06:21:32 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -218,6 +218,7 @@ without a cold re-run.</p>
 </span><span class='words_sep'>  </span><span class='tstring_content'>env_snapshot.json</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>env_dependency.json</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>cache_hit_reason.json</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>filtered_examples.json</span><span class='words_sep'>
 </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="LAST_RUN_FILENAME-constant" class="">LAST_RUN_FILENAME =
@@ -312,6 +313,7 @@ filename is computed as &quot;#field.#RSpecTracer::Storage::JsonBackend.@seriali
 </span><span class='words_sep'>  </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>env_dependency</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>filtered_examples</span><span class='words_sep'>
 </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="ID_SET_FIELDS-constant" class="">ID_SET_FIELDS =
@@ -358,6 +360,7 @@ branch. Read-side uses FIELD_KINDS below.</p>
         <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>all_examples</span><span class='words_sep'> </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'> </span><span class='tstring_content'>all_files</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'>
 </span><span class='words_sep'>  </span><span class='tstring_content'>boot_set</span><span class='words_sep'> </span><span class='tstring_content'>wsi_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_snapshot</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>filtered_examples</span><span class='words_sep'>
 </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
         <dt id="DEPENDENCY_FIELDS-constant" class="">DEPENDENCY_FIELDS =
@@ -420,7 +423,8 @@ digest maps, env_dependency).</p>
   <span class='label'>wsi_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
   <span class='label'>env_snapshot:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
   <span class='label'>env_dependency:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
-  <span class='label'>cache_hit_reason:</span> <span class='symbol'>:plain_hash</span>
+  <span class='label'>cache_hit_reason:</span> <span class='symbol'>:plain_hash</span><span class='comma'>,</span>
+  <span class='label'>filtered_examples:</span> <span class='symbol'>:plain_hash</span>
 <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
     </dl>
@@ -783,20 +787,20 @@ digest maps, env_dependency).</p>
       <pre class="lines">
 
 
-204
-205
-206
-207
 208
 209
 210
 211
 212
 213
-214</pre>
+214
+215
+216
+217
+218</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 204</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 208</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>retention_local_count:</span> <span class='kw'>nil</span><span class='comma'>,</span>
                <span class='label'>warn_per_file_mb:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>warn_total_mb:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>serializer:</span> <span class='symbol'>:json</span><span class='rparen'>)</span>
@@ -849,12 +853,12 @@ digest maps, env_dependency).</p>
       <pre class="lines">
 
 
-201
-202
-203</pre>
+205
+206
+207</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 205</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_cache_path'>cache_path</span>
   <span class='ivar'>@cache_path</span>
@@ -894,12 +898,12 @@ digest maps, env_dependency).</p>
       <pre class="lines">
 
 
-201
-202
-203</pre>
+205
+206
+207</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 205</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_serializer'>serializer</span>
   <span class='ivar'>@serializer</span>
@@ -939,12 +943,12 @@ digest maps, env_dependency).</p>
       <pre class="lines">
 
 
-201
-202
-203</pre>
+205
+206
+207</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 201</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 205</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_serializer_name'>serializer_name</span>
   <span class='ivar'>@serializer_name</span>
@@ -989,14 +993,14 @@ digest maps, env_dependency).</p>
       <pre class="lines">
 
 
-349
-350
-351
-352
-353</pre>
+353
+354
+355
+356
+357</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 349</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 353</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span>
   <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
@@ -1040,12 +1044,12 @@ into @serializer.</p>
       <pre class="lines">
 
 
-279
-280
-281</pre>
+283
+284
+285</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 279</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 283</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_field_filename'>field_filename</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='embexpr_end'>}</span><span class='tstring_content'>.</span><span class='embexpr_beg'>#{</span><span class='ivar'>@serializer</span><span class='period'>.</span><span class='id identifier rubyid_extension'>extension</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -1083,18 +1087,18 @@ into @serializer.</p>
       <pre class="lines">
 
 
-218
-219
-220
-221
 222
 223
 224
 225
-226</pre>
+226
+227
+228
+229
+230</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 218</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 222</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
   <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='id identifier rubyid_read_last_run_manifest'>read_last_run_manifest</span>
@@ -1138,10 +1142,6 @@ into @serializer.</p>
       <pre class="lines">
 
 
-230
-231
-232
-233
 234
 235
 236
@@ -1161,10 +1161,14 @@ into @serializer.</p>
 250
 251
 252
-253</pre>
+253
+254
+255
+256
+257</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 230</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 234</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_manifest'>manifest</span> <span class='op'>=</span> <span class='id identifier rubyid_read_last_run_manifest'>read_last_run_manifest</span>
@@ -1233,10 +1237,6 @@ different schema version are rejected without side effects
       <pre class="lines">
 
 
-368
-369
-370
-371
 372
 373
 374
@@ -1244,10 +1244,14 @@ different schema version are rejected without side effects
 376
 377
 378
-379</pre>
+379
+380
+381
+382
+383</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 368</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 372</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_merge_from_peers'>merge_from_peers</span><span class='lparen'>(</span><span class='id identifier rubyid_peer_cache_paths'>peer_cache_paths</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_peer_snapshots'>peer_snapshots</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_cache_paths'>peer_cache_paths</span><span class='period'>.</span><span class='id identifier rubyid_filter_map'>filter_map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
@@ -1303,10 +1307,6 @@ the remote cache backends use.</p>
       <pre class="lines">
 
 
-319
-320
-321
-322
 323
 324
 325
@@ -1317,10 +1317,14 @@ the remote cache backends use.</p>
 330
 331
 332
-333</pre>
+333
+334
+335
+336
+337</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 319</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 323</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_prune_run_dirs!'>prune_run_dirs!</span><span class='lparen'>(</span><span class='label'>keep:</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>if</span> <span class='id identifier rubyid_keep'>keep</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_keep'>keep</span> <span class='op'>&lt;=</span> <span class='int'>0</span>
@@ -1393,15 +1397,15 @@ measurable assertion.</p>
       <pre class="lines">
 
 
-267
-268
-269
-270
 271
-272</pre>
+272
+273
+274
+275
+276</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 267</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 271</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_dir'>dir</span><span class='comma'>,</span> <span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown snapshot field: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="#FIELD_KINDS-constant" title="RSpecTracer::Storage::JsonBackend::FIELD_KINDS (constant)">FIELD_KINDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
@@ -1455,10 +1459,6 @@ measurable assertion.</p>
       <pre class="lines">
 
 
-285
-286
-287
-288
 289
 290
 291
@@ -1475,10 +1475,14 @@ measurable assertion.</p>
 302
 303
 304
-305</pre>
+305
+306
+307
+308
+309</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 285</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 289</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot must not be nil</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1547,18 +1551,18 @@ measurable assertion.</p>
       <pre class="lines">
 
 
-337
-338
-339
-340
 341
 342
 343
 344
-345</pre>
+345
+346
+347
+348
+349</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 337</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/json_backend.rb', line 341</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_block'>block</span>
@@ -1579,7 +1583,7 @@ measurable assertion.</p>
 </div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:45 2026 by
+  Generated on Thu May 14 06:21:35 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

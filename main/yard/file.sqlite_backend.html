@@ -168,7 +168,8 @@
 </span>      <span class='comment'># DB. Kept in step with Snapshot.members minus the envelope.
 </span>      <span class='const'>READABLE_FIELDS</span> <span class='op'>=</span> <span class='lparen'>(</span>
         <span class='qsymbols_beg'>%i[</span><span class='tstring_content'>all_examples</span><span class='words_sep'> </span><span class='tstring_content'>duplicate_examples</span><span class='words_sep'> </span><span class='tstring_content'>all_files</span><span class='words_sep'> </span><span class='tstring_content'>dependency</span><span class='words_sep'>
-</span><span class='words_sep'>           </span><span class='tstring_content'>reverse_dependency</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='tstring_end'>]</span></span> <span class='op'>+</span>
+</span><span class='words_sep'>           </span><span class='tstring_content'>reverse_dependency</span><span class='words_sep'> </span><span class='tstring_content'>examples_coverage</span><span class='words_sep'> </span><span class='tstring_content'>env_dependency</span><span class='words_sep'> </span><span class='tstring_content'>cache_hit_reason</span><span class='words_sep'>
+</span><span class='words_sep'>           </span><span class='tstring_content'>filtered_examples</span><span class='tstring_end'>]</span></span> <span class='op'>+</span>
           <span class='const'>STATUS_FIELDS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='op'>+</span> <span class='const'>DIGEST_MAP_KINDS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
       <span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
 
@@ -593,11 +594,17 @@
         <span class='kw'>when</span> <span class='symbol'>:reverse_dependency</span> <span class='kw'>then</span> <span class='id identifier rubyid_read_reverse_dependency'>read_reverse_dependency</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
         <span class='kw'>when</span> <span class='symbol'>:examples_coverage</span> <span class='kw'>then</span> <span class='id identifier rubyid_read_examples_coverage'>read_examples_coverage</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
         <span class='kw'>when</span> <span class='symbol'>:env_dependency</span>    <span class='kw'>then</span> <span class='id identifier rubyid_read_env_dependency'>read_env_dependency</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
-        <span class='kw'>when</span> <span class='symbol'>:cache_hit_reason</span>  <span class='kw'>then</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='comment'># JSON-backend-only surface; sqlite no-op
-</span>        <span class='comment'># ^^ SqliteBackend does not persist the cache_hit_reason aggregate; future
-</span>        <span class='comment'># enhancement may add a meta-table column. Empty default mirrors the
-</span>        <span class='comment'># missing-file-coerces-to-{} contract used by JsonBackend&#39;s per-field reads.
-</span>        <span class='kw'>else</span>                    <span class='id identifier rubyid_dispatch_read_grouped'>dispatch_read_grouped</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
+        <span class='kw'>when</span> <span class='symbol'>:cache_hit_reason</span><span class='comma'>,</span> <span class='symbol'>:filtered_examples</span>
+          <span class='comment'># JSON-backend-only surfaces; sqlite no-op. SqliteBackend
+</span>          <span class='comment'># does not persist these aggregates (would require meta-
+</span>          <span class='comment'># table columns / schema bump). SqliteBackend also has no
+</span>          <span class='comment'># parallel-tests peer-merge path (M5.1 / M5.5 are
+</span>          <span class='comment'># JsonBackend-only), so the per-id filtered_examples that
+</span>          <span class='comment'># backs cache_hit_reason isn&#39;t needed either. Empty default
+</span>          <span class='comment'># mirrors the missing-file-coerces-to-{} contract used by
+</span>          <span class='comment'># JsonBackend&#39;s per-field reads.
+</span>          <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='kw'>else</span>                    <span class='id identifier rubyid_dispatch_read_grouped'>dispatch_read_grouped</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
@@ -747,7 +754,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Wed May 13 22:54:43 2026 by
+  Generated on Thu May 14 06:21:33 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
