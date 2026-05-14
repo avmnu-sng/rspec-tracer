@@ -91,6 +91,7 @@ module RSpecTracer
         env_snapshot.json
         env_dependency.json
         cache_hit_reason.json
+        filtered_examples.json
       ].freeze
 
       # Internal constant.
@@ -126,6 +127,7 @@ module RSpecTracer
         env_snapshot
         env_dependency
         cache_hit_reason
+        filtered_examples
       ].freeze
 
       # Binds a backend + run directory so `LazySnapshot` readers
@@ -161,6 +163,7 @@ module RSpecTracer
       HASH_FIELDS = %w[
         all_examples duplicate_examples all_files examples_coverage
         boot_set wsi_snapshot env_snapshot env_dependency cache_hit_reason
+        filtered_examples
       ].freeze
       # Internal constant.
       # @api private
@@ -193,7 +196,8 @@ module RSpecTracer
         wsi_snapshot: :plain_hash,
         env_snapshot: :plain_hash,
         env_dependency: :plain_hash,
-        cache_hit_reason: :plain_hash
+        cache_hit_reason: :plain_hash,
+        filtered_examples: :plain_hash
       }.freeze
 
       # Internal attribute.
@@ -392,7 +396,14 @@ module RSpecTracer
 
           state[:reverse_dependency] = reverse_of(state[:dependency])
           state[:run_id] = Digest::MD5.hexdigest(state[:all_examples].keys.sort.to_json)
+          state[:cache_hit_reason] = state[:filtered_examples].values.tally
 
+          build_merged_snapshot(state, schema_version: schema_version)
+        end
+
+        # Internal helper for the tracer pipeline.
+        # @api private
+        def self.build_merged_snapshot(state, schema_version:)
           Snapshot.new(
             schema_version: schema_version,
             run_id: state[:run_id],
@@ -411,7 +422,8 @@ module RSpecTracer
             wsi_snapshot: state[:wsi_snapshot],
             env_snapshot: state[:env_snapshot],
             env_dependency: state[:env_dependency],
-            cache_hit_reason: state[:cache_hit_reason]
+            cache_hit_reason: state[:cache_hit_reason],
+            filtered_examples: state[:filtered_examples]
           )
         end
 
@@ -433,7 +445,7 @@ module RSpecTracer
             wsi_snapshot: {},
             env_snapshot: {},
             env_dependency: {},
-            cache_hit_reason: Hash.new(0)
+            filtered_examples: {}
           }
         end
 
@@ -462,7 +474,7 @@ module RSpecTracer
           state[:wsi_snapshot].merge!(snapshot.wsi_snapshot || {})
           state[:env_snapshot].merge!(snapshot.env_snapshot || {})
           merge_env_dependency!(state[:env_dependency], snapshot.env_dependency || {})
-          merge_cache_hit_reason!(state[:cache_hit_reason], snapshot.cache_hit_reason || {})
+          merge_filtered_examples!(state[:filtered_examples], snapshot.filtered_examples || {})
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
@@ -477,14 +489,20 @@ module RSpecTracer
           end
         end
 
-        # Sum per-worker reason counts. parallel_tests partitions
-        # examples across workers; each worker's filtered_examples
-        # tally is disjoint by example_id, so sum is the right combine
-        # rule (a "Files changed" count from worker A plus the same
-        # reason's count from worker B = total examples that ran for
-        # that reason across the suite).
-        def self.merge_cache_hit_reason!(target, source)
-          source.each { |reason, count| target[reason] += count }
+        # Merge per-worker filtered_examples by example_id. Every
+        # parallel_tests worker independently runs Filter.select
+        # against the same global previous-run snapshot
+        # (Engine#compute_filter_decisions walks the registry seeded
+        # from `prev` and the filter intersects against
+        # `prev.all_examples.keys`), so every worker's filtered_examples
+        # hash is IDENTICAL. First-write-wins collapses the duplicate
+        # ids; `Merger.call` re-derives `cache_hit_reason` as the
+        # values-tally of the merged hash so the merged
+        # cache_hit_reason is the per-id-correct count (not the
+        # N-fold-inflated sum of identical per-worker tallies that
+        # the pre-#193 merge produced).
+        def self.merge_filtered_examples!(target, source)
+          source.each { |id, reason| target[id] ||= reason }
         end
 
         # Internal helper for the tracer pipeline.

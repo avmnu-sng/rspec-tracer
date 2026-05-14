@@ -165,6 +165,14 @@ RSpec.describe RSpecTracer::Storage::SqliteBackend do
       expect(backend.read_field(:examples_coverage))
         .to eq('ex1' => { '/a.rb' => { 0 => 1, 2 => 2 } })
     end
+
+    it 'returns an empty Hash for the JSON-backend-only cache_hit_reason field' do
+      expect(backend.read_field(:cache_hit_reason)).to eq({})
+    end
+
+    it 'returns an empty Hash for the JSON-backend-only filtered_examples field' do
+      expect(backend.read_field(:filtered_examples)).to eq({})
+    end
   end
 
   describe 'save is full-replace per run' do

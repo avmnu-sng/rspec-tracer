@@ -37,7 +37,8 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       wsi_snapshot: { 'Gemfile.lock' => 'feedc0de', '.ruby-version' => 'b16b00b5' },
       env_snapshot: { 'API_KEY' => 'facade1', 'ROLE_CONFIG' => 'baadf00d' },
       env_dependency: { 'ex1' => ['API_KEY'], 'ex2' => %w[ROLE_CONFIG API_KEY] },
-      cache_hit_reason: { 'Files changed' => 3, 'No cache' => 1 }
+      cache_hit_reason: { 'Files changed' => 3, 'No cache' => 1 },
+      filtered_examples: { 'ex1' => 'Files changed', 'ex2' => 'No cache' }
     )
   end
 
@@ -57,7 +58,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(described_class::FILENAMES).to be_frozen
     end
 
-    it 'lists exactly the 16 per-run files (cache_hit_reason added alongside the existing 15)' do
+    it 'lists exactly the 17 per-run files (filtered_examples added alongside the existing 16)' do
       expect(described_class::FILENAMES).to eq(expected_filenames)
     end
 
@@ -68,7 +69,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
         pending_examples.json skipped_examples.json
         all_files.json dependency.json reverse_dependency.json examples_coverage.json
         boot_set.json wsi_snapshot.json env_snapshot.json env_dependency.json
-        cache_hit_reason.json
+        cache_hit_reason.json filtered_examples.json
       ]
     end
   end
@@ -103,6 +104,39 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
 
       expect(loaded.cache_hit_reason).to eq({})
+    end
+  end
+
+  describe 'filtered_examples round-trip' do
+    it 'persists and reloads the per-example reason hash' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.filtered_examples).to eq('ex1' => 'Files changed', 'ex2' => 'No cache')
+    end
+
+    it 'writes filtered_examples.json with a plain Hash[example_id => reason_string] body' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'filtered_examples.json')
+
+      expect(JSON.parse(File.read(path))).to eq('ex1' => 'Files changed', 'ex2' => 'No cache')
+    end
+
+    it 'coerces a missing filtered_examples.json to {} (load tolerant of pre-#193 caches)' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      File.delete(File.join(cache_path, sample_snapshot.run_id, 'filtered_examples.json'))
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.filtered_examples).to eq({})
+    end
+
+    it 'tolerates a malformed filtered_examples.json (returns {})' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      path = File.join(cache_path, sample_snapshot.run_id, 'filtered_examples.json')
+      File.binwrite(path, "\x00 garbage".b)
+      loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+
+      expect(loaded.filtered_examples).to eq({})
     end
   end
 
@@ -789,7 +823,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
   end
   # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations, RSpec/ExampleLength
 
-  # rubocop:disable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations
+  # rubocop:disable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations, RSpec/ExampleLength
   describe RSpecTracer::Storage::JsonBackend::Merger do
     let(:schema) { RSpecTracer::Storage::Schema::CURRENT }
 
@@ -824,6 +858,65 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
 
       expect(merged.duplicate_examples['ex']).to eq([{ a: 1 }, { a: 2 }])
     end
+
+    # Regression: every parallel_tests worker independently runs
+    # Filter.select against the SAME global previous-run snapshot,
+    # producing IDENTICAL @filtered_examples hashes — failed /
+    # pending / interrupted ids are seeded from the same `prev`
+    # snapshot on every worker. Pre-fix merge sum-merged the
+    # per-worker cache_hit_reason tallies, inflating counts by N
+    # workers for any always-re-run bucket (issue #193's 3-worker
+    # / 2-failed = 6-reported reproduction).
+    it 'collapses identical per-worker filtered_examples by id then re-tallies (issue #193)' do
+      filtered = { 'ex_F1' => 'Failed previously', 'ex_F2' => 'Failed previously' }
+      tally = { 'Failed previously' => 2 }
+      peer = lambda do |run_id|
+        make_snapshot(run_id: run_id, filtered_examples: filtered, cache_hit_reason: tally)
+      end
+
+      merged = described_class.call([peer.call('p1'), peer.call('p2'), peer.call('p3')], schema_version: schema)
+
+      expect(merged.filtered_examples).to eq(filtered)
+      expect(merged.cache_hit_reason).to eq('Failed previously' => 2)
+    end
+
+    it 'preserves disjoint filtered_examples ids across workers (files_changed case)' do
+      s1 = make_snapshot(
+        run_id: 'p1',
+        filtered_examples: { 'ex_A' => 'Files changed', 'ex_B' => 'Files changed' }
+      )
+      s2 = make_snapshot(
+        run_id: 'p2',
+        filtered_examples: { 'ex_C' => 'Files changed' }
+      )
+
+      merged = described_class.call([s1, s2], schema_version: schema)
+
+      expect(merged.filtered_examples).to eq(
+        'ex_A' => 'Files changed', 'ex_B' => 'Files changed', 'ex_C' => 'Files changed'
+      )
+      expect(merged.cache_hit_reason).to eq('Files changed' => 3)
+    end
+
+    it 'first-write-wins on conflicting reasons (defensive; workers should agree)' do
+      s1 = make_snapshot(run_id: 'p1', filtered_examples: { 'ex' => 'Failed previously' })
+      s2 = make_snapshot(run_id: 'p2', filtered_examples: { 'ex' => 'Files changed' })
+
+      merged = described_class.call([s1, s2], schema_version: schema)
+
+      expect(merged.filtered_examples).to eq('ex' => 'Failed previously')
+      expect(merged.cache_hit_reason).to eq('Failed previously' => 1)
+    end
+
+    it 'derives an empty cache_hit_reason when no peer reports filtered_examples' do
+      s1 = make_snapshot(run_id: 'p1')
+      s2 = make_snapshot(run_id: 'p2')
+
+      merged = described_class.call([s1, s2], schema_version: schema)
+
+      expect(merged.filtered_examples).to eq({})
+      expect(merged.cache_hit_reason).to eq({})
+    end
   end
-  # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations
+  # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/MultipleExpectations, RSpec/ExampleLength
 end

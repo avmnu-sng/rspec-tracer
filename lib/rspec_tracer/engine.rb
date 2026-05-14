@@ -1012,7 +1012,8 @@ module RSpecTracer
         wsi_snapshot: @whole_suite_invalidators.digest_snapshot,
         env_snapshot: env_snapshot_for_persistence,
         env_dependency: env_dependency_for_persistence,
-        cache_hit_reason: @filtered_examples.values.tally
+        cache_hit_reason: @filtered_examples.values.tally,
+        filtered_examples: @filtered_examples
       )
     end
 
