@@ -4,8 +4,8 @@ require 'rspec_tracer/storage/schema'
 
 RSpec.describe RSpecTracer::Storage::Schema do
   describe 'CURRENT' do
-    it 'is 3 (M3.7 added Snapshot.boot_set; prior v2 shape is not backward-readable)' do
-      expect(described_class::CURRENT).to eq(3)
+    it 'is 4 (schema 4 reshaped the example-identity payload; schema-3 caches no longer match)' do
+      expect(described_class::CURRENT).to eq(4)
     end
   end
 

@@ -9,12 +9,12 @@ version: '3'
 tasks:
   test:mutation:smoke:
     desc: >-
-      Mutation smoke — 14 subjects (TimeFormatter.format_time, Tracker::Input,
-      Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators, Storage::Schema,
-      Storage::Snapshot, Storage::Backend, Tracker::DependencyGraph,
-      Tracker::ExampleRegistry, Tracker::Filter, Tracker::LoadedFilesTracker,
-      Rails::Preset, Tracker::EnvSnapshot, Tracker::EnvMatcher)
-      must each hit >= 90% (< 2 min budget)
+      Mutation smoke — 15 subjects (TimeFormatter.format_time, Example,
+      Tracker::Input, Tracker::DeclaredGlobs, Tracker::WholeSuiteInvalidators,
+      Storage::Schema, Storage::Snapshot, Storage::Backend,
+      Tracker::DependencyGraph, Tracker::ExampleRegistry, Tracker::Filter,
+      Tracker::LoadedFilesTracker, Rails::Preset, Tracker::EnvSnapshot,
+      Tracker::EnvMatcher) must each hit >= 90% (< 2 min budget)
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -54,6 +54,9 @@ tasks:
         run_mutant_subject "TimeFormatter.format_time" \
           "rspec_tracer/time_formatter" \
           "RSpecTracer::TimeFormatter.format_time" || fail=1
+        run_mutant_subject "Example" \
+          "rspec_tracer/example" \
+          "RSpecTracer::Example*" || fail=1
         run_mutant_subject "Tracker::Input" \
           "rspec_tracer/tracker/input" \
           "RSpecTracer::Tracker::Input*" || fail=1

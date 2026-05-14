@@ -17,6 +17,7 @@ RSpec.describe RSpecTracer::Engine do
   let(:cache_path) { File.join(tmp_base, 'cache') }
   let(:logger) { instance_double(RSpecTracer::Logger, debug: nil, info: nil, warn: nil, error: nil) }
   let(:configuration) { stub_configuration }
+  let(:current_schema) { RSpecTracer::Storage::Schema::CURRENT }
 
   before do
     write_project_file('lib/a.rb', "module A; VALUE = 1; end\n")
@@ -322,7 +323,7 @@ RSpec.describe RSpecTracer::Engine do
       expect(File).to exist(File.join(cache_path, 'last_run.json'))
     end
 
-    it 'stamps the cache with schema_version 3' do
+    it 'stamps the cache with the current schema_version' do
       allow(tracker.coverage_adapter).to receive(:peek).and_return({}, {})
       tracker.register_example(build_example('ex1'))
       tracker.example_started
@@ -332,7 +333,7 @@ RSpec.describe RSpecTracer::Engine do
       tracker.finalize
 
       manifest = JSON.parse(File.read(File.join(cache_path, 'last_run.json')))
-      expect(manifest['schema_version']).to eq(3)
+      expect(manifest['schema_version']).to eq(current_schema)
     end
 
     it 'flags ids without a terminal status as :interrupted at finalize' do
@@ -400,7 +401,7 @@ RSpec.describe RSpecTracer::Engine do
 
     def prime_previous_cache_with(failed: [], flaky: [])
       ids = (Array(failed) + Array(flaky)).uniq
-      snapshot = RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+      snapshot = RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |s|
         s.all_examples = ids.to_h { |id| [id, build_example(id)] }
         s.failed_examples = Set.new(Array(failed))
         s.flaky_examples = Set.new(Array(flaky))
@@ -411,7 +412,7 @@ RSpec.describe RSpecTracer::Engine do
         }
       end
       RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
-        .save_graph(snapshot, schema_version: 3)
+        .save_graph(snapshot, schema_version: current_schema)
     end
 
     def run_one(tracker, id, outcome)
@@ -491,14 +492,14 @@ RSpec.describe RSpecTracer::Engine do
         'overwritten' => { '/lib/a.rb' => { '0' => 9 } } }
     end
     let(:previous_snapshot) do
-      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+      RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |s|
         s.examples_coverage = previous_coverage
       end
     end
 
     def prime_previous_cache
       backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
-      backend.save_graph(previous_snapshot, schema_version: 3)
+      backend.save_graph(previous_snapshot, schema_version: current_schema)
     end
 
     it 'leaves @examples_coverage empty after setup (no eager seed)' do
@@ -601,7 +602,7 @@ RSpec.describe RSpecTracer::Engine do
       RSpecTracer::Tracker::WholeSuiteInvalidators.new(root: root).digest_snapshot
     end
     let(:previous_snapshot) do
-      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+      RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |s|
         s.all_examples = { 'ex1' => build_example('ex1'), 'ex2' => build_example('ex2') }
         # Non-empty dependency keeps Filter from marking every prev example
         # as :no_cache (Filter maps missing-from-graph to no_cache which
@@ -624,7 +625,7 @@ RSpec.describe RSpecTracer::Engine do
     def prime_previous_cache
       FileUtils.mkdir_p(prev_cache_path)
       backend = RSpecTracer::Storage::JsonBackend.new(cache_path: prev_cache_path, logger: logger)
-      backend.save_graph(previous_snapshot, schema_version: 3)
+      backend.save_graph(previous_snapshot, schema_version: current_schema)
     end
 
     it 'adds env_changed decisions for examples whose tracked env key changed' do
@@ -682,7 +683,7 @@ RSpec.describe RSpecTracer::Engine do
       RSpecTracer::Tracker::WholeSuiteInvalidators.new(root: root).digest_snapshot
     end
     let(:previous_snapshot) do
-      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |s|
+      RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |s|
         s.all_examples = {
           'ex1' => build_example('ex1'),
           'ex2' => build_example('ex2'),
@@ -710,7 +711,7 @@ RSpec.describe RSpecTracer::Engine do
     def prime_previous_cache
       FileUtils.mkdir_p(prev_cache_path)
       backend = RSpecTracer::Storage::JsonBackend.new(cache_path: prev_cache_path, logger: logger)
-      backend.save_graph(previous_snapshot, schema_version: 3)
+      backend.save_graph(previous_snapshot, schema_version: current_schema)
     end
 
     it 'unions config-level tracked names into @tracked_env_names at setup' do
@@ -1251,7 +1252,7 @@ RSpec.describe RSpecTracer::Engine do
     end
 
     let(:previous_snapshot) do
-      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |snap|
+      RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |snap|
         snap.all_files = {
           '/lib/keep.rb' => {
             file_name: '/lib/keep.rb',
@@ -1277,7 +1278,7 @@ RSpec.describe RSpecTracer::Engine do
 
     def prime_previous_cache
       backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
-      backend.save_graph(previous_snapshot, schema_version: 3)
+      backend.save_graph(previous_snapshot, schema_version: current_schema)
     end
 
     it 'drops carried-over @all_files entries that match a currently-configured filter' do
@@ -1329,7 +1330,7 @@ RSpec.describe RSpecTracer::Engine do
   # field testing across all five reason paths.
   describe 'register_example overwrites prior-run metadata on warm runs' do
     let(:previous_snapshot) do
-      RSpecTracer::Storage::Snapshot.empty(schema_version: 3, run_id: 'prev').tap do |snap|
+      RSpecTracer::Storage::Snapshot.empty(schema_version: current_schema, run_id: 'prev').tap do |snap|
         snap.all_examples = {
           'ex_failed' => build_example('ex_failed').merge(run_reason: 'No cache')
         }
@@ -1339,7 +1340,7 @@ RSpec.describe RSpecTracer::Engine do
 
     def prime_previous_cache
       backend = RSpecTracer::Storage::JsonBackend.new(cache_path: cache_path, logger: logger)
-      backend.save_graph(previous_snapshot, schema_version: 3)
+      backend.save_graph(previous_snapshot, schema_version: current_schema)
     end
 
     it "replaces the seeded run_reason with this run's freshly-tagged value" do

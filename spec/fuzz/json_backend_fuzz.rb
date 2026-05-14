@@ -29,6 +29,7 @@ require 'tmpdir'
 
 $LOAD_PATH.unshift File.expand_path('../../lib', __dir__)
 require 'rspec_tracer/storage/json_backend'
+require 'rspec_tracer/storage/schema'
 
 iterations = Integer(ENV.fetch('ITERATIONS', '100'))
 seed       = Integer(ENV.fetch('SEED', Random.new_seed.to_s))
@@ -54,7 +55,10 @@ Dir.mktmpdir('rspec_tracer_fuzz_') do |cache_path|
 
   # Reasonable-manifest baseline; iterations either corrupt it or
   # corrupt one of the per-run JSON files under run_dir.
-  manifest = { 'schema_version' => 3, 'run_id' => run_id, 'timestamp' => Time.now.utc.iso8601 }
+  manifest = {
+    'schema_version' => RSpecTracer::Storage::Schema::CURRENT,
+    'run_id' => run_id, 'timestamp' => Time.now.utc.iso8601
+  }
   File.write(File.join(cache_path, MANIFEST), JSON.pretty_generate(manifest))
   FILENAMES.each do |name|
     next if name == MANIFEST
@@ -75,7 +79,7 @@ Dir.mktmpdir('rspec_tracer_fuzz_') do |cache_path|
     File.binwrite(target, rng.bytes(length))
 
     begin
-      result = backend.load_graph(schema_version: 3)
+      result = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
       outcomes[result.nil? ? :nil : :snapshot] += 1
     rescue SystemExit, Interrupt
       raise
