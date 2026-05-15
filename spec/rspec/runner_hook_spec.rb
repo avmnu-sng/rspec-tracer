@@ -163,6 +163,38 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
 
         expect(label).to eq('spec/a_spec.rb:9 Thing behaves like shared')
       end
+
+      it 'returns a Hash with a default block so intermediate describe groups do not NPE in example_count' do
+        # rspec-core's RSpec::Core::World#example_count walks
+        # g.descendants for every top-level group and reads
+        # e.filtered_examples (= world.filtered_examples[e]) on each
+        # descendant. Intermediate groups (a `describe` containing only
+        # nested `describe`s, no direct `it`s) have no entry in the
+        # kept Hash. A plain Hash returns nil for those keys; the
+        # missing-key lookup then NPEs in
+        # `inject(0) { |a, e| a + e.filtered_examples.size }`. The
+        # default block returns [] (.size == 0) matching what
+        # _rspec_tracer_build_filter_decision's to_run already does.
+        # Issue: avmnu-sng/rspec-tracer#218.
+        surviving_metadata = { rspec_tracer_example_id: 'unique-id', file_path: 'spec/a_spec.rb' }
+        leaf_group = double('LeafGroup')
+        survivor = double('Survivor', metadata: surviving_metadata, description: 'unique',
+                                      example_group: double('EG', parent_groups: [leaf_group]))
+        intermediate_group = double('IntermediateGroup')
+        allow(engine).to receive(:duplicate_examples)
+          .and_return('dup-id' => duplicate_entries)
+        examples_map = { leaf_group => [survivor] }
+
+        kept_map, kept_groups = runner.send(
+          :_rspec_tracer_drop_duplicate_examples, examples_map, [leaf_group]
+        )
+
+        expect(kept_map[leaf_group]).to eq([survivor])
+        expect(kept_groups).to eq([leaf_group])
+        # Load-bearing assertion: missing-key lookup returns [] not nil.
+        expect(kept_map.default_proc).not_to be_nil
+        expect(kept_map[intermediate_group]).to eq([])
+      end
     end
 
     context 'when examples are tracked and the engine schedules a run' do

@@ -207,15 +207,29 @@ module RSpecTracer
       # the exit code (via `at_exit_behavior`), not whether anything
       # runs. A group is kept only if it still has examples after the
       # colliding ones are removed.
+      #
+      # The returned Hash uses the same `Hash.new { |h, k| h[k] = [] }`
+      # default-block shape as `_rspec_tracer_build_filter_decision`'s
+      # `to_run`. That contract matters because rspec-core's
+      # `RSpec::Core::World#example_count` walks `g.descendants` for
+      # every top-level group and reads `e.filtered_examples`
+      # (= `world.filtered_examples[e]`) on each descendant — including
+      # INTERMEDIATE groups (a `describe` that contains only nested
+      # `describe`s, no direct `it`s). A plain Hash returns `nil` for
+      # those keys, which then NPEs in
+      # `inject(0) { |a, e| a + e.filtered_examples.size }`. The
+      # default block returns `[]` (`.size == 0`), matching the
+      # pre-drop path's behavior.
       # @api private
       def _rspec_tracer_drop_duplicate_examples(examples_map, example_groups)
         duplicate_ids = Set.new(RSpecTracer.engine.duplicate_examples.keys)
 
-        kept_map = examples_map.each_with_object({}) do |(group, examples), kept|
+        kept_map = Hash.new { |hash, group| hash[group] = [] }
+        examples_map.each do |group, examples|
           survivors = examples.reject do |example|
             duplicate_ids.include?(example.metadata[:rspec_tracer_example_id])
           end
-          kept[group] = survivors unless survivors.empty?
+          kept_map[group] = survivors unless survivors.empty?
         end
 
         [kept_map, example_groups.select { |group| kept_map.key?(group) }]
