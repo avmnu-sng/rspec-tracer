@@ -21,7 +21,14 @@ require 'pathname'
 #   SOAK_FIXTURE_ROOT  - cloned project path
 #                        (default: tmp/soak-fixtures/<project>)
 #   SOAK_ITERATIONS    - iter count override
-#                        (default: solidus=50, refinery=100, spree=50)
+#                        (default: solidus=50, refinery=100, spree=20 per shard)
+#   SOAK_SHARD         - per-cell shard index (1-indexed; unset for
+#                        unsharded cells). Used by the workflow to split
+#                        Spree across 2 matrix cells (`spree-shard-1`,
+#                        `spree-shard-2`) with disjoint mutation-seed
+#                        slices so the combined shards cover what a
+#                        single-cell N*ITERATIONS run would have. Empty
+#                        = no offset (legacy semantics).
 #   SOAK_WARMUP_ITERS  - warm-up baseline iter (default: 5)
 #   SOAK_MEMORY_BOUND  - growth bound vs warm-up (default: 1.20)
 #
@@ -198,12 +205,17 @@ MUTATION_TARGETS = {
 # Refinery is small (~70 specs, ~29 s/iter on GHA) so 100 iters fits;
 # Solidus's api engine (~700 specs, ~85 s/iter) takes ~70 min at 50.
 # Spree's core engine (~1307 specs, ~660 s/iter on GHA EPYC) is the
-# bottleneck: at 11 min/iter, 50 iters needs ~9 h wall — far past cap.
-# Sized at 18 (~3.5 h) for cron with the workflow_dispatch
-# `iterations` input as the escape hatch for full 50-iter ad-hoc soaks.
+# bottleneck: at 11 min/iter, a single-cell 50-iter run needs ~9 h
+# wall — far past cap. The workflow shards Spree into 2 matrix cells
+# (see `.github/workflows/soak.yml`); each cell runs ITERATIONS=20
+# (~3.7 h with margin), and the cells use disjoint SHARD_OFFSETs so
+# the combined deterministic mutation-seed space across shards covers
+# 40 iter-equivalents (4.4 mutation-kind cycles, 30 post-warmup memory
+# observations across shards) — most of what the original 50-iter
+# design provided.
 # Per-iter wall on GHA EPYC is 3-6x M2 Max for Rails-heavy suites; the
 # original 1.5-2 h docstring claim assumed M2 Max pacing.
-DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 18 }.freeze
+DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 20 }.freeze
 
 PROJECT = ENV.fetch('SOAK_PROJECT') do
   raise 'SOAK_PROJECT env var required (one of: solidus, refinery, spree)'
@@ -233,6 +245,24 @@ ITERATIONS = Integer(soak_iterations_env || DEFAULT_ITERATIONS.fetch(PROJECT).to
 WARMUP_ITERS = Integer(ENV.fetch('SOAK_WARMUP_ITERS', '5'))
 MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.20'))
 
+# Shard support. When `SOAK_SHARD=N` is set (1-indexed), the mutation
+# RNG seed + kind selection use `global_iter = iter + SHARD_OFFSET`
+# where `SHARD_OFFSET = (N - 1) * ITERATIONS`. This makes shard 1's
+# iter 1..ITERATIONS exercise mutation seeds 1..ITERATIONS, shard 2's
+# iter 1..ITERATIONS exercise seeds (ITERATIONS+1)..(2*ITERATIONS), etc.
+# Combined across shards, the deterministic mutation-seed space is
+# disjoint and covers what a single-cell N*ITERATIONS run would have.
+# Empty / unset `SOAK_SHARD` treats as the unsharded default (offset 0)
+# so local `task soak:smoke:*` runs and the unsharded Solidus / Refinery
+# cells keep their original semantics.
+# Used by `.github/workflows/soak.yml`'s Spree matrix split to fit the
+# 4 h cron cap while preserving most of the 50-iter signal that a
+# single-cell run can no longer get on GHA EPYC.
+soak_shard_env = ENV['SOAK_SHARD'].to_s
+SHARD = soak_shard_env.empty? ? nil : Integer(soak_shard_env)
+SHARD_OFFSET = SHARD.nil? ? 0 : (SHARD - 1) * ITERATIONS
+SHARD_LABEL = SHARD.nil? ? '' : " shard #{SHARD}"
+
 # Soak orchestration: subprocess-per-iter pattern needs before(:all)
 # fixture-existence sanity + a single multi-statement example. The
 # integration-style cops below are tuned for unit specs (small
@@ -240,7 +270,7 @@ MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.20'))
 # cross-process soak.
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
 # rubocop:disable RSpec/NoExpectationExample
-RSpec.describe "realworld soak (#{PROJECT})" do
+RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
   before(:all) do
     raise "fixture missing: #{FIXTURE_ROOT}\n\nRun `task soak:fixture:#{PROJECT}` first." \
       unless FIXTURE_ROOT.directory?
@@ -258,7 +288,7 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     IntegrationCleanup.scrub_default!(ENGINE_PATH)
   end
 
-  it "completes #{ITERATIONS} iterations against #{PROJECT} with no memory leak or crash" do
+  it "completes #{ITERATIONS} iterations against #{PROJECT}#{SHARD_LABEL} with no memory leak or crash" do
     skip_if_jruby
 
     memstats = []
@@ -279,10 +309,10 @@ RSpec.describe "realworld soak (#{PROJECT})" do
         head = output[0, 2_000]
         tail = output.length > 6_000 ? output[-4_000..] : ''
         chunk = tail.empty? ? head : "#{head}\n[... truncated ...]\n#{tail}"
-        raise "iter #{iter} (#{PROJECT}) subprocess failed:\n#{chunk}"
+        raise "iter #{iter}#{SHARD_LABEL} (#{PROJECT}) subprocess failed:\n#{chunk}"
       end
 
-      raise "iter #{iter} (#{PROJECT}): no memstat captured" if memstat.nil?
+      raise "iter #{iter}#{SHARD_LABEL} (#{PROJECT}): no memstat captured" if memstat.nil?
 
       memstats << memstat
       verify_cache_state(iter)
@@ -300,15 +330,22 @@ RSpec.describe "realworld soak (#{PROJECT})" do
   end
 
   def mutate_for_iter(iter)
-    rng = Random.new(iter)
-    kind = MUTATION_KINDS[(iter - 1) % MUTATION_KINDS.size]
+    # Apply SHARD_OFFSET so each shard exercises a disjoint slice of
+    # the deterministic mutation-seed space. global_iter is what feeds
+    # the RNG seed + kind selection; the original `iter` 1..ITERATIONS
+    # is still used for filesystem paths (iter_dir) and announce
+    # markers so per-shard cell output is human-readable.
+    global_iter = iter + SHARD_OFFSET
+    rng = Random.new(global_iter)
+    kind = MUTATION_KINDS[(global_iter - 1) % MUTATION_KINDS.size]
     candidates = mutation_candidates(kind)
     if candidates.empty?
       # Some projects don't populate every mutation kind. Skip the
       # iter's mutation rather than crashing - the iter still runs
       # and exercises the tracker via prior mutations' accumulated
       # invalidation surface.
-      puts "iter #{iter} (#{PROJECT}): no mutation candidates for kind #{kind.inspect} - skipping mutation" # rubocop:disable RSpec/Output
+      msg = "iter #{iter}#{SHARD_LABEL} (#{PROJECT}): no mutation candidates for kind #{kind.inspect}"
+      puts "#{msg} - skipping mutation" # rubocop:disable RSpec/Output
       return
     end
 
@@ -344,7 +381,7 @@ RSpec.describe "realworld soak (#{PROJECT})" do
   # observes the change via mtime / size / digest invalidation -
   # which is what the soak is testing.
   def mutation_suffix(path, iter, _kind)
-    label = "soak iter #{iter} (#{PROJECT})"
+    label = "soak iter #{iter}#{SHARD_LABEL} (#{PROJECT})"
     case File.extname(path)
     when '.erb'  then "\n<%# #{label} %>\n"
     when '.slim' then "\n/ #{label}\n"
@@ -357,14 +394,15 @@ RSpec.describe "realworld soak (#{PROJECT})" do
   #   primary observability artifact; without them the GHA UI shows zero
   #   activity for 30+ min which looks like a hang.
   def announce_iter_start(iter)
-    $stdout.write("\n=== #{PROJECT} iter #{iter}/#{ITERATIONS} starting ===\n")
+    $stdout.write("\n=== #{PROJECT}#{SHARD_LABEL} iter #{iter}/#{ITERATIONS} starting ===\n")
     $stdout.flush
   end
 
   def announce_iter_done(iter, started_at, success)
     elapsed = format('%.1f', Time.now - started_at)
     state = success ? 'OK' : 'FAIL'
-    $stdout.write("=== #{PROJECT} iter #{iter}/#{ITERATIONS} done in #{elapsed}s (status=#{state}) ===\n\n")
+    header = "=== #{PROJECT}#{SHARD_LABEL} iter #{iter}/#{ITERATIONS}"
+    $stdout.write("#{header} done in #{elapsed}s (status=#{state}) ===\n\n")
     $stdout.flush
   end
   # rubocop:enable RSpec/Output
@@ -425,14 +463,14 @@ RSpec.describe "realworld soak (#{PROJECT})" do
   end
 
   def verify_cache_state(iter)
-    raise "iter #{iter} (#{PROJECT}): rspec_tracer_cache/ missing at #{CACHE_PATH}" \
+    raise "iter #{iter}#{SHARD_LABEL} (#{PROJECT}): rspec_tracer_cache/ missing at #{CACHE_PATH}" \
       unless CACHE_PATH.directory?
 
     last_run = CACHE_PATH.join('last_run.json')
-    raise "iter #{iter} (#{PROJECT}): last_run.json missing" unless last_run.file?
+    raise "iter #{iter}#{SHARD_LABEL} (#{PROJECT}): last_run.json missing" unless last_run.file?
 
     manifest = JSON.parse(last_run.read)
-    raise "iter #{iter} (#{PROJECT}): run_id missing" if manifest['run_id'].to_s.empty?
+    raise "iter #{iter}#{SHARD_LABEL} (#{PROJECT}): run_id missing" if manifest['run_id'].to_s.empty?
   end
 
   def enforce_memory_bound(memstats)
@@ -465,12 +503,12 @@ RSpec.describe "realworld soak (#{PROJECT})" do
     # post-merge dashboards plot it as the soak SLI signal. RSpec/Output
     # disabled deliberately - this puts is the spec's primary
     # observability artifact.
-    puts "Memory growth (#{PROJECT} baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}" # rubocop:disable RSpec/Output
+    puts "Memory growth (#{PROJECT}#{SHARD_LABEL} baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}" # rubocop:disable RSpec/Output
 
     violations = growths.select { |_, memsize, _| memsize > bound }
     return if violations.empty?
 
-    raise "memory bound exceeded for #{PROJECT} (baseline #{baseline}, bound #{bound}):\n" +
+    raise "memory bound exceeded for #{PROJECT}#{SHARD_LABEL} (baseline #{baseline}, bound #{bound}):\n" +
       violations.map { |iter, memsize, ratio|
         "  iter #{iter}: #{memsize} bytes (#{format('%.4f', ratio)}x)"
       }.join("\n")
