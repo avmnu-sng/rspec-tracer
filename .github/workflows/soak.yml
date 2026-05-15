@@ -180,12 +180,37 @@ jobs:
       - name: Run soak (${{ matrix.cell }})
         run: task soak:full:${{ matrix.project }}
 
+      - name: Render soak summary
+        # `if: always()` so failed cells still render their summary
+        # (the soak spec's `ensure` block writes summary.md regardless
+        # of whether the assertion raised). The summary is the
+        # primary SLI surface for nightly runs — visible directly on
+        # the run page via $GITHUB_STEP_SUMMARY without downloading
+        # the memstats artifact.
+        if: always()
+        run: |
+          summary="tmp/soak/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## soak (${{ matrix.cell }})"
+              echo ""
+              echo "**Result:** ❌ no summary written (cell exited before the soak spec's ensure block ran)."
+              echo ""
+              echo "See the \`Run soak\` step's logs for the early-exit cause."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload memstats
         if: always()
         uses: actions/upload-artifact@v7
         with:
           # Artifact name must be unique across matrix cells in one run;
           # cell (vs project) disambiguates spree-shard-1 from spree-shard-2.
+          # The artifact ships tmp/soak/ which now includes summary.json
+          # (machine-readable) + summary.md (rendered to the run page
+          # via $GITHUB_STEP_SUMMARY) alongside per-iter memstat-*.json.
           name: soak-memstats-${{ matrix.cell }}-${{ github.run_id }}
           path: tmp/soak/
           if-no-files-found: warn
