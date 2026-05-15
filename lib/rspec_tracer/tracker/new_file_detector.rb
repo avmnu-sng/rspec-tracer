@@ -9,9 +9,9 @@ module RSpecTracer
   # @api private
   module Tracker
     # Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
-    # KNOWN_ISSUES Section B5: 1.x's fetch_changed_files loop only
-    # iterated the previous run's cache, so newly-added source files
-    # were never discovered and never triggered re-runs.
+    # a 1.x gap: fetch_changed_files only iterated the previous run's
+    # cache, so newly-added source files were never discovered and
+    # never triggered re-runs.
     #
     # The fix: at boot, walk the union of user-declared globs and a
     # pure-Ruby default set (lib/**/*.rb). Every match on disk that is

@@ -537,11 +537,11 @@ module RSpecTracer
           # JSON-backend-only surfaces; sqlite no-op. SqliteBackend
           # does not persist these aggregates (would require meta-
           # table columns / schema bump). SqliteBackend also has no
-          # parallel-tests peer-merge path (M5.1 / M5.5 are
-          # JsonBackend-only), so the per-id filtered_examples that
-          # backs cache_hit_reason isn't needed either. Empty default
-          # mirrors the missing-file-coerces-to-{} contract used by
-          # JsonBackend's per-field reads.
+          # parallel-tests peer-merge path (that's JsonBackend-only),
+          # so the per-id filtered_examples that backs cache_hit_reason
+          # isn't needed either. Empty default mirrors the missing-
+          # file-coerces-to-{} contract used by JsonBackend's
+          # per-field reads.
           {}
         else                    dispatch_read_grouped(db, field)
         end

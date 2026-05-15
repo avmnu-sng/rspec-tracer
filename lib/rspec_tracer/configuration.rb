@@ -94,10 +94,9 @@ module RSpecTracer
     DEFAULT_CACHE_RETENTION_LOCAL_COUNT = 5
     # Size budgets (MiB). Warn at save time when any single cache
     # file exceeds the per-file threshold or when the cache total
-    # exceeds the aggregate threshold. Surfaces B11 symptoms
-    # (dependency.json ballooning past the few-MB range) while
-    # the user can still act on them. Set to 0 to disable either
-    # individually.
+    # exceeds the aggregate threshold. Surfaces dependency.json
+    # ballooning past the few-MB range while the user can still
+    # act on them. Set to 0 to disable either individually.
     DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB = 50
     # Internal constant.
     # @api private

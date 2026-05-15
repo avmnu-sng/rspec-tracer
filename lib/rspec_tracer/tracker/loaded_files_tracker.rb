@@ -11,7 +11,7 @@ module RSpecTracer
   # @api private
   module Tracker
     # Observer #5 in the 2.0 tracker pipeline. Closes the constants-
-    # lookup blind spot documented in KNOWN_ISSUES.md B10.
+    # lookup blind spot in 1.x's coverage-diff approach.
     #
     # The bug: when file A defines constants at load time and example E2
     # references them without triggering a re-require, E2's coverage

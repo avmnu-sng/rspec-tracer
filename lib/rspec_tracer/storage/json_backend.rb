@@ -562,8 +562,8 @@ module RSpecTracer
       # effective remediations in order: add_filter for vendor paths
       # (usually the biggest win), transitive_load_tracking off
       # (cuts the constants-blind-spot overhead), and the `:msgpack`
-      # serializer (PR B). Budgets surface B11 symptoms (issue #15 /
-      # #20) without forcing behavior change.
+      # serializer. Budgets surface size-blow-up symptoms (issues
+      # #15 / #20) without forcing behavior change.
       def maybe_warn_size_budget(run_id)
         warn_oversized_run_files(run_id) if positive_threshold?(@warn_per_file_mb)
         warn_oversized_cache_total if positive_threshold?(@warn_total_mb)
