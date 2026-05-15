@@ -804,9 +804,14 @@ RSpec.describe RSpecTracer::Configuration do
 
     it 'raises when called a second time' do
       config.remote_cache_backend(:s3, bucket: 'b', prefix: 'p')
-
       expect { config.remote_cache_backend(:s3, bucket: 'other') }
-        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /already configured/)
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /already configured.*alternative DSLs/m)
+    end
+
+    it 'raises with alternative-DSL guidance when remote_cache_uri was called first' do
+      config.remote_cache_uri('file:///tmp/cache')
+      expect { config.remote_cache_backend(:local_fs, root: '/tmp/cache') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /alternative DSLs/)
     end
 
     it 'rejects invalid name types' do
@@ -848,6 +853,12 @@ RSpec.describe RSpecTracer::Configuration do
     it 'rejects malformed URIs' do
       expect { config.remote_cache_uri('this-is-not-a-uri ${whatever}') }
         .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /invalid remote_cache_uri/)
+    end
+
+    it 'raises with alternative-DSL guidance when remote_cache_backend was called first' do
+      config.remote_cache_backend(:local_fs, root: '/tmp/cache')
+      expect { config.remote_cache_uri('file:///tmp/cache') }
+        .to raise_error(RSpecTracer::Configuration::InvalidUsageError, /alternative DSLs/)
     end
   end
 

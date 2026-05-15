@@ -312,7 +312,9 @@ module RSpecTracer
     #   remote_cache_backend MyCustomBackend, custom_opt: 'value'
     def remote_cache_backend(name_or_class, **opts)
       if defined?(@remote_cache_backend_entry) && @remote_cache_backend_entry
-        raise InvalidUsageError, 'remote_cache_backend already configured'
+        raise InvalidUsageError,
+              'remote_cache already configured. `remote_cache_backend` and ' \
+              '`remote_cache_uri` are alternative DSLs — call one exactly once.'
       end
 
       validate_remote_cache_backend(name_or_class)
