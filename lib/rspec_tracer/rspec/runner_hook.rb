@@ -209,7 +209,7 @@ module RSpecTracer
       # colliding ones are removed.
       # @api private
       def _rspec_tracer_drop_duplicate_examples(examples_map, example_groups)
-        duplicate_ids = RSpecTracer.engine.duplicate_examples.keys
+        duplicate_ids = Set.new(RSpecTracer.engine.duplicate_examples.keys)
 
         kept_map = examples_map.each_with_object({}) do |(group, examples), kept|
           survivors = examples.reject do |example|

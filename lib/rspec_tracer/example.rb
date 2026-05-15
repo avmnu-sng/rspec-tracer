@@ -60,6 +60,13 @@ module RSpecTracer
   # Helpers are `def self.x` + `private_class_method` so mutant
   # attributes mutations through the singleton call path.
   module Example
+    # Identity-keyed cache of `<example_group> => Array<unnamed sibling>`
+    # populated lazily by `unnamed_description`. A group with N unnamed
+    # examples computes the sibling list once per group rather than N
+    # times. Memory is bounded by the live group set (RSpec retains
+    # those for the run anyway).
+    @unnamed_siblings_cache = {}.compare_by_identity
+
     # Builds the identity payload for one RSpec example. The MD5 is
     # taken over the stability-contract subset (see `digest_identity`
     # for the named-vs-unnamed split); `line_number` / `rerun_*` ride
@@ -114,11 +121,22 @@ module RSpecTracer
     # are reordered or one is inserted / removed ahead of it (the
     # documented carve-out - see the module comment). Closes the
     # remaining #196 gap reported in #210.
+    #
+    # The unnamed-siblings list is memoized per example_group object,
+    # so a group with N unnamed examples computes the list once, not N
+    # times. The discriminator string takes a Ruby-inspect-style
+    # `#<...>` form to make spoofing implausible - and even if a user
+    # description literally matched, full_description would still
+    # differ between the unnamed example (`"<group> "`) and the named
+    # one (`"<group> #<...>"`), so no real digest collision is
+    # possible.
     # @api private
     def self.unnamed_description(example)
-      unnamed_siblings = example.example_group.examples.select { |sibling| unnamed?(sibling) }
+      group = example.example_group
+      unnamed_siblings = @unnamed_siblings_cache[group] ||=
+        group.examples.select { |sibling| unnamed?(sibling) }
 
-      "example at unnamed index #{unnamed_siblings.index(example)}"
+      "#<rspec-tracer unnamed example #{unnamed_siblings.index(example)}>"
     end
 
     # Internal helper for the tracer pipeline.
