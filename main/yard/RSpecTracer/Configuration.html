@@ -566,8 +566,6 @@ standard Ruby semantics.</p>
       <pre class="lines">
 
 
-1411
-1412
 1413
 1414
 1415
@@ -575,10 +573,12 @@ standard Ruby semantics.</p>
 1417
 1418
 1419
-1420</pre>
+1420
+1421
+1422</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1411</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1413</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_method_missing'>method_missing</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>if</span> <span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_end_with?'>end_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>=</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -763,12 +763,12 @@ standard Ruby semantics.</p>
       <pre class="lines">
 
 
-1424
-1425
-1426</pre>
+1426
+1427
+1428</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1424</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1426</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_respond_to_missing?'>respond_to_missing?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='id identifier rubyid_include_private'>include_private</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
   <span class='kw'>super</span>
@@ -783,7 +783,7 @@ standard Ruby semantics.</p>
 </div>
 
       <div id="footer">
-  Generated on Fri May 15 17:34:54 2026 by
+  Generated on Fri May 15 19:30:41 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
