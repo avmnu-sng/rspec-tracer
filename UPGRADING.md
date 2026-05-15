@@ -61,6 +61,15 @@ renaming a file, `describe`, or `it` gives an example a new identity
 (one cold run); restructuring around it — blank lines, reordering,
 metadata edits — keeps it warm.
 
+One carve-out: an **unnamed** example (`it { ... }`, `specify { ... }`,
+`example { ... }` — no description string) has no stable name to hash,
+so its identity is its position among the unnamed examples of its
+group. Blank-line and comment edits still keep it warm, and adding or
+renaming *named* siblings doesn't disturb it — but reordering the
+unnamed examples, or inserting/removing one ahead of it, gives the
+shifted examples a new identity (one cold run). Give an example an
+explicit description for a fully reorder-stable identity.
+
 ## SimpleCov branch coverage now works
 
 The 1.x README warned: *"If you use RSpec Tracer with SimpleCov, then
@@ -107,6 +116,27 @@ A `.rspec-tracer` file using only the old names runs identically to one
 using the new names; the warns are advisory.
 
 ## Behavior changes worth knowing
+
+### Duplicate example identities
+
+rspec-tracer identifies each example by a hash of its `describe`
+chain, description, and file, so it can carry that example's
+pass / fail / flaky history across runs. Two examples that hash to
+the *same* identity can't be tracked apart — which happens when
+examples are genuinely indistinguishable: a copy-pasted `it` with an
+identical description in the same group, or a parameterized
+`[...].each { it 'same description' do ... end }` loop.
+
+From 2.0.0.pre.2 on, rspec-tracer logs an error that **names the
+colliding examples** (file, line, description), **drops just those
+examples** from the run, and runs the rest of the suite normally.
+`fail_on_duplicates` (default `true`) then governs the exit code —
+the run still exits non-zero so the collision can't pass unnoticed in
+CI; `fail_on_duplicates false` keeps the exit code at zero. Either
+way, the fix is to give the colliding examples distinct descriptions.
+
+Unnamed `it { ... }` blocks do *not* collide this way — each gets a
+distinct position-based identity (see the cache section above).
 
 ### `track_ar_schema_notifications` precondition
 

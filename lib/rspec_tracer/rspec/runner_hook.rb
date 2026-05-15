@@ -20,9 +20,11 @@ module RSpecTracer
     #      ignored examples (matched by `Configuration#ignore_spec_files`)
     #      pass through untouched - RSpec still runs them, but the tracer
     #      never sees them. Closes #41.
-    #   3. Detect duplicate example identities. `fail_on_duplicates=true`
-    #      surfaces via `::Kernel.exit(1)` in `at_exit_behavior`; the
-    #      hook passes `[]` to super so RSpec doesn't execute anything.
+    #   3. Detect duplicate example identities. Colliding examples are
+    #      dropped from the run (per-example tracking can't attribute
+    #      coverage to two examples sharing one identity hash); the
+    #      rest of the suite still runs. `fail_on_duplicates=true` then
+    #      surfaces a `::Kernel.exit(1)` in `at_exit_behavior`.
     #   4. Overwrite `RSpec.world.@filtered_examples` +
     #      `@example_groups` with the filtered set, then log the run
     #      banner and delegate to `super`.
@@ -46,10 +48,9 @@ module RSpecTracer
         filtered_examples_map, filtered_example_groups = _rspec_tracer_build_filter_decision
 
         if _rspec_tracer_duplicates_detected?
-          RSpecTracer.running = true
           RSpecTracer.duplicate_examples = RSpecTracer.fail_on_duplicates
-          super([])
-          return
+          filtered_examples_map, filtered_example_groups =
+            _rspec_tracer_drop_duplicate_examples(filtered_examples_map, filtered_example_groups)
         end
 
         ::RSpec.world.instance_variable_set(:@filtered_examples, filtered_examples_map)
@@ -160,18 +161,64 @@ module RSpecTracer
         end
       end
 
-      # Internal method on the tracer pipeline.
+      # Logs the duplicate-identity diagnostic and returns whether any
+      # were found. The summary line keeps its 1.x wording (CI log
+      # parsers + specs match on it); the indented detail names each
+      # colliding example so the user can find and rename them.
       # @api private
       def _rspec_tracer_duplicates_detected?
         duplicates = RSpecTracer.engine.duplicate_examples
         return false if duplicates.empty?
 
         total = duplicates.sum { |_, entries| entries.count }
-        hashes = duplicates.size
         RSpecTracer.logger.error(
-          "RSpec tracer detected #{total} duplicate example(s) across #{hashes} identity hash(es)"
+          "RSpec tracer detected #{total} duplicate example(s) across " \
+          "#{duplicates.size} identity hash(es). Examples that share one rspec-tracer " \
+          'identity cannot be tracked separately and are dropped from this run - give ' \
+          "them distinct descriptions to fix:\n#{_rspec_tracer_duplicate_report(duplicates)}"
         )
         true
+      end
+
+      # The indented per-hash detail block for the duplicate
+      # diagnostic: the identity hash, then one labelled line per
+      # colliding example under it.
+      # @api private
+      def _rspec_tracer_duplicate_report(duplicates)
+        duplicates.map do |example_id, entries|
+          labelled = entries.map { |entry| "    - #{_rspec_tracer_example_label(entry)}" }
+          "  #{example_id}\n#{labelled.join("\n")}"
+        end.join("\n")
+      end
+
+      # `file:line description` for one colliding example, read off the
+      # `Example.from` payload (rerun location preferred, mirroring the
+      # reporter + `explain` columns).
+      # @api private
+      def _rspec_tracer_example_label(entry)
+        file = entry[:rerun_file_name] || entry[:file_name]
+        line = entry[:rerun_line_number] || entry[:line_number]
+
+        "#{file}:#{line} #{entry[:full_description] || entry[:description]}".rstrip
+      end
+
+      # Drops the colliding examples from the filtered run set. The
+      # rest of the suite still runs; `fail_on_duplicates` governs only
+      # the exit code (via `at_exit_behavior`), not whether anything
+      # runs. A group is kept only if it still has examples after the
+      # colliding ones are removed.
+      # @api private
+      def _rspec_tracer_drop_duplicate_examples(examples_map, example_groups)
+        duplicate_ids = Set.new(RSpecTracer.engine.duplicate_examples.keys)
+
+        kept_map = examples_map.each_with_object({}) do |(group, examples), kept|
+          survivors = examples.reject do |example|
+            duplicate_ids.include?(example.metadata[:rspec_tracer_example_id])
+          end
+          kept[group] = survivors unless survivors.empty?
+        end
+
+        [kept_map, example_groups.select { |group| kept_map.key?(group) }]
       end
     end
   end

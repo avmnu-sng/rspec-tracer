@@ -85,20 +85,83 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
     end
 
     context 'when duplicate examples are detected' do
+      let(:colliding_metadata) { { file_path: 'spec/user_spec.rb' } }
+      let(:unique_metadata) { { file_path: 'spec/user_spec.rb' } }
+      let(:colliding_example) do
+        double('CollidingExample', metadata: colliding_metadata, description: 'collides',
+                                   example_group: double('EG', parent_groups: [example_group]))
+      end
+      let(:unique_example) do
+        double('UniqueExample', metadata: unique_metadata, description: 'is unique',
+                                example_group: double('EG', parent_groups: [example_group]))
+      end
+      let(:duplicate_entries) do
+        [
+          { example_id: 'dup-id', file_name: 'spec/user_spec.rb', line_number: 6,
+            full_description: 'User is valid' },
+          { example_id: 'dup-id', file_name: 'spec/user_spec.rb', line_number: 7,
+            full_description: 'User is valid' }
+        ]
+      end
+
       before do
-        allow(world).to receive_messages(example_count: 1, filtered_examples: {})
-        allow(engine).to receive(:duplicate_examples).and_return(
-          'ex1' => [{ example_id: 'ex1' }, { example_id: 'ex1' }]
-        )
+        allow(world).to receive(:example_count).and_return(2, 1)
+        allow(world).to receive(:filtered_examples)
+          .and_return(example_group => [colliding_example, unique_example])
+        allow(world).to receive(:instance_variable_set)
+        allow(RSpecTracer::Example).to receive(:from).with(colliding_example)
+          .and_return(example_id: 'dup-id')
+        allow(RSpecTracer::Example).to receive(:from).with(unique_example)
+          .and_return(example_id: 'unique-id')
+        allow(engine).to receive(:duplicate_examples).and_return('dup-id' => duplicate_entries)
         allow(RSpecTracer).to receive(:fail_on_duplicates).and_return(true)
       end
 
-      it 'logs an error, flips duplicate_examples, and calls super with an empty list' do
+      it 'logs the summary line, the identity hash, the colliding examples, and a remediation hint' do
         runner.run_specs([:original])
 
-        expect(logger).to have_received(:error).with(/2 duplicate example\(s\) across 1 identity hash/)
+        expect(logger).to have_received(:error).with(
+          a_string_including('2 duplicate example(s) across 1 identity hash(es)')
+            .and(a_string_including('dup-id'))
+            .and(a_string_including('spec/user_spec.rb:6 User is valid'))
+            .and(a_string_including('spec/user_spec.rb:7 User is valid'))
+            .and(a_string_including('distinct descriptions'))
+        )
+      end
+
+      it 'flips RSpecTracer.duplicate_examples to the fail_on_duplicates value' do
+        runner.run_specs([:original])
+
         expect(RSpecTracer).to have_received(:duplicate_examples=).with(true)
-        expect(runner.super_calls).to eq([[]])
+      end
+
+      it 'drops only the colliding examples and still runs the rest of the suite' do
+        runner.run_specs([:original])
+
+        expect(world).to have_received(:instance_variable_set)
+          .with(:@filtered_examples, example_group => [unique_example])
+        expect(runner.super_calls.last).to eq([example_group])
+      end
+
+      it 'drops a group entirely when every one of its examples collides' do
+        allow(world).to receive(:filtered_examples).and_return(example_group => [colliding_example])
+
+        runner.run_specs([:original])
+
+        expect(world).to have_received(:instance_variable_set).with(:@filtered_examples, {})
+        expect(world).to have_received(:instance_variable_set).with(:@example_groups, [])
+        expect(runner.super_calls.last).to eq([])
+      end
+
+      it 'labels a colliding example file:line description, preferring the rerun location' do
+        label = runner.send(
+          :_rspec_tracer_example_label,
+          rerun_file_name: 'spec/a_spec.rb', rerun_line_number: 9,
+          file_name: 'spec/support/shared.rb', line_number: 99,
+          full_description: 'Thing behaves like shared '
+        )
+
+        expect(label).to eq('spec/a_spec.rb:9 Thing behaves like shared')
       end
     end
 
