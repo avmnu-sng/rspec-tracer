@@ -399,6 +399,26 @@ cold-read time.
 **JRuby**: `:sqlite` is unsupported; the engine warns once and
 falls back to `:json` automatically.
 
+### Smaller caches with `:msgpack`
+
+Goal: ~3.5x on-disk cache reduction (helps CI artifact size and
+remote_cache upload time on suites with many examples).
+
+```ruby
+# .rspec-tracer
+RSpecTracer.configure do
+  storage_backend :json, serializer: :msgpack
+end
+```
+
+Add `gem 'msgpack'` to your Gemfile (test group). Cache files now
+end with `.msgpack.gz` instead of `.json`. If `msgpack` isn't
+loadable at boot, the engine warns once and falls back to `:json`.
+
+**Filename caveat**: despite the `.gz` suffix, payloads are raw
+`Zlib::Deflate` streams (not gzip format) — `gunzip` fails on them.
+The suffix is cosmetic and may change in a future major release.
+
 ### Coverage modes (rspec-tracer + SimpleCov interop)
 
 By default, rspec-tracer enables Ruby's `lines` coverage mode only.
