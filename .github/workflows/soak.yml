@@ -30,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       iterations:
-        description: Iter count override (default per-project; 50/100/50)
+        description: Iter count override (default per-project; solidus=50/refinery=100/spree=18)
         required: false
         default: ''
 

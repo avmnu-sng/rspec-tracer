@@ -193,11 +193,17 @@ MUTATION_TARGETS = {
   }
 }.freeze
 
-# Per-project default iter counts. Refinery is small (~70 specs)
-# so 100 iters fits within the 4 h cron cap; Solidus / Spree's
-# api/core engines are 10x bigger so 50 iters keep the cell under
-# cap with headroom for cold first-cache run.
-DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 50 }.freeze
+# Per-project default iter counts. Sized to fit the 4 h cron cap
+# (workflow `timeout-minutes: 240`) against measured GHA per-iter wall.
+# Refinery is small (~70 specs, ~29 s/iter on GHA) so 100 iters fits;
+# Solidus's api engine (~700 specs, ~85 s/iter) takes ~70 min at 50.
+# Spree's core engine (~1307 specs, ~660 s/iter on GHA EPYC) is the
+# bottleneck: at 11 min/iter, 50 iters needs ~9 h wall — far past cap.
+# Sized at 18 (~3.5 h) for cron with the workflow_dispatch
+# `iterations` input as the escape hatch for full 50-iter ad-hoc soaks.
+# Per-iter wall on GHA EPYC is 3-6x M2 Max for Rails-heavy suites; the
+# original 1.5-2 h docstring claim assumed M2 Max pacing.
+DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 18 }.freeze
 
 PROJECT = ENV.fetch('SOAK_PROJECT') do
   raise 'SOAK_PROJECT env var required (one of: solidus, refinery, spree)'

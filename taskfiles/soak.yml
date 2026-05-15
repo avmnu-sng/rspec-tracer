@@ -242,7 +242,13 @@ tasks:
 
   soak:full:spree:
     desc: >-
-      50-iter Spree soak (~1.5-2 h) - cron driver.
+      18-iter Spree soak (~3-3.5 h on GHA) - cron driver. Locally on
+      M2 Max each iter is ~1-2 min; on GHA `ubuntu-latest` EPYC each
+      iter is ~10-11 min for Spree's ~1307-example core suite (3-6x
+      Rails-heavy slowdown vs local). 18 iters is the largest count
+      that fits under the workflow's `timeout-minutes: 240` (4 h) cap
+      with margin; the `workflow_dispatch.inputs.iterations` override
+      is the escape hatch for ad-hoc 50-iter runs.
     env:
       SOAK_PROJECT: spree
     cmds:
