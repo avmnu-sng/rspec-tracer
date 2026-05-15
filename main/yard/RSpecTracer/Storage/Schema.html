@@ -131,12 +131,16 @@ expect for any rspec-tracer version bump.</p>
 </p>
 <p>1.x caches were unstamped; schema_version 2 was the first
 versioned schema, and 2.0 bumped to 3 when <code>Snapshot.boot_set</code>
-landed. schema_version 4 changes the example-identity payload:
-<code>example_id</code> now hashes the describe block's <em>description</em>
-(not RSpec's load-order-dependent class name) and excludes
-line numbers, so a 3-stamped cache's example_ids no longer
-match. The change is breaking, so SUPPORTED stays <code>[CURRENT]</code>
-and the caller pays one cold run on upgrade.</p>
+landed. schema_version 4 reshaped the example-identity payload:
+<code>example_id</code> hashes the describe block's <em>description</em> (not
+RSpec's load-order-dependent class name) and excludes line
+numbers. schema_version 5 closes the remaining gap for unnamed
+examples (<code>it { }</code> / <code>specify { }</code> / <code>example { }</code>): their
+<code>example_id</code> now derives from an intra-group ordinal instead
+of RSpec's line-bearing <code>&quot;example at &lt;path&gt;:&lt;line&gt;&quot;</code> fallback,
+so a 4-stamped cache's unnamed-example ids no longer match.
+Each bump is breaking, so SUPPORTED stays <code>[CURRENT]</code> and the
+caller pays one cold run on upgrade.</p>
 
   </div>
 </div>
@@ -145,7 +149,7 @@ and the caller pays one cold run on upgrade.</p>
 
 </div>
         </dt>
-        <dd><pre class="code"><span class='int'>4</span></pre></dd>
+        <dd><pre class="code"><span class='int'>5</span></pre></dd>
       
         <dt id="SUPPORTED-constant" class="">SUPPORTED =
           <div class="docstring">
@@ -258,12 +262,12 @@ the version field. The caller logs and falls back to cold run.</p>
       <pre class="lines">
 
 
-41
-42
-43</pre>
+45
+46
+47</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/schema.rb', line 41</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/schema.rb', line 45</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_supported?'>supported?</span><span class='lparen'>(</span><span class='id identifier rubyid_version'>version</span><span class='rparen'>)</span>
   <span class='const'><span class='object_link'><a href="#SUPPORTED-constant" title="RSpecTracer::Storage::Schema::SUPPORTED (constant)">SUPPORTED</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_version'>version</span><span class='rparen'>)</span>
@@ -278,7 +282,7 @@ the version field. The caller logs and falls back to cold run.</p>
 </div>
 
       <div id="footer">
-  Generated on Thu May 14 12:21:07 2026 by
+  Generated on Fri May 15 10:14:57 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

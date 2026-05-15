@@ -105,9 +105,11 @@ ObjectSpace loop in <code>setup_rspec?</code> used to install.</p>
  ignored examples (matched by `Configuration#ignore_spec_files`)
  pass through untouched - RSpec still runs them, but the tracer
  never sees them. Closes #41.
-3. Detect duplicate example identities. `fail_on_duplicates=true`
- surfaces via `::Kernel.exit(1)` in `at_exit_behavior`; the
- hook passes `[]` to super so RSpec doesn&#39;t execute anything.
+3. Detect duplicate example identities. Colliding examples are
+ dropped from the run (per-example tracking can&#39;t attribute
+ coverage to two examples sharing one identity hash); the
+ rest of the suite still runs. `fail_on_duplicates=true` then
+ surfaces a `::Kernel.exit(1)` in `at_exit_behavior`.
 4. Overwrite `RSpec.world.@filtered_examples` +
  `@example_groups` with the filtered set, then log the run
  banner and delegate to `super`.
@@ -195,8 +197,6 @@ cucumber scenarios and CI log parsers keep working.</p>
       <pre class="lines">
 
 
-36
-37
 38
 39
 40
@@ -229,10 +229,11 @@ cucumber scenarios and CI log parsers keep working.</p>
 67
 68
 69
-70</pre>
+70
+71</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/runner_hook.rb', line 36</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/runner_hook.rb', line 38</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_run_specs'>run_specs</span><span class='lparen'>(</span><span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="../../RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span>
@@ -247,10 +248,9 @@ cucumber scenarios and CI log parsers keep working.</p>
   <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span> <span class='op'>=</span> <span class='id identifier rubyid__rspec_tracer_build_filter_decision'>_rspec_tracer_build_filter_decision</span>
 
   <span class='kw'>if</span> <span class='id identifier rubyid__rspec_tracer_duplicates_detected?'>_rspec_tracer_duplicates_detected?</span>
-    <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="../../RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span> <span class='op'>=</span> <span class='kw'>true</span>
     <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'><span class='object_link'><a href="../../RSpecTracer.html#duplicate_examples-class_method" title="RSpecTracer.duplicate_examples (method)">duplicate_examples</a></span></span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_fail_on_duplicates'>fail_on_duplicates</span>
-    <span class='kw'>super</span><span class='lparen'>(</span><span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
-    <span class='kw'>return</span>
+    <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span> <span class='op'>=</span>
+      <span class='id identifier rubyid__rspec_tracer_drop_duplicate_examples'>_rspec_tracer_drop_duplicate_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span><span class='rparen'>)</span>
   <span class='kw'>end</span>
 
   <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_world'>world</span><span class='period'>.</span><span class='id identifier rubyid_instance_variable_set'>instance_variable_set</span><span class='lparen'>(</span><span class='symbol'>:@filtered_examples</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='rparen'>)</span>
@@ -279,7 +279,7 @@ cucumber scenarios and CI log parsers keep working.</p>
 </div>
 
       <div id="footer">
-  Generated on Thu May 14 12:21:07 2026 by
+  Generated on Fri May 15 10:14:57 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -84,13 +84,17 @@
 </span>    <span class='kw'>module</span> <span class='const'>Schema</span>
       <span class='comment'># 1.x caches were unstamped; schema_version 2 was the first
 </span>      <span class='comment'># versioned schema, and 2.0 bumped to 3 when `Snapshot.boot_set`
-</span>      <span class='comment'># landed. schema_version 4 changes the example-identity payload:
-</span>      <span class='comment'># `example_id` now hashes the describe block&#39;s *description*
-</span>      <span class='comment'># (not RSpec&#39;s load-order-dependent class name) and excludes
-</span>      <span class='comment'># line numbers, so a 3-stamped cache&#39;s example_ids no longer
-</span>      <span class='comment'># match. The change is breaking, so SUPPORTED stays `[CURRENT]`
-</span>      <span class='comment'># and the caller pays one cold run on upgrade.
-</span>      <span class='const'>CURRENT</span> <span class='op'>=</span> <span class='int'>4</span>
+</span>      <span class='comment'># landed. schema_version 4 reshaped the example-identity payload:
+</span>      <span class='comment'># `example_id` hashes the describe block&#39;s *description* (not
+</span>      <span class='comment'># RSpec&#39;s load-order-dependent class name) and excludes line
+</span>      <span class='comment'># numbers. schema_version 5 closes the remaining gap for unnamed
+</span>      <span class='comment'># examples (`it { }` / `specify { }` / `example { }`): their
+</span>      <span class='comment'># `example_id` now derives from an intra-group ordinal instead
+</span>      <span class='comment'># of RSpec&#39;s line-bearing `&quot;example at &lt;path&gt;:&lt;line&gt;&quot;` fallback,
+</span>      <span class='comment'># so a 4-stamped cache&#39;s unnamed-example ids no longer match.
+</span>      <span class='comment'># Each bump is breaking, so SUPPORTED stays `[CURRENT]` and the
+</span>      <span class='comment'># caller pays one cold run on upgrade.
+</span>      <span class='const'>CURRENT</span> <span class='op'>=</span> <span class='int'>5</span>
       <span class='comment'># Internal constant.
 </span>      <span class='comment'># @api private
 </span>      <span class='const'>SUPPORTED</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='const'>CURRENT</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
@@ -107,7 +111,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Thu May 14 12:21:06 2026 by
+  Generated on Fri May 15 10:14:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

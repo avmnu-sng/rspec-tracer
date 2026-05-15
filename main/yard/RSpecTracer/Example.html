@@ -100,7 +100,8 @@ restructure = same identity.</em></p>
 <p>Identity is PRESERVED when:</p>
 <ul>
 <li>blank lines or comments are added/removed around the example</li>
-<li>examples are reordered within a describe block</li>
+<li>examples are reordered within a describe block (named
+examples only - see &quot;Unnamed examples&quot; below)</li>
 <li>a sibling describe / example in the same file is renamed</li>
 <li>metadata changes (<code>skip:</code>, tags, <code>tracks: { ... }</code>) - the
 spec-file digest still triggers the re-run and status history
@@ -114,6 +115,22 @@ again, the file digest triggers the re-run</li>
 <li>the <code>describe</code> / <code>it</code> / shared-example name is changed</li>
 <li>the example moves to a different describe block</li>
 </ul>
+<h2 id="Unnamed_examples___it________specify________example______">Unnamed examples (<code>it { }</code>, <code>specify { }</code>, <code>example { }</code>)</h2>
+<p>An example with no description string has no stable name to hash,
+and identity must be computed pre-run (for the filter decision),
+before RSpec generates a matcher-derived description. The only
+line-independent signal RSpec exposes pre-run is position, so an
+unnamed example's identity is derived from its ordinal among the
+<em>unnamed</em> examples of its group. (RSpec's <code>description</code> for an
+unnamed example is the line-bearing <code>&quot;example at &lt;path&gt;:&lt;line&gt;&quot;</code>
+fallback, which would otherwise leak the line number straight
+back into the digest - issue #210.)</p>
+<p>For unnamed examples the contract above is amended: identity is
+still PRESERVED across blank-line / comment edits, sibling
+renames, and adding or removing <em>named</em> siblings - but it CHANGES
+when the unnamed examples are reordered, or one is inserted or
+removed ahead of it. Give an example an explicit description
+(<code>it 'does X' do</code>) for a fully reorder-stable identity.</p>
 <p><code>line_number</code> / <code>rerun_file_name</code> / <code>rerun_line_number</code> stay in
 the returned Hash for the reporter + <code>explain</code> location columns,
 but are DELIBERATELY EXCLUDED from the digest - a no-op edit that
@@ -193,10 +210,10 @@ attributes mutations through the singleton call path.</p>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
 <p>Builds the identity payload for one RSpec example. The MD5 is
-taken over <code>identity</code> only (the stability-contract subset);
-<code>line_number</code> / <code>rerun_*</code> ride along in the returned Hash for
-the reporters but never enter the digest. See the module
-comment for the full stability contract.</p>
+taken over the stability-contract subset (see <code>digest_identity</code>
+for the named-vs-unnamed split); <code>line_number</code> / <code>rerun_*</code> ride
+along in the returned Hash for the reporters but never enter the
+digest. See the module comment for the full stability contract.</p>
 
   </div>
 </div>
@@ -209,24 +226,24 @@ comment for the full stability contract.</p>
       <pre class="lines">
 
 
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
-62
-63</pre>
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/example.rb', line 49</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/example.rb', line 76</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_from'>from</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_location'>location</span> <span class='op'>=</span> <span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
@@ -241,7 +258,7 @@ comment for the full stability contract.</p>
 
   <span class='id identifier rubyid_identity'>identity</span>
     <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_location'>location</span><span class='rparen'>)</span>
-    <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_identity'>identity</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
+    <span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='label'>example_id:</span> <span class='const'>Digest</span><span class='op'>::</span><span class='const'>MD5</span><span class='period'>.</span><span class='id identifier rubyid_hexdigest'>hexdigest</span><span class='lparen'>(</span><span class='id identifier rubyid_digest_identity'>digest_identity</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='comma'>,</span> <span class='id identifier rubyid_identity'>identity</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_json'>to_json</span><span class='rparen'>)</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -253,7 +270,7 @@ comment for the full stability contract.</p>
 </div>
 
       <div id="footer">
-  Generated on Thu May 14 12:21:06 2026 by
+  Generated on Fri May 15 10:14:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

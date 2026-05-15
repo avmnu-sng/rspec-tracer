@@ -81,9 +81,11 @@
 </span>    <span class='comment'>#      ignored examples (matched by `Configuration#ignore_spec_files`)
 </span>    <span class='comment'>#      pass through untouched - RSpec still runs them, but the tracer
 </span>    <span class='comment'>#      never sees them. Closes #41.
-</span>    <span class='comment'>#   3. Detect duplicate example identities. `fail_on_duplicates=true`
-</span>    <span class='comment'>#      surfaces via `::Kernel.exit(1)` in `at_exit_behavior`; the
-</span>    <span class='comment'>#      hook passes `[]` to super so RSpec doesn&#39;t execute anything.
+</span>    <span class='comment'>#   3. Detect duplicate example identities. Colliding examples are
+</span>    <span class='comment'>#      dropped from the run (per-example tracking can&#39;t attribute
+</span>    <span class='comment'>#      coverage to two examples sharing one identity hash); the
+</span>    <span class='comment'>#      rest of the suite still runs. `fail_on_duplicates=true` then
+</span>    <span class='comment'>#      surfaces a `::Kernel.exit(1)` in `at_exit_behavior`.
 </span>    <span class='comment'>#   4. Overwrite `RSpec.world.@filtered_examples` +
 </span>    <span class='comment'>#      `@example_groups` with the filtered set, then log the run
 </span>    <span class='comment'>#      banner and delegate to `super`.
@@ -107,10 +109,9 @@
         <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span> <span class='op'>=</span> <span class='id identifier rubyid__rspec_tracer_build_filter_decision'>_rspec_tracer_build_filter_decision</span>
 
         <span class='kw'>if</span> <span class='id identifier rubyid__rspec_tracer_duplicates_detected?'>_rspec_tracer_duplicates_detected?</span>
-          <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_running'><span class='object_link'><a href="RSpecTracer.html#running-class_method" title="RSpecTracer.running (method)">running</a></span></span> <span class='op'>=</span> <span class='kw'>true</span>
           <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'><span class='object_link'><a href="RSpecTracer.html#duplicate_examples-class_method" title="RSpecTracer.duplicate_examples (method)">duplicate_examples</a></span></span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_fail_on_duplicates'>fail_on_duplicates</span>
-          <span class='kw'>super</span><span class='lparen'>(</span><span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
-          <span class='kw'>return</span>
+          <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span> <span class='op'>=</span>
+            <span class='id identifier rubyid__rspec_tracer_drop_duplicate_examples'>_rspec_tracer_drop_duplicate_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_example_groups'>filtered_example_groups</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
 
         <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_world'>world</span><span class='period'>.</span><span class='id identifier rubyid_instance_variable_set'>instance_variable_set</span><span class='lparen'>(</span><span class='symbol'>:@filtered_examples</span><span class='comma'>,</span> <span class='id identifier rubyid_filtered_examples_map'>filtered_examples_map</span><span class='rparen'>)</span>
@@ -221,25 +222,71 @@
         <span class='kw'>end</span>
       <span class='kw'>end</span>
 
-      <span class='comment'># Internal method on the tracer pipeline.
+      <span class='comment'># Logs the duplicate-identity diagnostic and returns whether any
+</span>      <span class='comment'># were found. The summary line keeps its 1.x wording (CI log
+</span>      <span class='comment'># parsers + specs match on it); the indented detail names each
+</span>      <span class='comment'># colliding example so the user can find and rename them.
 </span>      <span class='comment'># @api private
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_duplicates_detected?'>_rspec_tracer_duplicates_detected?</span>
         <span class='id identifier rubyid_duplicates'>duplicates</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'><span class='object_link'><a href="RSpecTracer/Engine.html#duplicate_examples-instance_method" title="RSpecTracer::Engine#duplicate_examples (method)">duplicate_examples</a></span></span>
         <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_duplicates'>duplicates</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
         <span class='id identifier rubyid_total'>total</span> <span class='op'>=</span> <span class='id identifier rubyid_duplicates'>duplicates</span><span class='period'>.</span><span class='id identifier rubyid_sum'>sum</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid__'>_</span><span class='comma'>,</span> <span class='id identifier rubyid_entries'>entries</span><span class='op'>|</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_count'>count</span> <span class='rbrace'>}</span>
-        <span class='id identifier rubyid_hashes'>hashes</span> <span class='op'>=</span> <span class='id identifier rubyid_duplicates'>duplicates</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
         <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_error'><span class='object_link'><a href="RSpecTracer/Logger.html#error-instance_method" title="RSpecTracer::Logger#error (method)">error</a></span></span><span class='lparen'>(</span>
-          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer detected </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_total'>total</span><span class='embexpr_end'>}</span><span class='tstring_content'> duplicate example(s) across </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_hashes'>hashes</span><span class='embexpr_end'>}</span><span class='tstring_content'> identity hash(es)</span><span class='tstring_end'>&quot;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer detected </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_total'>total</span><span class='embexpr_end'>}</span><span class='tstring_content'> duplicate example(s) across </span><span class='tstring_end'>&quot;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_duplicates'>duplicates</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'> identity hash(es). Examples that share one rspec-tracer </span><span class='tstring_end'>&quot;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>identity cannot be tracked separately and are dropped from this run - give </span><span class='tstring_end'>&#39;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>them distinct descriptions to fix:\n</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid__rspec_tracer_duplicate_report'>_rspec_tracer_duplicate_report</span><span class='lparen'>(</span><span class='id identifier rubyid_duplicates'>duplicates</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
         <span class='rparen'>)</span>
         <span class='kw'>true</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># The indented per-hash detail block for the duplicate
+</span>      <span class='comment'># diagnostic: the identity hash, then one labelled line per
+</span>      <span class='comment'># colliding example under it.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_duplicate_report'>_rspec_tracer_duplicate_report</span><span class='lparen'>(</span><span class='id identifier rubyid_duplicates'>duplicates</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_duplicates'>duplicates</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example_id'>example_id</span><span class='comma'>,</span> <span class='id identifier rubyid_entries'>entries</span><span class='op'>|</span>
+          <span class='id identifier rubyid_labelled'>labelled</span> <span class='op'>=</span> <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>    - </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid__rspec_tracer_example_label'>_rspec_tracer_example_label</span><span class='lparen'>(</span><span class='id identifier rubyid_entry'>entry</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='rbrace'>}</span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>  </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_example_id'>example_id</span><span class='embexpr_end'>}</span><span class='tstring_content'>\n</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_labelled'>labelled</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\n</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>\n</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># `file:line description` for one colliding example, read off the
+</span>      <span class='comment'># `Example.from` payload (rerun location preferred, mirroring the
+</span>      <span class='comment'># reporter + `explain` columns).
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_example_label'>_rspec_tracer_example_label</span><span class='lparen'>(</span><span class='id identifier rubyid_entry'>entry</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_file'>file</span> <span class='op'>=</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:rerun_file_name</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_line'>line</span> <span class='op'>=</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:rerun_line_number</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:line_number</span><span class='rbracket'>]</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file'>file</span><span class='embexpr_end'>}</span><span class='tstring_content'>:</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_line'>line</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:full_description</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:description</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='period'>.</span><span class='id identifier rubyid_rstrip'>rstrip</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Drops the colliding examples from the filtered run set. The
+</span>      <span class='comment'># rest of the suite still runs; `fail_on_duplicates` governs only
+</span>      <span class='comment'># the exit code (via `at_exit_behavior`), not whether anything
+</span>      <span class='comment'># runs. A group is kept only if it still has examples after the
+</span>      <span class='comment'># colliding ones are removed.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_drop_duplicate_examples'>_rspec_tracer_drop_duplicate_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_examples_map'>examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_duplicate_ids'>duplicate_ids</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'><span class='object_link'><a href="RSpecTracer/Engine.html#duplicate_examples-instance_method" title="RSpecTracer::Engine#duplicate_examples (method)">duplicate_examples</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_kept_map'>kept_map</span> <span class='op'>=</span> <span class='id identifier rubyid_examples_map'>examples_map</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='lparen'>(</span><span class='id identifier rubyid_group'>group</span><span class='comma'>,</span> <span class='id identifier rubyid_examples'>examples</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_kept'>kept</span><span class='op'>|</span>
+          <span class='id identifier rubyid_survivors'>survivors</span> <span class='op'>=</span> <span class='id identifier rubyid_examples'>examples</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example'>example</span><span class='op'>|</span>
+            <span class='id identifier rubyid_duplicate_ids'>duplicate_ids</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span><span class='lbracket'>[</span><span class='symbol'>:rspec_tracer_example_id</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+          <span class='kw'>end</span>
+          <span class='id identifier rubyid_kept'>kept</span><span class='lbracket'>[</span><span class='id identifier rubyid_group'>group</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_survivors'>survivors</span> <span class='kw'>unless</span> <span class='id identifier rubyid_survivors'>survivors</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='kw'>end</span>
+
+        <span class='lbracket'>[</span><span class='id identifier rubyid_kept_map'>kept_map</span><span class='comma'>,</span> <span class='id identifier rubyid_example_groups'>example_groups</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_group'>group</span><span class='op'>|</span> <span class='id identifier rubyid_kept_map'>kept_map</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_group'>group</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='rbracket'>]</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
   <span class='kw'>end</span>
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Thu May 14 12:21:06 2026 by
+  Generated on Fri May 15 10:14:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
