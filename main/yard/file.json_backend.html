@@ -623,8 +623,8 @@
 </span>      <span class='comment'># effective remediations in order: add_filter for vendor paths
 </span>      <span class='comment'># (usually the biggest win), transitive_load_tracking off
 </span>      <span class='comment'># (cuts the constants-blind-spot overhead), and the `:msgpack`
-</span>      <span class='comment'># serializer (PR B). Budgets surface B11 symptoms (issue #15 /
-</span>      <span class='comment'># #20) without forcing behavior change.
+</span>      <span class='comment'># serializer. Budgets surface size-blow-up symptoms (issues
+</span>      <span class='comment'># #15 / #20) without forcing behavior change.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_maybe_warn_size_budget'>maybe_warn_size_budget</span><span class='lparen'>(</span><span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_warn_oversized_run_files'>warn_oversized_run_files</span><span class='lparen'>(</span><span class='id identifier rubyid_run_id'>run_id</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_positive_threshold?'>positive_threshold?</span><span class='lparen'>(</span><span class='ivar'>@warn_per_file_mb</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_warn_oversized_cache_total'>warn_oversized_cache_total</span> <span class='kw'>if</span> <span class='id identifier rubyid_positive_threshold?'>positive_threshold?</span><span class='lparen'>(</span><span class='ivar'>@warn_total_mb</span><span class='rparen'>)</span>
@@ -945,7 +945,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:56 2026 by
+  Generated on Fri May 15 17:34:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

@@ -598,11 +598,11 @@
           <span class='comment'># JSON-backend-only surfaces; sqlite no-op. SqliteBackend
 </span>          <span class='comment'># does not persist these aggregates (would require meta-
 </span>          <span class='comment'># table columns / schema bump). SqliteBackend also has no
-</span>          <span class='comment'># parallel-tests peer-merge path (M5.1 / M5.5 are
-</span>          <span class='comment'># JsonBackend-only), so the per-id filtered_examples that
-</span>          <span class='comment'># backs cache_hit_reason isn&#39;t needed either. Empty default
-</span>          <span class='comment'># mirrors the missing-file-coerces-to-{} contract used by
-</span>          <span class='comment'># JsonBackend&#39;s per-field reads.
+</span>          <span class='comment'># parallel-tests peer-merge path (that&#39;s JsonBackend-only),
+</span>          <span class='comment'># so the per-id filtered_examples that backs cache_hit_reason
+</span>          <span class='comment'># isn&#39;t needed either. Empty default mirrors the missing-
+</span>          <span class='comment'># file-coerces-to-{} contract used by JsonBackend&#39;s
+</span>          <span class='comment'># per-field reads.
 </span>          <span class='lbrace'>{</span><span class='rbrace'>}</span>
         <span class='kw'>else</span>                    <span class='id identifier rubyid_dispatch_read_grouped'>dispatch_read_grouped</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
         <span class='kw'>end</span>
@@ -754,7 +754,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:56 2026 by
+  Generated on Fri May 15 17:34:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

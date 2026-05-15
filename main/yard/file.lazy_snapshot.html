@@ -70,7 +70,7 @@
 </span>    <span class='comment'># read + deserialization for each field until the caller touches it.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Rationale: on a large cache (100 MB+), eager-reading every file
-</span>    <span class='comment'># at setup dominates warm-run startup (see issue #17 / B12). Engine
+</span>    <span class='comment'># at setup dominates warm-run startup (issue #17). Engine
 </span>    <span class='comment'># at setup touches 10/15 fields; reporters never touch the previous
 </span>    <span class='comment'># snapshot; third-party tooling often reads one or two. The 3-5
 </span>    <span class='comment'># fields the Engine does NOT touch at setup (duplicate_examples,
@@ -126,7 +126,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:56 2026 by
+  Generated on Fri May 15 17:34:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

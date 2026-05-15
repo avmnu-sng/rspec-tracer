@@ -70,9 +70,9 @@
 </span>  <span class='comment'># @api private
 </span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
     <span class='comment'># Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
-</span>    <span class='comment'># KNOWN_ISSUES Section B5: 1.x&#39;s fetch_changed_files loop only
-</span>    <span class='comment'># iterated the previous run&#39;s cache, so newly-added source files
-</span>    <span class='comment'># were never discovered and never triggered re-runs.
+</span>    <span class='comment'># a 1.x gap: fetch_changed_files only iterated the previous run&#39;s
+</span>    <span class='comment'># cache, so newly-added source files were never discovered and
+</span>    <span class='comment'># never triggered re-runs.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># The fix: at boot, walk the union of user-declared globs and a
 </span>    <span class='comment'># pure-Ruby default set (lib/**/*.rb). Every match on disk that is
@@ -123,7 +123,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:56 2026 by
+  Generated on Fri May 15 17:34:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

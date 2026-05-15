@@ -362,6 +362,20 @@ same data; the SQLite backend avoids the per-file open overhead at
 cold-read time.</p>
 <p><strong>JRuby</strong>: <code>:sqlite</code> is unsupported; the engine warns once and
 falls back to <code>:json</code> automatically.</p>
+<h3 id="Smaller_caches_with___msgpack_">Smaller caches with <code>:msgpack</code></h3>
+<p>Goal: ~3.5x on-disk cache reduction (helps CI artifact size and
+remote_cache upload time on suites with many examples).</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
+</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='symbol'>:json</span><span class='comma'>,</span> <span class='label'>serializer:</span> <span class='symbol'>:msgpack</span>
+<span class='kw'>end</span>
+</code></pre>
+<p>Add <code>gem 'msgpack'</code> to your Gemfile (test group). Cache files now
+end with <code>.msgpack.gz</code> instead of <code>.json</code>. If <code>msgpack</code> isn't
+loadable at boot, the engine warns once and falls back to <code>:json</code>.</p>
+<p><strong>Filename caveat</strong>: despite the <code>.gz</code> suffix, payloads are raw
+<code>Zlib::Deflate</code> streams (not gzip format) — <code>gunzip</code> fails on them.
+The suffix is cosmetic and may change in a future major release.</p>
 <h3 id="Coverage_modes__rspec_tracer___SimpleCov_interop_">Coverage modes (rspec-tracer + SimpleCov interop)</h3>
 <p>By default, rspec-tracer enables Ruby's <code>lines</code> coverage mode only.
 The <code>coverage_modes</code> DSL opts into additional Ruby <code>Coverage</code> modes
@@ -556,7 +570,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:55 2026 by
+  Generated on Fri May 15 17:34:53 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

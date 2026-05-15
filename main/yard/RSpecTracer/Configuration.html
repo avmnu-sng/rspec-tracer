@@ -373,10 +373,9 @@ the cache grow unbounded (issue #20). 0 opts out entirely.</p>
   <div class="discussion">
     <p>Size budgets (MiB). Warn at save time when any single cache
 file exceeds the per-file threshold or when the cache total
-exceeds the aggregate threshold. Surfaces B11 symptoms
-(dependency.json ballooning past the few-MB range) while
-the user can still act on them. Set to 0 to disable either
-individually.</p>
+exceeds the aggregate threshold. Surfaces dependency.json
+ballooning past the few-MB range while the user can still
+act on them. Set to 0 to disable either individually.</p>
 
   </div>
 </div>
@@ -567,6 +566,7 @@ standard Ruby semantics.</p>
       <pre class="lines">
 
 
+1411
 1412
 1413
 1414
@@ -575,11 +575,10 @@ standard Ruby semantics.</p>
 1417
 1418
 1419
-1420
-1421</pre>
+1420</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1412</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1411</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_method_missing'>method_missing</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>if</span> <span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_end_with?'>end_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>=</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -644,6 +643,7 @@ standard Ruby semantics.</p>
       <pre class="lines">
 
 
+117
 118
 119
 120
@@ -677,11 +677,10 @@ standard Ruby semantics.</p>
 148
 149
 150
-151
-152</pre>
+151</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 118</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 117</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_configure'>configure</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span>
   <span class='comment'># Scan the full caller chain (not just the immediate two frames):
@@ -764,12 +763,12 @@ standard Ruby semantics.</p>
       <pre class="lines">
 
 
+1424
 1425
-1426
-1427</pre>
+1426</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1425</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1424</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_respond_to_missing?'>respond_to_missing?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='id identifier rubyid_include_private'>include_private</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
   <span class='kw'>super</span>
@@ -784,7 +783,7 @@ standard Ruby semantics.</p>
 </div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:57 2026 by
+  Generated on Fri May 15 17:34:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>

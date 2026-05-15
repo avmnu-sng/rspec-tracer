@@ -109,9 +109,9 @@
   You should avoid using this class if possible, as it may be removed or be changed in the future.
 </p>
 <p>Observer #5 (composition of DeclaredGlobs + cache diff). Fixes
-KNOWN_ISSUES Section B5: 1.x's fetch_changed_files loop only
-iterated the previous run's cache, so newly-added source files
-were never discovered and never triggered re-runs.</p>
+a 1.x gap: fetch_changed_files only iterated the previous run's
+cache, so newly-added source files were never discovered and
+never triggered re-runs.</p>
 <p>The fix: at boot, walk the union of user-declared globs and a
 pure-Ruby default set (lib/**/*.rb). Every match on disk that is
 not in the loaded cache's known_paths emits an Input, which the
@@ -420,7 +420,7 @@ is O(1) so no upstream <code>to_set</code> is needed.</p>
 </div>
 
       <div id="footer">
-  Generated on Fri May 15 10:14:58 2026 by
+  Generated on Fri May 15 17:34:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
