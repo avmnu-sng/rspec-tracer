@@ -9,7 +9,7 @@ module RSpecTracer
     # read + deserialization for each field until the caller touches it.
     #
     # Rationale: on a large cache (100 MB+), eager-reading every file
-    # at setup dominates warm-run startup (see issue #17 / B12). Engine
+    # at setup dominates warm-run startup (issue #17). Engine
     # at setup touches 10/15 fields; reporters never touch the previous
     # snapshot; third-party tooling often reads one or two. The 3-5
     # fields the Engine does NOT touch at setup (duplicate_examples,
