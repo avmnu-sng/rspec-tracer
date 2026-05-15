@@ -33,6 +33,21 @@ require 'uri'
 # rubocop:disable Lint/ConstantDefinitionInBlock
 RSpec.describe 'rake rspec_tracer:remote_cache:* tasks against LocalStack', :integration, :localstack do
   LOCALSTACK_ENDPOINT_RAKE = ENV.fetch('LOCALSTACK_ENDPOINT', 'http://localhost:4566')
+  # Disable git background maintenance for the fake-repo setup below.
+  # Matches the constant in spec/remote_cache/git_ancestry_spec.rb;
+  # see that file for the failure-mode rationale (`bitmap-ref-tips_*`
+  # vs Dir.mktmpdir cleanup race). This spec only does 1 commit so the
+  # race window is much smaller than git_ancestry_spec's 30-commit
+  # loop, but the fixture pattern is identical — preemptive parity.
+  GIT_NO_MAINTENANCE_RAKE = %w[
+    -c gc.auto=0
+    -c gc.autoPackLimit=0
+    -c maintenance.auto=false
+    -c core.commitGraph=false
+    -c gc.writeCommitGraph=false
+    -c fetch.writeCommitGraph=false
+    -c pack.writeBitmaps=false
+  ].freeze
 
   def localstack_reachable?
     return false unless system('command', '-v', 'awslocal', out: File::NULL, err: File::NULL)
@@ -99,12 +114,12 @@ RSpec.describe 'rake rspec_tracer:remote_cache:* tasks against LocalStack', :int
       # GitAncestry can compute branch refs (uses HEAD + a single
       # commit so `git rev-list --max-count=25 HEAD` resolves).
       Dir.chdir(dir) do
-        system('git', 'init', '-q', '-b', 'main') || raise('git init failed')
-        system('git', 'config', 'user.email', 'rspec-tracer-rake-spec@example.com') || raise
-        system('git', 'config', 'user.name', 'rspec-tracer rake spec') || raise
+        system('git', *GIT_NO_MAINTENANCE_RAKE, 'init', '-q', '-b', 'main') || raise('git init failed')
+        system('git', *GIT_NO_MAINTENANCE_RAKE, 'config', 'user.email', 'rspec-tracer-rake-spec@example.com') || raise
+        system('git', *GIT_NO_MAINTENANCE_RAKE, 'config', 'user.name', 'rspec-tracer rake spec') || raise
         File.write('seed.txt', 'seed')
-        system('git', 'add', 'seed.txt') || raise
-        system('git', 'commit', '-q', '-m', 'seed') || raise
+        system('git', *GIT_NO_MAINTENANCE_RAKE, 'add', 'seed.txt') || raise
+        system('git', *GIT_NO_MAINTENANCE_RAKE, 'commit', '-q', '-m', 'seed') || raise
       end
 
       # Seed a small cache for upload to consume.

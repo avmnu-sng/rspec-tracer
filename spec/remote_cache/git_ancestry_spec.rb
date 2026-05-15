@@ -17,7 +17,27 @@ require 'rspec_tracer/remote_cache/git_ancestry'
 # Git commands are run quietly (stdout+stderr to /dev/null) except
 # when we want to inspect failures. `sh!` raises on non-zero; `sh`
 # returns status+stdout.
+#
+# Every git invocation is prefixed with `GIT_NO_MAINTENANCE` flags.
+# Recent git (>= 2.x) writes transient `.git/objects/bitmap-ref-tips_*`
+# files in the background when commit-graph / multi-pack-index /
+# auto-gc / bitmap writes are enabled. Those temp files race with
+# `Dir.mktmpdir`'s recursive cleanup — the cleanup walks the dir,
+# sees a temp file, then `apply2files` raises `Errno::ENOENT` once
+# git removes it out from under the cleanup, and the parent rmdir
+# then raises `Errno::ENOTEMPTY`. Disabling the writes outright
+# (rather than retrying cleanup) removes the source of the race.
 module FakeGitRepo
+  GIT_NO_MAINTENANCE = %w[
+    -c gc.auto=0
+    -c gc.autoPackLimit=0
+    -c maintenance.auto=false
+    -c core.commitGraph=false
+    -c gc.writeCommitGraph=false
+    -c fetch.writeCommitGraph=false
+    -c pack.writeBitmaps=false
+  ].freeze
+
   def with_fake_repo(&)
     Dir.mktmpdir do |remote_dir|
       Dir.mktmpdir do |work_dir|
@@ -66,11 +86,12 @@ module FakeGitRepo
   end
 
   def current_head
-    out, = Open3.capture3('git', 'rev-parse', 'HEAD')
+    out, = Open3.capture3('git', *GIT_NO_MAINTENANCE, 'rev-parse', 'HEAD')
     out.chomp
   end
 
   def sh!(*cmd)
+    cmd = ['git', *GIT_NO_MAINTENANCE, *cmd.drop(1)] if cmd.first == 'git'
     _stdout, stderr, status = Open3.capture3(*cmd)
     raise "git cmd failed: #{cmd.join(' ')}\n#{stderr}" unless status.success?
   end
