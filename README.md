@@ -48,7 +48,7 @@ Rails 8.0 needs Ruby 3.2+. JRuby 9.4 is supported.
    ```ruby
    # 2.0 is in pre-release. Pin to the pre-release version explicitly;
    # switch to '~> 2.0' once 2.0.0 final ships.
-   gem 'rspec-tracer', '= 2.0.0.pre.1', group: :test, require: false
+   gem 'rspec-tracer', '= 2.0.0.pre.2', group: :test, require: false
    ```
 
    `bundle install` will resolve the pre-release version. You can

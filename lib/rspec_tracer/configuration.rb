@@ -1173,10 +1173,10 @@ module RSpecTracer
     #   coverage_modes [:lines, :branches]
     # @example Methods coverage in addition (for downstream tooling)
     #   coverage_modes [:lines, :methods]
-    def coverage_modes(*args)
-      return read_coverage_modes if args.empty?
+    def coverage_modes(*modes)
+      return read_coverage_modes if modes.empty?
 
-      modes_array = Array(args.length == 1 ? args.first : args).flatten.map(&:to_sym)
+      modes_array = Array(modes.length == 1 ? modes.first : modes).flatten.map(&:to_sym)
       raise InvalidUsageError, 'coverage_modes requires at least one mode (e.g. [:lines])' if modes_array.empty?
 
       unknown = modes_array - COVERAGE_MODES
