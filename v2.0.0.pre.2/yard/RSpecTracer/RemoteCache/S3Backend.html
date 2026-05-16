@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Class: RSpecTracer::RemoteCache::S3Backend
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::RemoteCache::S3Backend";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (S)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../RemoteCache.html" title="RSpecTracer::RemoteCache (module)">RemoteCache</a></span></span>
+     &raquo; 
+    <span class="title">S3Backend</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Class: RSpecTracer::RemoteCache::S3Backend
+  
+  
+  <span class="private note title">Private</span>
+</h1>
+<div class="box_info">
+  
+  <dl>
+    <dt>Inherits:</dt>
+    <dd>
+      <span class="inheritName">Object</span>
+      
+        <ul class="fullTree">
+          <li>Object</li>
+          
+            <li class="next">RSpecTracer::RemoteCache::S3Backend</li>
+          
+        </ul>
+        <a href="#" class="inheritanceTree">show all</a>
+      
+    </dd>
+  </dl>
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/remote_cache/s3_backend.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>S3 implementation of <code>RemoteCache::Backend</code>. Shells out to the
+<code>aws</code> / <code>awslocal</code> CLI for every operation - matches 1.x's
+behavior and avoids pulling <code>aws-sdk-s3</code> into the gem's runtime
+deps. Users on 1.x already have <code>aws</code> on PATH per the documented
+CI recipe; 2.0 asks nothing new.</p>
+<p>Two-tier S3 layout (change from 1.x flat layout; paired with the
+schema_version bump - one cold run on upgrade). Cache payload is
+a single <code>cache.tar.gz</code> per ref (~15 JSON files + last_run.json
+packed together; ~4-6x smaller on the wire + 1 GET per download
+instead of 15):</p>
+<pre class="code ruby"><code class="ruby">s3://&lt;bucket&gt;/&lt;prefix&gt;/
+main/&lt;sha&gt;/[&lt;test_suite_id&gt;/]cache.tar.gz
+pr/&lt;branch&gt;/&lt;sha&gt;/[&lt;test_suite_id&gt;/]cache.tar.gz
+pr/&lt;branch&gt;/branch_refs.json
+</code></pre>
+<p>Local cache_path layout is unchanged - the archive is a transit
+boundary only. Users and external tooling continue to see the
+15-file disk layout documented in <code>USER_FACING_SURFACE.md</code> section 6.</p>
+<p>Tier is determined from <code>branch</code> vs <code>default_branch</code> at construction.
+Main-branch builds write to main tier; PR builds write to their
+branch-scoped pr tier. Download tries the backend's own tier first,
+then falls back to main tier for the same ref (catches PRs
+cherry-picking from main).</p>
+<p>Retention (closes issue #20 at the architectural layer, not just
+with a knob):</p>
+<pre class="code ruby"><code class="ruby">- `cache_retention_count N` keeps newest N refs per tier
+(main has N refs, each PR branch has N refs).
+- `cache_retention_duration_seconds X` prunes refs older than
+X seconds in any tier the backend visits.
+- `cache_retention_pr_branch_ttl_seconds X` deletes a PR branch
+entirely (including its branch_refs.json) when no ref has
+been touched in X seconds. Applied at upload time in the
+backend&#39;s own branch only; cross-branch cleanup is a separate
+Rake task.
+</code></pre>
+<p>Graceful-degradation contract:</p>
+<pre class="code ruby"><code class="ruby">- `download` returns false and never raises on wire/validation
+failure. Partial downloads are cleaned up.
+- `upload` raises on wire failure; the Rake task catches.
+- `branch_refs` returns `{}` on missing file.
+- `prune!` returns count removed, never raises.
+</code></pre>
+<p>S3 shells out via <code>aws</code> CLI - a single class is the natural unit
+of composition here. The class is large; splitting would be
+cosmetic.
+rubocop:disable Metrics/ClassLength</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><h2>Defined Under Namespace</h2>
+<p class="children">
+  
+    
+  
+    
+      <strong class="classes">Classes:</strong> <span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span>
+    
+  
+</p>
+
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="MAIN_TIER-constant" class="">MAIN_TIER =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>main</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="PR_TIER-constant" class="">PR_TIER =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>pr</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="BRANCH_REFS_FILENAME-constant" class="">BRANCH_REFS_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>branch_refs.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="LAST_RUN_FILENAME-constant" class="">LAST_RUN_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last_run.json</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="CACHE_ARCHIVE_FILENAME-constant" class="">CACHE_ARCHIVE_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='const'><span class='object_link'><a href="Archive.html" title="RSpecTracer::RemoteCache::Archive (module)">Archive</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="Archive.html#CACHE_FILENAME-constant" title="RSpecTracer::RemoteCache::Archive::CACHE_FILENAME (constant)">CACHE_FILENAME</a></span></span></pre></dd>
+      
+        <dt id="ENCODING-constant" class="">ENCODING =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="REQUIRED_OPTS-constant" class="">REQUIRED_OPTS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>bucket</span><span class='words_sep'> </span><span class='tstring_content'>prefix</span><span class='words_sep'> </span><span class='tstring_content'>branch</span><span class='words_sep'> </span><span class='tstring_content'>default_branch</span><span class='words_sep'> </span><span class='tstring_content'>cache_path</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+
+
+
+  
+    <h2>
+      Instance Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#branch_refs-instance_method" title="#branch_refs (instance method)">#<strong>branch_refs</strong>(branch_name)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Read branch_refs for the given branch.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#download-instance_method" title="#download (instance method)">#<strong>download</strong>(ref, tree_sha: nil)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Download the cache for <code>ref</code> into <code>cache_path</code>.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#initialize-instance_method" title="#initialize (instance method)">#<strong>initialize</strong>(bucket:, prefix:, branch:, default_branch:, cache_path:, test_suite_id: nil, local: false, logger: nil)  &#x21d2; S3Backend </a>
+    
+
+    
+  </span>
+  
+  
+    <span class="note title constructor">constructor</span>
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>rubocop:disable Metrics/ParameterLists.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#prune!-instance_method" title="#prune! (instance method)">#<strong>prune!</strong>(count: nil, duration_seconds: nil, pr_branch_ttl_seconds: nil)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Apply retention policy to the backend's own tier.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#prune_all!-instance_method" title="#prune_all! (instance method)">#<strong>prune_all!</strong>(pr_branch_ttl_seconds: nil)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Cross-tier PR-branch cleanup.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#unbounded_warning-instance_method" title="#unbounded_warning (instance method)">#<strong>unbounded_warning</strong>(warn_threshold: 500)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Check whether the backend's own tier has accumulated more than <code>warn_threshold</code> refs without retention configured.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#upload-instance_method" title="#upload (instance method)">#<strong>upload</strong>(ref, tree_sha: nil)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Upload the local cache to this backend's own tier under <code>ref</code>.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#write_branch_refs-instance_method" title="#write_branch_refs (instance method)">#<strong>write_branch_refs</strong>(branch_name, refs)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Persist branch_refs for the given branch.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+<div id="constructor_details" class="method_details_list">
+  <h2>Constructor Details</h2>
+  
+    <div class="method_details first">
+  <h3 class="signature first" id="initialize-instance_method">
+  
+    #<strong>initialize</strong>(bucket:, prefix:, branch:, default_branch:, cache_path:, test_suite_id: nil, local: false, logger: nil)  &#x21d2; <tt><span class='object_link'><a href="" title="RSpecTracer::RemoteCache::S3Backend (class)">S3Backend</a></span></tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>rubocop:disable Metrics/ParameterLists</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 97</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>bucket:</span><span class='comma'>,</span> <span class='label'>prefix:</span><span class='comma'>,</span> <span class='label'>branch:</span><span class='comma'>,</span> <span class='label'>default_branch:</span><span class='comma'>,</span>
+               <span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>test_suite_id:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>local:</span> <span class='kw'>false</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_validate_required!'>validate_required!</span><span class='lparen'>(</span><span class='label'>bucket:</span> <span class='id identifier rubyid_bucket'>bucket</span><span class='comma'>,</span> <span class='label'>prefix:</span> <span class='id identifier rubyid_prefix'>prefix</span><span class='comma'>,</span> <span class='label'>branch:</span> <span class='id identifier rubyid_branch'>branch</span><span class='comma'>,</span>
+                     <span class='label'>default_branch:</span> <span class='id identifier rubyid_default_branch'>default_branch</span><span class='comma'>,</span> <span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+
+  <span class='ivar'>@bucket</span> <span class='op'>=</span> <span class='id identifier rubyid_bucket'>bucket</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
+  <span class='ivar'>@prefix</span> <span class='op'>=</span> <span class='id identifier rubyid_trim_trailing_slashes'>trim_trailing_slashes</span><span class='lparen'>(</span><span class='id identifier rubyid_prefix'>prefix</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='rparen'>)</span>
+  <span class='ivar'>@branch</span> <span class='op'>=</span> <span class='id identifier rubyid_branch'>branch</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_chomp'>chomp</span>
+  <span class='ivar'>@default_branch</span> <span class='op'>=</span> <span class='id identifier rubyid_default_branch'>default_branch</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_chomp'>chomp</span>
+  <span class='ivar'>@test_suite_id</span> <span class='op'>=</span> <span class='id identifier rubyid_normalize_test_suite_id'>normalize_test_suite_id</span><span class='lparen'>(</span><span class='id identifier rubyid_test_suite_id'>test_suite_id</span><span class='rparen'>)</span>
+  <span class='ivar'>@cache_path</span> <span class='op'>=</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
+  <span class='ivar'>@cli_binary</span> <span class='op'>=</span> <span class='id identifier rubyid_local'>local</span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>awslocal</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>aws</span><span class='tstring_end'>&#39;</span></span>
+  <span class='ivar'>@logger</span> <span class='op'>=</span> <span class='id identifier rubyid_logger'>logger</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+  
+</div>
+
+
+  <div id="instance_method_details" class="method_details_list">
+    <h2>Instance Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="branch_refs-instance_method">
+  
+    #<strong>branch_refs</strong>(branch_name)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Read branch_refs for the given branch. Returns <code>{sha =&gt; ts_epoch}</code>
+or <code>{}</code> when the file is missing / malformed. PR tier only -
+main branch doesn't track branch_refs (rewrites not expected on
+the default branch).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 166</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_branch_refs'>branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_local_tmp'>local_tmp</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>.branch_refs_download_</span><span class='embexpr_beg'>#{</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_ok'>ok</span><span class='comma'>,</span> <span class='op'>=</span> <span class='id identifier rubyid_aws_cp_silent'>aws_cp_silent</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_url'>s3_url</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_branch_refs_key'>s3_branch_refs_key</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>unless</span> <span class='id identifier rubyid_ok'>ok</span>
+
+  <span class='id identifier rubyid_parsed'>parsed</span> <span class='op'>=</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_parse'>parse</span><span class='lparen'>(</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='const'><span class='object_link'><a href="#ENCODING-constant" title="RSpecTracer::RemoteCache::S3Backend::ENCODING (constant)">ENCODING</a></span></span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>Hash</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='period'>.</span><span class='id identifier rubyid_transform_values'>transform_values</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:to_i</span><span class='rparen'>)</span> <span class='op'>:</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='id identifier rubyid_log_debug'>log_debug</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>branch_refs read failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>); treating as empty</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='lbrace'>{</span><span class='rbrace'>}</span>
+<span class='kw'>ensure</span>
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_f'>rm_f</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_local_tmp'>local_tmp</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="download-instance_method">
+  
+    #<strong>download</strong>(ref, tree_sha: nil)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Download the cache for <code>ref</code> into <code>cache_path</code>. Tries the
+backend's own tier first; on miss, falls back to the main tier
+for the same ref. Validates the downloaded <code>last_run.json</code> via
+schema_version before declaring success.</p>
+<p>When <code>tree_sha</code> is provided, first consults the tree-SHA
+secondary index (<code>&lt;tier&gt;/by_tree/&lt;tree_sha&gt;</code>) to resolve the
+tree to a commit ref - catches rebase / revert scenarios where
+the same tree lives at a different commit hash than the one
+the caller is asking about. The standard <code>&lt;tier&gt;/&lt;ref&gt;</code> lookup
+is still tried as a fallback when the tree pointer is absent
+or its resolved ref has no archive.</p>
+<p>Returns true on validated success, false on any failure. Cleans
+up partially-downloaded files on failure so a subsequent fresh
+load doesn't see stale data.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+129
+130
+131
+132
+133
+134</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 129</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_download'>download</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_ref'>ref</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_ref'>ref</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_attempts'>attempts</span> <span class='op'>=</span> <span class='id identifier rubyid_build_download_attempts'>build_download_attempts</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_attempts'>attempts</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_tier'>tier</span><span class='comma'>,</span> <span class='id identifier rubyid_candidate'>candidate</span><span class='op'>|</span> <span class='id identifier rubyid_try_download_from'>try_download_from</span><span class='lparen'>(</span><span class='id identifier rubyid_tier'>tier</span><span class='comma'>,</span> <span class='id identifier rubyid_candidate'>candidate</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="prune!-instance_method">
+  
+    #<strong>prune!</strong>(count: nil, duration_seconds: nil, pr_branch_ttl_seconds: nil)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Apply retention policy to the backend's own tier. Returns the
+number of refs removed. Never raises on a partial failure; logs
+and returns the count it managed to delete.</p>
+<p>Semantics:</p>
+<pre class="code ruby"><code class="ruby">- count N: keep newest N refs, delete older.
+- duration_seconds X: delete refs whose last_run.json is
+older than X seconds.
+- pr_branch_ttl_seconds X: (PR tier only) if the backend&#39;s
+branch has no ref newer than X seconds, delete the entire
+pr/&lt;branch&gt;/ prefix (branch_refs.json included).
+</code></pre>
+<p>Two or more parameters may be set; each applies independently.
+All nil/0 =&gt; no-op.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+218
+219
+220
+221
+222
+223
+224</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 218</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_prune!'>prune!</span><span class='lparen'>(</span><span class='label'>count:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>duration_seconds:</span> <span class='kw'>nil</span><span class='comma'>,</span> <span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_removed'>removed</span> <span class='op'>=</span> <span class='int'>0</span>
+  <span class='id identifier rubyid_removed'>removed</span> <span class='op'>+=</span> <span class='id identifier rubyid_prune_by_count!'>prune_by_count!</span><span class='lparen'>(</span><span class='id identifier rubyid_count'>count</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_count'>count</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
+  <span class='id identifier rubyid_removed'>removed</span> <span class='op'>+=</span> <span class='id identifier rubyid_prune_by_duration!'>prune_by_duration!</span><span class='lparen'>(</span><span class='id identifier rubyid_duration_seconds'>duration_seconds</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_duration_seconds'>duration_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
+  <span class='id identifier rubyid_removed'>removed</span> <span class='op'>+=</span> <span class='id identifier rubyid_prune_dead_pr_branch!'>prune_dead_pr_branch!</span><span class='lparen'>(</span><span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_pr_tier?'>pr_tier?</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
+  <span class='id identifier rubyid_removed'>removed</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="prune_all!-instance_method">
+  
+    #<strong>prune_all!</strong>(pr_branch_ttl_seconds: nil)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Cross-tier PR-branch cleanup. Enumerates every PR branch under
+the configured prefix by listing the <code>pr/</code> subtree, applies the
+TTL to each branch, deletes dead branches whole. Returns total
+refs removed. No-op on nil / non-positive TTL. Never raises
+(graceful-degradation contract).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 231</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_prune_all!'>prune_all!</span><span class='lparen'>(</span><span class='label'>pr_branch_ttl_seconds:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='int'>0</span> <span class='kw'>unless</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='op'>&amp;.</span><span class='id identifier rubyid_positive?'>positive?</span>
+
+  <span class='id identifier rubyid_cutoff'>cutoff</span> <span class='op'>=</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span> <span class='op'>-</span> <span class='id identifier rubyid_pr_branch_ttl_seconds'>pr_branch_ttl_seconds</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span>
+  <span class='id identifier rubyid_branches'>branches</span> <span class='op'>=</span> <span class='id identifier rubyid_discover_pr_branches'>discover_pr_branches</span>
+  <span class='id identifier rubyid_branches'>branches</span><span class='period'>.</span><span class='id identifier rubyid_sum'>sum</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_branch'>branch</span><span class='op'>|</span> <span class='id identifier rubyid_maybe_prune_branch'>maybe_prune_branch</span><span class='lparen'>(</span><span class='id identifier rubyid_branch'>branch</span><span class='comma'>,</span> <span class='id identifier rubyid_cutoff'>cutoff</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='id identifier rubyid_log_warn'>log_warn</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>prune_all! failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='int'>0</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="unbounded_warning-instance_method">
+  
+    #<strong>unbounded_warning</strong>(warn_threshold: 500)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Check whether the backend's own tier has accumulated more than
+<code>warn_threshold</code> refs without retention configured. Callable
+from orchestrator for the &quot;S3 growing unbounded&quot; diagnostic.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+245
+246
+247
+248
+249
+250
+251</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 245</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_unbounded_warning'>unbounded_warning</span><span class='lparen'>(</span><span class='label'>warn_threshold:</span> <span class='int'>500</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_refs'>refs</span> <span class='op'>=</span> <span class='id identifier rubyid_list_own_tier_refs'>list_own_tier_refs</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span> <span class='op'>&gt;</span> <span class='id identifier rubyid_warn_threshold'>warn_threshold</span>
+
+  <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer remote cache has </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span><span class='embexpr_end'>}</span><span class='tstring_content'> refs in </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_own_tier_prefix'>own_tier_prefix</span><span class='embexpr_end'>}</span><span class='tstring_content'>; </span><span class='tstring_end'>&quot;</span></span> \
+    <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>configure cache_retention_count or cache_retention_duration to cap growth</span><span class='tstring_end'>&#39;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="upload-instance_method">
+  
+    #<strong>upload</strong>(ref, tree_sha: nil)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Upload the local cache to this backend's own tier under <code>ref</code>.
+Packs the 15-file local layout into a single <code>cache.tar.gz</code> and
+uploads that one object. Raises on wire failure. Idempotent.</p>
+<p>When <code>tree_sha</code> is provided, ALSO writes a small pointer file
+at <code>&lt;tier&gt;/by_tree/&lt;tree_sha&gt;</code> containing the commit-SHA. The
+pointer is consumed by <code>download(ref, tree_sha: ...)</code> to hit
+the cache when a different commit (rebase / revert) shares
+the same tree.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span></tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 145</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_upload'>upload</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='label'>tree_sha:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>ref is required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_read_local_run_id'>read_local_run_id</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>no local cache to upload (missing </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="#LAST_RUN_FILENAME-constant" title="RSpecTracer::RemoteCache::S3Backend::LAST_RUN_FILENAME (constant)">LAST_RUN_FILENAME</a></span></span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='id identifier rubyid_archive_path'>archive_path</span> <span class='op'>=</span> <span class='id identifier rubyid_tmp_archive_path'>tmp_archive_path</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>upload</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+  <span class='kw'>begin</span>
+    <span class='const'><span class='object_link'><a href="Archive.html" title="RSpecTracer::RemoteCache::Archive (module)">Archive</a></span></span><span class='period'>.</span><span class='id identifier rubyid_pack'><span class='object_link'><a href="Archive.html#pack-class_method" title="RSpecTracer::RemoteCache::Archive.pack (method)">pack</a></span></span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='ivar'>@cache_path</span><span class='comma'>,</span> <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span> <span class='label'>dest_path:</span> <span class='id identifier rubyid_archive_path'>archive_path</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_upload_file'>upload_file</span><span class='lparen'>(</span><span class='id identifier rubyid_archive_path'>archive_path</span><span class='comma'>,</span> <span class='id identifier rubyid_s3_archive_key'>s3_archive_key</span><span class='lparen'>(</span><span class='id identifier rubyid_own_tier_prefix'>own_tier_prefix</span><span class='comma'>,</span> <span class='id identifier rubyid_ref'>ref</span><span class='rparen'>)</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_upload_tree_pointer'>upload_tree_pointer</span><span class='lparen'>(</span><span class='id identifier rubyid_ref'>ref</span><span class='comma'>,</span> <span class='id identifier rubyid_tree_sha'>tree_sha</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_tree_sha'>tree_sha</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_log_debug'>log_debug</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>uploaded cache for </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_ref'>ref</span><span class='embexpr_end'>}</span><span class='tstring_content'> to </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_own_tier_prefix'>own_tier_prefix</span><span class='embexpr_end'>}</span><span class='tstring_content'> (</span><span class='embexpr_beg'>#{</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='lparen'>(</span><span class='id identifier rubyid_archive_path'>archive_path</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'> bytes)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='kw'>ensure</span>
+    <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_f'>rm_f</span><span class='lparen'>(</span><span class='id identifier rubyid_archive_path'>archive_path</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="write_branch_refs-instance_method">
+  
+    #<strong>write_branch_refs</strong>(branch_name, refs)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Persist branch_refs for the given branch. No-op for main-branch
+writes (main-branch doesn't use branch_refs). Raises on wire
+failure for PR tier.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/remote_cache/s3_backend.rb', line 187</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_write_branch_refs'>write_branch_refs</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='comma'>,</span> <span class='id identifier rubyid_refs'>refs</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_blank?'>blank?</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_branch_name'>branch_name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_chomp'>chomp</span> <span class='op'>==</span> <span class='ivar'>@default_branch</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_refs'>refs</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_local_tmp'>local_tmp</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>.branch_refs_upload_</span><span class='embexpr_beg'>#{</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span><span class='embexpr_end'>}</span><span class='tstring_content'>.json</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='comma'>,</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_pretty_generate'>pretty_generate</span><span class='lparen'>(</span><span class='id identifier rubyid_refs'>refs</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='const'><span class='object_link'><a href="#ENCODING-constant" title="RSpecTracer::RemoteCache::S3Backend::ENCODING (constant)">ENCODING</a></span></span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_ok'>ok</span><span class='comma'>,</span> <span class='id identifier rubyid__stdout'>_stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span> <span class='op'>=</span> <span class='id identifier rubyid_aws_cp_silent'>aws_cp_silent</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='comma'>,</span> <span class='id identifier rubyid_s3_url'>s3_url</span><span class='lparen'>(</span><span class='id identifier rubyid_s3_branch_refs_key'>s3_branch_refs_key</span><span class='lparen'>(</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='rparen'>)</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="S3Backend/S3BackendError.html" title="RSpecTracer::RemoteCache::S3Backend::S3BackendError (class)">S3BackendError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Failed to upload branch_refs for </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_chomp'>chomp</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_ok'>ok</span>
+
+  <span class='id identifier rubyid_log_debug'>log_debug</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>wrote branch_refs for </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_branch_name'>branch_name</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+<span class='kw'>ensure</span>
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_f'>rm_f</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='id identifier rubyid_local_tmp'>local_tmp</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_local_tmp'>local_tmp</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Sat May 16 08:24:35 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

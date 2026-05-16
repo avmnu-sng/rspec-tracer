@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Module: RSpecTracer::Configuration
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::Configuration";
+  relpath = '../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../_index.html">Index (C)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+     &raquo; 
+    <span class="title">Configuration</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Module: RSpecTracer::Configuration
+  
+  
+  
+</h1>
+<div class="box_info">
+  
+
+  
+  
+  
+  
+  
+
+  
+  <dl>
+    <dt>Included in:</dt>
+    <dd><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></dd>
+  </dl>
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/configuration.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p>The user-facing configuration DSL. Mixed into <code>RSpecTracer</code> itself,
+so calls inside a <code>.rspec-tracer</code> (or <code>~/.rspec-tracer</code>) file appear
+against the top-level module:</p>
+<p>The DSL methods are technically <code>private</code> in Ruby; the <code>configure</code>
+block uses Docile to expose them as if public. Calling them
+outside a <code>.rspec-tracer</code> file raises <code>InvalidUsageError</code>. The
+configuration loader allowlist enforces this gate (see
+<span class='object_link'><a href="#ALLOWED_CONFIGURER-constant" title="RSpecTracer::Configuration::ALLOWED_CONFIGURER (constant)">ALLOWED_CONFIGURER</a></span>).</p>
+<p>See also:</p>
+<ul>
+<li><a href="../index.html" title="README">README</a> — user guide.</li>
+<li><a href="../file.UPGRADING.html" title="UPGRADING">UPGRADING</a> — 1.x → 2.0 migration.</li>
+<li><a href="../file.ARCHITECTURE.html" title="ARCHITECTURE">ARCHITECTURE</a> — input taxonomy + layer structure.</li>
+<li><a href="../file.COOKBOOK.html" title="COOKBOOK">COOKBOOK</a> — recipes for common scenarios.</li>
+</ul>
+<p>rubocop:disable Metrics/ModuleLength</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+  <div class="examples">
+    <h4 class="tag_title">Examples:</h4>
+    
+      
+        <h5 class="example_title"><div class='inline'><p>A typical <code>.rspec-tracer</code></p></div></h5>
+      
+      <pre class="example code"><code><span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_project_name'>project_name</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>My App</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_track_files'>track_files</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>config/locales/**/*.yml</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>db/schema.rb</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>Gemfile.lock</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_track_env'>track_env</span>   <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>AUTH_TOKEN</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>DATABASE_URL</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RAILS_*</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_track_rails_defaults'>track_rails_defaults</span>
+
+  <span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='symbol'>:sqlite</span>
+  <span class='id identifier rubyid_remote_cache_backend'>remote_cache_backend</span> <span class='symbol'>:s3</span><span class='comma'>,</span> <span class='label'>bucket:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>my-bucket</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>prefix:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span>
+
+  <span class='id identifier rubyid_add_filter'>add_filter</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/vendor/</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_add_coverage_filter'>add_coverage_filter</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>/spec/</span><span class='words_sep'> </span><span class='tstring_content'>/test/</span><span class='tstring_end'>]</span></span>
+<span class='kw'>end</span></code></pre>
+    
+  </div>
+
+
+</div><h2>Defined Under Namespace</h2>
+<p class="children">
+  
+    
+      <strong class="modules">Modules:</strong> <span class='object_link'><a href="Configuration/DslTypoSuggester.html" title="RSpecTracer::Configuration::DslTypoSuggester (module)">DslTypoSuggester</a></span>
+    
+  
+    
+      <strong class="classes">Classes:</strong> <span class='object_link'><a href="Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span>
+    
+  
+</p>
+
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="ALLOWED_CONFIGURER-constant" class="">ALLOWED_CONFIGURER =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>lib/rspec_tracer/load_default_config.rb</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>lib/rspec_tracer/load_global_config.rb</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>lib/rspec_tracer/load_local_config.rb</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="DEFAULT_CACHE_DIR-constant" class="">DEFAULT_CACHE_DIR =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_cache</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="DEFAULT_COVERAGE_DIR-constant" class="">DEFAULT_COVERAGE_DIR =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_coverage</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="DEFAULT_REPORT_DIR-constant" class="">DEFAULT_REPORT_DIR =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer_report</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="DEFAULT_LOCK_FILE-constant" class="">DEFAULT_LOCK_FILE =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer.lock</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="DEFAULT_STORAGE_BACKEND-constant" class="">DEFAULT_STORAGE_BACKEND =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='symbol'>:json</span></pre></dd>
+      
+        <dt id="STORAGE_BACKEND_NAMES-constant" class="">STORAGE_BACKEND_NAMES =
+          <div class="docstring">
+  <div class="discussion">
+    <p>:sqlite opt-in: MRI &gt;= 3.2 only (sqlite3 2.x gem requirement).
+Kept closed so typos raise early.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>sqlite</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="STORAGE_BACKEND_OPT_KEYS-constant" class="">STORAGE_BACKEND_OPT_KEYS =
+          <div class="docstring">
+  <div class="discussion">
+    <p>Keys allowed in <code>storage_backend</code>'s opts hash. <code>:serializer</code> is
+accepted only for the :json backend (see validate_storage_opts!).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>serializer</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="STORAGE_BACKEND_SERIALIZERS-constant" class="">STORAGE_BACKEND_SERIALIZERS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>json</span><span class='words_sep'> </span><span class='tstring_content'>msgpack</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="DEFAULT_COVERAGE_MODES-constant" class="">DEFAULT_COVERAGE_MODES =
+          <div class="docstring">
+  <div class="discussion">
+    <p>Default Ruby <code>Coverage</code> modes when the user has not called the
+<code>coverage_modes</code> DSL. Matches bare <code>Coverage.start</code> semantics so
+legacy configs continue to emit lines-only <code>coverage.json</code> shape.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>lines</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="COVERAGE_MODES-constant" class="">COVERAGE_MODES =
+          <div class="docstring">
+  <div class="discussion">
+    <p>Allowed Ruby <code>Coverage</code> modes accepted by the <code>coverage_modes</code>
+DSL. The set tracks Ruby 3.1+ <code>Coverage.start</code> keyword args.
+<code>coverage.json</code> ships the lines-only <code>Array&lt;Integer|nil&gt;</code> shape
+per file regardless — branches / methods / oneshot_lines / eval
+data is collected by Ruby but the user-facing artifact stays on
+the documented 1.x shape (see UPGRADING <code>#SimpleCov branch coverage now works</code> for SimpleCov interop).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='tstring_content'>lines</span><span class='words_sep'> </span><span class='tstring_content'>branches</span><span class='words_sep'> </span><span class='tstring_content'>methods</span><span class='words_sep'> </span><span class='tstring_content'>oneshot_lines</span><span class='words_sep'> </span><span class='tstring_content'>eval</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+        <dt id="DEFAULT_CACHE_RETENTION_LOCAL_COUNT-constant" class="">DEFAULT_CACHE_RETENTION_LOCAL_COUNT =
+          <div class="docstring">
+  <div class="discussion">
+    <p>Per-save retention on the local cache's run-id directories.
+5 keeps enough history for rollback debugging without letting
+the cache grow unbounded (issue #20). 0 opts out entirely.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>5</span></pre></dd>
+      
+        <dt id="DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB-constant" class="">DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB =
+          <div class="docstring">
+  <div class="discussion">
+    <p>Size budgets (MiB). Warn at save time when any single cache
+file exceeds the per-file threshold or when the cache total
+exceeds the aggregate threshold. Surfaces dependency.json
+ballooning past the few-MB range while the user can still
+act on them. Set to 0 to disable either individually.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>50</span></pre></dd>
+      
+        <dt id="DEFAULT_CACHE_SIZE_WARN_TOTAL_MB-constant" class="">DEFAULT_CACHE_SIZE_WARN_TOTAL_MB =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>500</span></pre></dd>
+      
+        <dt id="LOG_LEVEL-constant" class="">LOG_LEVEL =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='lbrace'>{</span>
+  <span class='label'>off:</span> <span class='int'>0</span><span class='comma'>,</span>
+  <span class='label'>debug:</span> <span class='int'>1</span><span class='comma'>,</span>
+  <span class='label'>info:</span> <span class='int'>2</span><span class='comma'>,</span>
+  <span class='label'>warn:</span> <span class='int'>3</span><span class='comma'>,</span>
+  <span class='label'>error:</span> <span class='int'>4</span>
+<span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+
+
+
+  
+    <h2>
+      Instance Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#configure-instance_method" title="#configure (instance method)">#<strong>configure</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#method_missing-instance_method" title="#method_missing (instance method)">#<strong>method_missing</strong>(name, *args, **kwargs)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  
+
+  
+    <span class="summary_desc"><div class='inline'><p>Catches typos in <code>.rspec-tracer</code> config files.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#respond_to_missing%3F-instance_method" title="#respond_to_missing? (instance method)">#<strong>respond_to_missing?</strong>(name, include_private = false)  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+<div id="method_missing_details" class="method_details_list">
+  <h2>Dynamic Method Handling</h2>
+  <p class="notice this">
+    This class handles dynamic methods through the <tt>method_missing</tt> method
+    
+  </p>
+  
+    <div class="method_details first">
+  <h3 class="signature first" id="method_missing-instance_method">
+  
+    #<strong>method_missing</strong>(name, *args, **kwargs)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p>Catches typos in <code>.rspec-tracer</code> config files. When the user
+mistypes a DSL name (e.g. <code>track_files_glob</code> for <code>track_files</code>),
+bare <code>NoMethodError</code> puts a Ruby backtrace in their face. This
+surface raises <code>InvalidUsageError</code> with a stdlib <code>DidYouMean</code>
+suggestion when the typo is close to a known DSL method;
+otherwise it falls through to NoMethodError so internal
+respond_to? probes / non-DSL undefined-method usage retains
+standard Ruby semantics.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span></tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+1413
+1414
+1415
+1416
+1417
+1418
+1419
+1420
+1421
+1422</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1413</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_method_missing'>method_missing</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>if</span> <span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_end_with?'>end_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>=</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_candidates'>candidates</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="" title="RSpecTracer::Configuration (module)">Configuration</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="Configuration/DslTypoSuggester.html" title="RSpecTracer::Configuration::DslTypoSuggester (module)">DslTypoSuggester</a></span></span><span class='period'>.</span><span class='id identifier rubyid_candidates'><span class='object_link'><a href="Configuration/DslTypoSuggester.html#candidates-class_method" title="RSpecTracer::Configuration::DslTypoSuggester.candidates (method)">candidates</a></span></span>
+  <span class='id identifier rubyid_suggestion'>suggestion</span> <span class='op'>=</span> <span class='id identifier rubyid_candidates'>candidates</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='op'>?</span> <span class='kw'>nil</span> <span class='op'>:</span> <span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="" title="RSpecTracer::Configuration (module)">Configuration</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="Configuration/DslTypoSuggester.html" title="RSpecTracer::Configuration::DslTypoSuggester (module)">DslTypoSuggester</a></span></span><span class='period'>.</span><span class='id identifier rubyid_nearest'><span class='object_link'><a href="Configuration/DslTypoSuggester.html#nearest-class_method" title="RSpecTracer::Configuration::DslTypoSuggester.nearest (method)">nearest</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='comma'>,</span> <span class='id identifier rubyid_candidates'>candidates</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>super</span> <span class='kw'>if</span> <span class='id identifier rubyid_suggestion'>suggestion</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span></span><span class='comma'>,</span>
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown .rspec-tracer DSL method </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_name'>name</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>; did you mean </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_suggestion'>suggestion</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>?</span><span class='tstring_end'>&quot;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+  
+</div>
+
+
+  <div id="instance_method_details" class="method_details_list">
+    <h2>Instance Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="configure-instance_method">
+  
+    #<strong>configure</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Raises:</p>
+<ul class="raise">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt><span class='object_link'><a href="Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span></tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 117</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_configure'>configure</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span>
+  <span class='comment'># Scan the full caller chain (not just the immediate two frames):
+</span>  <span class='comment'># MRI / JRuby place the load_*_config.rb loader at depth 2, but
+</span>  <span class='comment'># TruffleRuby&#39;s `load` interposes an extra runtime frame, pushing
+</span>  <span class='comment'># the loader past the 2-frame window and tripping the InvalidUsage
+</span>  <span class='comment'># raise. Path-suffix match against the well-known loader filenames
+</span>  <span class='comment'># keeps the gate safe regardless of stack depth - user code would
+</span>  <span class='comment'># have to copy one of those filenames verbatim into a path it
+</span>  <span class='comment'># `load`s to get a false positive, which we treat as wilful.
+</span>  <span class='id identifier rubyid_configurers'>configurers</span> <span class='op'>=</span> <span class='id identifier rubyid_caller_locations'>caller_locations</span><span class='lparen'>(</span><span class='int'>1</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_invalid'>invalid</span> <span class='op'>=</span> <span class='id identifier rubyid_configurers'>configurers</span><span class='period'>.</span><span class='id identifier rubyid_none?'>none?</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_configurer'>configurer</span><span class='op'>|</span>
+    <span class='const'><span class='object_link'><a href="#ALLOWED_CONFIGURER-constant" title="RSpecTracer::Configuration::ALLOWED_CONFIGURER (constant)">ALLOWED_CONFIGURER</a></span></span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_allowed_configurer'>allowed_configurer</span><span class='op'>|</span>
+      <span class='id identifier rubyid_configurer'>configurer</span><span class='period'>.</span><span class='id identifier rubyid_end_with?'>end_with?</span><span class='lparen'>(</span><span class='id identifier rubyid_allowed_configurer'>allowed_configurer</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+
+  <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>You must define configurations in a .rspec-tracer file</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_invalid'>invalid</span>
+
+  <span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="" title="RSpecTracer::Configuration (module)">Configuration</a></span></span><span class='period'>.</span><span class='id identifier rubyid_module_exec'>module_exec</span> <span class='kw'>do</span>
+    <span class='const'><span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="" title="RSpecTracer::Configuration (module)">Configuration</a></span></span><span class='period'>.</span><span class='id identifier rubyid_private_instance_methods'>private_instance_methods</span><span class='lparen'>(</span><span class='kw'>false</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_method_name'>method_name</span><span class='op'>|</span>
+      <span class='id identifier rubyid_alias_method'>alias_method</span> <span class='symbol'>:&quot;_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_method_name'>method_name</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_method_name'>method_name</span>
+
+      <span class='comment'># Forward `**kwargs` too so DSL methods can accept Ruby 3+
+</span>      <span class='comment'># keyword args (e.g. `track_rails_defaults except: [:views]`,
+</span>      <span class='comment'># `storage_backend :json, serializer: :msgpack`). Earlier
+</span>      <span class='comment'># forms of this wrapper forwarded `*args, &amp;block` only and
+</span>      <span class='comment'># silently stripped kwargs.
+</span>      <span class='id identifier rubyid_define_method'>define_method</span> <span class='id identifier rubyid_method_name'>method_name</span> <span class='kw'>do</span> <span class='op'>|</span><span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='op'>|</span>
+        <span class='id identifier rubyid_send'>send</span><span class='lparen'>(</span><span class='symbol'>:&quot;_</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_method_name'>method_name</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span> <span class='op'>*</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='op'>**</span><span class='id identifier rubyid_kwargs'>kwargs</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+
+  <span class='const'>Docile</span><span class='period'>.</span><span class='id identifier rubyid_dsl_eval'>dsl_eval</span><span class='lparen'>(</span><span class='kw'>self</span><span class='comma'>,</span> <span class='op'>&amp;</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="respond_to_missing?-instance_method">
+  
+    #<strong>respond_to_missing?</strong>(name, include_private = false)  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal method on the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+1426
+1427
+1428</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/configuration.rb', line 1426</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_respond_to_missing?'>respond_to_missing?</span><span class='lparen'>(</span><span class='id identifier rubyid_name'>name</span><span class='comma'>,</span> <span class='id identifier rubyid_include_private'>include_private</span> <span class='op'>=</span> <span class='kw'>false</span><span class='rparen'>)</span>
+  <span class='kw'>super</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Sat May 16 08:24:33 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

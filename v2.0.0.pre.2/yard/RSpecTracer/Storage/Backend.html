@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Module: RSpecTracer::Storage::Backend
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::Storage::Backend";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (B)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span>
+     &raquo; 
+    <span class="title">Backend</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Module: RSpecTracer::Storage::Backend
+  
+  
+  <span class="private note title">Private</span>
+</h1>
+<div class="box_info">
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/storage/backend.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>Protocol every storage backend must satisfy. JsonBackend is the
+default; SqliteBackend is an opt-in alternative on MRI. The
+<code>spec/contracts/storage_backend.rb</code> shared-examples group asserts
+the full contract on every implementation.</p>
+<p>Rationale for the method set (from ARCHITECTURE.md, Contracts
+between layers):</p>
+<pre class="code ruby"><code class="ruby">- `load_graph(schema_version:)` returns `Snapshot` or `nil`.
+`nil` means &quot;no cache, or schema mismatch.&quot; Never raises on
+corruption - the backend&#39;s job is to normalize malformed
+inputs into nil + a log line.
+- `save_graph(snapshot, schema_version:)` persists the graph.
+Either every file lands or none do (atomic via
+transactional_save).
+- `last_run_id` returns the identifier of the most recent
+successful save, or `nil` if no cache exists.
+- `transactional_save(&amp;block)` runs the block with
+single-writer semantics and commits on clean exit; on any
+raise, the pre-block state is preserved.
+- `clear!` removes everything the backend owns.
+</code></pre>
+<p>This module is intentionally documentation-only - it does not
+define stubs that raise NotImplementedError, because mutant
+would flag every <code>raise</code> as an alive mutation with no way to
+kill it. The shared-examples contract is the real gate.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+  <div class="examples">
+    <h4 class="tag_title">Examples:</h4>
+    
+      
+        <h5 class="example_title"><div class='inline'><p>Registering a custom storage backend</p></div></h5>
+      
+      <pre class="example code"><code><span class='kw'>class</span> <span class='const'>MyBackend</span>
+  <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span><span class='semicolon'>;</span> <span class='kw'>end</span>
+  <span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span><span class='semicolon'>;</span> <span class='kw'>end</span>
+  <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span><span class='semicolon'>;</span> <span class='kw'>end</span>
+  <span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span><span class='semicolon'>;</span> <span class='kw'>yield</span><span class='semicolon'>;</span> <span class='kw'>end</span>
+  <span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span><span class='semicolon'>;</span> <span class='kw'>end</span>
+<span class='kw'>end</span>
+
+<span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="../Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='const'>MyBackend</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+<span class='kw'>end</span></code></pre>
+    
+  </div>
+
+
+</div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="REQUIRED_METHODS-constant" class="">REQUIRED_METHODS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qsymbols_beg'>%i[</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>load_graph</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>save_graph</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>last_run_id</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>transactional_save</span><span class='words_sep'>
+</span><span class='words_sep'>  </span><span class='tstring_content'>clear!</span><span class='words_sep'>
+</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+
+
+
+  
+    <h2>
+      Class Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#build-class_method" title="build (class method)">.<strong>build</strong>(cache_path:, configuration: RSpecTracer)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Construct the configured storage backend instance.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#build_json-class_method" title="build_json (class method)">.<strong>build_json</strong>(cache_path:, configuration:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#build_sqlite-class_method" title="build_sqlite (class method)">.<strong>build_sqlite</strong>(cache_path:, configuration:)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#conforms%3F-class_method" title="conforms? (class method)">.<strong>conforms?</strong>(backend)  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Verifies a candidate object satisfies the backend protocol.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+
+
+  <div id="class_method_details" class="method_details_list">
+    <h2>Class Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="build-class_method">
+  
+    .<strong>build</strong>(cache_path:, configuration: RSpecTracer)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Construct the configured storage backend instance. Single
+source of truth for the json/sqlite dispatch + sqlite-gem-
+missing graceful fallback to :json, used by both
+<span class='object_link'><a href="../Engine.html" title="RSpecTracer::Engine (class)">Engine</a></span> (runtime) and the
+<span class='object_link'><a href="../CLI/CacheInfo.html" title="RSpecTracer::CLI::CacheInfo (module)">CLI::CacheInfo</a></span> / <span class='object_link'><a href="../CLI/Explain.html" title="RSpecTracer::CLI::Explain (module)">CLI::Explain</a></span>
+sub-commands (post-run inspection). Pre-refactor, the
+dispatch lived only on Engine and the CLI sub-commands
+hardcoded the JsonBackend on-disk layout — so
+<code>bin/rspec-tracer cache:info</code> / <code>explain</code> reported &quot;no
+last_run.json&quot; even when <code>storage_backend :sqlite</code> had
+persisted a working cache.</p>
+
+  </div>
+</div>
+<div class="tags">
+  <p class="tag_title">Parameters:</p>
+<ul class="param">
+  
+    <li>
+      
+        <span class='name'>cache_path</span>
+      
+      
+        <span class='type'>(<tt>String</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>root cache directory.</p></div>
+      
+    </li>
+  
+    <li>
+      
+        <span class='name'>configuration</span>
+      
+      
+        <span class='type'>(<tt>Object</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>RSpecTracer</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>anything responding to the
+<code>storage_backend</code> / <code>storage_backend_opts</code> /
+<code>cache_retention_local_count</code> / <code>cache_size_warn_*</code> /
+<code>logger</code> accessors (defaults to the <span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span>
+top-level module).</p></div>
+      
+    </li>
+  
+</ul>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Object</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>a backend instance satisfying <span class='object_link'><a href="#REQUIRED_METHODS-constant" title="RSpecTracer::Storage::Backend::REQUIRED_METHODS (constant)">REQUIRED_METHODS</a></span>.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+86
+87
+88
+89
+90
+91
+92
+93</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 86</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_build'>build</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='rparen'>)</span>
+  <span class='kw'>case</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_storage_backend'>storage_backend</span>
+  <span class='kw'>when</span> <span class='symbol'>:sqlite</span>
+    <span class='id identifier rubyid_build_sqlite'>build_sqlite</span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='rparen'>)</span>
+  <span class='kw'>else</span>
+    <span class='id identifier rubyid_build_json'>build_json</span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="build_json-class_method">
+  
+    .<strong>build_json</strong>(cache_path:, configuration:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.
+JsonBackend / SqliteBackend constants are pre-required by
+every call site that loads <span class='object_link'><a href="" title="RSpecTracer::Storage::Backend (module)">RSpecTracer::Storage::Backend</a></span> — Engine at gem-boot
+time, CLI sub-commands at their own require chain — so the
+method body stays focused on the construction shape mutant
+can actually verify. Returning a <code>require_relative</code> call to
+the method would be a structurally-unkillable mutation
+(Ruby caches requires; the test process always has both
+backends loaded).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 105</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_build_json'>build_json</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>configuration:</span><span class='rparen'>)</span>
+  <span class='const'><span class='object_link'><a href="JsonBackend.html" title="RSpecTracer::Storage::JsonBackend (class)">JsonBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="JsonBackend.html#initialize-instance_method" title="RSpecTracer::Storage::JsonBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+    <span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span>
+    <span class='label'>logger:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='comma'>,</span>
+    <span class='label'>retention_local_count:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_retention_local_count'>cache_retention_local_count</span><span class='comma'>,</span>
+    <span class='label'>warn_per_file_mb:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_per_file_mb'>cache_size_warn_per_file_mb</span><span class='comma'>,</span>
+    <span class='label'>warn_total_mb:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_total_mb'>cache_size_warn_total_mb</span><span class='comma'>,</span>
+    <span class='label'>serializer:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_storage_backend_opts'>storage_backend_opts</span><span class='lbracket'>[</span><span class='symbol'>:serializer</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='symbol'>:json</span>
+  <span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="build_sqlite-class_method">
+  
+    .<strong>build_sqlite</strong>(cache_path:, configuration:)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.
+See <span class='object_link'><a href="#build_json-class_method" title="RSpecTracer::Storage::Backend.build_json (method)">build_json</a></span> for why the SqliteBackend require is at the
+call site rather than inside the method body.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+120
+121
+122
+123
+124
+125
+126
+127</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 120</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_build_sqlite'>build_sqlite</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>configuration:</span><span class='rparen'>)</span>
+  <span class='const'><span class='object_link'><a href="SqliteBackend.html" title="RSpecTracer::Storage::SqliteBackend (class)">SqliteBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="SqliteBackend.html#initialize-instance_method" title="RSpecTracer::Storage::SqliteBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'><span class='object_link'><a href="SqliteBackend.html" title="RSpecTracer::Storage::SqliteBackend (class)">SqliteBackend</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="SqliteBackend/SqliteBackendError.html" title="RSpecTracer::Storage::SqliteBackend::SqliteBackendError (class)">SqliteBackendError</a></span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='id identifier rubyid_configuration'>configuration</span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: sqlite backend unavailable (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>); falling back to :json</span><span class='tstring_end'>&quot;</span></span>
+  <span class='rparen'>)</span>
+  <span class='id identifier rubyid_build_json'>build_json</span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='id identifier rubyid_configuration'>configuration</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="conforms?-class_method">
+  
+    .<strong>conforms?</strong>(backend)  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Verifies a candidate object satisfies the backend protocol.
+Used by <span class='object_link'>Configuration#storage_backend</span> to gate
+custom-backend registration at config-load time.</p>
+
+  </div>
+</div>
+<div class="tags">
+  <p class="tag_title">Parameters:</p>
+<ul class="param">
+  
+    <li>
+      
+        <span class='name'>backend</span>
+      
+      
+        <span class='type'>(<tt>Object</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>candidate backend instance</p></div>
+      
+    </li>
+  
+</ul>
+
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>true if every <span class='object_link'><a href="#REQUIRED_METHODS-constant" title="RSpecTracer::Storage::Backend::REQUIRED_METHODS (constant)">REQUIRED_METHODS</a></span> entry is
+responded to</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+63
+64
+65</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/backend.rb', line 63</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_conforms?'>conforms?</span><span class='lparen'>(</span><span class='id identifier rubyid_backend'>backend</span><span class='rparen'>)</span>
+  <span class='const'><span class='object_link'><a href="#REQUIRED_METHODS-constant" title="RSpecTracer::Storage::Backend::REQUIRED_METHODS (constant)">REQUIRED_METHODS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_all?'>all?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_m'>m</span><span class='op'>|</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='id identifier rubyid_m'>m</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Sat May 16 08:24:34 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

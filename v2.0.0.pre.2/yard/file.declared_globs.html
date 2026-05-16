@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: declared_globs
+  
+    &mdash; Documentation by YARD 0.9.43
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "declared_globs";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: declared_globs</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>file_digest</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>input</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
+    <span class='comment'># Observer #3 in the 2.0 tracker pipeline (CoverageAdapter = #1,
+</span>    <span class='comment'># IOHooks = #2). Walks user-declared glob patterns at boot, digests
+</span>    <span class='comment'># each matching file, and emits :declared Inputs. Declared globs
+</span>    <span class='comment'># cover inputs that cannot be auto-observed - files no app code
+</span>    <span class='comment'># reads (Gemfile.lock, .rspec-tracer), or files that might not be
+</span>    <span class='comment'># rendered during a given run (a newly-added template).
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Exposes #covers? so IOHooks can skip paths the declared-globs
+</span>    <span class='comment'># walk already observed. ARCHITECTURE rule (Input taxonomy): &quot;if
+</span>    <span class='comment'># the user declares a glob that covers the same files we auto-
+</span>    <span class='comment'># intercept, the declared glob takes precedence.&quot;
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Graceful degradation (CLAUDE.md): an unreadable declared file is
+</span>    <span class='comment'># skipped silently - the tracer never propagates failure into the
+</span>    <span class='comment'># user&#39;s test suite. Identity-based Set dedup collapses overlap
+</span>    <span class='comment'># when two globs match the same file.
+</span>    <span class='kw'>class</span> <span class='const'>DeclaredGlobs</span>
+      <span class='comment'># FNM_PATHNAME keeps `*` from eating `/` so globs walk directory
+</span>      <span class='comment'># boundaries predictably. FNM_EXTGLOB enables `{a,b}` alternation
+</span>      <span class='comment'># so `coverage_track_files &#39;{app,lib}/**/*.rb&#39;` (a real pattern
+</span>      <span class='comment'># in the sample projects) matches the same files `Dir.glob` would.
+</span>      <span class='const'>FNMATCH_FLAGS</span> <span class='op'>=</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>FNM_PATHNAME</span> <span class='op'>|</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>FNM_EXTGLOB</span>
+
+      <span class='comment'># Internal attribute.
+</span>      <span class='comment'># @api private
+</span>      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span><span class='comma'>,</span> <span class='symbol'>:globs</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>globs:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+        <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+        <span class='ivar'>@root_prefix</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='ivar'>@root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span>
+        <span class='ivar'>@globs</span> <span class='op'>=</span> <span class='const'>Array</span><span class='lparen'>(</span><span class='id identifier rubyid_globs'>globs</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_flatten'>flatten</span><span class='period'>.</span><span class='id identifier rubyid_compact'>compact</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:to_s</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_uniq'>uniq</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Memoized across calls - the architecture constraint is &quot;glob
+</span>      <span class='comment'># walk at boot is a single pass; result cached for the life of
+</span>      <span class='comment'># the tracker instance.&quot;
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_walk'>walk</span>
+        <span class='ivar'>@walk</span> <span class='op'>||=</span> <span class='id identifier rubyid_compute_walk'>compute_walk</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># O(N_globs) per call; N is typically 1-10. Absolute paths only -
+</span>      <span class='comment'># the callers (IOHooks precedence, NewFileDetector diff) always
+</span>      <span class='comment'># hold absolute paths. Paths outside root never match.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_covers?'>covers?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='ivar'>@globs</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_rel'>rel</span> <span class='op'>=</span> <span class='id identifier rubyid_path'>path</span><span class='lbracket'>[</span><span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span><span class='op'>..</span><span class='rbracket'>]</span>
+        <span class='ivar'>@globs</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_glob'>glob</span><span class='op'>|</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_fnmatch?'>fnmatch?</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='comma'>,</span> <span class='id identifier rubyid_rel'>rel</span><span class='comma'>,</span> <span class='const'>FNMATCH_FLAGS</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Per-example attribution. Declared inputs attach to every
+</span>      <span class='comment'># example in the suite (per-example narrowing is available via
+</span>      <span class='comment'># the per-example `tracks:` DSL). Each example gets its own Set
+</span>      <span class='comment'># copy so downstream mutation of one example&#39;s input set does
+</span>      <span class='comment'># not leak into siblings.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_attribute_to'>attribute_to</span><span class='lparen'>(</span><span class='id identifier rubyid_example_ids'>example_ids</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_inputs'>inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_walk'>walk</span>
+        <span class='id identifier rubyid_example_ids'>example_ids</span><span class='period'>.</span><span class='id identifier rubyid_to_h'>to_h</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_inputs'>inputs</span><span class='rparen'>)</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_private'>private</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_compute_walk'>compute_walk</span>
+        <span class='ivar'>@globs</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_glob'>glob</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_glob'>glob</span><span class='lparen'>(</span><span class='id identifier rubyid_glob'>glob</span><span class='comma'>,</span> <span class='label'>base:</span> <span class='ivar'>@root</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_rel'>rel</span><span class='op'>|</span>
+            <span class='id identifier rubyid_abs'>abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_rel'>rel</span><span class='comma'>,</span> <span class='ivar'>@root</span><span class='rparen'>)</span>
+            <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_abs'>abs</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span>
+
+            <span class='id identifier rubyid_digest'>digest</span> <span class='op'>=</span> <span class='id identifier rubyid_file_digest'>file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_abs'>abs</span><span class='rparen'>)</span>
+            <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_digest'>digest</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+            <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='const'>Input</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span> <span class='id identifier rubyid_abs'>abs</span><span class='comma'>,</span> <span class='label'>kind:</span> <span class='symbol'>:declared</span><span class='comma'>,</span> <span class='label'>digest:</span> <span class='id identifier rubyid_digest'>digest</span><span class='comma'>,</span> <span class='label'>root:</span> <span class='ivar'>@root</span><span class='rparen'>)</span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_file_digest'>file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='const'>FileDigest</span><span class='period'>.</span><span class='id identifier rubyid_compute'>compute</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Sat May 16 08:24:33 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.43 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>
