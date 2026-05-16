@@ -2,9 +2,12 @@
 name: soak
 
 # Nightly soak across 3 pinned-SHA real-world Rails+RSpec projects:
-# Solidus / Refinery / Spree. Each cell runs in parallel under
-# fail-fast: false so one project's failure doesn't cancel the
-# others. Per-cell timeout-minutes: 240 (4 h cap = 50% margin
+# Solidus / Refinery / Spree. The matrix has 4 cells (solidus,
+# refinery, spree-shard-1, spree-shard-2); Spree is sharded because
+# its core suite is too large to complete 50 iters under the 4 h cap
+# on GHA EPYC (see strategy.matrix comment below). Each cell runs in
+# parallel under fail-fast: false so one cell's failure doesn't cancel
+# the others. Per-cell timeout-minutes: 240 (4 h cap = 50% margin
 # under GHA's 6 h hard limit so the cache post-hook fires reliably
 # even on cold-cache first run, per
 # feedback_actions_cache_post_hook_timeout).
@@ -21,7 +24,7 @@ name: soak
 # stability is checked by soak-bump.yml, not here.
 #
 # MRI-only per feedback_jruby_ci_subprocess_floor: JRuby x Rails
-# 50-100 iter cells would compound to multiple hours each, untenable
+# multi-iter cells would compound to multiple hours each, untenable
 # in nightly cadence.
 
 on:
@@ -30,7 +33,9 @@ on:
   workflow_dispatch:
     inputs:
       iterations:
-        description: Iter count override (default per-project; 50/100/50)
+        description: >-
+          Iter count override per CELL (default per-project;
+          solidus=50/refinery=100/spree=20 per shard, 2 shards = 40 total).
         required: false
         default: ''
 
@@ -39,32 +44,58 @@ permissions:
 
 jobs:
   soak:
-    name: soak (${{ matrix.project }})
+    name: soak (${{ matrix.cell }})
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
-      # Independent per-project cells - one project's failure must
-      # not cancel the others, otherwise the AC ("All 3 soak cells
-      # complete one cron run with no crash") is unverifiable on a
-      # bad night.
+      # Independent per-cell entries - one cell's failure must not
+      # cancel the others, otherwise the AC ("All soak cells complete
+      # one cron run with no crash") is unverifiable on a bad night.
+      #
+      # Spree is sharded into 2 cells because its ~1307-example core
+      # suite runs ~10-11 min/iter on GHA EPYC; a single-cell 50-iter
+      # design needed ~9 h wall (busted the 4 h cap). Each shard runs
+      # ITERATIONS=20 (~3.7 h) and uses SOAK_SHARD={1,2} to pick a
+      # disjoint slice of the deterministic mutation-seed space, so the
+      # combined shards cover ~40 iter-equivalents (4.4 mutation-kind
+      # cycles, 30 post-warmup memory observations across shards) - most
+      # of what the original single-cell 50-iter design provided.
+      # Solidus and Refinery still fit a single 4 h cell at their
+      # default 50/100 iter counts.
       fail-fast: false
       matrix:
         include:
           - project: solidus
             repo: solidusio/solidus
+            cell: solidus
           - project: refinery
             repo: refinery/refinerycms
+            cell: refinery
           - project: spree
             repo: spree/spree
+            cell: spree-shard-1
+            shard: '1'
+          - project: spree
+            repo: spree/spree
+            cell: spree-shard-2
+            shard: '2'
     concurrency:
-      # Per-project group so a workflow_dispatch rerun of one project
-      # doesn't cancel the others mid-run. cancel-in-progress because
-      # a manual dispatch during a stuck run should preempt the stuck
-      # one (rare with 4 h cap + nightly cadence).
-      group: soak-${{ matrix.project }}
+      # Per-cell group so a workflow_dispatch rerun of one cell doesn't
+      # cancel the others mid-run. cancel-in-progress because a manual
+      # dispatch during a stuck run should preempt the stuck one (rare
+      # with 4 h cap + nightly cadence). Shard-aware so a Spree-shard-1
+      # rerun doesn't cancel Spree-shard-2.
+      group: soak-${{ matrix.cell }}
       cancel-in-progress: true
     env:
       SOAK_PROJECT: ${{ matrix.project }}
+      # SOAK_SHARD passes the per-cell shard index to the spec; empty
+      # for non-sharded cells (solidus, refinery), '1' / '2' for the
+      # Spree shards. The spec computes
+      # `SHARD_OFFSET = (SHARD - 1) * ITERATIONS` and uses
+      # `global_iter = iter + SHARD_OFFSET` for mutation-RNG seeding so
+      # shard 1 and shard 2 exercise disjoint mutation-seed slices.
+      SOAK_SHARD: ${{ matrix.shard }}
       SOAK_FIXTURE_ROOT: ${{ github.workspace }}/tmp/soak-fixtures/${{ matrix.project }}
       # On `schedule:` triggers GitHub Actions populates `inputs.*`
       # with each input's default value, which here is `''`. That
@@ -146,14 +177,41 @@ jobs:
       - name: Setup ${{ matrix.project }} fixture (inject + bundle + db prep)
         run: task soak:setup:${{ matrix.project }}
 
-      - name: Run soak (${{ matrix.project }})
+      - name: Run soak (${{ matrix.cell }})
         run: task soak:full:${{ matrix.project }}
+
+      - name: Render soak summary
+        # `if: always()` so failed cells still render their summary
+        # (the soak spec's `ensure` block writes summary.md regardless
+        # of whether the assertion raised). The summary is the
+        # primary SLI surface for nightly runs — visible directly on
+        # the run page via $GITHUB_STEP_SUMMARY without downloading
+        # the memstats artifact.
+        if: always()
+        run: |
+          summary="tmp/soak/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## soak (${{ matrix.cell }})"
+              echo ""
+              echo "**Result:** ❌ no summary written (cell exited before the soak spec's ensure block ran)."
+              echo ""
+              echo "See the \`Run soak\` step's logs for the early-exit cause."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload memstats
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: soak-memstats-${{ matrix.project }}-${{ github.run_id }}
+          # Artifact name must be unique across matrix cells in one run;
+          # cell (vs project) disambiguates spree-shard-1 from spree-shard-2.
+          # The artifact ships tmp/soak/ which now includes summary.json
+          # (machine-readable) + summary.md (rendered to the run page
+          # via $GITHUB_STEP_SUMMARY) alongside per-iter memstat-*.json.
+          name: soak-memstats-${{ matrix.cell }}-${{ github.run_id }}
           path: tmp/soak/
           if-no-files-found: warn
           retention-days: 14
