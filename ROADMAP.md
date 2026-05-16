@@ -1,8 +1,8 @@
 # Roadmap
 
 This is the public roadmap for rspec-tracer. The **live status** of
-specific work items lives on the project board:
-[github.com/users/avmnu-sng/projects](https://github.com/users/avmnu-sng/projects).
+specific work items lives on the
+[rspec-tracer roadmap project board](https://github.com/users/avmnu-sng/projects/1).
 
 This file summarizes phases at a high level — what shipped, what's
 next, what's being considered. Detail per item lives in

@@ -1,0 +1,79 @@
+---
+# Auto-add new issues labeled `roadmap-item` to the rspec-tracer
+# roadmap project board at https://github.com/users/avmnu-sng/projects/1.
+#
+# Triggers when:
+#   - a new issue is opened with the `roadmap-item` label, OR
+#   - the `roadmap-item` label is added to an existing issue.
+#
+# Required secret: PROJECTS_PAT — a fine-grained Personal Access Token
+# scoped to this repo with `Projects: Read and write` permission. The
+# default `secrets.GITHUB_TOKEN` does NOT have project scope (GitHub
+# OAuth tokens granted to workflows don't include `project`).
+#
+# To set the secret:
+#   1. Create a fine-grained PAT at github.com/settings/personal-access-tokens/new
+#      - Resource owner: avmnu-sng
+#      - Repository access: only `rspec-tracer`
+#      - Repository permissions: Issues (Read), Metadata (Read)
+#      - Account permissions: Projects (Read and write)
+#      - Expiration: 1 year (renew when prompted)
+#   2. Add to repo secrets at .../rspec-tracer/settings/secrets/actions
+#      as `PROJECTS_PAT`.
+#
+# If the secret is missing, the workflow fails fast with a clear error
+# message — preferred to silent skipping, which would let the project
+# board drift out of sync over time.
+
+name: Auto-add roadmap items to project board
+
+on:
+  issues:
+    types:
+      - opened
+      - labeled
+
+# Concurrency: serialize per-issue runs so a fast-fire of opened+labeled
+# doesn't race two `add-to-project` calls against the same issue. The
+# action itself is idempotent (re-adding is a no-op) but the GitHub
+# API rate-limit treats them as separate calls.
+concurrency:
+  group: auto-add-roadmap-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  # Read-only on the repo side. All write permissions live on the PAT.
+  contents: read
+  issues: read
+
+jobs:
+  add-to-project:
+    name: Add issue to roadmap project
+    # Only fires on issues labeled `roadmap-item` — either at open time
+    # (label applied via issue template) or when the label is added
+    # later. Other label events (e.g., `bug` getting added) skip.
+    if: |
+      (github.event.action == 'opened'   && contains(github.event.issue.labels.*.name, 'roadmap-item')) ||
+      (github.event.action == 'labeled'  && github.event.label.name == 'roadmap-item')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PROJECTS_PAT secret
+        env:
+          PAT: ${{ secrets.PROJECTS_PAT }}
+        run: |
+          if [ -z "$PAT" ]; then
+            {
+              echo "::error::PROJECTS_PAT secret is not set."
+              echo "::error::This workflow needs a fine-grained PAT with"
+              echo "::error::Projects: Read and write to add issues to the"
+              echo "::error::project board. See the file header for setup."
+            } >&2
+            exit 1
+          fi
+          echo "PROJECTS_PAT secret is present (value redacted)."
+
+      - name: Add issue to rspec-tracer roadmap project
+        uses: actions/add-to-project@v1
+        with:
+          project-url: https://github.com/users/avmnu-sng/projects/1
+          github-token: ${{ secrets.PROJECTS_PAT }}
