@@ -5,8 +5,8 @@ description: >-
   shellcheck, yamllint, trivy, bundler-audit) + HTML reporter npm
   deps. Used by every parallel job in lint-and-specs.yml; underlying
   caches (setup-ruby bundler-cache, setup-node npm cache, explicit
-  tools cache on Taskfile.yml + .tool-versions) keep per-job warm-up
-  under ~30 s.
+  Task tool-cache, explicit out-of-bundle tools cache on Taskfile.yml
+  + .tool-versions) keep per-job warm-up under ~30 s.
 
 runs:
   using: composite
@@ -24,6 +24,35 @@ runs:
         node-version: '20'
         cache: npm
         cache-dependency-path: lib/rspec_tracer/reporters/html/package-lock.json
+
+    - name: Cache Task binary
+      uses: actions/cache@v5
+      with:
+        # go-task/setup-task@v2 calls `tc.find('task', version)` from
+        # @actions/tool-cache before downloading; a hit at
+        # $RUNNER_TOOL_CACHE/task/<version>/<arch> skips the download
+        # entirely. Cache the directory before setup-task runs so the
+        # restore lands ahead of the find() call.
+        #
+        # Same shape as the bin/+.venv/ cache below — addresses the
+        # same class of GitHub-Releases CDN flakes that motivated that
+        # cache. The 502 that bit lint-and-specs / test-mutation-
+        # storage-json-backend-shard-{4,7} on the 2026-05-16 main CI
+        # run after #220 merge was at THIS step (the Task download),
+        # not the bin/ tools — Task wasn't covered by the existing
+        # cache because it lives in the runner tool-cache, not bin/.
+        #
+        # Key is os + arch + version so the cache busts naturally on a
+        # Task version bump; restore-keys fallback bridges any
+        # out-of-band eviction. Task version is duplicated across the
+        # 20+ setup-task call sites in this repo (an unrelated single-
+        # source-of-truth cleanup); when bumping, search-replace
+        # `3.45.4` to keep this key + every workflow's `version:` in
+        # lock-step.
+        path: ${{ runner.tool_cache }}/task
+        key: task-${{ runner.os }}-${{ runner.arch }}-3.45.4
+        restore-keys: |
+          task-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Setup Task
       uses: go-task/setup-task@v2
