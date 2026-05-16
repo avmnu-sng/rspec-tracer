@@ -1,3 +1,193 @@
+## [2.0.0.pre.2] - 2026-05-16
+
+Bug-fix + interop release after the field-test pass that followed
+`v2.0.0.pre.1`. 15 issues filed publicly
+([#182](https://github.com/avmnu-sng/rspec-tracer/issues/182)–[#196](https://github.com/avmnu-sng/rspec-tracer/issues/196))
+plus two follow-on findings
+([#210](https://github.com/avmnu-sng/rspec-tracer/issues/210) and
+[#218](https://github.com/avmnu-sng/rspec-tracer/issues/218))
+surfaced during fix-verification; all 17 are closed at tag. No CI
+surface drops, no Ruby / Rails / RSpec floor changes.
+
+The cumulative cache `schema_version` path is `3 → 5` (two bumps
+across [#209](https://github.com/avmnu-sng/rspec-tracer/pull/209)
+and [#211](https://github.com/avmnu-sng/rspec-tracer/pull/211));
+a pre.1 cache cold-loads cleanly on the pre.2 upgrade in one cold
+run, then warm caches resume. See [`UPGRADING.md`](UPGRADING.md).
+
+### Added
+
+- **`coverage_modes` config DSL** for the standalone Coverage
+  path (no SimpleCov). Pass any subset of
+  `[:lines, :branches, :methods, :oneshot_lines, :eval]`; default
+  `[:lines]` keeps byte-compatibility with prior runs. Threaded
+  through both `RSpecTracer.setup_coverage` and
+  `Engine#ensure_coverage_started`; inert when SimpleCov drives
+  Coverage. New COOKBOOK recipe "Coverage modes (rspec-tracer +
+  SimpleCov interop)" under recipe 9 documents the per-mode
+  interop matrix.
+- **`bin/rspec-tracer cache:clear --force` / `-f`** as a synonym
+  for `--yes` / `-y`. Matches the common Unix-CLI convention.
+- **COOKBOOK recipe for the `:msgpack` serializer** documenting
+  the `storage_backend :json, serializer: :msgpack` option for
+  ~3.5× smaller caches than `:json` on dependency-heavy suites.
+  Notes that `.msgpack.gz` payloads are raw `Zlib::Deflate`
+  streams (not gzip format) — the suffix is cosmetic and may
+  change in a future major release.
+
+### Changed
+
+- **Cache `schema_version` bump 3 → 5** (cumulative). The
+  `example_id` digest now drops the load-order-dependent
+  generated-class-name suffix and the line-number fields, and
+  substitutes a positional discriminator for unnamed
+  `it { }` / `specify { }` / `example { }` examples that
+  previously picked up RSpec's `"example at <path>:<line>"`
+  description fallback. First run on pre.2 is cold; subsequent
+  runs return to warm. See [`UPGRADING.md`](UPGRADING.md)
+  "Schema-version cold runs."
+- **Duplicate-example-identity detection now prune-and-continue.**
+  When the runner detects two examples with the same identity,
+  it drops the colliders from the run and lets the rest of the
+  suite proceed, instead of aborting the entire run to zero
+  examples. `fail_on_duplicates` becomes purely an exit-code
+  lever — the non-colliding remainder always runs. The error log
+  names the colliding examples (file:line + description) with a
+  remediation hint. See [`UPGRADING.md`](UPGRADING.md)
+  "Duplicate example identities."
+
+### Fixed
+
+- **Restored flaky-test detection across runs.** A top-line
+  README feature present in 1.x since v1.0.0; silently dropped
+  in the 2.0 rewrite — the registry `:flaky` status, the
+  `:flaky_example` filter reason, the `flaky_examples` snapshot
+  field, and the HTML reporter's Flaky tab were all retained,
+  but no production code path transitioned an example into
+  `:flaky`. `on_example_passed` now promotes a
+  previously-failed-or-flaky example into `:flaky`;
+  `on_example_failed` keeps a previously-flaky example sticky.
+  Closes [#194](https://github.com/avmnu-sng/rspec-tracer/issues/194).
+- **`run_reason` field in `report.json` (and the terminal
+  `by reason:` line) now persists the correct reason on warm
+  runs for every reason path** — `Failed previously`,
+  `Pending previously`, `Interrupted previously`, `Files changed`,
+  `Environment changed`. Previously displayed as `No cache` on
+  every warm-run case because `Engine#register_example`
+  short-circuited on the entry already seeded from the previous
+  snapshot. Single-character fix closing all five reason paths.
+  Closes [#186](https://github.com/avmnu-sng/rspec-tracer/issues/186).
+- **Parallel-`tests` `cache_hit_reason` counts no longer inflated
+  by worker count.** Each worker independently computed an
+  identical `filtered_examples` hash against the global
+  previous-run snapshot; the pre-fix sum-merge inflated
+  always-re-run buckets N-fold. The merge now keys on
+  `example_id` (first-write-wins), then re-tallies. Closes
+  [#193](https://github.com/avmnu-sng/rspec-tracer/issues/193).
+- **`example_id` stable across runs when multiple files share a
+  `describe` name** (the load-order-dependent
+  `RSpec::ExampleGroups::Name_N` disambiguator suffix is no
+  longer in the digest) **and stable across line-shift edits for
+  unnamed one-liner examples** (`it { is_expected.to eq(7) }`,
+  `specify { ... }`, `example { ... }`). Long-standing bugs since
+  v1.0.0; pervasive in shoulda-matchers model specs which are
+  almost entirely one-liner matcher syntax. Closes
+  [#196](https://github.com/avmnu-sng/rspec-tracer/issues/196)
+  + [#210](https://github.com/avmnu-sng/rspec-tracer/issues/210).
+- **NPE in `RSpec.world.example_count` for suites with
+  intermediate describe groups after rspec-tracer drops a
+  duplicate-identity example.** Companion fix to the
+  duplicate-detection prune-and-continue redesign above — the
+  kept-map needed a default block so descendants of an
+  intermediate describe (a describe containing only nested
+  describes, no direct `it`s) resolve to an empty array on the
+  `filtered_examples` lookup instead of `nil`. Closes
+  [#218](https://github.com/avmnu-sng/rspec-tracer/issues/218).
+- **`storage_backend :json, serializer: :msgpack` no longer
+  crashes on `Time` values** (and `Symbol` values now round-trip
+  losslessly across the cache). Registered
+  `MessagePack::Factory` type extensions for `Time` (12-byte
+  `tv_sec + tv_nsec`, UTC-canonicalized on decode) and `Symbol`
+  (UTF-8 body). Users who followed rspec-tracer's own 50 MiB
+  cache warning's `:msgpack` recommendation no longer brick
+  their cache silently on the first run that writes a `Time`.
+  Closes [#182](https://github.com/avmnu-sng/rspec-tracer/issues/182).
+- **`bin/rspec-tracer cache:info` and `explain` now compose with
+  `storage_backend :sqlite`.** Previously hardcoded the
+  JsonBackend on-disk layout and reported `no last_run.json yet`
+  on every sqlite run, even after a successful rspec. Both CLI
+  sub-commands now dispatch through a shared
+  `Storage::Backend.build` factory; sqlite metadata-table reads
+  surface alongside JSON manifest reads behind the same
+  protocol. Closes
+  [#183](https://github.com/avmnu-sng/rspec-tracer/issues/183).
+- **`bin/rspec-tracer doctor` no longer false-reports `SimpleCov:
+  not loaded` / `Rails: not loaded`** when those gems ARE in the
+  Gemfile (doctor runs in its own process; app code doesn't load
+  there). Three states are now reported: loaded-in-this-process
+  (`OK`), installed-but-not-loaded
+  (`INFO ... installed (<version>; not loaded in doctor's process)`),
+  and not-installed (`INFO ... not installed`). Closes
+  [#184](https://github.com/avmnu-sng/rspec-tracer/issues/184).
+- **`bin/rspec-tracer` invocation guidance flipped to
+  `bundle exec rspec-tracer`** across README, COOKBOOK, and
+  UPGRADING. The bare `bin/rspec-tracer` form required users to
+  run `bundle binstubs rspec-tracer` first; `bundle exec
+  rspec-tracer` works out of the box. Closes
+  [#185](https://github.com/avmnu-sng/rspec-tracer/issues/185).
+- **`reports_s3_path` deprecation warning no longer false-flags
+  on the probe path** — when no `remote_cache_backend` /
+  `remote_cache_uri` is configured AND the user runs
+  `rake rspec_tracer:remote_cache:download` / `:upload` /
+  `:prune_all`. A new non-warning predicate gates the probe; the
+  deprecation now fires only on legitimate use of the legacy
+  DSL. Closes
+  [#187](https://github.com/avmnu-sng/rspec-tracer/issues/187).
+- **`remote_cache` success now emits visible INFO lines** for
+  `download!` (`restored cache from <ref>` — with a
+  `(cross-branch fallback)` qualifier when a PR-tier download
+  falls through to a commit-ancestry ref successfully),
+  `upload!` (`uploaded cache to <ref>`), and `prune_all!`
+  (`prune_all removed N refs`). One fix covers all three
+  backends (s3 / redis / file) + the cron-driven `prune_all`
+  admin task. Closes
+  [#188](https://github.com/avmnu-sng/rspec-tracer/issues/188).
+- **`track_ar_schema_notifications` now installs correctly under
+  the canonical README setup order** (`RSpecTracer.start` BEFORE
+  `require_relative '../config/environment'`). Previously,
+  `defined?(::Rails::VERSION)` was false at engine.setup time
+  and the entire Rails-observer install path short-circuited —
+  the `sql.active_record` subscriber never attached AND the
+  documented `use_transactional_fixtures`-widening warn never
+  fired. Now late-binds via a `before(:suite)` hook that
+  re-checks Rails-loaded state after `rails_helper.rb` has
+  required the environment. Closes
+  [#192](https://github.com/avmnu-sng/rspec-tracer/issues/192).
+- **`RSpecTracer.start` no longer crashes** when the user
+  pre-starts `::Coverage` (e.g. to opt into branch coverage for
+  SimpleCov-free runs). The `setup_coverage` entry point now
+  matches `Engine#ensure_coverage_started`'s `Coverage.running?`
+  guard + `RuntimeError` rescue. Closes
+  [#195](https://github.com/avmnu-sng/rspec-tracer/issues/195).
+- **`InvalidUsageError` raised on conflicting
+  `remote_cache_backend` / `remote_cache_uri` configuration now
+  names both DSLs and explains they are alternatives.** The
+  previous `<dsl> already configured` message was confusing when
+  the user only typed `remote_cache_uri` (which dispatches
+  internally to `remote_cache_backend`).
+- **README per-example-precision section now covers Rails
+  engines.** An engine's own `lib/` is `require`d at gem-load
+  time via the Gemfile.lock cascade and lands in the boot set
+  **regardless of `eager_load`**. COOKBOOK gains a
+  `transitive_load_tracking false` opt-out recipe with the
+  trade-off documented. Closes
+  [#189](https://github.com/avmnu-sng/rspec-tracer/issues/189).
+- **Engine + dummy-app two-rspec-summary explainer** added to
+  COOKBOOK — clarifies which of the two terminal summary totals
+  is authoritative when an engine fixture invokes RSpec against
+  its dummy app. Closes
+  [#190](https://github.com/avmnu-sng/rspec-tracer/issues/190).
+
 ## [2.0.0.pre.1] - 2026-05-06
 
 The first pre-release of the 2.0 line. Architecture rewrite around
