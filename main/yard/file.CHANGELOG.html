@@ -59,7 +59,196 @@
         <div class="clear"></div>
       </div>
 
-      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_1____2026_05_06">[2.0.0.pre.1] - 2026-05-06</h2>
+      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_2____2026_05_16">[2.0.0.pre.2] - 2026-05-16</h2>
+<p>Bug-fix + interop release after the field-test pass that followed
+<code>v2.0.0.pre.1</code>. 15 issues filed publicly
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/182">#182</a>–<a href="https://github.com/avmnu-sng/rspec-tracer/issues/196">#196</a>)
+plus two follow-on findings
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/210">#210</a> and
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/218">#218</a>)
+surfaced during fix-verification; all 17 are closed at tag. No CI
+surface drops, no Ruby / Rails / RSpec floor changes.</p>
+<p>The cumulative cache <code>schema_version</code> path is <code>3 → 5</code> (two bumps
+across <a href="https://github.com/avmnu-sng/rspec-tracer/pull/209">#209</a>
+and <a href="https://github.com/avmnu-sng/rspec-tracer/pull/211">#211</a>);
+a pre.1 cache cold-loads cleanly on the pre.2 upgrade in one cold
+run, then warm caches resume. See <a href="UPGRADING.md"><code>UPGRADING.md</code></a>.</p>
+<h3 id="Added">Added</h3>
+<ul>
+<li><strong><code>coverage_modes</code> config DSL</strong> for the standalone Coverage
+path (no SimpleCov). Pass any subset of
+<code>[:lines, :branches, :methods, :oneshot_lines, :eval]</code>; default
+<code>[:lines]</code> keeps byte-compatibility with prior runs. Threaded
+through both <code>RSpecTracer.setup_coverage</code> and
+<code>Engine#ensure_coverage_started</code>; inert when SimpleCov drives
+Coverage. New COOKBOOK recipe &quot;Coverage modes (rspec-tracer +
+SimpleCov interop)&quot; under recipe 9 documents the per-mode
+interop matrix.</li>
+<li><strong><code>bin/rspec-tracer cache:clear --force</code> / <code>-f</code></strong> as a synonym
+for <code>--yes</code> / <code>-y</code>. Matches the common Unix-CLI convention.</li>
+<li><strong>COOKBOOK recipe for the <code>:msgpack</code> serializer</strong> documenting
+the <code>storage_backend :json, serializer: :msgpack</code> option for
+~3.5× smaller caches than <code>:json</code> on dependency-heavy suites.
+Notes that <code>.msgpack.gz</code> payloads are raw <code>Zlib::Deflate</code>
+streams (not gzip format) — the suffix is cosmetic and may
+change in a future major release.</li>
+</ul>
+<h3 id="Changed">Changed</h3>
+<ul>
+<li><strong>Cache <code>schema_version</code> bump 3 → 5</strong> (cumulative). The
+<code>example_id</code> digest now drops the load-order-dependent
+generated-class-name suffix and the line-number fields, and
+substitutes a positional discriminator for unnamed
+<code>it { }</code> / <code>specify { }</code> / <code>example { }</code> examples that
+previously picked up RSpec's <code>&quot;example at &lt;path&gt;:&lt;line&gt;&quot;</code>
+description fallback. First run on pre.2 is cold; subsequent
+runs return to warm. See <a href="UPGRADING.md"><code>UPGRADING.md</code></a>
+&quot;Schema-version cold runs.&quot;</li>
+<li><strong>Duplicate-example-identity detection now prune-and-continue.</strong>
+When the runner detects two examples with the same identity,
+it drops the colliders from the run and lets the rest of the
+suite proceed, instead of aborting the entire run to zero
+examples. <code>fail_on_duplicates</code> becomes purely an exit-code
+lever — the non-colliding remainder always runs. The error log
+names the colliding examples (file:line + description) with a
+remediation hint. See <a href="UPGRADING.md"><code>UPGRADING.md</code></a>
+&quot;Duplicate example identities.&quot;</li>
+</ul>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>Restored flaky-test detection across runs.</strong> A top-line
+README feature present in 1.x since v1.0.0; silently dropped
+in the 2.0 rewrite — the registry <code>:flaky</code> status, the
+<code>:flaky_example</code> filter reason, the <code>flaky_examples</code> snapshot
+field, and the HTML reporter's Flaky tab were all retained,
+but no production code path transitioned an example into
+<code>:flaky</code>. <code>on_example_passed</code> now promotes a
+previously-failed-or-flaky example into <code>:flaky</code>;
+<code>on_example_failed</code> keeps a previously-flaky example sticky.
+Closes <a href="https://github.com/avmnu-sng/rspec-tracer/issues/194">#194</a>.</li>
+<li><strong><code>run_reason</code> field in <code>report.json</code> (and the terminal
+<code>by reason:</code> line) now persists the correct reason on warm
+runs for every reason path</strong> — <code>Failed previously</code>,
+<code>Pending previously</code>, <code>Interrupted previously</code>, <code>Files changed</code>,
+<code>Environment changed</code>. Previously displayed as <code>No cache</code> on
+every warm-run case because <code>Engine#register_example</code>
+short-circuited on the entry already seeded from the previous
+snapshot. Single-character fix closing all five reason paths.
+Closes <a href="https://github.com/avmnu-sng/rspec-tracer/issues/186">#186</a>.</li>
+<li><strong>Parallel-<code>tests</code> <code>cache_hit_reason</code> counts no longer inflated
+by worker count.</strong> Each worker independently computed an
+identical <code>filtered_examples</code> hash against the global
+previous-run snapshot; the pre-fix sum-merge inflated
+always-re-run buckets N-fold. The merge now keys on
+<code>example_id</code> (first-write-wins), then re-tallies. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/193">#193</a>.</li>
+<li>
+<strong><code>example_id</code> stable across runs when multiple files share a
+<code>describe</code> name</strong> (the load-order-dependent
+<code>RSpec::ExampleGroups::Name_N</code> disambiguator suffix is no
+longer in the digest) <strong>and stable across line-shift edits for
+unnamed one-liner examples</strong> (<code>it { is_expected.to eq(7) }</code>,
+<code>specify { ... }</code>, <code>example { ... }</code>). Long-standing bugs since
+v1.0.0; pervasive in shoulda-matchers model specs which are
+almost entirely one-liner matcher syntax. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/196">#196</a>
+<ul>
+<li><a href="https://github.com/avmnu-sng/rspec-tracer/issues/210">#210</a>.</li>
+</ul>
+</li>
+<li><strong>NPE in <code>RSpec.world.example_count</code> for suites with
+intermediate describe groups after rspec-tracer drops a
+duplicate-identity example.</strong> Companion fix to the
+duplicate-detection prune-and-continue redesign above — the
+kept-map needed a default block so descendants of an
+intermediate describe (a describe containing only nested
+describes, no direct <code>it</code>s) resolve to an empty array on the
+<code>filtered_examples</code> lookup instead of <code>nil</code>. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/218">#218</a>.</li>
+<li><strong><code>storage_backend :json, serializer: :msgpack</code> no longer
+crashes on <code>Time</code> values</strong> (and <code>Symbol</code> values now round-trip
+losslessly across the cache). Registered
+<code>MessagePack::Factory</code> type extensions for <code>Time</code> (12-byte
+<code>tv_sec + tv_nsec</code>, UTC-canonicalized on decode) and <code>Symbol</code>
+(UTF-8 body). Users who followed rspec-tracer's own 50 MiB
+cache warning's <code>:msgpack</code> recommendation no longer brick
+their cache silently on the first run that writes a <code>Time</code>.
+Closes <a href="https://github.com/avmnu-sng/rspec-tracer/issues/182">#182</a>.</li>
+<li><strong><code>bin/rspec-tracer cache:info</code> and <code>explain</code> now compose with
+<code>storage_backend :sqlite</code>.</strong> Previously hardcoded the
+JsonBackend on-disk layout and reported <code>no last_run.json yet</code>
+on every sqlite run, even after a successful rspec. Both CLI
+sub-commands now dispatch through a shared
+<code>Storage::Backend.build</code> factory; sqlite metadata-table reads
+surface alongside JSON manifest reads behind the same
+protocol. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/183">#183</a>.</li>
+<li><strong><code>bin/rspec-tracer doctor</code> no longer false-reports <code>SimpleCov: not loaded</code> / <code>Rails: not loaded</code></strong> when those gems ARE in the
+Gemfile (doctor runs in its own process; app code doesn't load
+there). Three states are now reported: loaded-in-this-process
+(<code>OK</code>), installed-but-not-loaded
+(<code>INFO ... installed (&lt;version&gt;; not loaded in doctor's process)</code>),
+and not-installed (<code>INFO ... not installed</code>). Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/184">#184</a>.</li>
+<li><strong><code>bin/rspec-tracer</code> invocation guidance flipped to
+<code>bundle exec rspec-tracer</code></strong> across README, COOKBOOK, and
+UPGRADING. The bare <code>bin/rspec-tracer</code> form required users to
+run <code>bundle binstubs rspec-tracer</code> first; <code>bundle exec rspec-tracer</code> works out of the box. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/185">#185</a>.</li>
+<li><strong><code>reports_s3_path</code> deprecation warning no longer false-flags
+on the probe path</strong> — when no <code>remote_cache_backend</code> /
+<code>remote_cache_uri</code> is configured AND the user runs
+<code>rake rspec_tracer:remote_cache:download</code> / <code>:upload</code> /
+<code>:prune_all</code>. A new non-warning predicate gates the probe; the
+deprecation now fires only on legitimate use of the legacy
+DSL. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/187">#187</a>.</li>
+<li><strong><code>remote_cache</code> success now emits visible INFO lines</strong> for
+<code>download!</code> (<code>restored cache from &lt;ref&gt;</code> — with a
+<code>(cross-branch fallback)</code> qualifier when a PR-tier download
+falls through to a commit-ancestry ref successfully),
+<code>upload!</code> (<code>uploaded cache to &lt;ref&gt;</code>), and <code>prune_all!</code>
+(<code>prune_all removed N refs</code>). One fix covers all three
+backends (s3 / redis / file) + the cron-driven <code>prune_all</code>
+admin task. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/188">#188</a>.</li>
+<li><strong><code>track_ar_schema_notifications</code> now installs correctly under
+the canonical README setup order</strong> (<code>RSpecTracer.start</code> BEFORE
+<code>require_relative '../config/environment'</code>). Previously,
+<code>defined?(::Rails::VERSION)</code> was false at engine.setup time
+and the entire Rails-observer install path short-circuited —
+the <code>sql.active_record</code> subscriber never attached AND the
+documented <code>use_transactional_fixtures</code>-widening warn never
+fired. Now late-binds via a <code>before(:suite)</code> hook that
+re-checks Rails-loaded state after <code>rails_helper.rb</code> has
+required the environment. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/192">#192</a>.</li>
+<li><strong><code>RSpecTracer.start</code> no longer crashes</strong> when the user
+pre-starts <code>::Coverage</code> (e.g. to opt into branch coverage for
+SimpleCov-free runs). The <code>setup_coverage</code> entry point now
+matches <code>Engine#ensure_coverage_started</code>'s <code>Coverage.running?</code>
+guard + <code>RuntimeError</code> rescue. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/195">#195</a>.</li>
+<li><strong><code>InvalidUsageError</code> raised on conflicting
+<code>remote_cache_backend</code> / <code>remote_cache_uri</code> configuration now
+names both DSLs and explains they are alternatives.</strong> The
+previous <code>&lt;dsl&gt; already configured</code> message was confusing when
+the user only typed <code>remote_cache_uri</code> (which dispatches
+internally to <code>remote_cache_backend</code>).</li>
+<li><strong>README per-example-precision section now covers Rails
+engines.</strong> An engine's own <code>lib/</code> is <code>require</code>d at gem-load
+time via the Gemfile.lock cascade and lands in the boot set
+<strong>regardless of <code>eager_load</code></strong>. COOKBOOK gains a
+<code>transitive_load_tracking false</code> opt-out recipe with the
+trade-off documented. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/189">#189</a>.</li>
+<li><strong>Engine + dummy-app two-rspec-summary explainer</strong> added to
+COOKBOOK — clarifies which of the two terminal summary totals
+is authoritative when an engine fixture invokes RSpec against
+its dummy app. Closes
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/190">#190</a>.</li>
+</ul>
+<h2 id="_2_0_0_pre_1____2026_05_06">[2.0.0.pre.1] - 2026-05-06</h2>
 <p>The first pre-release of the 2.0 line. Architecture rewrite around
 the input-taxonomy mental model documented in
 <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>: every test is a pure function
@@ -475,7 +664,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sat May 16 05:52:37 2026 by
+  Generated on Sat May 16 08:23:29 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.43 (ruby-3.3.10).
 </div>
