@@ -95,6 +95,13 @@ Items:
 - **Confidence scoring on per-run summary.** Terminal output extends
   to show what proportion of selection decisions came from explicit
   vs inferred dependencies; surfaces invalidation hotspots.
+- **Auto-fallback when self-measured confidence is low.** Runtime
+  decision logic that consumes the confidence score: if confidence
+  drops below a configurable threshold OR N consecutive runs show
+  downward drift, automatically fall back to full-suite execution
+  with a clear warn line. Converts the trust story from
+  *observe-and-report* to *observe-and-self-defend* — the tool
+  structurally cannot skip silently when its own confidence is low.
 
 ### Flaky detection as first-class
 
@@ -122,7 +129,11 @@ invalidator — safe but coarser than per-example attribution.
   real and documented; users opt in per their cost / precision trade-off.
   *(Originally planned for 2.1; promoted to the 2.0 final scope because
   per-example precision under the most common Rails CI configuration is
-  a trust story, not a feature story.)*
+  a trust story, not a feature story. Implementation is evidence-gated
+  on shadow-mode data + reference-adopter feedback during rc.3 — if
+  whole-suite invalidation under `eager_load = true` proves not to be
+  the binding constraint on real-world Rails apps, the feature defers
+  back to 2.1.)*
 
 ### Documentation + positioning
 
@@ -147,6 +158,37 @@ The same release ramp also reshapes how rspec-tracer is presented:
   surfacing the existing Ruby-HEAD CI in the README. Closes
   "single-maintainer infrastructure on volatile tooling" as an
   adoption objection.
+
+### Distribution + adoption
+
+Running in parallel with the engineering cycles above — not after
+2.0 ships. The recognition: after the rc cycles complete, the
+binding constraint flips from *"is the tool trustworthy enough"*
+to *"does anyone know it exists and will a credible team vouch
+for it."* Owned as a first-class workstream rather than treated
+as an afterthought.
+
+- **Reference adopter recruitment + first public case study.**
+  Warm-target outreach to known active users + co-authored case
+  study published alongside the GA tag. Self-reported maintainer
+  benchmarks are discounted by default; third-party *"we cut CI
+  from N min to M min, here's the config"* is the artifact that
+  closes adoption-side Q&A loops.
+- **Conference talks + technical blog series.** CFP submissions
+  for RubyConf / Rails World in the GA window; 3-part blog series
+  anchored to the trust + soundness-ledger narrative; newsletter
+  pitches to Ruby Weekly + This Week in Rails.
+- **Ongoing community presence.** Maintainer presence in
+  3+ Ruby/Rails community real-time channels (Discord / Slack)
+  with sustained ~1-2 hr/week cadence. Lower-overhead than
+  conferences/blog but compounds over time.
+
+The distribution workstream feeds the engineering cycles too:
+reference-adopter feedback empirically validates whether
+`track_class_attribution` under `eager_load = true` is the
+binding constraint adopters care about (vs a theoretical concern),
+which influences whether that feature lands in 2.0 GA or defers
+back to 2.1.
 
 ---
 
