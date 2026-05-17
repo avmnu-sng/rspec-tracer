@@ -88,4 +88,54 @@ RSpec.describe RSpecTracer::Cache do
       end
     end
   end
+
+  # Round-trip guard for 1.2.4: the example_id computation changed
+  # (digest now reads example_group.description instead of .name and
+  # excludes line numbers), but the on-disk cache JSON shape is
+  # unchanged. A cache file written by v1.2.3 must still load cleanly
+  # through the patched code — the new lookups simply miss against the
+  # old example_ids (= one cold run on upgrade), but the load itself
+  # must not raise.
+  describe '#populate_from_disk (v1.2.4 round-trip guard)' do
+    let(:tmp) { Dir.mktmpdir }
+    let(:run_id) { 'pre124abc' }
+    let(:run_dir) { File.join(tmp, run_id) }
+    let(:legacy_example_id) { 'e3fdea47ac3a8995083ec0ba9784c95c' }
+
+    after { FileUtils.remove_entry(tmp) if File.directory?(tmp) }
+
+    before do
+      Dir.mkdir(run_dir)
+      File.write(File.join(tmp, 'last_run.json'), JSON.dump('run_id' => run_id), encoding: 'UTF-8')
+      # Models a v1.2.3-written all_examples.json: example_group held
+      # the OLD generated class name and the digest hashed it together
+      # with line_number.
+      File.write(
+        File.join(run_dir, 'all_examples.json'),
+        JSON.dump(
+          legacy_example_id => {
+            'example_group' => 'RSpec::ExampleGroups::Calculator::Add',
+            'description' => 'adds 1 and 2 to 3',
+            'full_description' => 'Calculator#add adds 1 and 2 to 3',
+            'file_name' => '/spec/calculator_spec.rb',
+            'line_number' => 14,
+            'rerun_file_name' => '/spec/calculator_spec.rb',
+            'rerun_line_number' => 14,
+            'example_id' => legacy_example_id
+          }
+        ),
+        encoding: 'UTF-8'
+      )
+    end
+
+    it 'loads the cache via populate_from_disk without raising' do
+      expect { cache.populate_from_disk(run_dir) }.not_to raise_error
+    end
+
+    it 'preserves the legacy example_id as the all_examples key (cache shape unchanged)' do
+      cache.populate_from_disk(run_dir)
+
+      expect(cache.all_examples).to have_key(legacy_example_id)
+    end
+  end
 end
