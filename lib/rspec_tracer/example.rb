@@ -1,19 +1,122 @@
 # frozen_string_literal: true
 
 module RSpecTracer
+  # Builds the identity-hash payload (`:example_id`-keyed Hash) that
+  # RSpec::RunnerHook attaches to every example pre-run.
+  #
+  # == Identity stability contract
+  #
+  # `example_id` is the MD5 of a stable subset of the payload:
+  # `example_group` (the describe block's *description* string),
+  # `description`, `full_description`, `shared_group` (inclusion
+  # locations with the trailing line number stripped), and
+  # `file_name`. The contract, in one line: *rename = new identity;
+  # restructure = same identity.*
+  #
+  # Identity is PRESERVED when:
+  # - blank lines or comments are added/removed around the example
+  # - examples are reordered within a describe block (named
+  #   examples only - see "Unnamed examples" below)
+  # - a sibling describe / example in the same file is renamed
+  # - the example body or its hooks (`before`, `let`) are edited -
+  #   the file digest still triggers the re-run
+  #
+  # Identity CHANGES (one cold "No cache" run) when:
+  # - the file is renamed or moved
+  # - the `describe` / `it` / shared-example name is changed
+  # - the example moves to a different describe block
+  #
+  # == Unnamed examples (`it { }`, `specify { }`, `example { }`)
+  #
+  # An example with no description string has no stable name to hash,
+  # and identity must be computed pre-run (for the filter decision),
+  # before RSpec generates a matcher-derived description. The only
+  # line-independent signal RSpec exposes pre-run is position, so an
+  # unnamed example's identity is derived from its ordinal among the
+  # *unnamed* examples of its group. (RSpec's `description` for an
+  # unnamed example is the line-bearing `"example at <path>:<line>"`
+  # fallback, which would otherwise leak the line number straight
+  # back into the digest.)
+  #
+  # For unnamed examples the contract above is amended: identity is
+  # still PRESERVED across blank-line / comment edits, sibling
+  # renames, and adding or removing *named* siblings - but it CHANGES
+  # when the unnamed examples are reordered, or one is inserted or
+  # removed ahead of it. Give an example an explicit description
+  # (`it 'does X' do`) for a fully reorder-stable identity.
+  #
+  # `line_number` / `rerun_file_name` / `rerun_line_number` stay in
+  # the returned Hash for the reporter location columns, but are
+  # DELIBERATELY EXCLUDED from the digest - a no-op edit that shifts
+  # line numbers must not invalidate the cache. `example_group` uses
+  # `example_group.description` (the user's string) rather than
+  # `example_group.name`: RSpec's generated class name carries a
+  # load-order-dependent `_2` / `_3` suffix when two files share a
+  # describe name, which would otherwise flip the id across runs.
   module Example
     module_function
 
+    # Identity-keyed cache of `<example_group> => Array<unnamed sibling>`
+    # populated lazily by `unnamed_description`. A group with N unnamed
+    # examples computes the sibling list once per group rather than N
+    # times. Memory is bounded by the live example_group set, which
+    # RSpec retains for the run lifetime anyway.
+    @unnamed_siblings_cache = {}.compare_by_identity
+
     def from(example)
-      data = {
-        example_group: example.example_group.name,
+      location = example_location(example)
+      identity = {
+        example_group: example.example_group.description,
         description: example.description,
         full_description: example.full_description,
         shared_group: example.metadata[:shared_group_inclusion_backtrace]
-          .map(&:formatted_inclusion_location)
-      }.merge(example_location(example))
+          .map { |frame| frame.formatted_inclusion_location.sub(/:\d+\z/, '') },
+        file_name: location[:file_name]
+      }
 
-      data.merge(example_id: Digest::MD5.hexdigest(data.to_json))
+      identity
+        .merge(location)
+        .merge(example_id: Digest::MD5.hexdigest(digest_identity(example, identity).to_json))
+    end
+
+    # The Hash actually fed to the MD5. For a named example this is
+    # `identity` unchanged. For an unnamed example RSpec's
+    # `description` is the line-bearing `"example at <path>:<line>"`
+    # fallback, so `description` is swapped for a line-independent
+    # positional discriminator before hashing. The returned/stored
+    # payload still carries RSpec's `description` / `full_description`
+    # untouched - only the digest input differs.
+    def digest_identity(example, identity)
+      return identity unless unnamed?(example)
+
+      identity.merge(description: unnamed_description(example))
+    end
+
+    # True when the example has no explicit description string. RSpec's
+    # raw `metadata[:description]` is `""` for `it { }` / `specify { }`
+    # / `example { }`; the `description` *method* would instead return
+    # the line-bearing fallback, so the raw metadata value is what
+    # cleanly tells named from unnamed.
+    def unnamed?(example)
+      example.metadata[:description].to_s.strip.empty?
+    end
+
+    # Line-independent identity discriminator for an unnamed example:
+    # its 0-based ordinal among the *unnamed* examples of its group.
+    # Stable across blank-line edits and across adding or renaming
+    # *named* siblings; changes only when the unnamed examples are
+    # reordered or one is inserted/removed ahead of it. The string
+    # takes a Ruby-inspect-style `#<...>` form so that even if a user
+    # description literally matched, full_description would still
+    # differ between the unnamed example (`"<group> "`) and the named
+    # one (`"<group> #<...>"`), keeping digest collisions structurally
+    # impossible.
+    def unnamed_description(example)
+      group = example.example_group
+      unnamed_siblings = @unnamed_siblings_cache[group] ||=
+        group.examples.select { |sibling| unnamed?(sibling) }
+
+      "#<rspec-tracer unnamed example #{unnamed_siblings.index(example)}>"
     end
 
     def example_location(example)
@@ -53,6 +156,7 @@ module RSpecTracer
       RSpecTracer::SourceFile.file_name(file_path)
     end
 
-    private_class_method :example_location, :example_rerun_location, :location_file_name
+    private_class_method :digest_identity, :unnamed?, :unnamed_description,
+                         :example_location, :example_rerun_location, :location_file_name
   end
 end

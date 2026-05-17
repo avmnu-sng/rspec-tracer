@@ -29,7 +29,7 @@ Feature: Ruby App with no examples to run
     And The last run report should have correct details
       """
       {
-        "run_id": "ac50ff82ef0e8c97f7142ae07483d81d",
+        "run_id": "74fc3ff84ae8c0ad6f457c7bfc48283c",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -57,7 +57,7 @@ Feature: Ruby App with no examples to run
     And The last run report should have correct details
       """
       {
-        "run_id": "ac50ff82ef0e8c97f7142ae07483d81d",
+        "run_id": "74fc3ff84ae8c0ad6f457c7bfc48283c",
         "actual_count": 10,
         "example_count": 0,
         "skipped_examples": 10,

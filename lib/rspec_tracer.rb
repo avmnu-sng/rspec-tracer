@@ -259,8 +259,11 @@ module RSpecTracer
       return if simplecov?
 
       require 'coverage'
+      return if ::Coverage.running?
 
       ::Coverage.start
+    rescue RuntimeError => e
+      RSpecTracer.logger.warn "coverage measurement setup skipped: #{e.message}"
     end
 
     def setup_trace_point
