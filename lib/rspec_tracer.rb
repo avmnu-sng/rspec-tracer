@@ -263,7 +263,15 @@ module RSpecTracer
 
       require 'coverage'
 
+      return if ::Coverage.respond_to?(:running?) && ::Coverage.running?
+
       ::Coverage.start
+    rescue RuntimeError
+      # Ruby < 2.7 has no Coverage.running? predicate; the rescue
+      # catches the "user pre-started Coverage themselves" path on
+      # those Rubies. Safe to absorb — the tracer attaches to the
+      # already-running ::Coverage instance.
+      nil
     end
 
     def setup_trace_point
