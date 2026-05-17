@@ -1,3 +1,103 @@
+## [1.2.4] - 2026-05-17
+
+### Fixed
+
+- **`example_id` was unstable across runs — a long-standing bug since
+  v1.0.0.** `RSpecTracer::Example.from` built the MD5 identity hash
+  over a payload that included `example_group.name` (RSpec's
+  generated class name, which carries a load-order-dependent `_2` /
+  `_3` suffix when two spec files share a `describe` name) and the
+  example's `line_number`. The same example got a different id
+  depending on rspec's file load order — silently thrashing the
+  cache and breaking the always-re-run guarantees for failed,
+  pending, and flaky examples. A no-op blank-line edit above the
+  example flipped the id with the same effect.
+
+  The digest now uses a stable subset: the describe block's
+  *description* string (the user-supplied text, not RSpec's
+  generated class name), the example's `description`,
+  `full_description`, `shared_group` inclusion locations with the
+  trailing `:LINE` stripped, and `file_name`. `line_number` /
+  `rerun_file_name` / `rerun_line_number` still ride along in the
+  returned Hash for the HTML and JSON reporters' location columns,
+  but no longer enter the digest. Contract: **rename = new identity;
+  restructure = same identity.**
+
+  Unnamed examples (`it { }`, `specify { }`, `example { }`) needed
+  an extra step. RSpec's pre-run `description` for an unnamed
+  example is the line-bearing `"example at <path>:<line>"`
+  fallback, which would have re-leaked the line number straight
+  into the digest. The digest substitutes a line-independent
+  positional discriminator: the example's ordinal among the
+  *unnamed* examples of its group. Stability is preserved across
+  blank-line edits and across adding or renaming *named* siblings;
+  reordering the unnamed examples re-keys them (the documented
+  trade-off — give the example an explicit description for a fully
+  reorder-stable id).
+
+  **Upgrade note**: the cache file format is unchanged, so a v1.2.3
+  cache loads cleanly through v1.2.4 code. But every cached
+  `example_id` was computed against the old payload and the new
+  lookups will not match them, so the first run after upgrade
+  treats every example as `:no_cache` and re-runs the full suite.
+  Warm caches resume from the second run onward.
+
+  Surfaced by 2.0.0.pre.1 field testing against third-party Rails
+  apps. Fixed upstream in
+  [#209](https://github.com/avmnu-sng/rspec-tracer/pull/209) and
+  [#211](https://github.com/avmnu-sng/rspec-tracer/pull/211).
+
+- **`RSpecTracer.start` crashed when the user pre-started
+  `::Coverage`.** Users opting into branch coverage typically call
+  `Coverage.start(lines: true, branches: true)` before loading
+  rspec-tracer. The tracer's `setup_coverage` then called bare
+  `::Coverage.start` with no `running?` guard, raising
+  `RuntimeError: coverage measurement is already setup` and taking
+  the tracer down at boot.
+
+  Add a `Coverage.running?` predicate guard before the start call,
+  plus a defensive `RuntimeError` rescue with a `logger.warn` for
+  the case where the predicate returns false but `start` still
+  raises. Graceful degradation: coverage measurement is skipped
+  with a visible warn, the rest of the tracer pipeline continues.
+
+  Partial port of upstream
+  [#207](https://github.com/avmnu-sng/rspec-tracer/pull/207); the
+  `coverage_modes` config DSL half is 2.0-only.
+
+- **`remote_cache` success paths were silent at default log level.**
+  `RemoteCache::Cache#download` and `#upload` returned without
+  emitting anything after the underlying AWS calls succeeded, so a
+  successful `rake rspec_tracer:remote_cache:download` produced
+  zero output. Users couldn't tell from CI logs whether the cache
+  was actually restored or whether the run was cold.
+
+  Emit a single `RSpecTracer.logger.info` line on each operation's
+  success path: `"rspec-tracer remote_cache: restored cache from
+  <sha>"` on download, `"rspec-tracer remote_cache: uploaded cache
+  to <ref>"` on upload.
+
+  Partial port of upstream
+  [#201](https://github.com/avmnu-sng/rspec-tracer/pull/201); the
+  cross-branch-fallback qualifier is specific to 2.0's multi-tier
+  cache model and not applicable here.
+
+### Changed
+
+- **`rspec-tracer.gemspec` now declares `rubygems_mfa_required`** so
+  RubyGems enforces MFA on every publish. Packaging metadata only;
+  no behaviour change for users of the gem. Mirrors upstream
+  [#214](https://github.com/avmnu-sng/rspec-tracer/pull/214).
+
+- **`.github/workflows/release.yml` tag-trigger pattern tightened
+  to the strict `'v[0-9]+.[0-9]+.[0-9]+'` form** (1.x is
+  final-release only). The previous loose `'v*.*.*'` form would
+  have matched 4-segment shapes like `v2.0.0.rc.1` accidentally
+  because `*` greedy-matches dots; the strict per-segment digit
+  class rejects any non-digit. Documentation block above the
+  pattern explains the GHA filter-pattern flavor for future
+  maintainers. Workflow-only; no user-visible change.
+
 ## [1.2.3] - 2026-05-06
 
 ### Fixed
