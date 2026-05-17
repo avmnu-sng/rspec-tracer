@@ -19,11 +19,13 @@ module RSpecTracer
 
         @aws.download_file(@cache_sha, 'last_run.json')
         @aws.download_dir(@cache_sha, last_run_id)
+        RSpecTracer.logger.info "rspec-tracer remote_cache: restored cache from #{@cache_sha}"
       end
 
       def upload
         @aws.upload_file(@repo.branch_ref, 'last_run.json')
         @aws.upload_dir(@repo.branch_ref, last_run_id)
+        RSpecTracer.logger.info "rspec-tracer remote_cache: uploaded cache to #{@repo.branch_ref}"
 
         file_name = File.join(RSpecTracer.cache_path, 'branch_refs.json')
 
