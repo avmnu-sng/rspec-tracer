@@ -19,6 +19,8 @@ module RSpecTracer
 
         @aws.download_file(@cache_sha, 'last_run.json')
         @aws.download_dir(@cache_sha, last_run_id)
+
+        puts "rspec-tracer remote_cache: restored cache from #{@cache_sha}"
       rescue StandardError => e
         puts "Error: #{e.message}"
         puts e.backtrace.first(5).join("\n")
@@ -32,6 +34,8 @@ module RSpecTracer
 
         write_branch_refs(file_name)
         @aws.upload_branch_refs(@repo.branch_name, file_name)
+
+        puts "rspec-tracer remote_cache: uploaded cache to #{@repo.branch_ref}"
       rescue StandardError => e
         puts "Error: #{e.message}"
         puts e.backtrace.first(5).join("\n")
