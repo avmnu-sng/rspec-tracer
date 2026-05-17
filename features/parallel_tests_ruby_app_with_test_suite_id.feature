@@ -25,7 +25,7 @@ Feature: Parallel Tests Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "9badef37e6a3dd45e4d0342956371b73",
+        "run_id": "49d3367ed4d78b8879fbc36573bc7695",
         "actual_count": 2,
         "example_count": 2,
         "skipped_examples": 0,
@@ -68,7 +68,7 @@ Feature: Parallel Tests Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "2c48486d4513ef0eeee4e7ab8c284419",
+        "run_id": "574ae20ab240013a0bce29ac35957849",
         "actual_count": 8,
         "example_count": 8,
         "skipped_examples": 0,
@@ -103,7 +103,7 @@ Feature: Parallel Tests Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "9badef37e6a3dd45e4d0342956371b73",
+        "run_id": "49d3367ed4d78b8879fbc36573bc7695",
         "actual_count": 2,
         "example_count": 1,
         "skipped_examples": 1,
@@ -140,7 +140,7 @@ Feature: Parallel Tests Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "2c48486d4513ef0eeee4e7ab8c284419",
+        "run_id": "574ae20ab240013a0bce29ac35957849",
         "actual_count": 8,
         "example_count": 2,
         "skipped_examples": 6,
@@ -187,7 +187,7 @@ Feature: Parallel Tests Ruby App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,

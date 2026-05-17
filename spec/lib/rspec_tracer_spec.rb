@@ -45,4 +45,43 @@ RSpec.describe RSpecTracer do
       end
     end
   end
+
+  # Regression coverage for #195 partial — `setup_coverage` previously
+  # called bare `::Coverage.start`, raising `RuntimeError: coverage
+  # measurement is already setup` when the user pre-started Coverage
+  # for branch tracking. The guard + rescue now lets the tracer attach
+  # to the running ::Coverage instance instead of crashing.
+  describe '.setup_coverage' do
+    before do
+      require 'coverage'
+      allow(described_class).to receive(:simplecov?).and_return(false)
+    end
+
+    context 'when ::Coverage is already running' do
+      before { allow(Coverage).to receive(:running?).and_return(true) }
+
+      it 'does not call ::Coverage.start' do
+        allow(Coverage).to receive(:start)
+        described_class.send(:setup_coverage)
+        expect(Coverage).not_to have_received(:start)
+      end
+
+      it 'does not raise' do
+        expect { described_class.send(:setup_coverage) }.not_to raise_error
+      end
+    end
+
+    context 'when ::Coverage.start raises RuntimeError (Ruby < 2.7 fall-through path)' do
+      before do
+        allow(Coverage).to receive(:running?).and_return(false)
+        allow(Coverage).to receive(:start).and_raise(
+          RuntimeError, 'coverage measurement is already setup'
+        )
+      end
+
+      it 'silently rescues so RSpecTracer.start does not crash' do
+        expect { described_class.send(:setup_coverage) }.not_to raise_error
+      end
+    end
+  end
 end

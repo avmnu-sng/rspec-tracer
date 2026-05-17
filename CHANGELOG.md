@@ -1,3 +1,82 @@
+## [1.0.5] - 2026-05-17
+
+### Fixed
+
+- **`example_id` is now stable across runs and across no-op edits** —
+  `Example.from` previously fed `example.example_group.name` and
+  line numbers into the identity-hash payload. Two unrelated effects
+  shifted the resulting MD5 across runs that should have been
+  identical:
+
+  - `example_group.name` is RSpec's generated class name with a
+    load-order-dependent `_2` / `_3` suffix when two spec files share
+    a `describe` name (very common — e.g. `describe User do` in
+    `user_spec.rb` and `models/user_spec.rb`). The same example got
+    a different id depending on rspec's file load order, silently
+    thrashing the cache and breaking failed / pending always-re-run
+    guarantees.
+  - For unnamed examples (`it { }` / `specify { }` / `example { }`),
+    `example.description` falls back to RSpec's line-bearing
+    `"example at <path>:<line>"` string, so a no-op blank-line edit
+    above the example flipped its id and orphaned its cache entry.
+
+  The digest now uses `example_group.description` (the user's
+  string, not the generated class name), strips the trailing `:LINE`
+  from `shared_group_inclusion_backtrace` entries, and for unnamed
+  examples substitutes a line-independent positional discriminator
+  (the example's 0-based ordinal among the unnamed examples of its
+  group). `line_number` / `rerun_file_name` / `rerun_line_number`
+  still ride along in the stored payload for the reporter's location
+  columns but no longer enter the digest. Contract: *rename = new
+  identity; restructure = same identity.*
+
+  Affected since v1.0.0 (2021). One-time cold run on upgrade: every
+  cached `example_id` changes shape, so the first 1.0.5 run misses
+  the 1.0.4 cache uniformly and treats every example as no-cache;
+  the second run is warm again. Surfaced by the 2.0.0.pre.1 field
+  test against third-party Rails apps; ports
+  [#209](https://github.com/avmnu-sng/rspec-tracer/pull/209) and
+  [#211](https://github.com/avmnu-sng/rspec-tracer/pull/211) onto
+  this 1.0.x line. Closes
+  [#196](https://github.com/avmnu-sng/rspec-tracer/issues/196) and
+  [#210](https://github.com/avmnu-sng/rspec-tracer/issues/210).
+
+- **`RSpecTracer.start` no longer crashes when the user pre-started
+  `::Coverage`** — users who want branch coverage typically call
+  `Coverage.start(lines: true, branches: true)` before loading the
+  tracer. On the previous code path, `setup_coverage` called bare
+  `::Coverage.start` unconditionally, which raised
+  `RuntimeError: coverage measurement is already setup` and crashed
+  the tracer init. `setup_coverage` now guards on `Coverage.running?`
+  (Ruby 2.7+) and rescues `RuntimeError` for older Rubies; the
+  tracer attaches to the already-running `::Coverage` instance
+  instead of raising. Ports
+  [#207](https://github.com/avmnu-sng/rspec-tracer/pull/207)'s
+  Coverage-guard half (the 2.0-only `coverage_modes` DSL is not
+  backported). Closes
+  [#195](https://github.com/avmnu-sng/rspec-tracer/issues/195).
+
+- **`remote_cache` download and upload now log on success** — the
+  success paths on `RemoteCache::Cache#download` / `#upload` returned
+  silently, so a successful `rake rspec_tracer:remote_cache:download`
+  produced zero output and users couldn't tell from CI logs whether
+  the cache restored. Two `puts` lines now announce success:
+  `rspec-tracer remote_cache: restored cache from <sha>` after a
+  successful download, and `rspec-tracer remote_cache: uploaded cache
+  to <ref>` after a successful upload. Ports the basic-INFO portion of
+  [#201](https://github.com/avmnu-sng/rspec-tracer/pull/201) (the
+  cross-branch-fallback qualifier and `prune_all!` line are
+  2.0-only — 1.x has neither a multi-tier cache nor a prune_all
+  path). Closes
+  [#188](https://github.com/avmnu-sng/rspec-tracer/issues/188).
+
+### Changed
+
+- **Gemspec now requires MFA for publishing** — adds
+  `spec.metadata['rubygems_mfa_required'] = 'true'`. Pure packaging
+  metadata; no runtime impact for gem consumers. Ports
+  [#214](https://github.com/avmnu-sng/rspec-tracer/pull/214).
+
 ## [1.0.4] - 2026-05-06
 
 ### Fixed

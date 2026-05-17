@@ -1,20 +1,20 @@
 {
   "/app/calculator.rb": {
-    "example_count": 5,
+    "example_count": 10,
     "examples": {
-      "/spec/calculator_spec.rb": 5
+      "/spec/calculator_spec.rb": 10
     }
   },
   "/spec/calculator_spec.rb": {
-    "example_count": 5,
+    "example_count": 10,
     "examples": {
-      "/spec/calculator_spec.rb": 5
+      "/spec/calculator_spec.rb": 10
     }
   },
   "/spec/spec_helper.rb": {
-    "example_count": 5,
+    "example_count": 10,
     "examples": {
-      "/spec/calculator_spec.rb": 5
+      "/spec/calculator_spec.rb": 10
     }
   }
 }

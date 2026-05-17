@@ -2,9 +2,22 @@ name: release
 
 on:
   push:
+    # Tag triggers use GitHub Actions filter-pattern syntax, NOT bash
+    # extended-glob and NOT POSIX regex. Per
+    # docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax:
+    # `*` greedy-matches anything except `/` (including dots), so the
+    # looser `v*.*.*` form accidentally fires on `v2.0.0.rc.1` (third
+    # `*` eats `0.rc.1`). `[0-9]+` is GHA's "one or more digits" form
+    # (NOT the bash-extglob `+([0-9])`, which actionlint accepts as
+    # syntactically valid YAML but the runtime treats as literal
+    # characters that no real tag contains).
+    #
+    # 1.0.x only ships final releases (vMAJOR.MINOR.PATCH); no
+    # pre-release flavors. Pattern is YAML-quoted because the GitHub
+    # cheat sheet warns: "always quote patterns containing brackets
+    # to avoid YAML parsing errors."
     tags:
-      - 'v*.*.*'
-      - 'v*.*.*.pre.*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: write  # required to create the GitHub release

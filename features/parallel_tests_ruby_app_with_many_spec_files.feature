@@ -32,7 +32,7 @@ Feature: Parallel Tests Ruby App with Many Spec Files without SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "60d5ac9453a7d86d238b92992ca20540",
+        "run_id": "dda6cd4ac89b153240d50f39a191e1b3",
         "actual_count": 241,
         "example_count": 241,
         "skipped_examples": 0,
@@ -94,7 +94,7 @@ Feature: Parallel Tests Ruby App with Many Spec Files without SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "60d5ac9453a7d86d238b92992ca20540",
+        "run_id": "dda6cd4ac89b153240d50f39a191e1b3",
         "actual_count": 241,
         "example_count": 3,
         "skipped_examples": 238,

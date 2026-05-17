@@ -32,7 +32,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -71,7 +71,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 2,
         "skipped_examples": 8,
@@ -119,7 +119,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -158,7 +158,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 2,
         "skipped_examples": 8,
@@ -196,7 +196,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 2,
         "example_count": 1,
         "skipped_examples": 1,
@@ -233,7 +233,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 8,
         "example_count": 1,
         "skipped_examples": 7,
@@ -271,7 +271,7 @@ Feature: Rails App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 2,
         "skipped_examples": 8,
