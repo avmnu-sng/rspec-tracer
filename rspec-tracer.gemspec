@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.metadata['source_code_uri'] = "https://github.com/avmnu-sng/rspec-tracer/tree/v#{spec.version}"
   spec.metadata['changelog_uri'] = 'https://github.com/avmnu-sng/rspec-tracer/blob/main/CHANGELOG.md'
   spec.metadata['bug_tracker_uri'] = 'https://github.com/avmnu-sng/rspec-tracer/issues'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.required_ruby_version = '>= 2.5.0'
 
