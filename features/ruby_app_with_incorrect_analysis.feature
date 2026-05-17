@@ -14,14 +14,8 @@ Feature: Ruby App with Incorrect Analysis
         ================================================================================
            IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY
         ================================================================================
-        RSpec tracer could not uniquely identify the following 10 examples:
-          - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-          - Example ID: 72171b502c5a42b9aa133f165cf09ec2 (5 examples)
+        RSpec tracer could not uniquely identify the following 5 examples:
+          - Example ID: cb9e47c4f47215c00d36ebadb8c179dc (5 examples)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
@@ -37,14 +31,8 @@ Feature: Ruby App with Incorrect Analysis
         ================================================================================
            IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY
         ================================================================================
-        RSpec tracer could not uniquely identify the following 10 examples:
-          - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-          - Example ID: 72171b502c5a42b9aa133f165cf09ec2 (5 examples)
+        RSpec tracer could not uniquely identify the following 5 examples:
+          - Example ID: cb9e47c4f47215c00d36ebadb8c179dc (5 examples)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
@@ -69,7 +57,7 @@ Feature: Ruby App with Incorrect Analysis
     And The last run report should have correct details
       """
       {
-        "run_id": "35194a37e68446e9d6960c46e717fd44",
+        "run_id": "02b2f83e3b17ffc59ad4194252d8dedb",
         "actual_count": 15,
         "example_count": 15,
         "skipped_examples": 0,
@@ -97,14 +85,8 @@ Feature: Ruby App with Incorrect Analysis
         ================================================================================
            IMPORTANT NOTICE -- RSPEC TRACER COULD NOT IDENTIFY SOME EXAMPLES UNIQUELY
         ================================================================================
-        RSpec tracer could not uniquely identify the following 10 examples:
-          - Example ID: eabd51a899db4f64d5839afe96004f03 (5 examples)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-            * Calculator#add (spec/calculator_spec.rb:13)
-          - Example ID: 72171b502c5a42b9aa133f165cf09ec2 (5 examples)
+        RSpec tracer could not uniquely identify the following 5 examples:
+          - Example ID: cb9e47c4f47215c00d36ebadb8c179dc (5 examples)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)
             * Calculator#sub performs subtraction (spec/calculator_spec.rb:24)

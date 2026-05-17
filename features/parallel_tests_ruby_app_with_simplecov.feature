@@ -36,7 +36,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -80,7 +80,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 3,
         "skipped_examples": 7,
@@ -132,7 +132,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,
@@ -176,7 +176,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 3,
         "skipped_examples": 7,
@@ -215,7 +215,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 2,
         "example_count": 1,
         "skipped_examples": 1,
@@ -254,7 +254,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 8,
         "example_count": 2,
         "skipped_examples": 6,
@@ -297,7 +297,7 @@ Feature: Parallel Tests Ruby App with SimpleCov
     And The last run report should have correct details
       """
       {
-        "run_id": "63df6c782675a201fbef23140bd868e2",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 3,
         "skipped_examples": 7,

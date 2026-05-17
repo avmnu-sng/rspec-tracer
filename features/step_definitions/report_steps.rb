@@ -130,7 +130,7 @@ Then('The flaky example report should have correct details') do
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/flaky_examples.json"))
 
-    expect(report).to eq(%w[9479ac3d1030d06371c69081856ce7e0 c25a9aa240c4a72810d9ccfc0e2c10ad])
+    expect(report).to eq(%w[57ccea716c82282feb219d6c612a2e95 78f9b2aebc4bc945aa49e316472c00e5])
   end
 end
 
@@ -138,22 +138,20 @@ Then('The failed example report should have correct details') do
   cd('.') do
     report = JSON.parse(File.read("#{@cache_dir}/#{@run_id}/failed_examples.json"))
     example = case @project
-              when 'rails_app'
-                ['338f77315d8f7c01ea5551cd0759b110']
-              when 'ruby_app'
+              when 'rails_app', 'ruby_app'
                 if @force_fail
                   %w[
-                    9479ac3d1030d06371c69081856ce7e0
-                    b5963ecab8d95c1024a46117fce4e907
-                    c25a9aa240c4a72810d9ccfc0e2c10ad
+                    57ccea716c82282feb219d6c612a2e95
+                    78f9b2aebc4bc945aa49e316472c00e5
+                    d0a55f1d752ca7f1412b0891ea49bfb0
                   ]
                 else
-                  ['b5963ecab8d95c1024a46117fce4e907']
+                  ['d0a55f1d752ca7f1412b0891ea49bfb0']
                 end
               when 'parallel_tests_ruby_app', 'parallel_tests_ruby_app_many_spec_files'
-                %w[95f5a10aa098336083912eee9d6666cd b5963ecab8d95c1024a46117fce4e907]
+                %w[d0a55f1d752ca7f1412b0891ea49bfb0 d907ddac19ce0dc0ebbb3cfd3b1b3948]
               when 'calculator_2_app'
-                ['1be34ddaa19469923b1a2c6798a5d15a']
+                ['5ecb90e20530ecaaa2cb514c54b42f54']
               end
 
     expect(report).to eq(example)
@@ -167,7 +165,7 @@ Then('The pending example report should have correct details') do
     if @project == 'calculator_2_app'
       expect(report).to eq([])
     else
-      expect(report).to eq(['94cd4d0e1d9ef63237421fe02085eb9a'])
+      expect(report).to eq(['f103480af5eae135df4293228a92cb50'])
     end
   end
 end
