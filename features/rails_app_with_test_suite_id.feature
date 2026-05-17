@@ -24,7 +24,7 @@ Feature: Rails App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "cf7e97dcafe77149bac34e2f6f35ff38",
+        "run_id": "49d3367ed4d78b8879fbc36573bc7695",
         "actual_count": 2,
         "example_count": 2,
         "skipped_examples": 0,
@@ -66,7 +66,7 @@ Feature: Rails App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "aa2c6f193206bf829ea3cb17f5c7672e",
+        "run_id": "574ae20ab240013a0bce29ac35957849",
         "actual_count": 8,
         "example_count": 8,
         "skipped_examples": 0,
@@ -101,7 +101,7 @@ Feature: Rails App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "cf7e97dcafe77149bac34e2f6f35ff38",
+        "run_id": "49d3367ed4d78b8879fbc36573bc7695",
         "actual_count": 2,
         "example_count": 1,
         "skipped_examples": 1,
@@ -136,7 +136,7 @@ Feature: Rails App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "aa2c6f193206bf829ea3cb17f5c7672e",
+        "run_id": "574ae20ab240013a0bce29ac35957849",
         "actual_count": 8,
         "example_count": 1,
         "skipped_examples": 7,
@@ -180,7 +180,7 @@ Feature: Rails App with Test Suite ID
     And The last run report should have correct details
       """
       {
-        "run_id": "6654a84c672a717904112cef7503d7a1",
+        "run_id": "140cef8616cc1ad1a42b3cfd0995af1b",
         "actual_count": 10,
         "example_count": 10,
         "skipped_examples": 0,

@@ -6,13 +6,13 @@ Given('I am working on the project {string}') do |project|
   @coverage_dir = 'rspec_tracer_coverage'
   @data_dir = "data/#{@project}"
   @run_id = {
-    parallel_tests_ruby_app: '63df6c782675a201fbef23140bd868e2',
-    parallel_tests_ruby_app_many_spec_files: '60d5ac9453a7d86d238b92992ca20540',
-    rails_app: '6654a84c672a717904112cef7503d7a1',
-    ruby_app: '63df6c782675a201fbef23140bd868e2',
-    calculator_app: 'ac50ff82ef0e8c97f7142ae07483d81d',
-    calculator_2_app: '35194a37e68446e9d6960c46e717fd44',
-    calculator_3_app: 'ac50ff82ef0e8c97f7142ae07483d81d'
+    parallel_tests_ruby_app: '140cef8616cc1ad1a42b3cfd0995af1b',
+    parallel_tests_ruby_app_many_spec_files: 'dda6cd4ac89b153240d50f39a191e1b3',
+    rails_app: '140cef8616cc1ad1a42b3cfd0995af1b',
+    ruby_app: '140cef8616cc1ad1a42b3cfd0995af1b',
+    calculator_app: '74fc3ff84ae8c0ad6f457c7bfc48283c',
+    calculator_2_app: '02b2f83e3b17ffc59ad4194252d8dedb',
+    calculator_3_app: '74fc3ff84ae8c0ad6f457c7bfc48283c'
   }[@project.to_sym]
 
   project_dir = File.dirname(__FILE__)
@@ -95,14 +95,10 @@ Given('I use test suite id {int}') do |suite_id|
   @coverage_dir = "rspec_tracer_coverage/#{@suite_id}"
   @data_dir = "data/#{@project}/#{@suite_id}"
   @run_id = case [@project, @suite_id]
-            when ['parallel_tests_ruby_app', 1], ['ruby_app', 1]
-              '9badef37e6a3dd45e4d0342956371b73'
-            when ['rails_app', 1]
-              'cf7e97dcafe77149bac34e2f6f35ff38'
-            when ['parallel_tests_ruby_app', 2], ['ruby_app', 2]
-              '2c48486d4513ef0eeee4e7ab8c284419'
-            when ['rails_app', 2]
-              'aa2c6f193206bf829ea3cb17f5c7672e'
+            when ['parallel_tests_ruby_app', 1], ['ruby_app', 1], ['rails_app', 1]
+              '49d3367ed4d78b8879fbc36573bc7695'
+            when ['parallel_tests_ruby_app', 2], ['ruby_app', 2], ['rails_app', 2]
+              '574ae20ab240013a0bce29ac35957849'
             end
 
   set_environment_variable('TEST_SUITE_ID', suite_id)
@@ -114,10 +110,8 @@ Given('I reset test suite id') do
   @coverage_dir = 'rspec_tracer_coverage'
   @data_dir = "data/#{@project}"
   @run_id = case @project
-            when 'rails_app'
-              '6654a84c672a717904112cef7503d7a1'
-            when 'parallel_tests_ruby_app', 'ruby_app'
-              '63df6c782675a201fbef23140bd868e2'
+            when 'rails_app', 'parallel_tests_ruby_app', 'ruby_app'
+              '140cef8616cc1ad1a42b3cfd0995af1b'
             end
 
   delete_environment_variable('TEST_SUITE_ID')
