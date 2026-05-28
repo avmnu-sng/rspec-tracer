@@ -73,7 +73,7 @@ jobs:
           echo "PROJECTS_PAT secret is present (value redacted)."
 
       - name: Add issue to rspec-tracer roadmap project
-        uses: actions/add-to-project@v1
+        uses: actions/add-to-project@v2
         with:
           project-url: https://github.com/users/avmnu-sng/projects/1
           github-token: ${{ secrets.PROJECTS_PAT }}
