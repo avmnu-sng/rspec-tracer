@@ -30,9 +30,9 @@ require 'rspec_tracer/storage/schema'
 #   - save_graph still works after the cold-run fallback (next run
 #     writes a fresh schema_version-tagged manifest)
 #
-# Per `feedback_v2_integration_exit_status`: assert on the contract
-# behavior (logger output + nil return + post-fallback save), not
-# just on absence-of-raise.
+# Assert on the contract behavior (logger output + nil return +
+# post-fallback save), not just on absence-of-raise -- raise-free
+# runs alone mask cache-persistence bugs.
 # rubocop:disable RSpec/DescribeClass, RSpec/InstanceVariable, RSpec/ContextWording
 # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength
 RSpec.describe 'Storage::JsonBackend 1.x -> 2.0 cache schema cold-run upgrade ceremony (M8.10)' do

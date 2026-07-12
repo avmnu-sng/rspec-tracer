@@ -29,9 +29,9 @@ require 'tmpdir'
 #   In both cases the rspec-tracer banner reports the surviving
 #   example count - the suite is NOT aborted to zero examples.
 #
-# Assertion shape per `feedback_v2_integration_exit_status`: the
-# load-bearing checks are the exit code, the banner's surviving-
-# example count, and (on the exit-0 path) the written cache.
+# Assertion shape: the load-bearing checks are the exit code, the
+# banner's surviving-example count, and (on the exit-0 path) the
+# written cache -- exit status alone masks cache-persistence bugs.
 #
 # Fixture: a parameterized `.each` loop wrapping a single `it` block
 # produces N examples that share example_group + description +

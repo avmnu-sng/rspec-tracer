@@ -73,15 +73,14 @@ branch:
 setup raise, every test in the suite is skipped and mutant reports
 100% alive. Fix: set `RSPEC_TRACER_DISABLE=1` in the Taskfile env
 block (every per-module subtask already does); confirm the spec_helper
-honors the flag. See `feedback_mutant_rspec_gotchas` (memory).
+honors the flag.
 
 **2. Subject undefined / `Subjects: 0` in the mutant summary.** Causes:
 the source file uses `module_function` (the singleton + private-instance
-duplication makes mutant mutate the unreachable instance method - see
-`feedback_mutation_friendly_modules`); or the subject is defined inside
-a `Struct.new do ... end` block (mutant rejects - reopen the class via
-`class X < Struct.new(...)`); or non-ASCII bytes in lib/ source crash
-mutant's US-ASCII parser (see `feedback_mutant_non_ascii_source`).
+duplication makes mutant mutate the unreachable instance method); or
+the subject is defined inside a `Struct.new do ... end` block (mutant
+rejects - reopen the class via `class X < Struct.new(...)`); or
+non-ASCII bytes in lib/ source crash mutant's US-ASCII parser.
 Action: refactor lib to `def self.x`, reopen Struct subclasses, ASCII-
 clean comments + string literals.
 
@@ -91,9 +90,8 @@ trailing `rescue StandardError` swallows the same `Errno::ENOENT` the
 guard was preventing. The mutation IS observably equivalent. Action:
 DROP the guard via lib refactor (with the maintainer-articulated
 "guarantee on behavior + perf intact" bar). Code clarity drives the
-refactor; coverage is a side effect. Precedents: M3.3
-`WholeSuiteInvalidators#file_digest`, M8.3-B `RemoteCache::Validator`.
-See `feedback_mutant_equivalent_guards`.
+refactor; coverage is a side effect. Precedents:
+`WholeSuiteInvalidators#file_digest`, `RemoteCache::Validator`.
 
 **4. Mutant first-token describe-mapping ceiling.** Mutant maps tests to
 subjects via the first space-separated token of `full_description`.
@@ -110,7 +108,7 @@ include the alive-but-functionally-tested mutations and document the
 ceiling in an inline Taskfile rationale comment. Do NOT restructure
 describes for coverage - that's the test-organization-for-coverage
 anti-pattern. Restructure ONLY when a describe label honestly belongs
-under a different method. See `feedback_mutant_describe_label_ceiling`.
+under a different method.
 
 **5. `Module#prepend` idempotency.** Ruby has no `unprepend` API. Once
 any prior test triggers `Klass.prepend(Hook)`, subsequent installs
@@ -118,28 +116,26 @@ any prior test triggers `Klass.prepend(Hook)`, subsequent installs
 so prepend-line mutations stay alive in shared-process spec suites.
 rspec-mocks spies don't help (singleton-class inheritance routes the
 spy to the wrong target). Subprocess isolation closes the gap but
-blows up wall-clock budget. Action: ACCEPT VIA CARVE-OUT with
-inline rationale comment referencing the memory. Do NOT add
-prepend-spy tests - they verify nothing real. Precedents:
-`Tracker::IOHooks` (M8.3-A), `Rails::I18nTracking::LoadTranslationsHook`
-(M8.3-C). See `feedback_mutant_prepend_idempotency`.
+blows up wall-clock budget. Action: ACCEPT VIA CARVE-OUT with an
+inline rationale comment explaining the idempotency ceiling. Do NOT
+add prepend-spy tests - they verify nothing real. Precedents:
+`Tracker::IOHooks`, `Rails::I18nTracking::LoadTranslationsHook`.
 
 **6. Local-vs-CI variance ≥ 5 pp.** Same source + same mutant version
 + same gem set produces materially different alive counts between local
 M2 Max and CI ubuntu-latest because of test-ordering shifts (no
-Gemfile.lock per M3.8 Part C), parallelism differences (mutant
+committed Gemfile.lock), parallelism differences (mutant
 `Jobs: 12` on M2 Max vs `Jobs: 4` on CI), and state-leaking
 memoizations (e.g. `@msgpack_loaded` ivar hiding `require 'msgpack'`
 mutations once any prior test trips the memo). Action: SIZE GATES from
 CI numbers + ~3-5 pp margin under, NEVER local. Re-cut the gate
 downward in a follow-up commit if any subject drops materially below
-local on the first CI run. Precedents: M8.3-A `154ec27`, M8.3-B
-`10c0d67`. See `feedback_mutant_local_vs_ci_variance`.
+local on the first CI run. Precedents: `154ec27`, `10c0d67`.
 
 **Genuine gap, not a ceiling?** Add a behavior test under the natural
 describe that asserts the real contract being broken by the mutation.
-Never weaken an existing assertion to make CI green
-(`feedback_never_weaken_tests`). Never add mutation-bait tests that
+Never weaken an existing assertion to make CI green -- diagnose the
+real cause instead. Never add mutation-bait tests that
 exist only to kill mutations - the test should document a real
 contract the lib promises. If the contract is fuzzy (e.g. log-message
 wording), `# mutant:disable - <one-line rationale>` with a

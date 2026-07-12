@@ -16,10 +16,9 @@
 #     M8.2 alongside this spec).
 #
 # Children exit via `Process.exit!(0)` to bypass SimpleCov's
-# per-process at_exit hook (memory:
-# `feedback_simplecov_fork_poisoning`). Without the bang, the child
-# rewrites the parent's coverage snapshot with its narrow slice and
-# drops effective coverage below the gate.
+# per-process at_exit hook, which forked children inherit. Without
+# the bang, the child rewrites the parent's coverage snapshot with
+# its narrow slice and drops effective coverage below the gate.
 #
 # fork() is MRI-only. Skip the entire spec on JRuby - threaded test
 # runners are out of scope for the storage layer's flock-based model

@@ -5,25 +5,92 @@
 [![codecov](https://codecov.io/gh/avmnu-sng/rspec-tracer/branch/main/graph/badge.svg)](https://codecov.io/gh/avmnu-sng/rspec-tracer)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://avmnu-sng.github.io/rspec-tracer/)
 
-**RSpec Tracer** is a specs dependency analyzer, flaky-test detector,
-test accelerator, and coverage reporter for RSpec. It records the
-inputs every example consumes — Ruby files (via `Coverage`), file
-I/O (via prepended `File` / `IO` / `YAML` / `JSON` hooks), Rails
-template + AR notifications, and user-declared globs — then re-runs
-only the examples whose inputs changed since the last run.
+**Test-dependency intelligence for RSpec: detect flaky tests, map code
+coupling, and -- when you are ready -- re-run only what changed.**
 
-It never skips:
-- **Failed**, **flaky**, or **pending** examples.
-- Examples whose dependent inputs changed (the whole point).
+rspec-tracer records the inputs it can observe for each RSpec
+example -- Ruby files, file I/O, Rails templates and queries,
+declared globs and ENV branches -- and turns that record into a
+flaky-test detector, a per-example dependency map, and optional CI
+acceleration. The flaky report and the dependency map never skip a
+test: value before trust.
 
-📚 **Full documentation site**: [avmnu-sng.github.io/rspec-tracer](https://avmnu-sng.github.io/rspec-tracer/) — YARD API reference, sample HTML report, cookbook, and per-version coverage report.
+**Measured, not promised.** In the maintainer's May 2026 field test
+(rspec-tracer 2.0.0.pre.1, Apple M2 Max), Mastodon's `spec/lib` --
+1,234 examples, Rails 8.1.3, Ruby 3.4.8 -- ran in 116.4 s cold and
+17.0 s warm: **6.85x**, with the tracer's own recording overhead
+included in both runs. "Cold" here is the tracer's own first run,
+not plain RSpec: recording costs roughly 1.6x plain RSpec on this
+repository's Rails benchmark fixture (approximate), and no
+tracer-free Mastodon baseline was measured, so your gain over a
+suite without the tracer will be smaller than cold minus warm.
+Suite shape matters: across the same field tests, warm-run skip
+rates ranged from 31% (a suite carrying 177 pre-existing failures --
+failed examples are never skipped) to 100%. Measure your own suite
+before you rely on these numbers.
 
-For a complete account of the input taxonomy and how the engine fits
-together, read [`ARCHITECTURE.md`](ARCHITECTURE.md).
+**Conservative by design, honest about its limits.** The tracer
+never skips failed, flaky, or pending examples, nor any example
+whose recorded inputs changed; when a recorded input is ambiguous,
+it re-runs. Real blind spots exist -- runtime metaprogramming and
+monkey-patches are invisible to it; the `tracks:` DSL is the escape
+hatch -- and the [soundness model](ARCHITECTURE.md#soundness-model)
+catalogues the known blind spots. Shadow mode (run everything,
+report what would have been skipped) lands in v2.0.0.rc.2, so you
+can verify the tracer on your own data before trusting it with a
+single skip.
+
+**Your data never leaves your infrastructure.** Everything runs inside
+your test process and your CI cache -- no SaaS backend, no telemetry,
+no per-seat pricing.
+
+## Quick start
+
+Requires Ruby 3.1+ and rspec-core 3.12+ (Rails 7.0+ when using Rails;
+Rails 8.0 needs Ruby 3.2+; JRuby 9.4 supported). Every CI-gated Ruby
+is supported until at least six months past its upstream EOL -- see
+[Maintenance](#maintenance).
+
+```ruby
+# Gemfile -- 2.0 is in pre-release; pin explicitly until 2.0.0 final
+gem 'rspec-tracer', '= 2.0.0.pre.2', group: :test, require: false
+```
+
+Add the tracer's working directories to your `.gitignore` before the
+first run:
+
+```
+rspec_tracer.lock
+rspec_tracer_cache/
+rspec_tracer_coverage/
+rspec_tracer_report/
+```
+
+```ruby
+# Top of spec_helper.rb / rails_helper.rb, before any application
+# code. With SimpleCov, start SimpleCov first -- load order is part
+# of the contract.
+require 'rspec_tracer'
+RSpecTracer.start
+```
+
+Run the suite twice. The second run skips the examples whose recorded
+inputs are unchanged and prints a per-reason breakdown of what
+re-ran; open `rspec_tracer_report/index.html` to audit every
+per-example decision. Not ready to let it skip anything? Set
+`RSPEC_TRACER_RUN_ALL_EXAMPLES=true` (or `run_all_examples true`
+inside the `RSpecTracer.configure` block in `.rspec-tracer`) --
+every example still runs while the flaky report and the dependency
+maps accumulate data.
+
+Setting up CI? [docs/CI_RECIPES.md](docs/CI_RECIPES.md) has
+copy-paste cache recipes for CircleCI, GitLab CI, Buildkite, and
+Heroku CI, plus a link to the canonical GitHub Actions workflow.
 
 ## Table of contents
 
 - [Quick start](#quick-start)
+- [What it saves](#what-it-saves)
 - [How it works](#how-it-works)
 - [Per-example `tracks:` DSL](#per-example-tracks-dsl)
 - [Rails quick start](#rails-quick-start)
@@ -34,126 +101,71 @@ together, read [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - [SimpleCov interop](#simplecov-interop)
 - [FAQ + comparison](#faq--comparison)
 - [Reports](#reports)
+- [Maintenance](#maintenance)
 - [Documentation + coverage](#documentation--coverage)
 - [Help and community](#help-and-community)
-- [Section anchor map (1.x → 2.0)](#section-anchor-map-1x--20)
+- [Section anchor map (1.x -> 2.0)](#section-anchor-map-1x--20)
 
-## Quick start
+## What it saves
 
-Requires Ruby 3.1+ and rspec-core 3.12+. Rails 7.0+ when using Rails;
-Rails 8.0 needs Ruby 3.2+. JRuby 9.4 is supported.
+All timings are wall-clock and measured, not projected: maintainer
+field tests, May 2026, Apple M2 Max, rspec-tracer 2.0.0.pre.1. In
+every row, "cold" is the tracer's own first, recording run -- it
+costs more than plain RSpec (roughly 1.6x on this repository's Rails
+benchmark fixture; approximate), and no tracer-free baseline was
+measured for these projects -- so your savings versus a suite
+without the tracer will be smaller than cold minus warm.
 
-1. Add the gem:
+| Project measured | Examples | Cold run | Warm run | Warm skip rate | Saved per warm run |
+|---|---|---|---|---|---|
+| Mastodon `spec/lib` (Rails 8.1.3, Ruby 3.4.8) | 1,234 | 116.4 s | 17.0 s | 98% (1,212 skipped) | ~99 s |
+| thoughtbot/clearance (Rails 8 engine + dummy app) | 258 | 11.1 s | 1.6 s | 100% | ~9.5 s |
+| publify (carries 177 pre-existing failures; failed examples are never skipped) | 257 | 6.7 s | 4.8 s | 31% | ~1.9 s |
 
-   ```ruby
-   # 2.0 is in pre-release. Pin to the pre-release version explicitly;
-   # switch to '~> 2.0' once 2.0.0 final ships.
-   gem 'rspec-tracer', '= 2.0.0.pre.2', group: :test, require: false
-   ```
+The Mastodon warm run is the zero-change best case; in the same
+field test, editing one file re-ran 68 of 1,234 examples in 19.0 s.
+Laptop rows understate CI savings: CI runners are slower than the
+development machine, so the seconds saved per run are typically
+larger there -- the skip ratios are what transfer.
 
-   `bundle install` will resolve the pre-release version. You can
-   also install ad-hoc with `gem install rspec-tracer --pre`.
+**Worked examples** (every input is an assumption you should replace
+with your own). For any suite:
 
-2. Add the canonical directories to your `.gitignore`:
+`(cold seconds - warm seconds) x runs/day / 60 x $/CI-minute x 30 = $/month per full-suite job`
 
-   ```
-   rspec_tracer.lock
-   rspec_tracer_cache/
-   rspec_tracer_coverage/
-   rspec_tracer_report/
-   ```
+At $0.006/CI-minute (illustrative -- GitHub-hosted Linux list price
+at the time of writing; check your provider's current rate) and 50
+CI runs/day on one job:
 
-3. Load and start at the very top of `spec_helper.rb` /
-   `rails_helper.rb`, **before any application code:**
+- Best case (a Mastodon-sized suite saving ~99 s per warm run):
+  ~83 CI-minutes/day, about $15/month per job.
+- Low-skip case (a publify-shaped suite saving ~1.9 s per warm run
+  at 31% skip): about $0.29/month per job.
 
-   ```ruby
-   require 'rspec_tracer'
-   RSpecTracer.start
-   ```
+Multiply by the number of jobs that each run the full suite (for
+example, a Ruby-version matrix); jobs that split one suite across
+workers share the saving rather than multiply it.
 
-   With SimpleCov, start SimpleCov first (load order is part of the
-   contract):
-
-   ```ruby
-   require 'simplecov'
-   SimpleCov.start
-   require 'rspec_tracer'
-   RSpecTracer.start
-   ```
-
-4. Run your suite. After the run, open
-   `rspec_tracer_report/index.html` for the HTML report, and
-   `rspec_tracer_report/report.json` for machine-readable output.
-
-   The terminal prints a one-line summary with cache size and the
-   reasons examples re-ran:
-
-   ```
-   rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
-   by reason: 38 Files changed · 4 Failed previously
-   cache: rspec_tracer_cache (14.4 MiB; +6.7 KiB vs prev run)
-   ```
+Conservative assumptions: 50 runs/day and the dollar rate are stated
+assumptions, not measurements; your skip rate may be far lower (see
+the 31% row -- suites with many failing examples skip less, by
+design); remote-cache download time on fresh CI workers is not
+subtracted (measured end-to-end remote-cache gain on clearance was
+still ~4.6x).
 
 ## How it works
 
-Every test is a pure function of its inputs; the tracker's job is to
-identify every input and hash it. Inputs come from six buckets:
-
-1. **Ruby-executed source** — observed via Ruby's `Coverage` module.
-2. **File I/O** (`File.read`, `YAML.load_file`, etc.) — observed via
-   `Module#prepend` hooks.
-3. **Framework events** — Rails template renders + (opt-in) AR
-   schema-touching queries via `ActiveSupport::Notifications`.
-4. **Declared globs** — what you tell the tracker to track via
-   `track_files` / `tracks:` / `track_rails_defaults`.
-5. **Whole-suite invalidators** — `Gemfile.lock`, `.ruby-version`,
-   `.rspec-tracer`, the rspec-tracer gem version itself.
-6. **Truly unobservable inputs** — env-var branches, refinements
-   in unexecuted files. Use `track_env` / `tracks: { env: ... }`
-   to declare them; the tracker can't auto-detect them.
-
-A digest of every observed input is stored per-example. The next run
-loads the cached digest set, recomputes per-input digests, and skips
-examples whose inputs are unchanged.
-
-Read [`ARCHITECTURE.md`](ARCHITECTURE.md) for the full layer
-structure (Tracker / Storage / RemoteCache / Reporters), data flows,
-and extension protocols.
-
-### Per-example precision under Rails `config.eager_load`
-
-A precision tradeoff worth knowing before you run a suite that uses
-Rails:
-
-- **`config.eager_load = false`** in test env — per-example precision
-  works as designed. Files autoloaded during an example land in
-  per-example deps; editing one re-runs only the examples that
-  touched it.
-- **`config.eager_load = true`** (Rails default for CI tests to
-  mirror prod) — all `app/` files load at boot and land in the
-  whole-suite invalidator set. Editing any `app/` file re-runs
-  every example. **Safe** (never misses a dep) but **coarser** than
-  per-example attribution.
-
-If your CI suite runs with `eager_load = true` and your `app/`-edit
-cycle is bottlenecked by whole-suite re-runs, set `config.eager_load
-= false` in test env to recover per-example precision. A future 2.1
-enhancement (working name: `track_class_attribution`) will install
-class-dispatch tracking to trim the invalidator scope under
-eager-loaded test environments — see
-[`CHANGELOG.md`](CHANGELOG.md) "Deferred to 2.1" for the planned
-contract.
-
-**Rails engines:** a gem-loaded engine's own `lib/` files are
-`require`d at gem-load time via the Gemfile.lock cascade and land
-in the boot set **regardless of `eager_load`**. Editing them
-re-runs every example — same SAFE-but-coarser shape as the
-`eager_load = true` case above. The rationale (closing the
-constants-lookup blind spot) lives in
-[`lib/rspec_tracer/tracker/loaded_files_tracker.rb`](lib/rspec_tracer/tracker/loaded_files_tracker.rb).
-Teams that want tighter per-example precision and accept the blind
-spot can set `transitive_load_tracking false` — see
-[`COOKBOOK.md`](COOKBOOK.md) recipe 2 for the trade-off.
+Each example's observed inputs -- executed Ruby source (via
+`Coverage`), file I/O (via `Module#prepend` hooks), Rails framework
+events, declared globs and env vars, and whole-suite invalidators
+like `Gemfile.lock` -- are digested and stored per example. The next
+run recomputes the digests and skips examples whose recorded inputs
+are unchanged. The full input taxonomy lives in
+[ARCHITECTURE.md](ARCHITECTURE.md#input-taxonomy); what each input
+kind does and does not guarantee is the
+[soundness model](ARCHITECTURE.md#soundness-model); the Rails
+`config.eager_load` precision trade-off is covered by the Rails
+recipe in [COOKBOOK.md](COOKBOOK.md).
 
 ## Per-example `tracks:` DSL
 
@@ -275,6 +287,13 @@ rm -f rspec_tracer.lock && bundle exec parallel_rspec
 
 ## Configuring CI
 
+Copy-paste cache recipes for CircleCI, GitLab CI, Buildkite, and
+Heroku CI live in [docs/CI_RECIPES.md](docs/CI_RECIPES.md); the
+canonical GitHub Actions workflow is
+[`.github/workflows/example-tracer-cache.yml`](.github/workflows/example-tracer-cache.yml).
+The rest of this section covers the remote-cache rake flow and the
+cache-key pattern all the recipes share.
+
 The 1.x flow is preserved bit-for-bit. In your project's `Rakefile`:
 
 ```ruby
@@ -324,10 +343,11 @@ The cache step:
       ${{ runner.os }}-
 ```
 
-The 4-component cache key (`runner.os` + Ruby version + the
-rspec-tracer gem's own version + your project's Gemfile lock)
-invalidates when something would make the previous run's decisions
-incorrect: native gem binaries differ across runner OSes, Ruby ABI
+The 4-component cache key (`runner.os` + Ruby version + your
+project's Gemfile lock -- which also pins the rspec-tracer gem's
+version -- + a fixed name suffix) invalidates when something would
+make the previous run's decisions incorrect: native gem binaries
+differ across runner OSes, Ruby ABI
 changes invalidate native extensions, a tracer upgrade can change the
 cache schema, and gem-set drift is the most common cache-staleness
 trigger.
@@ -437,6 +457,14 @@ Compose them: shard with Knapsack, then skip with rspec-tracer.
 A composition smoke spec (`spec/regressions/knapsack_coexistence_spec.rb`)
 proves they coexist.
 
+**Datadog Test Optimization / Buildkite Test Analytics / CircleCI
+Test Insights?** Those are hosted services: your test metadata ships
+to a vendor backend, with the pricing and procurement that implies.
+rspec-tracer runs entirely inside your test process -- the cache and
+reports are plain files in your repo, S3 bucket, or Redis. No SaaS
+backend, no telemetry, no per-seat pricing; keeping it that way is a
+standing commitment in [ROADMAP.md](ROADMAP.md)'s "Won't do" list.
+
 **`RSpec::Retry` / `RSpec::Rerun`?** Retries flaky failures.
 rspec-tracer detects flaky examples (same inputs, different outcomes)
 and refuses to skip them on the next run. Compose: retry to make a
@@ -455,23 +483,47 @@ taxonomy" for the rule.
 ## Reports
 
 After the run, `rspec_tracer_report/index.html` opens five HTML
-reports:
+reports. The first two deliver value even if you never let the
+tracer skip a single example:
 
-- **All Examples** — basic test info (id, status, duration, the inputs
-  the example consumed).
-- **Duplicate Examples** — pairs RSpec couldn't uniquely identify
+- **Flaky Examples** -- examples that failed on one run and passed on
+  a later one, the canonical intermittence signal: a flake list your
+  suite builds passively from the runs you were already doing. Once
+  flagged, the tracer refuses to skip them on subsequent runs.
+- **Files Dependency** -- "if I change this file, which tests run?"
+  The file-to-test map that makes refactors, reviews, and deletions
+  safer -- the report unique to rspec-tracer.
+- **Examples Dependency** -- the per-example inverse: "what does this
+  test depend on?"
+- **All Examples** -- basic test info (id, status, duration, the
+  inputs the example consumed).
+- **Duplicate Examples** -- pairs RSpec couldn't uniquely identify
   (file:line collisions; only appears when duplicates are present).
-- **Flaky Examples** — examples that passed after previously failing
-  without any dependency change. The tracker refuses to skip these
-  on subsequent runs.
-- **Examples Dependency** — per-example file dependency lists; the
-  "what does this test depend on?" view.
-- **Files Dependency** — the inverse: "what tests run if I change
-  this file?" The unique-to-rspec-tracer report that makes refactors
-  safer.
 
 Plus a machine-readable `rspec_tracer_report/report.json` for CI
-dashboards and the terminal one-liner shown in [Quick start](#quick-start).
+dashboards, and a terminal summary with a per-reason breakdown after
+every run (see [Quick start](#quick-start)).
+
+## Maintenance
+
+Every CI-gated Ruby is supported until **at least** six months past
+its upstream end-of-life date. That is a floor, not a drop date:
+versions can stay supported longer, and Ruby 3.1 currently is.
+Upstream EOL dates are published on the official
+[Ruby maintenance schedule](https://www.ruby-lang.org/en/downloads/branches/);
+that page is authoritative for the dates below.
+
+| Version | CI-gated | Status |
+|---------|----------|--------|
+| Ruby 3.1 | Yes | Supported. Upstream EOL was 2025-03-26, so the committed six-month window has lapsed -- and 3.1 is still supported today because the policy is a minimum, not a schedule. It remains the floor for the 2.0 release line. |
+| Ruby 3.2 | Yes | Supported. Upstream EOL was 2026-04-01; supported until at least 2026-10-01, and potentially longer -- the policy is a minimum. |
+| Ruby 3.3 | Yes | Supported. Upstream EOL is expected 2027-03-31; supported until at least six months past the published EOL date. |
+| Ruby 3.4 | Yes | Supported, until at least six months past its upstream EOL date (not yet announced). |
+| Ruby 4.0 | Yes | Supported, until at least six months past its upstream EOL date (not yet announced). |
+| JRuby 9.4 | Yes | Supported. JRuby support tracks the JRuby project's own maintenance schedule, not the Ruby-Core EOL dates above. |
+
+TruffleRuby and Ruby head are best-effort: no CI gate, but issue
+reports are welcome and get investigated.
 
 ## Documentation + coverage
 
