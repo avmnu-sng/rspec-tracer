@@ -4,7 +4,7 @@ name: lint-and-specs
 on:
   workflow_call:
     inputs:
-      # Per-subject mutation gating (M8.6). Caller (ci.yml) computes
+      # Per-subject mutation gating. Caller (ci.yml) computes
       # these from the PR diff; defaults true so non-PR / fallback
       # callers run every gate. Cross-cutting safety net (Gemfile /
       # .ruby-version / Taskfile.yml / lib/rspec_tracer.rb / multi-
@@ -47,6 +47,8 @@ jobs:
         run: task lint:yaml
       - name: Lint — Node (HTML reporter frontend)
         run: task lint:node
+      - name: Lint -- Internal-nomenclature leak check
+        run: task docs:leak-check
       - name: Check — Bundle
         run: task check:bundle
       - name: Check — HTML reporter dist drift
@@ -117,7 +119,7 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
-  # M9.0: non-Rails regression specs (upstream PR #72 phantom file_path
+  # Non-Rails regression specs (upstream PR #72 phantom file_path
   # graceful-degradation + rspec-retry / rspec-rerun coexistence smoke).
   # Pure-Ruby + subprocess-shape - no rails_app fixture bundle install
   # required, so this lives on the per-PR fast-track. The Rails-fixture
@@ -227,7 +229,7 @@ jobs:
         timeout-minutes: 5
         run: task test:mutation:tracker
 
-  # M8.6 — storage mutation split into 4 parallel jobs (rebalanced
+  # Storage mutation split into 4 parallel jobs (rebalanced
   # post-first-CI). Original 3-shard SqliteBackend split was
   # over-sharded (each ~1-2 min CI), and the unsharded `non-sqlite`
   # job hit ~17 min on CI because JsonBackend dominates with 2792
@@ -285,7 +287,7 @@ jobs:
     if: ${{ inputs.mut_storage }}
     # JsonBackend middle-section first half (9 subjects). Originally
     # 18 subjects at 3:52 CI — split for jitter headroom under the
-    # cap (4-min then; bumped to 5-min in M8.6-B). The other 9 land
+    # cap (4-min then; later bumped to 5-min). The other 9 land
     # in shard-7.
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -324,8 +326,8 @@ jobs:
     # file-I/O-dense atomic-write helpers concentrated together.
     # Original alphabetical-shard-3 (22 subjects mixing this with
     # reads + Merger) hit 6:52 M2 Max / ~10 min CI; 5-way split
-    # isolates the heavy writes here so the per-shard cap (5-min as
-    # of M8.6-B; was 4-min when the split was decided) can be enforced.
+    # isolates the heavy writes here so the per-shard cap (5-min now;
+    # was 4-min when the split was decided) can be enforced.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -415,7 +417,7 @@ jobs:
     # JsonBackend Merger second half (4 subjects): Merger.empty_state,
     # Merger.merge_env_dependency!, Merger.merge_examples_coverage!,
     # Merger.reverse_of. Split out from shard-5 to fit the per-shard
-    # cap (4-min when split, 5-min after M8.6-B's headroom bump).
+    # cap (4-min when split, 5-min after the headroom bump).
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -487,8 +489,8 @@ jobs:
   test-mutation-top-level-a:
     name: test-mutation-top-level-a
     if: ${{ inputs.mut_top_level }}
-    # M8.6: top-level split into 2 alphabetical halves to enforce the
-    # per-shard step cap (4-min when split, 5-min after M8.6-B's
+    # Top-level split into 2 alphabetical halves to enforce the
+    # per-shard step cap (4-min when split, 5-min after the
     # headroom bump). Whole-module run was 14:59 CI at default 5s
     # timeout + jobs=4 because ~95% of mutations are spec_helper boot
     # hangs that always burn the full 5s timeout. Halving the matcher
@@ -547,7 +549,7 @@ jobs:
     timeout-minutes: 20
 
     services:
-      # LocalStack provides a real S3 API surface for the M7.1 remote-cache
+      # LocalStack provides a real S3 API surface for the S3 remote-cache
       # integration spec. We pin a specific image tag so a LocalStack
       # release never silently breaks our CI. The `task ci:localstack:ready`
       # step below layers a health-poll + smoke probe on top of the
@@ -565,7 +567,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
-      # Redis provides the real wire surface for the M7.2 RedisBackend
+      # Redis provides the real wire surface for the RedisBackend
       # integration spec. 7.4 is the current stable; pin the minor to
       # keep CI reproducible across Redis's periodic protocol tweaks.
       redis:
@@ -602,7 +604,7 @@ jobs:
 
   # Consolidator: the single required-status-check that branch
   # protection can gate on. Succeeds iff every parallel job above
-  # succeeded OR was skipped via M8.6 path-gating; fails if any
+  # succeeded OR was skipped via per-subject path-gating; fails if any
   # was 'failure' or 'cancelled'.
   #
   # `if: !cancelled()` ensures this job runs even when one or more
@@ -647,7 +649,7 @@ jobs:
           NEEDS_RESULTS: ${{ toJSON(needs) }}
         run: |
           echo "$NEEDS_RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
-          # Accept success (job ran and passed) or skipped (M8.6
+          # Accept success (job ran and passed) or skipped (the per-subject
           # path-gate skipped this subject's mutation pass on this
           # PR). Reject failure or cancelled.
           if echo "$NEEDS_RESULTS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null; then

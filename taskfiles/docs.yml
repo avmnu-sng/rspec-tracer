@@ -27,6 +27,17 @@ tasks:
     cmds:
       - bundle exec yard stats --list-undoc
 
+  docs:leak-check:
+    desc: >-
+      Scan every tracked file for internal planning vocabulary that
+      must not ship in the public repo (milestone tags, private note
+      names, local-only doc-tree paths), including split
+      directory-tree renderings in Markdown. Exemptions live in
+      .leakcheck-allow at the repo root; every entry needs a trailing
+      justification comment. Nonzero exit on any unallowed hit.
+    cmds:
+      - ruby scripts/leak_check.rb
+
   docs:wcag:
     desc: >-
       Run WCAG 2.1 AA accessibility audit on the HTML reporter via

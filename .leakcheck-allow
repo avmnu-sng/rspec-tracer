@@ -1,0 +1,19 @@
+# Exemptions for `task docs:leak-check` (scripts/leak_check.rb).
+#
+# One path or glob per line. Every entry MUST carry a trailing
+# `# justification` comment; entries without one fail the gate.
+# Keep this list short: the default treatment for a hit is rewriting
+# the text to be self-contained, not exempting the file.
+#
+# CHANGELOG.md is deliberately NOT listed here. The script applies a
+# section-scoped rule instead: the active [Unreleased] block (above
+# the first released-version heading) is scanned with the full
+# pattern set, and only the shipped-history sections below it are
+# exempt (frozen release text, never rewritten retroactively). A
+# whole-path entry would silently pass fresh leaks written into
+# [Unreleased].
+scripts/leak_check.rb  # gate implementation; spells out the very patterns it scans for
+.gitignore  # the ignore rule must name the local-only planning tree it excludes
+CLAUDE.md  # agent guardrail doc; must name the local-only tree and its vocabulary to ban them
+AGENTS.md  # agent guardrail doc; must name the local-only tree and its vocabulary to ban them
+lib/rspec_tracer/reporters/html/package-lock.json  # npm-generated lockfile; base64 sha512 integrity hashes randomly contain letter+digit runs that collide with tag patterns
