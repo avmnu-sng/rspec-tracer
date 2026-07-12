@@ -8,7 +8,7 @@ gem 'rails', ENV['RAILS_VERSION']
 # to 2.x and then the gem activation blows up. Rails 8.0 needs
 # sqlite3 >= 2.1. Pick the right major via env var from the workflow.
 gem 'sqlite3', ENV.fetch('SQLITE3_VERSION', '~> 1.4')
-gem 'puma', '~> 6.0'
+gem 'puma', '>= 7.2.1'
 gem 'jbuilder', '~> 2.7'
 gem 'bootsnap', '>= 1.4.4', require: false
 
