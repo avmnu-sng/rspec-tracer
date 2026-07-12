@@ -42,7 +42,7 @@ module RSpecTracer
 
       # @api private
       def self.skip_confirmation?(args)
-        args.any? { |arg| SKIP_CONFIRMATION_FLAGS.include?(arg) }
+        args.intersect?(SKIP_CONFIRMATION_FLAGS)
       end
 
       # Internal helper for the tracer pipeline.

@@ -853,7 +853,7 @@ RSpec.describe RSpecTracer::RemoteCache::S3Backend do
         { 'Key' => k, 'LastModified' => Time.at(t).utc.iso8601 }
       end), '', status_ok])
 
-      expect(backend.unbounded_warning(warn_threshold: 3)).to match(/5 refs/)
+      expect(backend.unbounded_warning(warn_threshold: 3)).to include('5 refs')
     end
   end
 

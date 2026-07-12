@@ -312,7 +312,7 @@ RSpec.describe 'example_id stability across runs (issue #196)' do
     # have collided them and tripped duplicate detection, which would
     # then drop them from the run.
     expect(status.exitstatus).to eq(0), "expected all three to run:\n#{out}"
-    expect(out).not_to match(/duplicate example\(s\)/)
+    expect(out).not_to include('duplicate example(s)')
     ids = report_payload['reports']['all_examples'].map { |entry| entry['id'] }
     expect(ids.size).to eq(3)
     expect(ids.uniq.size).to eq(3)

@@ -490,7 +490,7 @@ RSpec.describe RSpecTracer::RemoteCache::LocalFsBackend do
         backend.upload("sha-#{i}")
       end
 
-      expect(backend.unbounded_warning(warn_threshold: 2)).to match(/3 refs/)
+      expect(backend.unbounded_warning(warn_threshold: 2)).to include('3 refs')
     end
   end
 
