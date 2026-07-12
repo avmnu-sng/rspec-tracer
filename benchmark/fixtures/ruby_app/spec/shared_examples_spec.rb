@@ -11,10 +11,11 @@
 # every shape that actually fires in the wild — not just top-level
 # anonymous it.
 #
-# Six patterns covered + one unicode-description regression case
-# (per M8.2-B kickoff decision (g-yes); construct unicode at runtime
-# so the source stays ASCII-only per feedback_mutant_non_ascii_source
-# discipline, even though spec files aren't in mutant's parser scope).
+# Six patterns covered + one unicode-description regression case.
+# The unicode description is constructed at runtime so the source
+# stays ASCII-only (mutant's parser rejects non-US-ASCII source;
+# spec files aren't in its parser scope today, but keeping the whole
+# tree ASCII avoids surprises if that scope ever widens).
 
 RSpec::Matchers.define :be_a_finite_numeric do
   match { |actual| actual.is_a?(Numeric) && actual.finite? }

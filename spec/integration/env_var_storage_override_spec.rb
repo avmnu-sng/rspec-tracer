@@ -18,8 +18,9 @@ require 'tmpdir'
 #              no per-field JSON under `<run_id>/`; the manifest
 #              pointer lives inside the DB).
 #
-# Per `feedback_v2_integration_exit_status`, both contexts assert
-# on the on-disk cache layout (filesystem state), not just exit code.
+# Both contexts assert on the on-disk cache layout (filesystem
+# state), not just exit code -- exit-status-only checks mask
+# cache-persistence bugs.
 #
 # rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/ExampleLength
 RSpec.describe 'RSPEC_TRACER_STORAGE env-var override integration' do

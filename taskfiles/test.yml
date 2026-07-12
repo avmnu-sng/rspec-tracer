@@ -99,7 +99,8 @@ tasks:
     desc: >-
       M8.2 edge case suite — adversarial filesystem + cache + concurrency
       tests under spec/edge_cases/. Excluded from the default rspec sweep
-      via .rspec --exclude-pattern (memory: feedback_rspec_exclude_pattern_positional).
+      via .rspec --exclude-pattern (note rspec silently ignores that flag
+      when explicit positional paths are passed).
       Runs per-PR via lint-and-specs.yml's `Test - Edge cases` step.
     env:
       COVERAGE_SUITE: edge-cases

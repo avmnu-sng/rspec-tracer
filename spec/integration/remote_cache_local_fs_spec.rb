@@ -18,8 +18,8 @@ require 'rspec_tracer/storage/schema'
 # closed the parity gap.
 #
 # Asserts on the content of what was uploaded / downloaded
-# (per `feedback_v2_integration_exit_status`: exit-status checks
-# mask cache-persistence bugs). The round-trip proves the two-tier
+# (exit-status checks mask cache-persistence bugs; only content
+# assertions catch them). The round-trip proves the two-tier
 # layout matches S3 semantics + the schema_version envelope is
 # preserved across the archive boundary.
 #

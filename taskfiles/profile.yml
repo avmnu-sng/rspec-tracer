@@ -8,9 +8,9 @@ version: '3'
 #   tmp/profile/<scenario>.txt    top-25 text summary
 #   tmp/profile/<scenario>.json   speedscope-loadable flamegraph JSON
 #
-# tmp/ is gitignored; profile output is a local-only reference. The
-# PR commit message + docs/revamp/PERFORMANCE_NOTES.md (M8.4-B)
-# paste relevant excerpts.
+# tmp/ is gitignored; profile output is a local-only reference.
+# Paste relevant excerpts into the PR commit message when a change
+# is motivated by profile data.
 #
 # stackprof is MRI-only (gated in the outer Gemfile via
 # `if RUBY_ENGINE == 'ruby'`). Tasks here will fail-fast on JRuby /

@@ -41,9 +41,11 @@ module BenchmarkHarness
   # which landed coverage_adapter (1.21x) + loaded_files_tracker
   # (1.22x) over the prior 1.20 threshold purely from GHA shared-
   # runner small-sample variance (5 iters per scenario; p50 is
-  # high-variance on microbenches at that sample size). Per
-  # feedback_gha_ratchet_shifts_non_uniform_vs_m2_max + the empirical
-  # WARN/FAIL distribution from the regen baseline. Tightening back
+  # high-variance on microbenches at that sample size). GHA runners
+  # shift non-uniformly per scenario vs the local baseline machine
+  # (Rails-heavy scenarios 3-3.5x slower, pure-Ruby microbenches flat
+  # or faster), so the 1.30 value came from the empirical WARN/FAIL
+  # distribution of the regen baseline. Tightening back
   # toward 1.20 is a 2.x calibration once multiple GHA baselines
   # accumulate enough variance signal to set a defensible per-
   # scenario threshold; tracked as a 2.1 followup.
@@ -201,7 +203,8 @@ module BenchmarkHarness
       # single signal for M8.0's perf payoff. M4.3 handoff target was
       # `<= 1.5x` of stock-rspec; structural Rails-boot floor caps the
       # achievable wall-clock ratio for this per-iter-subprocess shape
-      # at ~1.6x (per feedback_macro_vs_micro_perf_signal). The
+      # at ~1.6x (per-example tracer optimizations barely move a
+      # scenario dominated by boot cost, so Rails boot is the floor). The
       # `cold_rails_v2_warm_iter` companion below measures the
       # amortized-boot variant where Rails loads ONCE in a long-running
       # parent process; that scenario captures the steady-state

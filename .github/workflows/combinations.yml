@@ -37,10 +37,6 @@ name: combinations
 #
 # Plus 3 single-shot mutation jobs from (2) (no matrix axes; one cell
 # each on Ruby 3.3.10).
-#
-# See docs/revamp/sessions/M3.8-part-c-runtime-dep-matrix.md +
-# docs/revamp/sessions/M8.5-mutation-demote.md (local) for the full
-# design rationale.
 
 on:
   schedule:

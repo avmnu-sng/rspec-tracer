@@ -27,8 +27,9 @@
 # carries knapsack in the :development group (require: false default)
 # so the subprocess can require it on demand.
 #
-# Per `feedback_v2_integration_exit_status`: the cache-state
-# assertion (not just exit-status) is the load-bearing check.
+# The cache-state assertion (not just exit-status) is the
+# load-bearing check; exit-status-only checks mask cache-persistence
+# bugs.
 #
 require 'bundler'
 require 'fileutils'
@@ -72,8 +73,7 @@ RSpec.describe 'knapsack coexistence (smoke; M8.10)' do
       # first run the file doesn't exist; pre-creating an empty
       # report keeps the smoke focused on COMPOSITION (does
       # rspec-tracer + knapsack load + run cleanly?) rather than on
-      # knapsack's own bootstrap ceremony. Per
-      # feedback_v2_integration_exit_status the load-bearing
+      # knapsack's own bootstrap ceremony. The load-bearing
       # assertion is the cache-state, but we still want a clean
       # exit so the smoke is unambiguous.
       File.write(File.join(dir, 'knapsack_rspec_report.json'), '{}')
