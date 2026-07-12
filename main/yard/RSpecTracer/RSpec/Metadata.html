@@ -283,7 +283,7 @@ RunnerHook filter loop without synchronization.</p>
   <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Keep methods module-level via <code>def self.x</code> (not module_function) so mutant can observe them - module_function attaches the methods to an anonymous singleton that Method#source_location can't trace (memory: feedback_mutation_friendly_modules).</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Keep methods module-level via <code>def self.x</code> (not module_function) so mutant can observe them - module_function attaches the methods to an anonymous singleton that Method#source_location can't trace.</p></div></span>
   
 </li>
 
@@ -477,7 +477,7 @@ into the attribution set.</p>
 <p>Keep methods module-level via <code>def self.x</code> (not module_function)
 so mutant can observe them - module_function attaches the
 methods to an anonymous singleton that Method#source_location
-can't trace (memory: feedback_mutation_friendly_modules).</p>
+can't trace.</p>
 
   </div>
 </div>
@@ -522,7 +522,7 @@ can't trace (memory: feedback_mutation_friendly_modules).</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:15 2026 by
+  Generated on Sun Jul 12 14:59:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

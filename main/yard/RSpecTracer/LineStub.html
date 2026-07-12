@@ -98,8 +98,9 @@ branches sit outside the tracker_coverage_gate's
 100%-line+branch contract (the JRuby branch cannot be exercised
 on MRI; cross-engine coverage rollup would require fork-per-engine
 CI work that isn't justified for stub-line generation).</p>
-<p><code>def self.x</code> per feedback_mutation_friendly_modules so future
-mutation gating maps to the singleton form.</p>
+<p>Methods use <code>def self.x</code> (not module_function) so future mutation
+gating maps to the singleton form -- module_function attaches
+methods to an anonymous singleton that mutant cannot observe.</p>
 
   </div>
 </div>
@@ -225,7 +226,6 @@ mutation gating maps to the singleton form.</p>
       <pre class="lines">
 
 
-21
 22
 23
 24
@@ -234,10 +234,11 @@ mutation gating maps to the singleton form.</p>
 27
 28
 29
-30</pre>
+30
+31</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 21</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 22</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='kw'>for</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
   <span class='kw'>case</span> <span class='const'>RUBY_ENGINE</span>
@@ -282,7 +283,6 @@ mutation gating maps to the singleton form.</p>
       <pre class="lines">
 
 
-47
 48
 49
 50
@@ -294,10 +294,11 @@ mutation gating maps to the singleton form.</p>
 56
 57
 58
-59</pre>
+59
+60</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 47</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 48</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_jruby'>jruby</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_lines'>lines</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_foreach'>foreach</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='kw'>nil</span> <span class='rbrace'>}</span>
@@ -345,7 +346,6 @@ mutation gating maps to the singleton form.</p>
       <pre class="lines">
 
 
-34
 35
 36
 37
@@ -354,10 +354,11 @@ mutation gating maps to the singleton form.</p>
 40
 41
 42
-43</pre>
+43
+44</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 34</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/line_stub.rb', line 35</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ruby'>ruby</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_lines'>lines</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_foreach'>foreach</span><span class='lparen'>(</span><span class='id identifier rubyid_file_path'>file_path</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='kw'>nil</span> <span class='rbrace'>}</span>
@@ -379,7 +380,7 @@ mutation gating maps to the singleton form.</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:15 2026 by
+  Generated on Sun Jul 12 14:59:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

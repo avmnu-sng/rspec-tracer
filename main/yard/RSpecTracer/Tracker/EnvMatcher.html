@@ -94,11 +94,11 @@
 </p>
 <p>Wildcard env matching helper.</p>
 <p>Lives outside Configuration so configure's alias loop does not
-leak its private helpers as public _name DSL surface
-(memory: feedback_configure_dsl_private_leak). Pure utility
-module; def self.x style for mutant observability
-(memory: feedback_mutation_friendly_modules). ASCII-only source
-(memory: feedback_mutant_non_ascii_source).</p>
+leak its private helpers as public _name DSL surface (the loop
+wraps every instance method, private ones included). Pure
+utility module; def self.x style keeps methods observable to
+mutant (module_function's anonymous singleton is not).
+ASCII-only source, since mutant's parser rejects non-US-ASCII.</p>
 <p>Patterns accepted:</p>
 <pre class="code ruby"><code class="ruby">- Literal env name              &quot;AUTH_TOKEN&quot;
 - Single trailing wildcard      &quot;RAILS_*&quot;
@@ -590,7 +590,7 @@ rubocop:disable Metrics/PerceivedComplexity</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:15 2026 by
+  Generated on Sun Jul 12 14:59:19 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

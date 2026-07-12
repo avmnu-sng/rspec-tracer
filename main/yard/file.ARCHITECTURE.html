@@ -93,12 +93,18 @@ is either not our problem or an escape hatch.</p>
 </li>
 <li>
 <p><strong>Framework events</strong> — Rails template renders, I18n lookups, etc.
-<em>Observed via:</em> <code>ActiveSupport::Notifications</code> subscribers. Cost: already
-paid by Rails; we just listen.</p>
+Concretely: template / partial / collection renders, I18n
+translation loads, and (opt-in, via <code>track_ar_schema_notifications</code>)
+ActiveRecord schema-touching queries.
+<em>Observed via:</em> <code>ActiveSupport::Notifications</code> subscribers plus an
+<code>I18n::Backend::Base</code> prepend hook. Cost: already paid by Rails; we
+just listen.</p>
 </li>
 <li>
 <p><strong>Declared globs</strong> — inputs the user explicitly tells us to track, e.g.
-<code>config/locales/**/*.yml</code>, <code>db/schema.rb</code>, <code>Gemfile.lock</code>.
+<code>config/locales/**/*.yml</code>, <code>db/schema.rb</code>, <code>Gemfile.lock</code>. Declared
+through <code>track_files</code> / <code>track_rails_defaults</code> in config, or
+per-example via the <code>tracks:</code> metadata DSL.
 <em>Observed via:</em> directory walk at boot, digest cache, declared-to-example
 attribution rules. Cost: proportional to declared files, ~O(20 ms) at
 boot.</p>
@@ -201,77 +207,78 @@ etc.) and we want each observer to tag its kind narrowly.</p>
 replaceable independently.</p>
 <h2 id="Directory_layout__2_0_">Directory layout (2.0)</h2>
 <pre class="code text"><code class="text">rspec-tracer/
-├── lib/
-│   └── rspec_tracer/
-│       ├── version.rb
-│       ├── configuration.rb
-│       ├── tracker/                  ← core engine
-│       │   ├── input.rb
-│       │   ├── coverage_adapter.rb
-│       │   ├── io_hooks/
-│       │   │   ├── file.rb
-│       │   │   ├── io.rb
-│       │   │   ├── yaml.rb
-│       │   │   ├── json.rb
-│       │   │   └── kernel.rb
-│       │   ├── notifications/
-│       │   │   └── action_view.rb
-│       │   ├── declared_globs.rb
-│       │   ├── whole_suite_invalidators.rb
-│       │   ├── dependency_graph.rb
-│       │   ├── filter.rb
-│       │   └── example_registry.rb
-│       ├── storage/
-│       │   ├── backend.rb            ← protocol
-│       │   ├── json_backend.rb
-│       │   ├── sqlite_backend.rb     ← optional
-│       │   └── schema_version.rb
-│       ├── remote_cache/
-│       │   ├── backend.rb            ← protocol
-│       │   ├── s3_backend.rb
-│       │   ├── local_fs_backend.rb
-│       │   └── redis_backend.rb      ← optional
-│       ├── reporters/
-│       │   ├── base.rb
-│       │   ├── json_reporter.rb
-│       │   ├── terminal_reporter.rb
-│       │   └── html_reporter.rb
-│       ├── rspec/
-│       │   ├── runner_hook.rb
-│       │   ├── reporter_hook.rb
-│       │   ├── metadata.rb           ← per-example `tracks:` DSL
-│       │   └── parallel_tests.rb
-│       ├── rails/
-│       │   ├── preset.rb
-│       │   └── railtie.rb            ← auto-load when Rails present
-│       └── cli.rb
-├── spec/
-│   ├── spec_helper.rb
-│   ├── support/
-│   ├── tracker/
-│   ├── storage/
-│   ├── remote_cache/
-│   ├── reporters/
-│   ├── rspec/
-│   ├── rails/
-│   ├── integration/
-│   │   └── reference_rails_app_spec.rb
-│   └── benchmark/
-│       └── cold_boot_spec.rb
-├── spec/fixtures/
-│   ├── rails_app/                    ← real Rails 7.1 app, load-bearing
-│   └── ruby_app/
-├── Taskfile.yml                      ← dev loop; see DEV_LOOP.md
-├── bin/
-│   ├── rspec-tracer                  ← CLI entry
-│   ├── actionlint                    ← installed by `task install:tools`
-│   └── shellcheck                    ← installed by `task install:tools`
-├── benchmark/
-│   ├── ratchet.json                  ← committed benchmark thresholds
-│   └── harness.rb
-├── docs/
-│   └── revamp/                       ← this directory
-└── ...
+|-- lib/
+|   `-- rspec_tracer/
+|       |-- version.rb
+|       |-- configuration.rb
+|       |-- tracker/                  &lt;- core engine
+|       |   |-- input.rb
+|       |   |-- coverage_adapter.rb
+|       |   |-- io_hooks/
+|       |   |   |-- file.rb
+|       |   |   |-- io.rb
+|       |   |   |-- yaml.rb
+|       |   |   |-- json.rb
+|       |   |   `-- kernel.rb
+|       |   |-- notifications/
+|       |   |   `-- action_view.rb
+|       |   |-- declared_globs.rb
+|       |   |-- whole_suite_invalidators.rb
+|       |   |-- dependency_graph.rb
+|       |   |-- filter.rb
+|       |   `-- example_registry.rb
+|       |-- storage/
+|       |   |-- backend.rb            &lt;- protocol
+|       |   |-- json_backend.rb
+|       |   |-- sqlite_backend.rb     &lt;- optional
+|       |   `-- schema_version.rb
+|       |-- remote_cache/
+|       |   |-- backend.rb            &lt;- protocol
+|       |   |-- s3_backend.rb
+|       |   |-- local_fs_backend.rb
+|       |   `-- redis_backend.rb      &lt;- optional
+|       |-- reporters/
+|       |   |-- base.rb
+|       |   |-- json_reporter.rb
+|       |   |-- terminal_reporter.rb
+|       |   `-- html_reporter.rb
+|       |-- rspec/
+|       |   |-- runner_hook.rb
+|       |   |-- reporter_hook.rb
+|       |   |-- metadata.rb           &lt;- per-example `tracks:` DSL
+|       |   `-- parallel_tests.rb
+|       |-- rails/
+|       |   |-- preset.rb
+|       |   `-- railtie.rb            &lt;- auto-load when Rails present
+|       `-- cli.rb
+|-- spec/
+|   |-- spec_helper.rb
+|   |-- support/
+|   |-- tracker/
+|   |-- storage/
+|   |-- remote_cache/
+|   |-- reporters/
+|   |-- rspec/
+|   |-- rails/
+|   |-- integration/
+|   |   `-- reference_rails_app_spec.rb
+|   `-- benchmark/
+|       `-- cold_boot_spec.rb
+|-- spec/fixtures/
+|   |-- rails_app/                    &lt;- real Rails 7.1 app, load-bearing
+|   `-- ruby_app/
+|-- Taskfile.yml                      &lt;- dev loop; see DEV_LOOP.md
+|-- bin/
+|   |-- rspec-tracer                  &lt;- CLI entry
+|   |-- actionlint                    &lt;- installed by `task install:tools`
+|   `-- shellcheck                    &lt;- installed by `task install:tools`
+|-- benchmark/
+|   |-- ratchet.json                  &lt;- committed benchmark thresholds
+|   `-- harness.rb
+|-- docs/
+|   |-- CI_RECIPES.md                 &lt;- per-provider CI cache recipes
+|   `-- internals/                    &lt;- subsystem deep-dives
+`-- ...
 </code></pre>
 <h2 id="Contracts_between_layers">Contracts between layers</h2>
 <h3 id="Tracker___RSpec_integration">Tracker ↔ RSpec integration</h3>
@@ -350,6 +357,182 @@ replaceable independently.</p>
       → finalize writes a fresh cache
 </code></pre>
 <p>Never propagate storage errors to the caller.</p>
+<h2 id="Soundness_model">Soundness model</h2>
+<p>&quot;Sound&quot; here means: if a recorded input changes, the tracer is
+guaranteed to notice and to re-run every example that recorded it.
+Not every input type can carry that guarantee, and this section says
+exactly which ones do. The governing rule for everything the tracer
+does observe:</p>
+<blockquote>
+<p><strong>When a recorded input is ambiguous, the tracer re-runs.</strong> Doubt
+is resolved by running the example, never by skipping it.</p>
+</blockquote>
+<p>The honest cost sits on the other side of that line: an input the
+tracer never observed cannot trigger a re-run. The tiers below
+classify every input type by which side it falls on. Independent of
+tier, examples that previously failed, were flagged flaky, were
+pending, or were interrupted are always re-run, as is any example
+with no cache entry -- skip decisions apply only to examples with a
+clean, fully-recorded history.</p>
+<h3 id="The_four_tiers">The four tiers</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sound</strong></td>
+<td>A change to the recorded input is always detected; every example that recorded it re-runs.</td>
+</tr>
+<tr>
+<td><strong>Conservative</strong></td>
+<td>Detection is sound, but attribution over-approximates: more examples re-run than strictly necessary, never fewer (within the observed scope).</td>
+</tr>
+<tr>
+<td><strong>Heuristic</strong></td>
+<td>Observation rides an event or hook surface that covers the common cases; an input consumed outside that surface is not recorded.</td>
+</tr>
+<tr>
+<td><strong>Blind spot</strong></td>
+<td>Not observable at all. Declare it via the escape hatch below, or the tracer cannot see it.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Classification_by_input_type">Classification by input type</h3>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Mechanism</th>
+<th>Tier</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whole-suite invalidators (<code>Gemfile.lock</code>, <code>.ruby-version</code>, <code>.rspec-tracer</code>, gem version)</td>
+<td>Digest snapshot at boot, value-equality compare</td>
+<td>Sound</td>
+<td>Any mismatch, including a watched file appearing or disappearing, forces a full run.</td>
+</tr>
+<tr>
+<td>Project Ruby source (<code>.rb</code> under root, not filtered)</td>
+<td><code>Coverage</code> diff per example + loaded-files over-approximation</td>
+<td>Sound detection, conservative attribution</td>
+<td>Content change is always caught (SHA256). Per-example precision degrades to &quot;every example that ran after the file loaded&quot; for files whose use leaves no coverage delta (constant lookups, memoized state).</td>
+</tr>
+<tr>
+<td>Declared file globs (<code>track_files</code>, <code>tracks: { files: ... }</code>)</td>
+<td>Boot-time walk + digest per run</td>
+<td>Sound, given the declaration</td>
+<td>The guarantee is conditional and applies to files the cache has seen: any change or deletion under a declared glob re-runs the attributed examples. Files added after the last observed run follow the &quot;New source files&quot; row below.</td>
+</tr>
+<tr>
+<td>Declared ENV vars (<code>track_env</code>, <code>tracks: { env: ... }</code>)</td>
+<td>Per-run value digest, compared against the cached snapshot</td>
+<td>Sound, two documented exceptions</td>
+<td>(1) An unset variable and an empty string digest identically, so unset -&gt; <code>&quot;&quot;</code> is not a change. (2) Wildcard patterns (<code>RAILS_*</code>) re-expand against the live environment each run; a variable that disappears entirely also drops off the watch list. Prefer literal names for variables that come and go.</td>
+</tr>
+<tr>
+<td>Boot-set files (everything loaded before the first example: <code>spec_helper</code> requires, gem-loaded engine <code>lib/</code>, eager-loaded <code>app/</code>)</td>
+<td>Digest snapshot of the boot set; any change invalidates the whole suite</td>
+<td>Conservative</td>
+<td>Deliberately coarse: safe under <code>config.eager_load = true</code> and constant autoload timing, at the cost of whole-suite re-runs on boot-file edits. Opt-out: <code>transitive_load_tracking false</code> (re-opens the constants-lookup blind spot).</td>
+</tr>
+<tr>
+<td>New source files</td>
+<td>Boot-set snapshot compare + per-run re-walk of declared globs and <code>lib/**/*.rb</code></td>
+<td>Conservative when boot-loaded; blind spot when runtime-only</td>
+<td>A new file that loads during boot (eager-loaded <code>app/</code>, <code>spec_helper</code> requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples -- it enters the graph on the first run that observes it.</td>
+</tr>
+<tr>
+<td>File I/O (<code>File.read</code>, <code>YAML.load_file</code>, <code>JSON.load_file</code>, <code>IO.read</code>, <code>Kernel#load</code>, ...)</td>
+<td><code>Module#prepend</code> hooks on class-level entry points</td>
+<td>Heuristic</td>
+<td>Records exactly what passes through the hooked methods, for allow-listed extensions (<code>.yml .yaml .json .erb .haml .slim .builder .jbuilder .ru .rake</code>; <code>.rb</code> for <code>Kernel#load</code>). Reads via unhooked APIs, C extensions, other extensions, or threads other than the example's are not recorded.</td>
+</tr>
+<tr>
+<td>Rails template renders</td>
+<td><code>render_{template,partial,collection}.action_view</code> subscribers</td>
+<td>Heuristic</td>
+<td>Attribution is thread-local: renders on another thread (e.g. an app server thread under browser tests) are not attributed. Malformed event payloads are skipped by design.</td>
+</tr>
+<tr>
+<td>I18n translations</td>
+<td>Prepend on <code>I18n::Backend::Base#load_translations</code></td>
+<td>Heuristic</td>
+<td>Covers backends that super-call <code>Base</code> (Simple, Chain, Cascade). A backend that never calls up is invisible; YAML-file backends are also caught by the I/O hook.</td>
+</tr>
+<tr>
+<td>ActiveRecord schema coupling (opt-in)</td>
+<td>First <code>sql.active_record</code> event per example attributes <code>db/schema.rb</code> + <code>db/structure.sql</code></td>
+<td>Heuristic</td>
+<td>A proxy, not a parse: any DB-touching example couples to the whole schema file (over-approximate per table), but only if a query event fires on the example's thread during the example.</td>
+</tr>
+<tr>
+<td>Runtime metaprogramming, monkey-patches in unexecuted or filtered files, ENV branches without declarations, refinements in unexecuted files, database contents</td>
+<td>none</td>
+<td>Blind spot</td>
+<td>See below.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="What_we_don_t_detect">What we don't detect</h3>
+<p>These are the known blind spots -- inputs with no observation
+mechanism. If one of them can change an example's outcome, the tracer
+will not re-run that example on its own:</p>
+<ul>
+<li><strong>Runtime metaprogramming.</strong> Behavior manufactured from non-file
+state at runtime (<code>define_method</code> / <code>const_set</code> driven by data the
+tracer never saw as a file read).</li>
+<li><strong>Monkey-patches in files that never execute in this process</strong> --
+most commonly gem code outside the project root, or paths excluded
+by a user filter. A patched gem upgrade is still caught, but only
+at <code>Gemfile.lock</code> granularity (whole-suite invalidator).</li>
+<li><strong>ENV-var branches without declarations.</strong> The tracer watches only
+the ENV names that config or example metadata declares.</li>
+<li><strong>Refinements in unexecuted files.</strong> A <code>using</code> whose refinement file
+never loads during the suite leaves no coverage or load trace.</li>
+<li><strong>Runtime-only new files.</strong> A file added since an example last ran
+and consumed only at runtime cannot be in that example's recorded
+inputs (see the &quot;New source files&quot; row above); boot-loaded
+additions are caught via the boot set.</li>
+<li><strong>State outside the filesystem.</strong> Database rows, external services,
+the clock: the tracer digests files, not the world. Schema files
+are the closest observable proxy (see the opt-in row above).</li>
+</ul>
+<p>The escape hatch for all of these is declaration -- turning an
+unobservable input into a declared (sound-tier) one:</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer -- suite-wide
+</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_track_files'>track_files</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>config/feature_flags/**/*.yml</span><span class='tstring_end'>&#39;</span></span>
+  <span class='id identifier rubyid_track_env'>track_env</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>FEATURE_X</span><span class='tstring_end'>&#39;</span></span>
+<span class='kw'>end</span>
+
+<span class='comment'># or per example group, via metadata
+</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_describe'>describe</span> <span class='const'>Checkout</span><span class='comma'>,</span> <span class='label'>tracks:</span> <span class='lbrace'>{</span> <span class='label'>files:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>db/seeds.rb</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+                                   <span class='label'>env:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PAYMENT_GATEWAY</span><span class='tstring_end'>&#39;</span></span> <span class='rbrace'>}</span> <span class='kw'>do</span>
+  <span class='comment'># ...
+</span><span class='kw'>end</span>
+</code></pre>
+<h3 id="Reading_the_tiers_as_a_user">Reading the tiers as a user</h3>
+<ul>
+<li>A <strong>sound</strong> input needs no thought: edit it and the right examples
+re-run.</li>
+<li>A <strong>conservative</strong> input trades precision for safety: expect
+occasional larger-than-necessary re-runs (a boot-file edit re-runs
+everything), never a missed one.</li>
+<li>A <strong>heuristic</strong> input is trustworthy inside its stated surface;
+when your suite consumes it outside that surface (another thread,
+an exotic backend, an unhooked read path), add a declaration.</li>
+<li>A <strong>blind spot</strong> must be declared or accepted. When in doubt about
+whether something is observed, declare it -- a redundant
+declaration costs one digest per run; a missed input costs a stale
+green.</li>
+</ul>
 <h2 id="Schema_versioning">Schema versioning</h2>
 <ul>
 <li><code>schema_version</code> is an integer field in the root of every cache manifest.</li>
@@ -403,7 +586,7 @@ primitive but don't schedule).</li>
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:12 2026 by
+  Generated on Sun Jul 12 14:59:15 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -208,6 +208,10 @@ All four are slated for removal in 3.0.</p>
 <p>A <code>.rspec-tracer</code> file using only the old names runs identically to one
 using the new names; the warns are advisory.</p>
 <h2 id="Behavior_changes_worth_knowing">Behavior changes worth knowing</h2>
+<p>For the full classification of which invalidation decisions are
+guaranteed, conservative, or heuristic -- and what the tracer cannot
+observe at all -- see the
+<a href="ARCHITECTURE.md#soundness-model">soundness model</a>.</p>
 <h3 id="Duplicate_example_identities">Duplicate example identities</h3>
 <p>rspec-tracer identifies each example by a hash of its <code>describe</code>
 chain, description, and file, so it can carry that example's
@@ -355,7 +359,7 @@ RSpec / SimpleCov versions and your <code>.rspec-tracer</code> config.</li>
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:12 2026 by
+  Generated on Sun Jul 12 14:59:15 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

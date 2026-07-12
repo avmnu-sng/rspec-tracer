@@ -107,7 +107,7 @@
       <span class='comment'># Keep methods module-level via `def self.x` (not module_function)
 </span>      <span class='comment'># so mutant can observe them - module_function attaches the
 </span>      <span class='comment'># methods to an anonymous singleton that Method#source_location
-</span>      <span class='comment'># can&#39;t trace (memory: feedback_mutation_friendly_modules).
+</span>      <span class='comment'># can&#39;t trace.
 </span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_tracks_for'>tracks_for</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_files'>files</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
         <span class='id identifier rubyid_envs'>envs</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
@@ -157,7 +157,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:14 2026 by
+  Generated on Sun Jul 12 14:59:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

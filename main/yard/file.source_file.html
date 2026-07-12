@@ -66,9 +66,9 @@
 </span>  <span class='comment'># Post-coverage-stack retirement, the only caller is example.rb
 </span>  <span class='comment'># (the legacy CoverageReporter that previously used these is gone).
 </span>  <span class='comment'>#
-</span>  <span class='comment'># All methods declared `def self.x` per
-</span>  <span class='comment'># feedback_mutation_friendly_modules so mutant observes mutations
-</span>  <span class='comment'># through the singleton call path.
+</span>  <span class='comment'># All methods declared `def self.x` (not module_function) so mutant
+</span>  <span class='comment'># observes mutations through the singleton call path;
+</span>  <span class='comment'># module_function&#39;s anonymous singleton breaks that observability.
 </span>  <span class='kw'>module</span> <span class='const'>SourceFile</span>
     <span class='comment'># Internal constant.
 </span>    <span class='comment'># @api private
@@ -117,7 +117,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:14 2026 by
+  Generated on Sun Jul 12 14:59:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

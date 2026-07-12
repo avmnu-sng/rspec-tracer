@@ -74,8 +74,9 @@
 </span>  <span class='comment'># on MRI; cross-engine coverage rollup would require fork-per-engine
 </span>  <span class='comment'># CI work that isn&#39;t justified for stub-line generation).
 </span>  <span class='comment'>#
-</span>  <span class='comment'># `def self.x` per feedback_mutation_friendly_modules so future
-</span>  <span class='comment'># mutation gating maps to the singleton form.
+</span>  <span class='comment'># Methods use `def self.x` (not module_function) so future mutation
+</span>  <span class='comment'># gating maps to the singleton form -- module_function attaches
+</span>  <span class='comment'># methods to an anonymous singleton that mutant cannot observe.
 </span>  <span class='kw'>module</span> <span class='const'>LineStub</span>
     <span class='comment'># Internal helper for the tracer pipeline.
 </span>    <span class='comment'># @api private
@@ -122,7 +123,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:14 2026 by
+  Generated on Sun Jul 12 14:59:18 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

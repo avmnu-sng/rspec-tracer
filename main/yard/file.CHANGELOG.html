@@ -60,6 +60,43 @@
       </div>
 
       <div id="content"><div id='filecontents'><h2 id="_Unreleased_">[Unreleased]</h2>
+<h3 id="Added">Added</h3>
+<ul>
+<li><strong>Soundness model documentation.</strong> New ARCHITECTURE.md section
+classifying what the tracer guarantees (content digests, explicit
+declarations, env snapshots), where it is deliberately
+conservative, where it relies on heuristics, and what it cannot
+observe at all -- with the <code>tracks:</code> DSL as the escape hatch
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/226">#226</a>).</li>
+<li><strong>Cost framing for CI.</strong> New README section with measured cold/warm
+timings and a formula for estimating CI-minute and dollar savings
+from your own suite's numbers and your provider's rate
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/227">#227</a>).</li>
+<li><strong>Maintenance and Ruby EOL policy.</strong> New README Maintenance
+section: each Ruby is supported until at least upstream EOL plus
+6 months, with a per-version table
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/229">#229</a>).</li>
+<li><strong>COOKBOOK recipes for flaky-test detection and file-to-test
+dependency mapping</strong>, placed ahead of the acceleration recipes
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/224">#224</a>).</li>
+</ul>
+<h3 id="Changed">Changed</h3>
+<ul>
+<li><strong>README restructured as a landing page</strong>
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/223">#223</a>):
+measured, attributed numbers, quick start, safety summary, and
+data-stays-local positioning
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/225">#225</a>) up
+front; the input-taxonomy depth moved to ARCHITECTURE.md and the
+eager-load precision guidance to COOKBOOK.md; per-provider CI
+cache recipes (<a href="docs/CI_RECIPES.md"><code>docs/CI_RECIPES.md</code></a>) linked
+from the quick start
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/228">#228</a>).</li>
+<li><strong>Gem summary and description repositioned</strong> to lead with
+flaky-test detection and dependency mapping, with
+re-run-only-what-changed as the closing step
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/224">#224</a>).</li>
+</ul>
 <h3 id="Fixed">Fixed</h3>
 <ul>
 <li><strong>Duplicate-example drop no longer discards nested spec files</strong>
@@ -680,7 +717,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:52:13 2026 by
+  Generated on Sun Jul 12 14:59:17 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
