@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# End-to-end integration for parallel_tests + the M5.1 hook rework.
+# End-to-end integration for parallel_tests + the v2 hook chain.
 # Drives the benchmark ruby_app fixture via `parallel_rspec spec` in a
 # subprocess, then asserts that:
 #
@@ -10,7 +10,7 @@
 #     all example ids the workers observed (union-of-peers merge)
 #   - the lock file is cleaned up after the last worker finishes
 #   - a warm run produces a zero-re-run filter decision
-#     (M4.3-style filter assertion, not just exit status)
+#     (filter-decision assertion, not just exit status)
 #
 # Depends on the `parallel_tests` gem being in the fixture's Gemfile.
 
@@ -20,8 +20,8 @@ require 'json'
 require 'open3'
 require 'set'
 
-# Module-scoped fixture constants + helpers (mirrors RailsAppSpecHelpers
-# from M4.3). Keeps `let` out of the before(:all) hook that installs the
+# Module-scoped fixture constants + helpers (mirrors
+# RailsAppSpecHelpers from rails_app_spec.rb). Keeps `let` out of the before(:all) hook that installs the
 # fixture's bundle - RSpec disallows memoized accessors there.
 module ParallelTestsSpecHelpers
   FIXTURE_ROOT = File.expand_path('../../benchmark/fixtures/ruby_app', __dir__)
@@ -117,14 +117,14 @@ RSpec.describe 'parallel_tests v2 engine integration' do
       expect(all_examples.keys.size).to be >= 3
     end
 
-    # M8.10: pre-fix, every worker emitted reports into per-worker
+    # Pre-fix, every worker emitted reports into per-worker
     # `parallel_tests_N` dirs and then `purge_worker_dirs!` deleted
     # them, leaving zero usable output for the user. Now the
     # last-process merge emits reporters ONCE at the top-level
     # location BEFORE the purge, so the user sees one HTML report,
     # one JSON report, and zero leftover per-worker report dirs.
     # rubocop:disable RSpec/ExampleLength
-    it 'writes a single merged HTML + JSON report at the top-level report dir (M8.10)' do
+    it 'writes a single merged HTML + JSON report at the top-level report dir' do
       run_parallel
 
       report_root = ParallelTestsSpecHelpers::REPORT_ROOT

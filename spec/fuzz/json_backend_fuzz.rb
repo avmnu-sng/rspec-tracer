@@ -11,9 +11,9 @@
 # byte inputs. Any escape that isn't the expected nil / Snapshot pair
 # is a failure mode worth investigating.
 #
-# Replaces the pre-M5.1 `cache_loader_fuzz.rb` which targeted
+# Replaces an earlier `cache_loader_fuzz.rb` which targeted
 # `RSpecTracer::Cache#load_all_examples_cache` (retired with the
-# legacy reporter stack in M6.2).
+# legacy reporter stack).
 #
 # Usage:
 #   ITERATIONS=100   bundle exec ruby spec/fuzz/json_backend_fuzz.rb

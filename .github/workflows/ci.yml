@@ -46,7 +46,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # Per-subject mutation flags (M8.6). When a PR's diff doesn't
+          # Per-subject mutation flags. When a PR's diff doesn't
           # touch a subject's lib/+spec/ surface, that subject's
           # mutation gate is skipped on the per-PR run — same coverage
           # signal still runs at merge-to-main (full-matrix path) and
@@ -61,7 +61,7 @@ jobs:
           # silently miss any one of them.
           MUT_TRACKER=0; MUT_STORAGE=0; MUT_RSPEC=0; MUT_TOP_LEVEL=0
           MUT_FORCE_ALL=0
-          # M8.4-B multi-tier granularity: gate the rails fixture cell
+          # Multi-tier granularity: gate the rails fixture cell
           # (the `rails:` job in full-matrix.yml) on tier=test as well
           # as tier=build, so spec-only PRs that touch the rails
           # fixture paths still run the full Rails matrix. Without

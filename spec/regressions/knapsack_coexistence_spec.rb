@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-# M8.10: knapsack composition smoke spec.
+# knapsack composition smoke spec.
 #
 # knapsack (https://github.com/KnapsackPro/knapsack) is the dominant
 # free test-splitter on production Rails CI - it pre-filters which
 # spec files run on each CI node so the suite parallelizes across
-# machines. M9.0 shipped coexistence smokes for rspec-retry +
+# machines. We ship coexistence smokes for rspec-retry +
 # rspec-rerun (which prepend RSpec::Core::Example / register a
 # Formatter); knapsack hooks into RSpec.configure callbacks +
 # logs example timings. Different surface from retry/rerun but the
@@ -39,7 +39,7 @@ require 'tmpdir'
 
 # rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations
 # rubocop:disable RSpec/ExampleLength
-RSpec.describe 'knapsack coexistence (smoke; M8.10)' do
+RSpec.describe 'knapsack coexistence (smoke)' do
   let(:project_root) { File.expand_path('../..', __dir__) }
   let(:gemfile_path) { File.join(project_root, 'Gemfile') }
 

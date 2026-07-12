@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M8.0 byte-equivalence assertion: the post-retirement
+# Byte-equivalence assertion: the post-retirement
 # Reporters::CoverageJsonReporter must produce coverage.json that
 # matches the pre-retirement legacy CoverageReporter / CoverageWriter
 # output (byte-for-byte modulo the per-run timestamp + machine-local
@@ -78,7 +78,7 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
         "#{JSON.pretty_generate(RSpecTracer: { coverage: actual_relativized, timestamp: 0 })}\n",
         encoding: 'UTF-8'
       )
-      warn "[M8.0 golden capture] wrote #{actual_relativized.size} keys -> #{golden_path}"
+      warn "[coverage.json golden capture] wrote #{actual_relativized.size} keys -> #{golden_path}"
       next
     end
 
@@ -87,7 +87,7 @@ RSpec.describe 'coverage.json byte-equivalence round-trip vs golden' do
     expect(actual_payload['RSpecTracer']['timestamp']).to be_a(Integer)
     expect(actual_relativized).not_to be_empty
     if actual_relativized != golden_payload['RSpecTracer']['coverage']
-      warn "[M8.0 round-trip diff debug] inner rspec output:\n#{@rspec_out}"
+      warn "[coverage.json round-trip diff debug] inner rspec output:\n#{@rspec_out}"
     end
     expect(actual_relativized).to eq(golden_payload['RSpecTracer']['coverage'])
   end

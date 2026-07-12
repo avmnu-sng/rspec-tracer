@@ -438,11 +438,11 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       expect(ordering).to eq(%i[pid_wait peer_wait merge])
     end
 
-    # M8.10: emit_merged_reporters! must run BEFORE purge_worker_dirs!
+    # emit_merged_reporters! must run BEFORE purge_worker_dirs!
     # so the reporter Registry consumes the merged top-level snapshot
     # AND writes its terminal/JSON/HTML output before the per-worker
     # parallel_tests_N dirs are removed.
-    it 'emits merged reporters before purging the per-worker dirs (M8.10)' do
+    it 'emits merged reporters before purging the per-worker dirs' do
       ordering = []
       allow(described_class).to receive(:emit_merged_reporters!) { ordering << :emit }
       allow(described_class).to receive(:purge_worker_dirs!) { ordering << :purge }
@@ -473,7 +473,7 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
     end
   end
 
-  describe '.emit_merged_reporters! (M8.10)' do
+  describe '.emit_merged_reporters!' do
     let(:base_dir) { File.dirname(cache_path) }
     let(:top_report_dir) { File.dirname(report_path) }
     let(:merged_snapshot) { instance_double(RSpecTracer::Storage::Snapshot) }
@@ -484,7 +484,7 @@ RSpec.describe RSpecTracer::RSpec::ParallelTests do
       allow(RSpecTracer).to receive(:rails?).and_return(false)
     end
 
-    it 'is a no-op for non-:json storage backends (M3.8 SqliteBackend)' do
+    it 'is a no-op for non-:json storage backends (SqliteBackend)' do
       allow(RSpecTracer).to receive(:storage_backend).and_return(:sqlite)
       expect(RSpecTracer::Reporters::Registry).not_to receive(:emit_all)
 

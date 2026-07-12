@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Property-based invariants for Tracker::Filter. Runs 500 iterations
-# per property per the M3.5 acceptance criterion. Generators are
+# per property per the original acceptance criterion. Generators are
 # pulled into a helper module because Rantly's property_of block
 # evaluates in Rantly's instance context - closure-captured lets
 # are not visible (same pattern as invalidation_monotonic_spec.rb

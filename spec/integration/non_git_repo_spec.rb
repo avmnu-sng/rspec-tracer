@@ -7,7 +7,7 @@ require 'json'
 require 'open3'
 require 'tmpdir'
 
-# M8.10: rspec-tracer in a non-git directory (graceful degradation).
+# rspec-tracer in a non-git directory (graceful degradation).
 #
 # Real-world scenarios where this happens:
 #   - User runs rspec in a tarball-extracted source dir.
@@ -30,7 +30,7 @@ require 'tmpdir'
 # parent directory; verifies the run produces a usable cache.
 #
 # rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/ExampleLength
-RSpec.describe 'rspec-tracer in a non-git working directory (M8.10)' do
+RSpec.describe 'rspec-tracer in a non-git working directory' do
   let(:project_root) { File.expand_path('../..', __dir__) }
   let(:gemfile_path) { File.join(project_root, 'Gemfile') }
 

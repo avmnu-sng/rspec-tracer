@@ -3,7 +3,7 @@
 ENV['RAILS_ENV'] ||= 'test'
 
 # Enable rspec-tracer for this fixture when RSPEC_TRACER=1 is set (the
-# M4.3 integration matrix + the benchmark harness cold_rails_v2 both
+# integration matrix + the benchmark harness cold_rails_v2 both
 # flip this on). Load order matters:
 #
 #   1. SimpleCov.start (Coverage.start) BEFORE Rails loads, so every
@@ -75,7 +75,7 @@ RSpec.configure do |config|
   end
 
   # Default: transactional fixtures on (matches Rails idiomatic test
-  # setup; covered by `task test:features:rails`). When the M8.2-B
+  # setup; covered by `task test:features:rails`). When the
   # narrow-AR-schema scenario flips RSPEC_TRACER_RAILS_TRANSACTIONAL=false,
   # each example commits its writes to the test DB and the per-example
   # schema-subscriber attribution path (Tracker::Notifications) becomes

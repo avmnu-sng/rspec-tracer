@@ -130,7 +130,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
     end
   end
 
-  describe 'B8 fix: TEST_SUITE_ID alone is valid' do
+  describe 'regression: TEST_SUITE_ID alone is valid' do
     it 'scopes uploads under <ref>/<test_suite_id>/ when TEST_SUITE_ID is set without TEST_SUITES' do
       backend = build_backend(branch: 'main', default_branch: 'main', test_suite_id: '3')
       write_local_cache(run_id: 'run-suite-3')
@@ -231,7 +231,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
     end
   end
 
-  # M8.4-B tree-SHA secondary index: rebase + revert commits produce
+  # Tree-SHA secondary index: rebase + revert commits produce
   # a different commit-SHA but the SAME tree-SHA. The standard
   # `<tier>/<ref>/cache.tar.gz` layout misses on those scenarios; the
   # tree-SHA pointer at `<tier>/by_tree/<tree_sha>` resolves the tree
@@ -300,7 +300,7 @@ RSpec.describe 'RemoteCache::S3Backend against LocalStack', :integration, :local
       backend = build_backend(branch: 'main', default_branch: 'main', prefix: prefix)
       write_local_cache(run_id: 'run-tree-4')
 
-      # No tree_sha kwarg = pre-M8.4-B behavior; works exactly as before.
+      # No tree_sha kwarg = pre-index behavior; works exactly as before.
       backend.upload('commit-Y')
 
       FileUtils.rm_rf(Dir.glob(File.join(@cache_path, '*')))

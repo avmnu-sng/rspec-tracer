@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# M8.2-B narrow-AR-schema fixture spec. Two examples:
+# Narrow-AR-schema fixture spec. Two examples:
 #   - one issues an AR query (User.create!) so the sql.active_record
 #     subscriber fires and rspec-tracer's record_ar_schema attributes
 #     `db/schema.rb` to this example_id;
@@ -18,7 +18,7 @@ RSpec.describe "narrow AR schema attribution" do
   it "creates a user (touches AR)" do
     # Time-suffixed email so re-runs under non-transactional fixtures
     # don't collide on the email uniqueness index even without
-    # DatabaseCleaner. (DatabaseCleaner was tried in M8.2-B and rejected:
+    # DatabaseCleaner. (DatabaseCleaner was tried here and rejected:
     # its TRUNCATE / DELETE queries fire inside the per-example bucket,
     # which then attributes db/schema.rb to *every* example via the
     # sql.active_record subscriber - completely defeating the test of

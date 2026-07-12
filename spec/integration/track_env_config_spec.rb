@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M5.3 end-to-end integration for the config-level `track_env(*names)`
+# End-to-end integration for the config-level `track_env(*names)`
 # DSL + wildcard env matching. Drives the reference Rails fixture at
 # `spec/fixtures/rails_app/` via subprocess RSpec.
 #
@@ -70,7 +70,7 @@ end
 
 # rubocop:disable RSpec/DescribeClass, RSpec/InstanceVariable, RSpec/BeforeAfterAll
 # rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
-RSpec.describe 'M5.3 config-level track_env DSL integration' do
+RSpec.describe 'config-level track_env DSL integration' do
   include TrackEnvConfigSpecHelpers
 
   before(:all) { TrackEnvConfigSpecHelpers.ensure_bundle_and_db }

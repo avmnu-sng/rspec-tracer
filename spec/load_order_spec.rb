@@ -2,7 +2,7 @@
 
 require 'rspec_tracer'
 
-# M8.9: SimpleCov load-order is part of the documented contract -
+# SimpleCov load-order is part of the documented contract -
 # SimpleCov.start MUST run before RSpecTracer.start when both are
 # used. When the user has SimpleCov loaded but not started, we'd
 # silently call ::Coverage.start and SimpleCov's later setup would

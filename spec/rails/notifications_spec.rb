@@ -10,7 +10,7 @@ require 'rspec_tracer/rails/notifications'
 # Unit spec for RSpecTracer::Rails::Notifications. The dev Gemfile does
 # not carry Rails / ActiveSupport, so this spec stubs a minimal
 # AS::Notifications surface that records subscribe / unsubscribe /
-# publish calls. Full real-Rails fixture boot is M4.3 territory.
+# publish calls. Full real-Rails fixture boot is integration-matrix territory.
 # rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
 RSpec.describe RSpecTracer::Rails::Notifications do
   let(:tmpdir) { Dir.mktmpdir('rspec-tracer-notifications') }

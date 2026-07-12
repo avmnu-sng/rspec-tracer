@@ -44,7 +44,7 @@ class EditorialChecker
   end
   # The IO.read blind-spot variant (distinct from File.read under 2.0's
   # prepend-hook architecture) is exercised in tracker unit specs
-  # (M3.2 territory), not here. CodeQL's taint tracker flags any
+  # (tracker territory), not here. CodeQL's taint tracker flags any
   # IO.read whose arg derives from Rails.root, even through a frozen
   # constant — noisy in fixture code that exists precisely to cross
   # those patterns.

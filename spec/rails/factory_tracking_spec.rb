@@ -8,7 +8,7 @@ require 'rspec_tracer/rails/preset'
 require 'rspec_tracer/tracker/declared_globs'
 require 'rspec_tracer/tracker/loaded_files_tracker'
 
-# Regression spec for the factory blind-spot (KNOWN_ISSUES F4). Factory
+# Regression spec for the factory blind-spot. Factory
 # files live under `spec/factories/**/*.rb` and are plain Ruby, so they
 # ride two tracker pipes:
 #
@@ -19,7 +19,7 @@ require 'rspec_tracer/tracker/loaded_files_tracker'
 #
 # This spec does not introduce a new lib file - it documents and
 # asserts that the existing mechanisms see factory files on mutation,
-# so the F4 path is mechanically verifiable without reopening M4.2.
+# so the factory-file path is mechanically verifiable end-to-end.
 # rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength
 RSpec.describe 'Factory tracking regression' do
   let(:tmpdir) { Dir.mktmpdir('rspec-tracer-factory') }

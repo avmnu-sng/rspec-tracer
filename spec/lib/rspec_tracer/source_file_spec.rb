@@ -49,7 +49,7 @@ RSpec.describe RSpecTracer::SourceFile do
     # where Encoding.default_external resolves to US-ASCII.
     context 'when the source file contains UTF-8 bytes under US-ASCII default external' do
       let(:path) { File.join(tmp, 'unicode.rb') }
-      let(:content) { "# KNOWN_ISSUES \u00A7B5\n" }
+      let(:content) { "# section \u00A7 marker\n" }
 
       around do |example|
         original_external = Encoding.default_external

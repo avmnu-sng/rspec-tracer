@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Fuzz-style spec proving the storage load path is crash-proof under
-# arbitrary byte corruption. 1000 iterations per the M3.4 acceptance
-# criterion.
+# arbitrary byte corruption. 1000 iterations per the original
+# acceptance criterion.
 #
 # Runs as RSpec (not a standalone harness like the legacy
 # `spec/fuzz/cache_loader_fuzz.rb`) so it lands in `task test:property`

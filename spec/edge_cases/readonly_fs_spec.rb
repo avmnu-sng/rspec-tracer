@@ -11,7 +11,7 @@
 #     cache_path. Reads work fine; the prior valid run stays
 #     loadable.
 #   - Engine integration (RSpecTracer.run_finalize): the rescue
-#     added in M8.2 logs + returns nil instead of propagating, so
+#     added alongside this spec logs + returns nil instead of propagating, so
 #     the at_exit pipeline downstream skips reports and the test
 #     suite exits cleanly.
 #

@@ -41,7 +41,7 @@ tasks:
 
   test:integration:check-bundle-drift:
     desc: >-
-      M8.4-B drift task contract spec. Verifies
+      Drift task contract spec. Verifies
       scripts/check_bundle_drift.rb exits zero on a known-good
       Gemfile and non-zero on a fixture Gemfile with an
       unsatisfiable constraint. Excluded from the default rspec
@@ -54,7 +54,7 @@ tasks:
 
   test:integration:parallel:
     desc: >-
-      M5.1 parallel_tests integration test. Drives the benchmark ruby_app fixture
+      parallel_tests integration test. Drives the benchmark ruby_app fixture
       under `parallel_rspec spec` and asserts the merged top-level cache shape.
       Excluded from the default rspec sweep (via .rspec --exclude-pattern) because
       each example spawns worker subprocesses.
@@ -87,7 +87,7 @@ tasks:
       (json_backend, multi-backend cache_loader spread across :json /
       :msgpack / sqlite, coverage_adapter pathological shapes). Runs
       per-PR + per-main via `lint-and-specs.yml`'s `Test - Fuzz (full)`
-      step (M3.8 Part C migration from the deleted nightly.yml).
+      step (migrated from the deleted nightly.yml).
     env:
       COVERAGE_SUITE: fuzz-full
     cmds:
@@ -97,7 +97,7 @@ tasks:
 
   test:edge-cases:
     desc: >-
-      M8.2 edge case suite — adversarial filesystem + cache + concurrency
+      Edge case suite -- adversarial filesystem + cache + concurrency
       tests under spec/edge_cases/. Excluded from the default rspec sweep
       via .rspec --exclude-pattern (note rspec silently ignores that flag
       when explicit positional paths are passed).
@@ -131,7 +131,7 @@ tasks:
 
   test:integration:per-example-dsl:
     desc: >-
-      M5.2 per-example tracks DSL integration test. Drives the Rails fixture
+      Per-example tracks DSL integration test. Drives the Rails fixture
       with a feature_flags_spec annotated with tracks: { env: ... }, cold/warm
       with the tracked env flipped, asserts only the env-branch examples
       re-run. Excluded from the default rspec sweep (subprocess, ~45s).
@@ -142,7 +142,7 @@ tasks:
 
   test:integration:track-env-config:
     desc: >-
-      M5.3 config-level track_env(*names) DSL + wildcard env matching.
+      Config-level track_env(*names) DSL + wildcard env matching.
       Drives the Rails fixture with a synthesized .rspec-tracer that
       declares `track_env 'AUTH_TOKEN'` (literal) or `track_env 'M53_PROBE_*'`
       (wildcard). Asserts every previously-seen example re-runs when a
@@ -156,7 +156,7 @@ tasks:
 
   test:integration:remote-cache:
     desc: >-
-      M7.1 S3Backend integration test against LocalStack. End-to-end
+      S3Backend integration test against LocalStack. End-to-end
       round-trip (upload + download + branch_refs + retention) against
       the real S3 API surface via awslocal. Excluded from the default
       rspec sweep. Depends on ci:localstack:ready so CI fails fast with
@@ -169,7 +169,7 @@ tasks:
 
   test:integration:remote-cache:redis:
     desc: >-
-      M7.2 RedisBackend integration test against a real Redis server.
+      RedisBackend integration test against a real Redis server.
       End-to-end round-trip (upload + download + branch_refs + retention
       + prune_all) against localhost:6379 (override via REDIS_URL).
       Depends on ci:redis:ready so CI fails fast if Redis is not reachable.
@@ -181,7 +181,7 @@ tasks:
 
   test:regressions:plain:
     desc: >-
-      M9.0 plain (non-Rails) regression specs at spec/regressions/.
+      Plain (non-Rails) regression specs at spec/regressions/.
       Covers upstream PR #72 (gem-generated examples with phantom
       file_path - rswag-shape - graceful degradation in Example.from
       and SourceFile.file_path) plus the rspec-retry + rspec-rerun
@@ -194,7 +194,7 @@ tasks:
 
   test:regressions:rails:
     desc: >-
-      M9.0 Rails-fixture-driving regression specs at spec/regressions/.
+      Rails-fixture-driving regression specs at spec/regressions/.
       Covers upstream issue #66 (template-change invalidates dependents
       via the render_template.action_view subscriber). Drives the
       rails_app fixture; same bundle-install + db:test:prepare ladder
@@ -208,7 +208,7 @@ tasks:
 
   test:regressions:
     desc: >-
-      M9.0 aggregate regression suite. Runs both test:regressions:plain
+      Aggregate regression suite. Runs both test:regressions:plain
       (non-Rails) and test:regressions:rails (drives rails_app
       fixture). Excluded from the default rspec sweep via
       .rspec --exclude-pattern.

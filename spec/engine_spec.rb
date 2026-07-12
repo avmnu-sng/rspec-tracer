@@ -369,7 +369,7 @@ RSpec.describe RSpecTracer::Engine do
       expect(snapshot.env_snapshot).to eq({})
     end
 
-    it 'persists env_dependency per example (M6.1 - reporter input)' do
+    it 'persists env_dependency per example (reporter input)' do
       tracker.register_tracks('ex1', files: Set.new, env: Set.new(%w[API_KEY ROLE]))
       tracker.register_tracks('ex2', files: Set.new, env: Set.new(['API_KEY']))
 
@@ -486,7 +486,7 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  describe 'examples_coverage finalize-time merge (M3.8 Part B)' do
+  describe 'examples_coverage finalize-time merge' do
     let(:previous_coverage) do
       { 'prev_only' => { '/lib/a.rb' => { '0' => 1, '1' => 2 } },
         'overwritten' => { '/lib/a.rb' => { '0' => 9 } } }
@@ -548,7 +548,7 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  describe '#register_tracks (M5.2 DSL hook)' do
+  describe '#register_tracks (DSL hook)' do
     subject(:tracker) { build_tracker.tap(&:setup) }
 
     it 'adds declared-kind inputs for each tracked glob to the example dep set' do
@@ -591,7 +591,7 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  describe '#apply_env_filter_decisions (M5.2)' do
+  describe '#apply_env_filter_decisions' do
     let(:prev_cache_path) { File.join(tmp_base, 'cache') }
     # Pre-seed wsi_snapshot with a digest matching the current project's
     # WholeSuiteInvalidators output so the engine's whole_suite_changed?
@@ -677,7 +677,7 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  describe 'M5.3 config-level track_env DSL' do
+  describe 'config-level track_env DSL' do
     let(:prev_cache_path) { File.join(tmp_base, 'cache') }
     let(:current_wsi) do
       RSpecTracer::Tracker::WholeSuiteInvalidators.new(root: root).digest_snapshot
@@ -805,7 +805,7 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  describe 'M5.3 per-example wildcard expansion' do
+  describe 'per-example wildcard expansion' do
     subject(:tracker) { build_tracker.tap(&:setup) }
 
     it 'expands wildcard patterns in tracks: { env: ... } against the live ENV' do
@@ -1222,13 +1222,13 @@ RSpec.describe RSpecTracer::Engine do
     end
   end
 
-  # M8.0 acceptance criterion #4: per-example hot path invokes
+  # Hot-path contract: per-example flow invokes
   # ::Coverage.peek_result exactly twice (once at example_started for
   # the baseline, once at example_finished for the diff). The legacy
   # CoverageReporter previously double-peeked via reporter_hook.rb's
-  # record_coverage / compute_diff calls; M8.0's retirement reduces
+  # record_coverage / compute_diff calls; its retirement reduces
   # the per-example peek count from 4 to 2.
-  describe '#example_started + #example_finished peek count (M8.0 AC #4)' do
+  describe '#example_started + #example_finished peek count' do
     it 'invokes ::Coverage.peek_result exactly twice across one example lifecycle' do
       tracker = build_tracker.tap(&:setup)
       allow(Coverage).to receive(:peek_result).and_return({})

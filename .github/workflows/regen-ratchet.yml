@@ -4,9 +4,9 @@ name: regen-ratchet
 # One-shot manual workflow to regenerate benchmark/ratchet.json on
 # GHA ubuntu-latest. The committed ratchet has historically been
 # captured on Apple M2 Max + Ruby 3.3.10; ubuntu-latest is ~1.4-1.6x
-# slower per scenario (per the M2.4 retro), so the M2 Max ratchet
-# is unenforceable on CI without `--no-enforce`. M8.4-A's design call
-# is: regenerate the ratchet on the canonical CI hardware so the
+# slower per scenario (measured on prior benchmark runs), so the
+# M2 Max ratchet is unenforceable on CI without `--no-enforce`. The
+# design call is: regenerate the ratchet on the canonical CI hardware so the
 # benchmark gate becomes blocking on per-PR runs.
 #
 # Trigger via:

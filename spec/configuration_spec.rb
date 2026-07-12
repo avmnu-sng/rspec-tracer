@@ -9,10 +9,10 @@ RSpec.describe RSpecTracer::Configuration do
 
   describe '#configure DSL wrapper' do
     # The DSL wrapper aliases every private setter to `_name`, then
-    # redefines the public name as a thin forwarder. Before M4.1 the
-    # forwarder stripped keyword arguments silently; M4.1 threads
-    # `**kwargs` through so `track_rails_defaults except: [:views]`
-    # (and the deferred M3.4/M3.8 `storage_backend` opts) work.
+    # redefines the public name as a thin forwarder. An early version
+    # of the forwarder stripped keyword arguments silently; it now
+    # threads `**kwargs` through so `track_rails_defaults except:
+    # [:views]` (and the `storage_backend` opts) work.
     it 'forwards keyword arguments through to the underlying setter' do
       params = described_class
         .instance_method(:track_rails_defaults)
@@ -32,7 +32,7 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe 'unknown DSL method handling (M8.9)' do
+  describe 'unknown DSL method handling' do
     # Typos in `.rspec-tracer` previously raised bare `NoMethodError`
     # with a Ruby backtrace. Now they raise `InvalidUsageError` with
     # a stdlib `DidYouMean` suggestion when the typo is close to a
@@ -701,7 +701,7 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#add_reporter / #reporters (M6.1)' do
+  describe '#add_reporter / #reporters' do
     before { require 'rspec_tracer/reporters/registry' }
 
     it 'returns nil for reporters when never configured' do
@@ -978,7 +978,7 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#cache_retention_local_count (M3.8)' do
+  describe '#cache_retention_local_count' do
     it 'defaults to DEFAULT_CACHE_RETENTION_LOCAL_COUNT when never set' do
       expect(config.cache_retention_local_count)
         .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_RETENTION_LOCAL_COUNT)
@@ -1016,7 +1016,7 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#cache_size_warn_per_file_mb (M3.8)' do
+  describe '#cache_size_warn_per_file_mb' do
     it 'defaults to DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB when never set' do
       expect(config.cache_size_warn_per_file_mb)
         .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_SIZE_WARN_PER_FILE_MB)
@@ -1048,7 +1048,7 @@ RSpec.describe RSpecTracer::Configuration do
     end
   end
 
-  describe '#cache_size_warn_total_mb (M3.8)' do
+  describe '#cache_size_warn_total_mb' do
     it 'defaults to DEFAULT_CACHE_SIZE_WARN_TOTAL_MB when never set' do
       expect(config.cache_size_warn_total_mb)
         .to eq(RSpecTracer::Configuration::DEFAULT_CACHE_SIZE_WARN_TOTAL_MB)

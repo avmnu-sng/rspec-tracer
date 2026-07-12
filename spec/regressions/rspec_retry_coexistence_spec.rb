@@ -4,7 +4,7 @@
 #
 # rspec-retry (https://github.com/NoRedInk/rspec-retry) wraps
 # RSpec::Core::Example via Module#prepend to retry failing examples up
-# to N times. rspec-tracer's M5.1 hook chain prepends
+# to N times. rspec-tracer's hook chain prepends
 # RSpec::Core::Runner (RunnerHook) and RSpec::Core::Reporter
 # (ReporterHook) - DIFFERENT MRO points than rspec-retry's prepend on
 # Example. The two extensions should compose without conflict.

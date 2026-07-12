@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# Anchor spec for the M4.3 behavior-matrix row
+# Anchor spec for the behavior-matrix row
 # "spec/fixtures/users.yml → only fixture-using examples." The fixture's
 # other specs rely on FactoryBot rather than AR fixtures, so without
 # this spec no example would have users.yml in its dependency set and

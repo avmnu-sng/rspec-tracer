@@ -154,7 +154,7 @@ RSpec.describe RSpecTracer::Tracker::WholeSuiteInvalidators do
 
   describe 'end-to-end Gemfile.lock invalidation' do
     # Proves AC: modifying Gemfile.lock invalidates the snapshot,
-    # which is the signal M3.5/M3.6 will translate into "re-run
+    # which is the signal the filter translates into "re-run
     # every example, regardless of any other config."
     it 'fires on Gemfile.lock modification between runs' do
       write_watch('Gemfile.lock', "run1\n")

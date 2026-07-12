@@ -12,8 +12,8 @@
 #   - SqliteBackend: `BEGIN IMMEDIATE` acquires SQLite's RESERVED
 #     write lock. Without a busy_timeout configured, the second
 #     `BEGIN IMMEDIATE` returns SQLITE_BUSY immediately. The fix
-#     belongs in SqliteBackend's configure_connection (added in
-#     M8.2 alongside this spec).
+#     belongs in SqliteBackend's configure_connection (added
+#     alongside this spec).
 #
 # Children exit via `Process.exit!(0)` to bypass SimpleCov's
 # per-process at_exit hook, which forked children inherit. Without

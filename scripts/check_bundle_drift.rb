@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 # Bundle-drift check: verify every Gemfile in the repo resolves
-# cleanly via a fresh `bundle install`. Closes the M2.1-M2.4
-# absorbed orphan "Proper lockfile-drift check for `task check:bundle`".
+# cleanly via a fresh `bundle install`. Closes a long-standing gap:
+# a proper lockfile-drift check for `task check:bundle`.
 #
 # Original framing was "diff against committed Gemfile.lock" but every
 # Gemfile.lock in this repo is gitignored (outer is library-style;

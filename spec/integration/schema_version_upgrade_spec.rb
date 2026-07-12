@@ -8,7 +8,7 @@ require 'tmpdir'
 require 'rspec_tracer/storage/json_backend'
 require 'rspec_tracer/storage/schema'
 
-# M8.10: 1.x -> 2.0 cache schema-version cold-run integration spec.
+# 1.x -> 2.0 cache schema-version cold-run integration spec.
 #
 # The 1.x cache shape on disk wrote `last_run.json` WITHOUT a
 # `schema_version` field (or under an older numeric value); the 2.0
@@ -17,8 +17,8 @@ require 'rspec_tracer/storage/schema'
 # info-level log when the stored shape is incompatible.
 #
 # Every existing 1.x user hits this code path on first 2.0 upgrade.
-# Pre-M8.10 the path was wired but no integration spec exercised the
-# actual upgrade ceremony; M8.9 doctor's `cache_schema_version_check`
+# Previously the path was wired but no integration spec exercised the
+# actual upgrade ceremony; doctor's `cache_schema_version_check`
 # surfaces the state at diagnostic time, but the lib-level handling
 # was unverified at integration level. This spec drives the
 # JsonBackend with three concrete 1.x-shaped cache fixtures (no
@@ -35,7 +35,7 @@ require 'rspec_tracer/storage/schema'
 # runs alone mask cache-persistence bugs.
 # rubocop:disable RSpec/DescribeClass, RSpec/InstanceVariable, RSpec/ContextWording
 # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength
-RSpec.describe 'Storage::JsonBackend 1.x -> 2.0 cache schema cold-run upgrade ceremony (M8.10)' do
+RSpec.describe 'Storage::JsonBackend 1.x -> 2.0 cache schema cold-run upgrade ceremony' do
   let(:logger) { instance_double(RSpecTracer::Logger, debug: nil, info: nil, warn: nil, error: nil) }
   let(:current_schema) { RSpecTracer::Storage::Schema::CURRENT }
 

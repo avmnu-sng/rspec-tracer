@@ -113,7 +113,7 @@ RSpec.describe RSpecTracer::Reporters::JsonReporter do
         .to eq(RSpecTracer::Reporters::PayloadBuilder::SCHEMA_VERSION)
     end
 
-    it 'is pinned to 1 for M6.1' do
+    it 'is pinned to 1 for the initial reporter schema' do
       expect(described_class::SCHEMA_VERSION).to eq(1)
     end
   end

@@ -20,7 +20,7 @@
 #     .sqlite3 file.
 #
 # JsonBackend :json property fuzz already lives at
-# spec/fuzz/json_backend_corruption_spec.rb (M3.4 1000-iter Rantly).
+# spec/fuzz/json_backend_corruption_spec.rb (1000-iter Rantly).
 # Not duplicated here - this spec extends the pattern, doesn't repeat
 # it.
 

@@ -2,7 +2,7 @@
 
 # 100%-line + 100%-branch coverage gate scoped to the lib/rspec_tracer
 # subdirectories listed in GATED_SUBDIRS. Legacy files get no retroactive
-# pressure; mutation is the stronger signal for those (M8.3).
+# pressure; mutation is the stronger signal for those.
 #
 # Activation is per-file, keyed on the lib/spec pairing convention
 # (lib/rspec_tracer/<subdir>/X.rb <-> spec/<subdir>/X_spec.rb). Running
@@ -42,7 +42,7 @@ module TrackerCoverageGate
   # covered by the `require` side-effect and the gate would fire inside
   # mutant's forked test subprocess, which mutant interprets as "the
   # mutation survived" (exit 1 ⟹ 0% mutation coverage). Same dogfood
-  # spirit as spec_helper's RSPEC_TRACER_DISABLE guard in M2.5: the
+  # spirit as spec_helper's RSPEC_TRACER_DISABLE guard: the
   # gate is a full-suite assertion, not something mutant cares about.
   def self.skip?
     defined?(::Mutant) || ENV['RSPEC_TRACER_DISABLE'] == '1'

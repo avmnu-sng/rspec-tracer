@@ -2,7 +2,7 @@
 
 # Microbenchmark for RSpecTracer::Tracker::LoadedFilesTracker#stop_example.
 #
-# M3.7 AC: `stop_example` overhead stays <= 1 ms per example including
+# Contract: `stop_example` overhead stays <= 1 ms per example including
 # loaded-files attribution.
 #
 # Scenarios measured, all against an in-root fixture of FILE_COUNT Ruby

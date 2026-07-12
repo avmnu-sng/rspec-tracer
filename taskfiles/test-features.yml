@@ -10,24 +10,24 @@ version: '3'
 tasks:
   test:features:ruby:
     desc: >-
-      M5.1 ruby_app integration test (swapped from cucumber; the legacy
+      ruby_app integration test (swapped from cucumber; the legacy
       cucumber scenarios asserted on 1.x cache layout - 10 files, spec_helper
-      in all_files - that v2 no longer produces). Same M4.3 c2 precedent as
+      in all_files - that v2 no longer produces). Same swap precedent as
       test:features:rails.
     cmds:
       - bundle exec rspec --no-color spec/integration/ruby_app_spec.rb spec/integration/dogfood_spec.rb
 
   test:features:ruby-parallel:
     desc: >-
-      M5.1 parallel_tests integration test (swapped from cucumber; the legacy
+      parallel_tests integration test (swapped from cucumber; the legacy
       cucumber scenarios asserted on 1.x cache layout that v2 no longer writes).
     cmds:
       - task: test:integration:parallel
 
   test:features:rails:
     desc: >-
-      M4.3 Rails integration test against the reference Rails app. Also
-      includes the M8.0 coverage.json byte-equivalence round-trip spec
+      Rails integration test against the reference Rails app. Also
+      includes the coverage.json byte-equivalence round-trip spec
       (drives the same fixture; opts out of SimpleCov via
       RSPEC_TRACER_FIXTURE_NO_SIMPLECOV=1 inside the spec). Excluded
       from the default rspec sweep (via .rspec --exclude-pattern) because
@@ -38,7 +38,7 @@ tasks:
 
   test:features:rails:narrow-schema:
     desc: >-
-      M8.2-B narrow-AR-schema integration test. Drives the rails fixture
+      Narrow-AR-schema integration test. Drives the rails fixture
       with use_transactional_fixtures = false
       (RSPEC_TRACER_RAILS_TRANSACTIONAL=false) and asserts the per-example
       schema-subscriber attribution path
@@ -55,7 +55,7 @@ tasks:
 
   test:features:rails:wide-schema:transactional:
     desc: >-
-      M9.0 wide-AR-schema integration test under the Rails-default
+      Wide-AR-schema integration test under the Rails-default
       `use_transactional_fixtures = true`. Drives spec/wide_schema_spec.rb
       (3 AR-touching examples + 1 pure-compute) and asserts: (1) cold
       attributes db/schema.rb to every AR-touching example because the
@@ -71,7 +71,7 @@ tasks:
 
   test:features:rails:wide-schema:db-cleaner-truncation:
     desc: >-
-      M9.0 wide-AR-schema integration test under the
+      Wide-AR-schema integration test under the
       `database_cleaner-active_record :truncation` strategy in an around
       hook. Drives spec/wide_schema_spec.rb with
       RSPEC_TRACER_RAILS_TRANSACTIONAL=false +
@@ -85,7 +85,7 @@ tasks:
 
   test:features:rails:wide-schema:db-cleaner-deletion:
     desc: >-
-      M9.0 wide-AR-schema integration test under the
+      Wide-AR-schema integration test under the
       `database_cleaner-active_record :deletion` strategy. Same shape as
       wide-schema:db-cleaner-truncation; DELETE queries fire
       sql.active_record inside the bucket instead of TRUNCATE.
@@ -94,7 +94,7 @@ tasks:
 
   test:features:rails:wide-schema:db-cleaner-transaction:
     desc: >-
-      M9.0 wide-AR-schema integration test under the
+      Wide-AR-schema integration test under the
       `database_cleaner-active_record :transaction` strategy. Same shape
       as wide-schema:db-cleaner-truncation; BEGIN / SAVEPOINT / ROLLBACK
       queries fire sql.active_record inside the bucket. Distinct from
@@ -105,7 +105,7 @@ tasks:
 
   test:features:rails:wide-schema:suite:
     desc: >-
-      M9.0 aggregator: runs all four wide-AR-schema integration specs
+      Aggregator: runs all four wide-AR-schema integration specs
       back-to-back. Used by the canary CI cell to wire one workflow step
       instead of four. Per-spec wall clock ~2-3 min; suite total ~10-12
       min on the canary `ruby-3.3 x Rails 7.1` MRI cell.
@@ -117,7 +117,7 @@ tasks:
 
   test:features:rails:jruby:
     desc: >-
-      M8.1-B Rails integration test on JRuby 9.4. Same shape as
+      Rails integration test on JRuby 9.4. Same shape as
       test:features:rails (drives the rails_app fixture via subprocess),
       with JRUBY_OPTS for the v2 engine's observer install. The fixture
       Gemfile branches on RUBY_ENGINE (activerecord-jdbcsqlite3-adapter
@@ -129,7 +129,7 @@ tasks:
       step env block.
       Local-dev convenience task: runs all 12 scenarios in one rspec
       process. CI uses the sharded variant `test:features:rails:jruby:shard`
-      (M8.6-B Lever 5) to fan the 12 scenarios across 6 parallel matrix
+      to fan the 12 scenarios across 6 parallel matrix
       jobs.
     env:
       JRUBY_OPTS: "--debug -X+O"
@@ -141,7 +141,7 @@ tasks:
 
   test:features:rails:jruby:shard:
     desc: >-
-      M8.6-B Lever 5 JRuby x Rails sharded variant. Reads SHARD env
+      JRuby x Rails sharded variant. Reads SHARD env
       (e.g. SHARD=rails_app-1-2) and runs only the specified 2 scenarios
       from rails_app_spec.rb via rspec --example filtering. Six shards
       (rails_app-1-2, rails_app-3-4, rails_app-5-6, rails_app-7-8,
@@ -176,7 +176,7 @@ tasks:
 
   test:features:rails:narrow-schema:jruby:
     desc: >-
-      M8.1-B narrow-AR-schema integration test on JRuby 9.4. Same shape
+      Narrow-AR-schema integration test on JRuby 9.4. Same shape
       as test:features:rails:narrow-schema; JRUBY_OPTS + the same Rails
       7.1 default pair as test:features:rails:jruby.
     env:
@@ -189,7 +189,7 @@ tasks:
 
   test:features:jruby:
     desc: >-
-      M5.1 ruby_app integration test on JRuby (swapped from cucumber for the
+      ruby_app integration test on JRuby (swapped from cucumber for the
       same reason as test:features:ruby). JRUBY_OPTS keeps the debug + object-
       space flags required for the v2 engine's observer install on JRuby 9.4.
     env:

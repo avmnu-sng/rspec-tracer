@@ -20,7 +20,7 @@ PROPERTY_FILES_POOL = %w[
   app/**/*.rb config/**/*.yml lib/tasks/*.rake db/schema.rb
   app/policies/**/*.rb app/helpers/*.rb
 ].freeze
-# Wildcard entries (M5.3) are opaque strings to Metadata.tracks_for —
+# Wildcard entries are opaque strings to Metadata.tracks_for --
 # the cascade walker just unions them; expansion happens downstream in
 # Engine#register_tracks via Tracker::EnvMatcher.expand. Mixing
 # literals + wildcards in the property pool asserts the walker stays

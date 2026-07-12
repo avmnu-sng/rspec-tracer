@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M8.2-B variance fixture. The original 3 spec files (calculator,
+# Example-identity variance fixture. The original 3 spec files (calculator,
 # discount, inventory) only exercise top-level `it { }` patterns under
 # a single describe. Real users hit the same Example.from identity-hash
 # surface via shared examples (re-included from multiple hosts), shared
@@ -39,7 +39,7 @@ RSpec.shared_context 'with prepared inventory' do
   it { expect(inv).not_to be_empty }
 end
 
-RSpec.describe 'M8.2-B anonymous-block variance fixture' do
+RSpec.describe 'anonymous-block variance fixture' do
   # Pattern 1 — shared examples re-included from host A.
   describe Calculator do
     describe '.add (sum of positive ints)' do
