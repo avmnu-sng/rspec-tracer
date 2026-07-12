@@ -195,6 +195,32 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
         expect(kept_map.default_proc).not_to be_nil
         expect(kept_map[intermediate_group]).to eq([])
       end
+
+      it 'keeps a nested top-level group whose leaf describe still has surviving examples' do
+        # RSpec.world.filtered_examples is keyed by LEAF groups while
+        # run_specs' group list holds TOP-LEVEL groups
+        # (`example.example_group.parent_groups.last`). For any spec
+        # file with nested describes those two sets are disjoint, so
+        # the drop path must map survivors back to their top-level
+        # parent instead of requiring the top-level group to be a
+        # kept_map key. Regression: with one colliding pair anywhere
+        # in the suite, every nested spec file was dropped wholesale
+        # (refinery soak: "running 68 examples (actual: 399,
+        # skipped: 331)").
+        top_group = double('TopLevelGroup')
+        leaf_group = double('LeafGroup')
+        survivor_metadata = { rspec_tracer_example_id: 'unique-id', file_path: 'spec/a_spec.rb' }
+        survivor = double('Survivor', metadata: survivor_metadata, description: 'unique',
+                                      example_group: double('EG', parent_groups: [leaf_group, top_group]))
+        examples_map = { leaf_group => [survivor] }
+
+        kept_map, kept_groups = runner.send(
+          :_rspec_tracer_drop_duplicate_examples, examples_map, [top_group]
+        )
+
+        expect(kept_map[leaf_group]).to eq([survivor])
+        expect(kept_groups).to eq([top_group])
+      end
     end
 
     context 'when examples are tracked and the engine schedules a run' do

@@ -40,6 +40,16 @@ require 'tmpdir'
 # the two iterations collide on rspec-tracer's identity hash even
 # though RSpec itself treats them as distinct examples.
 #
+# The two baselines cover both suite shapes the drop path must
+# preserve: a flat group (example directly under the top-level
+# describe) and a nested group (example inside an inner describe).
+# The nested one is load-bearing: RSpec.world.filtered_examples is
+# keyed by LEAF groups while the runner's group list holds TOP-LEVEL
+# groups, and a drop-path regression that only maps flat groups
+# silently discards every nested spec file in the suite (surfaced by
+# the refinery soak as "running 68 examples (actual: 399,
+# skipped: 331)" on a 2-duplicate suite).
+#
 # rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/ExampleLength
 RSpec.describe 'fail_on_duplicates real-user-shape integration' do
   let(:project_root) { File.expand_path('../..', __dir__) }
@@ -59,6 +69,14 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
       RSpec.describe 'a non-duplicate baseline' do
         it 'runs once with a unique identity' do
           expect(true).to be(true)
+        end
+      end
+
+      RSpec.describe 'a nested non-duplicate baseline' do
+        describe 'inner group' do
+          it 'survives the duplicate drop from inside a nested describe' do
+            expect(true).to be(true)
+          end
         end
       end
     RUBY
@@ -125,7 +143,7 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
         expect(out).to match(duplicate_log_re)
         # the non-duplicate baseline still runs - the suite is not
         # aborted to zero examples (issue #210).
-        expect(out).to include('running 1 examples')
+        expect(out).to include('running 2 examples')
       end
     end
   end
@@ -141,13 +159,13 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           be(true),
           "expected zero exit when fail_on_duplicates is false, got #{status.exitstatus}:\n#{out}"
         )
-        expect(out).to include('running 1 examples')
+        expect(out).to include('running 2 examples')
         duplicates = read_duplicate_examples(dir)
         expect(duplicates).not_to be_empty
         expect(duplicates.values.flatten.size).to be >= 2
         # the non-duplicate baseline ran and was cached; the colliding
         # examples were dropped from all_examples by deregistration.
-        expect(read_all_examples(dir).size).to eq(1)
+        expect(read_all_examples(dir).size).to eq(2)
       end
     end
   end
@@ -164,7 +182,7 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           "expected non-zero exit when env=true overrides DSL=false, got 0:\n#{out}"
         )
         expect(out).to match(duplicate_log_re)
-        expect(out).to include('running 1 examples')
+        expect(out).to include('running 2 examples')
       end
     end
   end
@@ -180,7 +198,7 @@ RSpec.describe 'fail_on_duplicates real-user-shape integration' do
           be(true),
           "expected zero exit when env=false overrides DSL=true, got #{status.exitstatus}:\n#{out}"
         )
-        expect(out).to include('running 1 examples')
+        expect(out).to include('running 2 examples')
         duplicates = read_duplicate_examples(dir)
         expect(duplicates).not_to be_empty
       end
