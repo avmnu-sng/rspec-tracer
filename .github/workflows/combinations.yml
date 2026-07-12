@@ -80,7 +80,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -124,7 +124,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -170,7 +170,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: ${{ matrix.sqlite3 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -215,7 +215,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -262,7 +262,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build tools for sqlite3 1.7 source-build
         run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential libsqlite3-dev
@@ -309,7 +309,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: "~> 2.9.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -353,7 +353,7 @@ jobs:
       RSPEC_TRACER_SQLITE3_VERSION: "~> 1.7.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build tools for sqlite3 1.7 source-build
         run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential libsqlite3-dev
@@ -399,7 +399,7 @@ jobs:
       RSPEC_VERSION: ${{ matrix.rspec }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build tools for JRuby native extensions
         run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
@@ -456,7 +456,7 @@ jobs:
       REDIS_URL: redis://localhost:6379/15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -504,7 +504,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -537,7 +537,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -571,7 +571,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

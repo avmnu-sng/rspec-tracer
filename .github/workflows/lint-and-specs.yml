@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Lint — Ruby
@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Security — bundle-audit
@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Unit
@@ -103,7 +103,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Edge cases
@@ -131,7 +131,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Regressions (plain, no Rails fixture)
@@ -151,7 +151,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Fuzz (full, 10000 iterations across 3 harnesses)
@@ -183,7 +183,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Download per-job coverage resultsets
@@ -206,7 +206,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (smoke)
@@ -220,7 +220,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (tracker)
@@ -251,7 +251,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage misc)
@@ -273,7 +273,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-1)
@@ -291,7 +291,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-2)
@@ -308,7 +308,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-7)
@@ -330,7 +330,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-3)
@@ -348,7 +348,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-4)
@@ -366,7 +366,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-5)
@@ -385,7 +385,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-8)
@@ -402,7 +402,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-9)
@@ -420,7 +420,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage JsonBackend shard-6)
@@ -439,7 +439,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage SqliteBackend read-side)
@@ -461,7 +461,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (storage SqliteBackend write+util)
@@ -475,7 +475,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (rspec)
@@ -496,7 +496,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (top-level shard-a)
@@ -515,7 +515,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (top-level shard-b)
@@ -532,7 +532,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Test — Mutation (top-level shard-c)
@@ -578,7 +578,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
       - name: Install — awslocal (LocalStack CLI wrapper)

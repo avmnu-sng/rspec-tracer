@@ -106,7 +106,7 @@ jobs:
       SOAK_ITERATIONS: ${{ inputs.iterations }}
     steps:
       - name: Checkout rspec-tracer
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -154,7 +154,7 @@ jobs:
           echo "Pin: ${{ matrix.project }} @ $tag ($sha)"
 
       - name: Checkout ${{ matrix.project }} fixture
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ matrix.repo }}
           ref: ${{ steps.pin.outputs.sha }}
