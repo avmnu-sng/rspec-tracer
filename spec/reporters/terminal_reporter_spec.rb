@@ -285,7 +285,7 @@ RSpec.describe RSpecTracer::Reporters::TerminalReporter do
 
       # delta == 0 hits the inner ternary's else branch, so the sign char
       # is empty: "(<size>; 0 B vs prev run)".
-      expect(cache_line_in_output).to match(/\(2\.0 KiB; 0 B vs prev run\)/)
+      expect(cache_line_in_output).to include('(2.0 KiB; 0 B vs prev run)')
     end
 
     it 'sums only file entries when the run dir contains nested subdirectories' do
