@@ -59,7 +59,23 @@
         <div class="clear"></div>
       </div>
 
-      <div id="content"><div id='filecontents'><h2 id="_2_0_0_pre_2____2026_05_16">[2.0.0.pre.2] - 2026-05-16</h2>
+      <div id="content"><div id='filecontents'><h2 id="_Unreleased_">[Unreleased]</h2>
+<h3 id="Fixed">Fixed</h3>
+<ul>
+<li><strong>Duplicate-example drop no longer discards nested spec files</strong>
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/262">#262</a>).
+With at least one pair of colliding example identities anywhere in
+the suite, the drop path rebuilt RSpec's top-level group list by
+requiring each top-level group to directly own surviving examples,
+so every spec file whose examples live inside nested <code>describe</code>
+blocks was removed wholesale (a 399-example suite with one
+colliding pair ran only 68 examples; with
+<code>fail_on_duplicates false</code> that under-run exited zero). The group
+filter now maps each surviving example back to its top-level
+group, so exactly the colliding examples are dropped — the
+behavior UPGRADING.md documents.</li>
+</ul>
+<h2 id="_2_0_0_pre_2____2026_05_16">[2.0.0.pre.2] - 2026-05-16</h2>
 <p>Bug-fix + interop release after the field-test pass that followed
 <code>v2.0.0.pre.1</code>. 15 issues filed publicly
 (<a href="https://github.com/avmnu-sng/rspec-tracer/issues/182">#182</a>–<a href="https://github.com/avmnu-sng/rspec-tracer/issues/196">#196</a>)
@@ -664,7 +680,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:12:11 2026 by
+  Generated on Sun Jul 12 10:34:12 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -281,26 +281,43 @@
 </span>      <span class='comment'># `inject(0) { |a, e| a + e.filtered_examples.size }`. The
 </span>      <span class='comment'># default block returns `[]` (`.size == 0`), matching the
 </span>      <span class='comment'># pre-drop path&#39;s behavior.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># `examples_map` is keyed by LEAF groups (the keys of
+</span>      <span class='comment'># `RSpec.world.filtered_examples`) while `example_groups` holds
+</span>      <span class='comment'># TOP-LEVEL groups (`example.example_group.parent_groups.last`,
+</span>      <span class='comment'># collected by `_rspec_tracer_build_filter_decision`). For any
+</span>      <span class='comment'># spec file with nested describes those two sets are disjoint,
+</span>      <span class='comment'># so the group filter maps each survivor back to its top-level
+</span>      <span class='comment'># parent — mirroring how the pre-drop path built the group list.
+</span>      <span class='comment'># Filtering `example_groups` by `kept_map.key?` instead used to
+</span>      <span class='comment'># drop every nested spec file in the suite the moment one
+</span>      <span class='comment'># duplicate pair existed anywhere (refinery soak: &quot;running 68
+</span>      <span class='comment'># examples (actual: 399, skipped: 331)&quot; from a single colliding
+</span>      <span class='comment'># pair in a 399-example suite).
 </span>      <span class='comment'># @api private
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid__rspec_tracer_drop_duplicate_examples'>_rspec_tracer_drop_duplicate_examples</span><span class='lparen'>(</span><span class='id identifier rubyid_examples_map'>examples_map</span><span class='comma'>,</span> <span class='id identifier rubyid_example_groups'>example_groups</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_duplicate_ids'>duplicate_ids</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_engine'><span class='object_link'><a href="RSpecTracer.html#engine-class_method" title="RSpecTracer.engine (method)">engine</a></span></span><span class='period'>.</span><span class='id identifier rubyid_duplicate_examples'><span class='object_link'><a href="RSpecTracer/Engine.html#duplicate_examples-instance_method" title="RSpecTracer::Engine#duplicate_examples (method)">duplicate_examples</a></span></span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='rparen'>)</span>
 
         <span class='id identifier rubyid_kept_map'>kept_map</span> <span class='op'>=</span> <span class='const'>Hash</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_hash'>hash</span><span class='comma'>,</span> <span class='id identifier rubyid_group'>group</span><span class='op'>|</span> <span class='id identifier rubyid_hash'>hash</span><span class='lbracket'>[</span><span class='id identifier rubyid_group'>group</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_kept_top_level'>kept_top_level</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
         <span class='id identifier rubyid_examples_map'>examples_map</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_group'>group</span><span class='comma'>,</span> <span class='id identifier rubyid_examples'>examples</span><span class='op'>|</span>
           <span class='id identifier rubyid_survivors'>survivors</span> <span class='op'>=</span> <span class='id identifier rubyid_examples'>examples</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_example'>example</span><span class='op'>|</span>
             <span class='id identifier rubyid_duplicate_ids'>duplicate_ids</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_metadata'>metadata</span><span class='lbracket'>[</span><span class='symbol'>:rspec_tracer_example_id</span><span class='rbracket'>]</span><span class='rparen'>)</span>
           <span class='kw'>end</span>
-          <span class='id identifier rubyid_kept_map'>kept_map</span><span class='lbracket'>[</span><span class='id identifier rubyid_group'>group</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_survivors'>survivors</span> <span class='kw'>unless</span> <span class='id identifier rubyid_survivors'>survivors</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_survivors'>survivors</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+          <span class='id identifier rubyid_kept_map'>kept_map</span><span class='lbracket'>[</span><span class='id identifier rubyid_group'>group</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_survivors'>survivors</span>
+          <span class='id identifier rubyid_survivors'>survivors</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_example'>example</span><span class='op'>|</span> <span class='id identifier rubyid_kept_top_level'>kept_top_level</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_example'>example</span><span class='period'>.</span><span class='id identifier rubyid_example_group'>example_group</span><span class='period'>.</span><span class='id identifier rubyid_parent_groups'>parent_groups</span><span class='period'>.</span><span class='id identifier rubyid_last'>last</span> <span class='rbrace'>}</span>
         <span class='kw'>end</span>
 
-        <span class='lbracket'>[</span><span class='id identifier rubyid_kept_map'>kept_map</span><span class='comma'>,</span> <span class='id identifier rubyid_example_groups'>example_groups</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_group'>group</span><span class='op'>|</span> <span class='id identifier rubyid_kept_map'>kept_map</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_group'>group</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='rbracket'>]</span>
+        <span class='lbracket'>[</span><span class='id identifier rubyid_kept_map'>kept_map</span><span class='comma'>,</span> <span class='id identifier rubyid_example_groups'>example_groups</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_group'>group</span><span class='op'>|</span> <span class='id identifier rubyid_kept_top_level'>kept_top_level</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_group'>group</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='rbracket'>]</span>
       <span class='kw'>end</span>
     <span class='kw'>end</span>
   <span class='kw'>end</span>
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 10:12:12 2026 by
+  Generated on Sun Jul 12 10:34:13 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
