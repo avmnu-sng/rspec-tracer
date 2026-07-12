@@ -25,8 +25,8 @@ version: '3'
 # soak:fixture:all regenerates all 3 fixtures locally (sequential)
 # for full pre-PR parity.
 #
-# MRI-only per feedback_jruby_ci_subprocess_floor: JRuby x Rails
-# multi-iter cells would compound past the 4 h cap.
+# MRI-only: JRuby x Rails cold-boots each subprocess in ~2:30 on CI
+# runners, so multi-iter cells would compound past the 4 h cap.
 
 vars:
   RSPEC_TRACER_ROOT:
@@ -143,8 +143,8 @@ tasks:
           # Unset CI for bundle install. Refinery main's Gemfile has
           # `if !ENV['CI']` gating for sqlite3. On GHA, ENV['CI']=true
           # so sqlite3 wouldn't be in the lockfile - but the soak
-          # subprocess sets CI=>nil (per
-          # feedback_env_empty_string_is_truthy), at which point
+          # subprocess sets CI=>nil to delete the var entirely
+          # (CI="" would still be truthy in Ruby), at which point
           # Bundler.setup re-evaluates the Gemfile and demands sqlite3,
           # finding it missing. Match the subprocess runtime by also
           # unsetting CI here.

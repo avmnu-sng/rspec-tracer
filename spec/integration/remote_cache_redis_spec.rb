@@ -19,9 +19,8 @@ require 'rspec_tracer/storage/schema'
 # REDIS_URL overrides the default. We use db 15 (an uncommon choice)
 # to isolate from other local tooling on the same Redis instance.
 #
-# Asserts on the content of what was uploaded / downloaded (per the
-# feedback_v2_integration_exit_status memory: exit-status-only checks
-# mask cache-persistence bugs).
+# Asserts on the content of what was uploaded / downloaded
+# (exit-status-only checks mask cache-persistence bugs).
 #
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 # rubocop:disable RSpec/LeakyConstantDeclaration, RSpec/ExampleLength, RSpec/MultipleExpectations

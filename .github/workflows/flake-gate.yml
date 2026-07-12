@@ -16,9 +16,9 @@ name: flake-gate
 # Kept available for on-demand re-targeting any cell when a future flake
 # investigation needs the 100x-iter shape.
 #
-# This is a POST-FIX gate, not the primary investigation tool. Per
-# memory feedback_no_hit_and_trial_ci, reproduce + investigate + fix +
-# verify locally first; this workflow is for ongoing safety-net
+# This is a POST-FIX gate, not the primary investigation tool:
+# reproduce + investigate + fix + verify locally against the gate
+# criterion first; this workflow is for ongoing safety-net
 # verification on the full GHA shared-runner environment, which has
 # different scheduling characteristics than a local M-series Mac.
 

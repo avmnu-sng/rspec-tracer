@@ -7,11 +7,11 @@ module RSpecTracer
     # Wildcard env matching helper.
     #
     # Lives outside Configuration so configure's alias loop does not
-    # leak its private helpers as public _name DSL surface
-    # (memory: feedback_configure_dsl_private_leak). Pure utility
-    # module; def self.x style for mutant observability
-    # (memory: feedback_mutation_friendly_modules). ASCII-only source
-    # (memory: feedback_mutant_non_ascii_source).
+    # leak its private helpers as public _name DSL surface (the loop
+    # wraps every instance method, private ones included). Pure
+    # utility module; def self.x style keeps methods observable to
+    # mutant (module_function's anonymous singleton is not).
+    # ASCII-only source, since mutant's parser rejects non-US-ASCII.
     #
     # Patterns accepted:
     #   - Literal env name              "AUTH_TOKEN"

@@ -9,9 +9,9 @@
 # rewritten per-example here (config-level DSL is the surface under
 # test) and restored in `after`.
 #
-# Assertion philosophy matches M4.3 / M5.2: assert on the set of
-# examples that re-ran (filter decisions), not exit status
-# (memory: feedback_v2_integration_exit_status).
+# Assertion philosophy matches the other integration specs: assert
+# on the set of examples that re-ran (filter decisions), not exit
+# status -- exit-status-only checks mask cache-persistence bugs.
 
 require 'bundler'
 require 'fileutils'
