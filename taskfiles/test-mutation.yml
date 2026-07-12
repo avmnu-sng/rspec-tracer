@@ -6,6 +6,17 @@ version: '3'
 # inline rationale comments reference 'M8.6-A' (work-as-shipped
 # label) and post-M8.6-B '5-min cap' value (Lever 4).
 
+# mutant reads each subject's source with Encoding.default_external.
+# On a shell with no locale (LANG / LC_ALL empty - common in fresh
+# macOS terminals and automation shells) that is US-ASCII, and any
+# UTF-8 byte in lib/ doc comments raises EncodingError before any
+# coverage is computed, failing every subject with "could not parse
+# mutant coverage". CI runners always export a UTF-8 locale, so this
+# only bites locally; force the Ruby-side default for every mutation
+# task so the dev loop is locale-independent.
+env:
+  RUBYOPT: -EUTF-8
+
 tasks:
   test:mutation:smoke:
     desc: >-
