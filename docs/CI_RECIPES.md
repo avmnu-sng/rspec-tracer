@@ -18,8 +18,7 @@ dependency-tracking contract.
 ## Cache key shape
 
 The 4-component canonical key (per
-[ARCHITECTURE.md](../ARCHITECTURE.md) + the `feedback_actions_cache_traps`
-memory) is:
+[ARCHITECTURE.md](../ARCHITECTURE.md)) is:
 
 ```
 <os>-<ruby-version>-<tracer-version>-<gemfile-hash>

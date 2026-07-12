@@ -5,9 +5,9 @@ module RSpecTracer
   # Post-coverage-stack retirement, the only caller is example.rb
   # (the legacy CoverageReporter that previously used these is gone).
   #
-  # All methods declared `def self.x` per
-  # feedback_mutation_friendly_modules so mutant observes mutations
-  # through the singleton call path.
+  # All methods declared `def self.x` (not module_function) so mutant
+  # observes mutations through the singleton call path;
+  # module_function's anonymous singleton breaks that observability.
   module SourceFile
     # Internal constant.
     # @api private

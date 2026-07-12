@@ -174,12 +174,13 @@ tasks:
         # prepended-method entry created equivalent-mutations against
         # the inner `_record` bucket-nil check (mutating either guard
         # alone leaves the other intact, plus the outer rescue
-        # StandardError swallows downstream nil-bucket errors). Per
-        # feedback_mutant_equivalent_guards + feedback_mutant_prepend_idempotency:
-        # accept the structural carve-out instead of tightening tests
-        # against an unobservable difference. CI baseline post-Priority-3
-        # is 75.33%; 72 leaves ~3pp margin under
-        # feedback_mutant_local_vs_ci_variance.
+        # StandardError swallows downstream nil-bucket errors) --
+        # observably-equivalent mutations plus prepend's no-unprepend
+        # idempotency ceiling. Accept the structural carve-out instead
+        # of tightening tests against an unobservable difference.
+        # CI baseline post-carve-out is 75.33%; 72 leaves ~3pp margin
+        # for local-vs-CI run variance (gates are sized from CI
+        # numbers, never local).
         run_mutant_gate "Tracker::IOHooks" \
           "rspec_tracer/tracker/io_hooks" \
           "RSpecTracer::Tracker::IOHooks*" 72 || fail=1
@@ -251,9 +252,10 @@ tasks:
         }
 
         fail=0
-        # Gates preserved verbatim from the M8.3-A storage Taskfile
-        # entry. Msgpack carve-out rationale documented in the M8.3-A
-        # retro + feedback_mutant_local_vs_ci_variance.
+        # Gates preserved verbatim from the original storage Taskfile
+        # entry. Msgpack carve-out absorbs local-vs-CI run variance
+        # (test-ordering + parallelism differences shift alive counts
+        # several pp between machines; gates are sized from CI numbers).
         run_mutant_gate "Storage::LazySnapshot" \
           "rspec_tracer/storage/lazy_snapshot" 85 \
           "RSpecTracer::Storage::LazySnapshot*" || fail=1
@@ -461,8 +463,9 @@ tasks:
         # carry more structural-ceiling mutations (transactional write
         # paths exercised end-to-end through public describes that
         # mutant credits to the public method, not the helper). Local
-        # M2 Max baseline 73.69%; 5pp margin under per
-        # feedback_mutant_local_vs_ci_variance.
+        # M2 Max baseline 73.69%; 5pp margin under absorbs
+        # local-vs-CI run variance (test ordering + parallelism shift
+        # alive counts several pp between machines).
         if awk "BEGIN { exit ($cov >= 68) ? 0 : 1 }"; then
           echo "mutation:storage [Storage::JsonBackend shard-3] PASS (coverage $cov% >= 68%)"
           exit 0
@@ -505,9 +508,8 @@ tasks:
         # prune helpers also concentrate structural-ceiling subjects
         # (private read-side helpers exercised through public describes
         # that mutant credits to the public method). Local M2 Max
-        # baseline 71.93%; ~4pp margin under per
-        # feedback_mutant_local_vs_ci_variance. Same calibration
-        # rationale as shard-3.
+        # baseline 71.93%; ~4pp margin under absorbs local-vs-CI run
+        # variance. Same calibration rationale as shard-3.
         if awk "BEGIN { exit ($cov >= 68) ? 0 : 1 }"; then
           echo "mutation:storage [Storage::JsonBackend shard-4] PASS (coverage $cov% >= 68%)"
           exit 0
@@ -544,11 +546,11 @@ tasks:
         fi
         # Shard-5 gate: 70% (vs whole-JsonBackend 75%). The 2 warn_*
         # methods are file-stat helpers exercised through public
-        # describes (`#save_graph` / `maybe_warn_size_budget`) that
-        # mutant credits to the public method per
-        # feedback_mutant_describe_label_ceiling. CI baseline 74.28%
-        # (105 mutations); 4pp margin per
-        # feedback_mutant_local_vs_ci_variance.
+        # describes (`#save_graph` / `maybe_warn_size_budget`);
+        # mutant credits kills to the describe label's method, so the
+        # helpers get no direct credit. CI baseline 74.28%
+        # (105 mutations); 4pp margin absorbs local-vs-CI run
+        # variance.
         if awk "BEGIN { exit ($cov >= 70) ? 0 : 1 }"; then
           echo "mutation:storage [Storage::JsonBackend shard-5] PASS (coverage $cov% >= 70%)"
           exit 0
@@ -789,9 +791,9 @@ tasks:
         fi
         # Gate is 65% (vs read-side 73%) because this shard
         # concentrates the structural-ceiling subjects:
-        # `#initialize` (exercised through sibling-method describes
-        # per feedback_mutant_describe_label_ceiling — same pattern
-        # as M8.3-A's Tracker::NewFileDetector#initialize) plus the
+        # `#initialize` (exercised through sibling-method describes,
+        # which mutant credits to the sibling, not #initialize --
+        # same pattern as Tracker::NewFileDetector#initialize) plus the
         # private connection / schema / utility helpers (exercised
         # via public describes that mutant credits to the public
         # method, not the helper). The original 3-shard split's
@@ -1036,15 +1038,14 @@ tasks:
 
         fail=0
         # Per-subject gates sized at ~3-5 pp under CI ubuntu-latest
-        # baselines for variance (per memory:
-        # feedback_mutant_local_vs_ci_variance, codified from M8.3-A
-        # retro). Initial cut sized from local M2 Max baselines was
-        # too tight: GitAncestry alone swung from 94.59% local to
+        # baselines for variance -- always size gates from CI numbers,
+        # never local. Initial cut sized from local M2 Max baselines
+        # was too tight: GitAncestry alone swung from 94.59% local to
         # 72.68% CI on the first run because mutant's per-mutation
         # 5 s timeout kills 305 local mutations (git shell-out hangs
         # under M2 Max parallelism 12) but 0 CI mutations (Linux git
         # responds fast enough under ubuntu-latest parallelism 4 that
-        # the same mutations don't hang). Same shape as M8.3-A's
+        # the same mutations don't hang). Same shape as the earlier
         # 154ec27 post-merge widening.
         run_mutant_gate "RemoteCache::Backend" \
           "rspec_tracer/remote_cache/backend" \
@@ -1062,8 +1063,8 @@ tasks:
           "rspec_tracer/remote_cache/git_ancestry" \
           "RSpecTracer::RemoteCache::GitAncestry*" 68 || fail=1
         # UserTasks / LocalFsBackend / RedisBackend / S3Backend share
-        # the M8.3-A Storage::SqliteBackend describe-label ceiling
-        # (memory: feedback_mutant_describe_label_ceiling): 4-7x more
+        # the same describe-label ceiling as Storage::SqliteBackend:
+        # 4-7x more
         # mutant subjects than public describe blocks because private
         # helpers (#build_admin_ancestry, #blank?, #join_key,
         # #object_key_for, #aws_rm_recursive_silent, #log_debug etc.)
@@ -1096,8 +1097,8 @@ tasks:
       mutations stay alive even though functionally tested under the
       combined describe), (b) the `Module#prepend` idempotency ceiling
       on I18nTracking::LoadTranslationsHook prepended onto
-      ::I18n::Backend::Base (per feedback_mutant_prepend_idempotency:
-      Ruby has no unprepend API, prepend-line mutations un-killable in
+      ::I18n::Backend::Base (Ruby has no unprepend API, so
+      prepend-line mutations are un-killable in
       shared-process spec suites), and (c) prose-form integration
       describes (`bucket lifecycle`, `LoadTranslationsHook integration`,
       `render subscriber integration via fake AS::Notifications`) that
@@ -1159,10 +1160,10 @@ tasks:
 
         fail=0
         # Per-subject gates sized at ~3-5 pp under M2 Max local baselines
-        # for CI ubuntu-latest variance per memory:
-        # feedback_mutant_local_vs_ci_variance. Re-cut downward in a
+        # to absorb CI ubuntu-latest variance (test ordering + mutant
+        # parallelism shift alive counts several pp). Re-cut downward in a
         # follow-up commit if any subject drops materially below local on
-        # the first CI run (M8.3-A 154ec27 + M8.3-B 10c0d67 precedent).
+        # the first CI run (154ec27 + 10c0d67 precedent).
         #
         # Notifications local 78.77%: 19 subjects, 48 selected tests; the
         # combined `.install / .installed? / .uninstall` describe credits
@@ -1176,8 +1177,8 @@ tasks:
         # end-to-end via the prose-form integration describes
         # (`render subscriber integration via fake AS::Notifications` /
         # `sql.active_record subscriber integration`). Restructuring
-        # describes for coverage rejected per the M8.3-A no-anti-pattern-
-        # test-org rule.
+        # describes for coverage rejected -- test organization exists to
+        # document behavior, not to satisfy the mutation tool.
         run_mutant_gate "Rails::Notifications" \
           "rspec_tracer/rails/notifications" \
           "RSpecTracer::Rails::Notifications*" 75 || fail=1
@@ -1187,7 +1188,9 @@ tasks:
         # match for `LoadTranslationsHook#load_translations`) PLUS the
         # `Module#prepend(::I18n::Backend::Base, LoadTranslationsHook)` line
         # in `prepend_backend_hook` whose mutations are structurally un-
-        # killable per feedback_mutant_prepend_idempotency. 5 pp margin
+        # killable (Ruby has no unprepend; once any prior test prepends,
+        # re-installs mutated or not leave the ancestor chain unchanged
+        # in a shared-process suite). 5 pp margin
         # rather than 3 pp because the prepend-idempotency ceiling
         # interacts unpredictably with test ordering on CI. Below the
         # canonical brief's 70% best-effort target; carve-out documented.
@@ -1219,9 +1222,10 @@ tasks:
       etc.) that don't map to mutant's first-token Klass#method scheme;
       private projection / formatting / classification helpers exercised
       via the public `#generate` / `.build` / `.emit_all` describes
-      receive no direct credit per feedback_mutant_describe_label_ceiling.
-      Carve-outs sized accordingly; restructuring describes for coverage
-      rejected per the M8.3-A no-anti-pattern-test-org rule.
+      receive no direct credit (mutant credits kills to the describe
+      label's method only). Carve-outs sized accordingly; restructuring
+      describes for coverage rejected -- test organization documents
+      behavior, it is not reshaped to satisfy the mutation tool.
     env:
       RSPEC_TRACER_DISABLE: '1'
     cmds:
@@ -1253,10 +1257,10 @@ tasks:
 
         fail=0
         # Per-subject gates sized at ~3 pp under M2 Max local baselines
-        # for CI ubuntu-latest variance per memory:
-        # feedback_mutant_local_vs_ci_variance. Re-cut downward in a
+        # to absorb CI ubuntu-latest variance (test ordering + mutant
+        # parallelism shift alive counts several pp). Re-cut downward in a
         # follow-up commit if any subject drops materially below local on
-        # the first CI run (M8.3-A 154ec27 + M8.3-B 10c0d67 precedent).
+        # the first CI run (154ec27 + 10c0d67 precedent).
         #
         # Base local 96.82%: 3 subjects, 11 selected; clean `#initialize`
         # / `#generate` / `#no_op?` describes map perfectly. The 2 alive
@@ -1288,7 +1292,7 @@ tasks:
         # / `cell` / `cell_code` / `format_duration` / `copy_assets`
         # / `inject` private helpers uncredited under mutant first-token
         # mapping. Behavior IS exercised end-to-end via `#generate` output
-        # assertions; carve-out per feedback_mutant_describe_label_ceiling.
+        # assertions; carve-out for the describe-label ceiling.
         run_mutant_gate "Reporters::HtmlReporter" \
           "rspec_tracer/reporters/html_reporter" \
           "RSpecTracer::Reporters::HtmlReporter*" 80 || fail=1

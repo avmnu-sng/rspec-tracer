@@ -70,14 +70,15 @@ Items:
   would have failed. Designed for teams to run silently in CI for 2-3
   weeks to accumulate empirical "0 missed failures across N runs"
   evidence before flipping the switch. The canonical adoption ramp for
-  correctness-sensitive infrastructure.
+  correctness-sensitive infrastructure. Lands in `v2.0.0.rc.2`.
 - **Soundness tier documentation.** Explicit classification of what
   rspec-tracer guarantees: **sound** (file-content digests, explicit
   `tracks:`, env snapshot), **conservative** (boot-set whole-suite
   invalidator, Rails `lib/` engine-load fallback), **heuristic** (Rails
-  subscriber attribution under common configs), **unsafe** (runtime
-  metaprogramming, monkey-patches, hidden reflection — call-out
-  prominently). Ships as an ARCHITECTURE.md section.
+  subscriber attribution under common configs), **blind spot** (runtime
+  metaprogramming, monkey-patches, hidden reflection -- called out
+  prominently). Shipped -- see
+  [ARCHITECTURE.md](ARCHITECTURE.md#soundness-model).
 - **`safety_mode :paranoid | :balanced | :aggressive` preset DSL.**
   Named presets that toggle existing knobs (`transitive_load_tracking`,
   `whole_suite_invalidators`, `always_re_run_failed_examples`,
@@ -154,8 +155,8 @@ The same release ramp also reshapes how rspec-tracer is presented:
   runs entirely inside customer infrastructure (no telemetry, no
   per-seat cost, no vendor egress). Material for regulated industries
   where commercial test-optimization SaaS isn't viable.
-- **Stated Ruby support / EOL policy** in COMPATIBILITY_MATRIX, plus
-  surfacing the existing Ruby-HEAD CI in the README. Closes
+- **Stated Ruby support / EOL policy** in the README's
+  [Maintenance section](README.md#maintenance). Closes
   "single-maintainer infrastructure on volatile tooling" as an
   adoption objection.
 
@@ -324,10 +325,10 @@ platform teams legitimately raise on infrastructure adoption:
 - **Stated Ruby support window.** rspec-tracer commits to supporting
   Ruby versions until upstream Ruby Core reaches EOL plus 6 months.
   Currently CI-gated per the [README's Quick start](README.md#quick-start):
-  Ruby 3.1, 3.2, 3.3, 3.4, 4.0 + JRuby 9.4. A formal version-by-version
-  EOL alignment doc lands as part of the 2.0 final work.
-- **Ruby HEAD + prereleases on CI** (best-effort tier). rspec-tracer
-  runs against Ruby HEAD on every PR; breakage on a Ruby prerelease
+  Ruby 3.1, 3.2, 3.3, 3.4, 4.0 + JRuby 9.4. The version-by-version
+  EOL table lives in the [README Maintenance section](README.md#maintenance).
+- **Ruby HEAD + TruffleRuby on a best-effort tier.** Neither is
+  CI-gated on every PR, but breakage reported on a Ruby prerelease
   is treated as a high-priority bug, not a future-self problem. Goal:
   rspec-tracer should never be the reason a team can't upgrade Ruby.
 - **Open governance commitment.** Sponsorship channels (GitHub

@@ -46,7 +46,7 @@ module RSpecTracer
       # Keep methods module-level via `def self.x` (not module_function)
       # so mutant can observe them - module_function attaches the
       # methods to an anonymous singleton that Method#source_location
-      # can't trace (memory: feedback_mutation_friendly_modules).
+      # can't trace.
       def self.tracks_for(example)
         files = Set.new
         envs = Set.new
