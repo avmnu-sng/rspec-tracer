@@ -1319,10 +1319,50 @@ tasks:
           "RSpecTracer::Reporters::Registry*" 86 || fail=1
         exit "$fail"
 
+  test:mutation:cli:
+    desc: >-
+      Mutation pass on the cli/ snapshot-reading surface (BlastRadius +
+      the SnapshotHelpers module both read-side sub-commands share).
+      Single combined run (~20s local); gate 87% sits ~4 pp under the
+      local M2 Max baseline (91.44%, 1578 mutations) to absorb
+      local-vs-CI run variance -- re-cut from CI numbers if the first
+      CI run lands materially lower (154ec27 + 10c0d67 precedent).
+      Explain / Doctor / CacheInfo / CacheClear / ReportOpen are not
+      gated (line-coverage only); BlastRadius is gated because it
+      computes the re-run prediction users act on, and SnapshotHelpers
+      rides along as its (and Explain's) shared loading/lookup core.
+    env:
+      RSPEC_TRACER_DISABLE: '1'
+    cmds:
+      - |
+        if ! bundle show mutant >/dev/null 2>&1; then
+          echo "skip: mutant not installed on this Ruby (needs MRI >= 3.2)"
+          exit 0
+        fi
+
+        echo "=== mutation:cli [CLI::BlastRadius + CLI::SnapshotHelpers] ==="
+        out=$(bundle exec mutant run --use rspec --usage opensource \
+          --jobs 8 \
+          --include lib --require rspec_tracer/cli/blast_radius \
+          "RSpecTracer::CLI::BlastRadius*" \
+          "RSpecTracer::CLI::SnapshotHelpers*" 2>&1 || true)
+        echo "$out"
+        cov=$(echo "$out" | awk '/^Coverage:/ { gsub(/%/, "", $2); print $2 }' | tail -1)
+        if [ -z "$cov" ]; then
+          echo "ERROR [CLI::BlastRadius + CLI::SnapshotHelpers]: could not parse mutant coverage"
+          exit 1
+        fi
+        if awk "BEGIN { exit ($cov >= 87) ? 0 : 1 }"; then
+          echo "mutation:cli [CLI::BlastRadius + CLI::SnapshotHelpers] PASS (coverage $cov% >= 87%)"
+          exit 0
+        fi
+        echo "mutation:cli [CLI::BlastRadius + CLI::SnapshotHelpers] FAIL (coverage $cov% < 87%)"
+        exit 1
+
   test:mutation:full:
     desc: >-
       Full mutation pass - test:mutation:smoke + the per-module
-      subtasks (tracker / storage / rspec / top-level) + the
+      subtasks (tracker / storage / rspec / top-level / cli) + the
       :remote-cache subtask + the :rails / :reporters subtasks.
       Runs per-PR + per-main via lint-and-specs.yml's parallel mutation
       jobs (migrated from the deleted nightly.yml).
@@ -1332,6 +1372,7 @@ tasks:
       - task: test:mutation:storage
       - task: test:mutation:rspec
       - task: test:mutation:top-level
+      - task: test:mutation:cli
       - task: test:mutation:remote-cache
       - task: test:mutation:rails
       - task: test:mutation:reporters

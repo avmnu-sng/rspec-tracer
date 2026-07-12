@@ -24,6 +24,13 @@ RSpec.describe RSpecTracer::CLI::CacheInfo do
       end
     end
 
+    it 'exits 0 silently when a downstream pipe closes early (broken pipe from `| head`)' do
+      broken = StringIO.new
+      allow(broken).to receive(:puts).and_raise(Errno::EPIPE)
+      expect(described_class.run(%w[-h], stdout: broken, stderr: stderr)).to eq(0)
+      expect(stderr.string).to be_empty
+    end
+
     context 'with a populated cache (json backend)' do
       before do
         @tmp_dir = Dir.mktmpdir

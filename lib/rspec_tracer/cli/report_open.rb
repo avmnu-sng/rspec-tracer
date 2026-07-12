@@ -17,8 +17,6 @@ module RSpecTracer
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 
-        require 'rspec_tracer/load_config'
-
         report_path = RSpecTracer.report_path
         index_path = File.join(report_path, 'index.html')
 
@@ -35,6 +33,19 @@ module RSpecTracer
           return 0
         end
 
+        launch(opener, index_path, stdout, stderr)
+      rescue Errno::EPIPE
+        # Downstream pipe (`... | head`) closed early -- routine in
+        # shell pipelines, not a failure. Exit 0 silently.
+        0
+      rescue StandardError => e
+        stderr.puts "report:open: #{e.class}: #{e.message}"
+        1
+      end
+
+      # Internal helper for the tracer pipeline.
+      # @api private
+      def self.launch(opener, index_path, stdout, stderr)
         if system(opener, index_path, out: File::NULL, err: File::NULL)
           stdout.puts "report:open: opened #{index_path} via #{opener}"
           0
@@ -42,9 +53,6 @@ module RSpecTracer
           stderr.puts "report:open: failed to launch #{opener} #{index_path}"
           1
         end
-      rescue StandardError => e
-        stderr.puts "report:open: #{e.class}: #{e.message}"
-        1
       end
 
       # Internal helper for the tracer pipeline.
