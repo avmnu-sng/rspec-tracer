@@ -6,10 +6,18 @@ group :development do
   gem 'pry', '~> 0.14'
   gem 'rake', '~> 13.2'
   gem 'rantly', '~> 2.0'
-  gem 'rubocop', '~> 1.60'
-  gem 'rubocop-performance', '~> 1.20'
-  gem 'rubocop-rake', '~> 0.6'
-  gem 'rubocop-rspec', '~> 3.0'
+
+  # Dev-only tool gems are pinned EXACTLY (not `~>`) so a fresh CI
+  # resolve cannot drift while main is dormant: new tool releases
+  # (new cops, parser changes, mutation-set changes) arrive via
+  # deliberate Dependabot bump PRs instead of breaking lint/mutation
+  # on untouched code. Runtime/matrix-driven gems below stay loose on
+  # purpose - their resolution spread IS the compatibility matrix.
+  gem 'rubocop', '1.88.2'
+  gem 'rubocop-performance', '1.26.1'
+  gem 'rubocop-rake', '0.7.1'
+  gem 'rubocop-rspec', '3.10.2'
+
   gem 'simplecov', '~> 0.22'
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
@@ -104,8 +112,10 @@ group :development do
   # `if` (not `install_if`) so the gem is not declared at all on
   # incompatible cells; `install_if` only gates install time and
   # Bundler would still refuse to resolve the dep graph when the lock
-  # is not committed.
-  gem 'mutant-rspec', '~> 0.16' if RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3')
+  # is not committed. Pinned exactly (like the rubocop gems above) so
+  # a new mutant release cannot change the mutation set / kill gate on
+  # untouched code; Dependabot bumps it deliberately.
+  gem 'mutant-rspec', '0.16.3' if RUBY_ENGINE == 'ruby' && Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.3')
 
   # Hot-path profiling — MRI only (stackprof relies on rb_postponed_job_*
   # APIs that JRuby + TruffleRuby don't implement). Used by `task
