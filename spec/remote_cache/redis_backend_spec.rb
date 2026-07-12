@@ -648,7 +648,7 @@ RSpec.describe RSpecTracer::RemoteCache::RedisBackend do
       backend = new_backend
       5.times { |i| @fake.hset("rspec-tracer:main:sha-#{i}", { '_timestamp' => '1' }) }
 
-      expect(backend.unbounded_warning(warn_threshold: 3)).to match(/5 refs/)
+      expect(backend.unbounded_warning(warn_threshold: 3)).to include('5 refs')
     end
 
     it 'excludes branch_refs keys from the count' do
