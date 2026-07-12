@@ -117,6 +117,11 @@ using the new names; the warns are advisory.
 
 ## Behavior changes worth knowing
 
+For the full classification of which invalidation decisions are
+guaranteed, conservative, or heuristic -- and what the tracer cannot
+observe at all -- see the
+[soundness model](ARCHITECTURE.md#soundness-model).
+
 ### Duplicate example identities
 
 rspec-tracer identifies each example by a hash of its `describe`

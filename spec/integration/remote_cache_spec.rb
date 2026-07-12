@@ -18,9 +18,9 @@ require 'rspec_tracer/storage/schema'
 # is a precondition for `task test:integration:remote-cache` - this
 # spec runs after the ready+smoke probe passes.
 #
-# Asserts on the content of what was uploaded / downloaded (per the
-# feedback_v2_integration_exit_status memory: exit-status checks mask
-# cache-persistence bugs). The round-trip proves the key layout
+# Asserts on the content of what was uploaded / downloaded
+# (exit-status checks mask cache-persistence bugs).
+# The round-trip proves the key layout
 # matches 1.x semantics + the new tier split is coherent.
 #
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable

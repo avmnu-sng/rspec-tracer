@@ -7,9 +7,8 @@ require 'fileutils'
 # before(:all) and after(:all) hooks to scrub cache / report /
 # coverage state between back-to-back runs.
 #
-# Closes synthesis flake Pattern 1 - stale cache-state leak, recurring
-# across the M3.3 / M3.6 / M4.1 / M7.1 retros (see
-# docs/revamp/retro/00-SYNTHESIS.md §Recurring flakes Pattern 1). The
+# Closes a recurring flake pattern: stale cache-state leaking
+# between back-to-back integration runs. The
 # Taskfile does not rm -rf cache/report dirs between tasks, so a spec
 # whose fixture leaks state into the next spec used to surface as
 # flakes that disappeared after a manual `rm -rf`.

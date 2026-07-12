@@ -27,5 +27,4 @@ ignore: |
   /vendor/
   /.bundle/
   node_modules/
-  /sample_projects/
   /spec/fixtures/

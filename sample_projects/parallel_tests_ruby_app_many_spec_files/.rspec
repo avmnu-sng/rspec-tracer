@@ -1,3 +1,0 @@
---require spec_helper
---require /tmp/helpers/test.rb
---format documentation

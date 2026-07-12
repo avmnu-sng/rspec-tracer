@@ -11,17 +11,19 @@ from 1.x see [`UPGRADING.md`](UPGRADING.md). For internals see
 
 1. [Add to a fresh Ruby gem](#1-add-to-a-fresh-ruby-gem)
 2. [Add to an existing Rails app](#2-add-to-an-existing-rails-app)
-3. [Migrate a 1.x project to 2.0](#3-migrate-a-1x-project-to-20)
-4. [Configure remote cache (S3 / Local-FS / Redis)](#4-configure-remote-cache)
-5. [Run with `parallel_tests`](#5-run-with-parallel_tests)
-6. [Run on JRuby](#6-run-on-jruby)
-7. [Track non-Ruby deps via `tracks:`](#7-track-non-ruby-deps-via-tracks)
-8. [Track env-var branching](#8-track-env-var-branching)
-9. [Use SQLite storage instead of JSON](#9-use-sqlite-storage-instead-of-json)
-10. [Debug "why did this test re-run?"](#10-debug-why-did-this-test-re-run)
-11. [Compose with Knapsack / RSpec::Retry / RSpec::Rerun](#11-compose-with-knapsack--rspecretry--rspecrerun)
-12. [Write a custom storage backend](#12-write-a-custom-storage-backend)
-13. [Write a custom reporter](#13-write-a-custom-reporter)
+3. [Detect flaky tests](#3-detect-flaky-tests)
+4. [Map file-to-test dependencies (Files Dependency)](#4-map-file-to-test-dependencies-files-dependency)
+5. [Migrate a 1.x project to 2.0](#5-migrate-a-1x-project-to-20)
+6. [Configure remote cache (S3 / Local-FS / Redis)](#6-configure-remote-cache)
+7. [Run with `parallel_tests`](#7-run-with-parallel_tests)
+8. [Run on JRuby](#8-run-on-jruby)
+9. [Track non-Ruby deps via `tracks:`](#9-track-non-ruby-deps-via-tracks)
+10. [Track env-var branching](#10-track-env-var-branching)
+11. [Use SQLite storage instead of JSON](#11-use-sqlite-storage-instead-of-json)
+12. [Debug "why did this test re-run?"](#12-debug-why-did-this-test-re-run)
+13. [Compose with Knapsack / RSpec::Retry / RSpec::Rerun](#13-compose-with-knapsack--rspecretry--rspecrerun)
+14. [Write a custom storage backend](#14-write-a-custom-storage-backend)
+15. [Write a custom reporter](#15-write-a-custom-reporter)
 
 ---
 
@@ -66,6 +68,10 @@ bundle exec rspec       # warm; skips unaffected examples
 The `rspec_tracer_report/index.html` file gives you per-example +
 per-file dependency views.
 
+Setting up CI? [docs/CI_RECIPES.md](docs/CI_RECIPES.md) has
+copy-paste cache recipes for CircleCI, GitLab CI, Buildkite, and
+Heroku CI, plus a link to the canonical GitHub Actions workflow.
+
 ---
 
 ## 2. Add to an existing Rails app
@@ -101,15 +107,21 @@ end
 
 `track_rails_defaults` attaches the common Rails-side declared globs
 (views, locales, fixtures, factories, helpers, config, schema). For
-narrower per-example schema attribution, see recipe
-[#4](#4-configure-remote-cache) below.
+narrower per-example schema attribution, see
+[Narrow AR-schema attribution](README.md#narrow-ar-schema-attribution)
+in the README.
 
 **Trade-off worth knowing**: if your test env runs with
 `config.eager_load = true` (Rails CI default), all `app/` files
 load at boot and any `app/` edit triggers a whole-suite re-run. To
 recover per-example precision, set `config.eager_load = false` in
-`config/environments/test.rb`. See README "How it works" for the
-full rationale.
+`config/environments/test.rb`. The boot-set row in
+[ARCHITECTURE.md's soundness model](ARCHITECTURE.md#soundness-model)
+explains why boot-loaded files invalidate the whole suite.
+
+Setting up CI? [docs/CI_RECIPES.md](docs/CI_RECIPES.md) has
+copy-paste cache recipes for CircleCI, GitLab CI, Buildkite, and
+Heroku CI, plus a link to the canonical GitHub Actions workflow.
 
 ### Rails engines: `lib/` always lands in the boot set
 
@@ -157,7 +169,101 @@ to the tracer.
 
 ---
 
-## 3. Migrate a 1.x project to 2.0
+## 3. Detect flaky tests
+
+Goal: find examples that pass and fail without their inputs
+changing -- no extra gems, no retry loops, and no test skipped in
+the process.
+
+rspec-tracer records each example's outcome alongside the inputs it
+consumed. When an example that failed on a previous run passes on a
+later one, it is flagged flaky; once flagged, it stays flagged and
+is never skipped, so every subsequent run re-investigates it.
+
+The default setup is all you need:
+
+```ruby
+# spec/spec_helper.rb -- top of file, before any application code.
+# With SimpleCov, start SimpleCov first -- load order is part of
+# the contract.
+require 'rspec_tracer'
+RSpecTracer.start
+```
+
+Not ready to let the tracer skip anything? Run in record-only mode
+-- every example still runs, and flaky detection works unchanged:
+
+```ruby
+# .rspec-tracer
+RSpecTracer.configure do
+  run_all_examples true
+end
+```
+
+Or per-run: `RSPEC_TRACER_RUN_ALL_EXAMPLES=true bundle exec rspec`.
+
+Where the output lives:
+
+- The terminal summary adds a flaky count to its tally line
+  (e.g. `2 flaky`) whenever any are detected.
+- The HTML report's **Flaky Examples** tab
+  (`rspec_tracer_report/index.html`) lists every flagged example.
+- `rspec_tracer_report/report.json` carries a `flaky_examples`
+  array (id, description, location) under its `reports` key for
+  CI dashboards.
+
+**One honest caveat**: flaky detection needs repeated runs on
+unchanged inputs. A single run proves nothing, and if you edit code
+between runs, a fail-then-pass flip looks like a fix, not a flake.
+The strongest signal comes from re-running the same commit -- CI
+retries, or local re-runs without edits.
+
+Pairing with `RSpec::Retry` so flakes don't block CI while you fix
+them? See recipe
+[#13](#13-compose-with-knapsack--rspecretry--rspecrerun).
+
+---
+
+## 4. Map file-to-test dependencies (Files Dependency)
+
+Goal: answer "what tests run if I change this file?" before you
+change it.
+
+Every run, rspec-tracer inverts its per-example input records into
+a file-to-examples map: for each file the suite consumed, which
+examples depend on it, and through which spec files. No config
+beyond the default:
+
+```ruby
+# spec/spec_helper.rb -- top of file, before any application code.
+# With SimpleCov, start SimpleCov first -- load order is part of
+# the contract.
+require 'rspec_tracer'
+RSpecTracer.start
+```
+
+Run the suite once (a cold run populates the map), then open
+`rspec_tracer_report/index.html`:
+
+- The **Files Dependency** tab is the file-to-tests view: pick a
+  file, see every example that depends on it.
+- The **Examples Dependency** tab is the per-example view: pick an
+  example, see every file it consumed.
+- `rspec_tracer_report/report.json`'s `reports.files_dependency`
+  array carries the same data (file, dependent-example count,
+  spec files) for scripting.
+
+Want the map without enabling skipping? Use the record-only mode
+from recipe [#3](#3-detect-flaky-tests).
+
+**One honest caveat**: the map shows test-to-file dependencies --
+which tests depend on which files -- not code-to-code coupling. Two
+application files that always change together show up only
+indirectly, through the examples that consume both.
+
+---
+
+## 5. Migrate a 1.x project to 2.0
 
 Goal: zero-touch upgrade preserving every 1.x behavior + adopting
 the new `track_rails_defaults` to close Rails blind spots.
@@ -186,10 +292,14 @@ complete migration guide.
 
 ---
 
-## 4. Configure remote cache
+## 6. Configure remote cache
 
 Pick one backend in `.rspec-tracer`. The `rake` task surface stays
 identical — only the storage substrate differs.
+
+Whichever backend you pick, the cache is plain files in
+infrastructure you own (your S3 bucket, your Redis, your
+filesystem) -- nothing ships to a vendor backend.
 
 ### S3 (preserves 1.x layout)
 
@@ -246,7 +356,7 @@ without enumerating the full key namespace.
 
 ---
 
-## 5. Run with `parallel_tests`
+## 7. Run with `parallel_tests`
 
 `parallel_tests` works out of the box. The tracker writes per-worker
 caches under `rspec_tracer_cache/parallel_tests_N/` and merges them
@@ -269,7 +379,7 @@ reports get purged at finalize alongside the per-worker cache dirs).
 
 ---
 
-## 6. Run on JRuby
+## 8. Run on JRuby
 
 ```sh
 export JRUBY_OPTS="--debug -X+O"
@@ -295,7 +405,7 @@ chain transparently.
 
 ---
 
-## 7. Track non-Ruby deps via `tracks:`
+## 9. Track non-Ruby deps via `tracks:`
 
 Goal: invalidate specific examples when a config file or non-Ruby
 asset they read changes.
@@ -335,7 +445,7 @@ attribution.
 
 ---
 
-## 8. Track env-var branching
+## 10. Track env-var branching
 
 Goal: invalidate examples when an env var they branch on changes
 between runs.
@@ -374,7 +484,7 @@ value (or setting/unsetting) invalidates the dependent examples.
 
 ---
 
-## 9. Use SQLite storage instead of JSON
+## 11. Use SQLite storage instead of JSON
 
 Goal: faster cold reads on suites with > ~5,000 examples.
 
@@ -464,7 +574,7 @@ your Ruby version for the authoritative supported set.
 
 ---
 
-## 10. Debug "why did this test re-run?"
+## 12. Debug "why did this test re-run?"
 
 Use `bundle exec rspec-tracer explain <example_id_or_substring>`:
 
@@ -491,7 +601,7 @@ order, schema version, remote-cache reachability, AR-schema config).
 
 ---
 
-## 11. Compose with Knapsack / RSpec::Retry / RSpec::Rerun
+## 13. Compose with Knapsack / RSpec::Retry / RSpec::Rerun
 
 These all coexist with rspec-tracer; their RSpec hooks compose with
 the tracer's `Module#prepend` chain. Add the gems normally.
@@ -547,7 +657,7 @@ through the rerun chain.
 
 ---
 
-## 12. Write a custom storage backend
+## 14. Write a custom storage backend
 
 Implement `RSpecTracer::Storage::Backend`'s 5-method protocol:
 
@@ -598,7 +708,7 @@ add your backend's spec to it.
 
 ---
 
-## 13. Write a custom reporter
+## 15. Write a custom reporter
 
 Subclass `RSpecTracer::Reporters::Base`:
 

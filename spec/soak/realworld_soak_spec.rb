@@ -39,21 +39,21 @@ require 'pathname'
 #
 # Excluded from the default rspec sweep via .rspec --exclude-pattern.
 #
-# Iteration mechanism: subprocess per iter via Open3.capture2e (M5.1
-# cold-subprocess test-isolation contract preserved per
-# feedback_jruby_ci_subprocess_floor); NO fork() in the spec - if
-# ever introduced, the child must Process.exit!(0) per
-# feedback_simplecov_fork_poisoning. Open3 is wrapped in
-# Bundler.with_unbundled_env per
-# feedback_bundler_unbundled_env_for_fixture_subprocess - the outer
-# `bundle exec rspec` leaks RUBYOPT=-rbundler/setup + BUNDLE_GEMFILE
-# etc. into the child; with_unbundled_env clears those so the child
-# resolves against the fixture's Gemfile cleanly.
+# Iteration mechanism: subprocess per iter via Open3.capture2e,
+# preserving the cold-subprocess test-isolation contract; NO fork()
+# in the spec - if ever introduced, the child must Process.exit!(0)
+# to bypass SimpleCov's inherited at_exit hook, which would rewrite
+# the parent's coverage snapshot. Open3 is wrapped in
+# Bundler.with_unbundled_env - the outer `bundle exec rspec` leaks
+# RUBYOPT=-rbundler/setup + BUNDLE_GEMFILE etc. into the child;
+# with_unbundled_env clears those so the child resolves against the
+# fixture's Gemfile cleanly.
 #
 # Cache state assertions only; no coverage.json byte-equivalence
-# (M8.0 domain - would require CI= empty pinning per
-# feedback_rails_eager_load_coverage_timing). Cleanup-guard hygiene
-# via spec/support/integration_cleanup.rb (M8.2).
+# (that would require pinning CI= empty in the child env, since
+# eager-loading Rails apps load files at boot before Coverage.start
+# fires and shift the coverage shape). Cleanup-guard hygiene
+# via spec/support/integration_cleanup.rb.
 #
 # Per-project layout differs significantly:
 #
@@ -136,9 +136,8 @@ PROJECT_INVOCATIONS = {
     # verified clean locally at the pinned SHA in ~5 min.
     # spec/services explicit dir list with checkout's individual
     # files (minus select_shipping_method) so rspec discovery skips
-    # the flake without an --exclude-pattern (which is silently
-    # ignored when positional paths are passed - per
-    # feedback_rspec_exclude_pattern_positional).
+    # the flake without an --exclude-pattern (which rspec silently
+    # ignores when explicit positional paths are passed).
     rspec_args: %w[
       spec/lib spec/finders spec/helpers spec/jobs spec/presenters spec/validators
       spec/services/spree/account

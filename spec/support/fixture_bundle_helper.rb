@@ -15,10 +15,10 @@ require 'json'
 # run_rspec_in_fixture variants since the env vars and target spec
 # file differ.
 #
-# `def self.x` (over module_function) per
-# feedback_mutation_friendly_modules: keeps the methods discoverable
-# under mutant should this helper ever be in scope; currently it
-# isn't (test-support code), but the convention is consistent.
+# `def self.x` (over module_function) keeps the methods discoverable
+# under mutant should this helper ever be in scope (module_function's
+# anonymous singleton hides them); currently it isn't (test-support
+# code), but the convention is consistent.
 module FixtureBundleHelper
   FIXTURE_ROOT = File.expand_path('../fixtures/rails_app', __dir__)
   CACHE_DIR = File.join(FIXTURE_ROOT, 'rspec_tracer_cache')
@@ -39,8 +39,7 @@ module FixtureBundleHelper
           # Wipe the lock so Bundler resolves fresh against the
           # current interpreter. Same-interpreter repeats keep
           # `bundle check` green, so this rm only fires on the
-          # exception path. Per M8.1-B's cross-interpreter resilience
-          # work + feedback_cross_interpreter_fixture_helper.
+          # exception path.
           FileUtils.rm_f(File.join(FIXTURE_ROOT, 'Gemfile.lock'))
           system(gemfile_env, 'bundle', 'install', '--quiet') || raise('bundle install failed')
         end

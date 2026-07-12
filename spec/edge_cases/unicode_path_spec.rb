@@ -8,7 +8,7 @@
 # All Unicode test data is constructed AT RUNTIME from integer
 # codepoints (`pack('U*')` / `chr(Encoding::UTF_8)`) so the spec
 # source itself stays ASCII-only. mutant's parser reads lib/ as
-# US-ASCII (memory: `feedback_mutant_non_ascii_source`); spec files
+# US-ASCII and crashes on non-ASCII bytes; spec files
 # are not subjects, but defensively-ASCII-clean spec sources avoid
 # any future tooling encoding-check surprise. The same posture
 # applies to unicode_path_spec, hardlink_spec, etc.

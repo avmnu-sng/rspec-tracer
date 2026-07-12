@@ -64,7 +64,8 @@ tasks:
       pure-compute describe (which sets self.use_transactional_fixtures
       = false) is NOT re-run, demonstrating the widening boundary.
       Documents the SAFE-BUT-WIDE schema attribution under the most
-      common Rails setup (memory: feedback_no_user_surprises).
+      common Rails setup: over-selection never skips an affected
+      example, and the widening is documented rather than silent.
     cmds:
       - bundle exec rspec --no-color spec/integration/wide_ar_schema_transactional_spec.rb
 
