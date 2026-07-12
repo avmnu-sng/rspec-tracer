@@ -26,7 +26,6 @@ skip-dirs:
   - rspec_tracer_cache
   - rspec_tracer_coverage
   - rspec_tracer_report
-  - sample_projects
   - spec/fixtures/rails_app/log
   - spec/fixtures/rails_app/storage
   - spec/fixtures/rails_app/tmp

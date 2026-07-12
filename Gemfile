@@ -33,7 +33,7 @@ group :development do
   # independent. `RSPEC_VERSION` is intentionally NOT prefixed: the
   # workflow always sets it at JOB level (so setup-ruby's bundle install
   # and the test step's bundle exec see the same value), and the prior
-  # cucumber sample_projects/Gemfiles (retired in 2.0.0) also read the
+  # cucumber-era fixture Gemfiles (retired in 2.0.0) also read the
   # unprefixed name - keeping the existing name avoids churn for users
   # tracking the env in their own Gemfiles.
   #
