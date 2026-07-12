@@ -42,10 +42,9 @@ concurrency:
   # an in-flight run. The merge-to-main push fire is the cold-cycle
   # cache-populating run; if a manual workflow_dispatch comes in
   # while it's still going, cancelling the merge run would lose its
-  # post-step cache save (per feedback_actions_cache_post_hook_timeout)
-  # and trap the next dispatch in cold-run hell. Mirrors ci.yml's
-  # rule: main / merge runs must run to completion, never cancelled
-  # because a later trigger arrived.
+  # post-step cache save and trap the next dispatch in cold-run
+  # hell. Mirrors ci.yml's rule: main / merge runs must run to
+  # completion, never cancelled because a later trigger arrived.
   group: example-tracer-cache
   cancel-in-progress: false
 
