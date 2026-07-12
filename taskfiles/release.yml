@@ -1,0 +1,109 @@
+version: '3'
+
+# Release preflight gate: maintainer-run checks before cutting a tag.
+# Runs every check, collects results, and exits nonzero only on hard
+# failures (packaged-gem hygiene, CHANGELOG/VERSION consistency).
+# Checks that need human judgment print VERIFY-MANUALLY blocks and do
+# not fail the run. See RELEASING.md for the full tag-cut procedure.
+
+tasks:
+  release:preflight:
+    desc: Run the pre-tag release checks (see RELEASING.md)
+    deps: [gem:build]
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+        fail=0
+
+        echo "== [1/5] Hardcoded pre-release version strings =========="
+        # Pre-release strings anywhere outside CHANGELOG.md history
+        # must be bumped to the release version or explicitly
+        # confirmed at tag time (e.g. install snippets in docs).
+        if git grep -InE '[0-9]+\.[0-9]+\.[0-9]+\.pre\.[0-9]+|\.rc\.[0-9]+' \
+            -- ':(exclude)CHANGELOG.md'; then
+          echo "VERIFY-MANUALLY: bump or confirm each hit above at tag time."
+        else
+          echo "PASS: no pre-release version strings outside CHANGELOG.md."
+        fi
+        echo
+
+        echo "== [2/5] Forward version promises ========================"
+        # Docs sometimes promise a feature for a future version; each
+        # promise must still be true (or be rewritten) at tag time.
+        if git grep -InE 'lands in v[0-9]'; then
+          echo "VERIFY-MANUALLY: re-verify each promised version above."
+        else
+          echo "PASS: no forward version promises found."
+        fi
+        echo
+
+        echo "== [3/5] Packaged gem tree hygiene ======================="
+        # Unpack the freshly built gem and scan every shipped file for
+        # internal planning nomenclature that must never reach users.
+        # The pattern spells each token with single-character classes
+        # (e.g. [a]) so this taskfile never contains the tokens it
+        # hunts for; the classes match identically to the bare letters.
+        rm -rf tmp/preflight-unpack
+        mkdir -p tmp
+        gem unpack "pkg/rspec-tracer-{{.VERSION}}.gem" \
+          --target tmp/preflight-unpack > /dev/null
+        if grep -rInE 'M[0-9]+\.[0-9]+|docs/rev[a]mp|feedb[a]ck_[a-z_]+|kick[o]ff|personal-inst[a]ll' \
+            tmp/preflight-unpack; then
+          echo "FAIL: internal nomenclature found in the packaged gem tree."
+          fail=1
+        else
+          echo "PASS: packaged gem tree is free of internal nomenclature."
+        fi
+        echo
+
+        echo "== [4/5] README maintenance-policy spot checks ==========="
+        # The Ruby EOL table and the CI-cost figure go stale silently;
+        # surface them for a human read. Tolerate absence: the section
+        # may not have landed in README.md yet.
+        eol_rows=$(awk 'tolower($0) ~ /^#+ +maintenance/ {insec=1; print; next}
+                        insec && /^## / {exit}
+                        insec && /^\|/ {print}' README.md || true)
+        if [ -n "$eol_rows" ]; then
+          echo "VERIFY-MANUALLY: Ruby EOL table rows (confirm dates are current):"
+          printf '%s\n' "$eol_rows"
+        else
+          echo "VERIFY-MANUALLY: README Maintenance section / EOL table not"
+          echo "  found; confirm the maintenance policy manually (the docs"
+          echo "  change adding it may not be merged yet)."
+        fi
+        cost_line=$(grep -inE 'ci[ -]?minute' README.md || true)
+        if [ -n "$cost_line" ]; then
+          echo "VERIFY-MANUALLY: CI cost line (confirm the figure is current):"
+          printf '%s\n' "$cost_line"
+        else
+          echo "VERIFY-MANUALLY: README CI-cost line not found; confirm the"
+          echo "  CI cost figure manually (the docs change adding it may not"
+          echo "  be merged yet)."
+        fi
+        echo
+
+        echo "== [5/5] CHANGELOG vs RSpecTracer::VERSION ==============="
+        latest=$(grep -m1 -E '^## \[' CHANGELOG.md \
+          | sed -E 's/^## \[([^]]+)\].*/\1/')
+        if [ "$latest" = "Unreleased" ]; then
+          echo "PASS: CHANGELOG has an [Unreleased] block; cut it to"
+          echo "  {{.VERSION}} as part of the tag procedure (RELEASING.md)."
+        elif [ "$latest" = "{{.VERSION}}" ]; then
+          echo "PASS: CHANGELOG latest block matches RSpecTracer::VERSION"
+          echo "  ({{.VERSION}})."
+        else
+          echo "FAIL: CHANGELOG latest block is [$latest] but"
+          echo "  RSpecTracer::VERSION is {{.VERSION}}; add an [Unreleased]"
+          echo "  or matching version block before tagging."
+          fail=1
+        fi
+        echo
+
+        if [ "$fail" -ne 0 ]; then
+          echo "release:preflight: FAILED -- fix the FAIL items above."
+        else
+          echo "release:preflight: OK -- work through the VERIFY-MANUALLY"
+          echo "items above before tagging."
+        fi
+        exit "$fail"

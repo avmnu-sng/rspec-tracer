@@ -89,6 +89,9 @@ includes:
   docs:
     taskfile: ./taskfiles/docs.yml
     flatten: true
+  release:
+    taskfile: ./taskfiles/release.yml
+    flatten: true
 
 tasks:
   default:
