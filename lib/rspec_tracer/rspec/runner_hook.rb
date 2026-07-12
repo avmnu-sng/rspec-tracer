@@ -220,19 +220,36 @@ module RSpecTracer
       # `inject(0) { |a, e| a + e.filtered_examples.size }`. The
       # default block returns `[]` (`.size == 0`), matching the
       # pre-drop path's behavior.
+      #
+      # `examples_map` is keyed by LEAF groups (the keys of
+      # `RSpec.world.filtered_examples`) while `example_groups` holds
+      # TOP-LEVEL groups (`example.example_group.parent_groups.last`,
+      # collected by `_rspec_tracer_build_filter_decision`). For any
+      # spec file with nested describes those two sets are disjoint,
+      # so the group filter maps each survivor back to its top-level
+      # parent — mirroring how the pre-drop path built the group list.
+      # Filtering `example_groups` by `kept_map.key?` instead used to
+      # drop every nested spec file in the suite the moment one
+      # duplicate pair existed anywhere (refinery soak: "running 68
+      # examples (actual: 399, skipped: 331)" from a single colliding
+      # pair in a 399-example suite).
       # @api private
       def _rspec_tracer_drop_duplicate_examples(examples_map, example_groups)
         duplicate_ids = Set.new(RSpecTracer.engine.duplicate_examples.keys)
 
         kept_map = Hash.new { |hash, group| hash[group] = [] }
+        kept_top_level = Set.new
         examples_map.each do |group, examples|
           survivors = examples.reject do |example|
             duplicate_ids.include?(example.metadata[:rspec_tracer_example_id])
           end
-          kept_map[group] = survivors unless survivors.empty?
+          next if survivors.empty?
+
+          kept_map[group] = survivors
+          survivors.each { |example| kept_top_level << example.example_group.parent_groups.last }
         end
 
-        [kept_map, example_groups.select { |group| kept_map.key?(group) }]
+        [kept_map, example_groups.select { |group| kept_top_level.include?(group) }]
       end
     end
   end

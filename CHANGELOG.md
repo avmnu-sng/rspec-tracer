@@ -1,3 +1,20 @@
+## [Unreleased]
+
+### Fixed
+
+- **Duplicate-example drop no longer discards nested spec files**
+  ([#262](https://github.com/avmnu-sng/rspec-tracer/issues/262)).
+  With at least one pair of colliding example identities anywhere in
+  the suite, the drop path rebuilt RSpec's top-level group list by
+  requiring each top-level group to directly own surviving examples,
+  so every spec file whose examples live inside nested `describe`
+  blocks was removed wholesale (a 399-example suite with one
+  colliding pair ran only 68 examples; with
+  `fail_on_duplicates false` that under-run exited zero). The group
+  filter now maps each surviving example back to its top-level
+  group, so exactly the colliding examples are dropped — the
+  behavior UPGRADING.md documents.
+
 ## [2.0.0.pre.2] - 2026-05-16
 
 Bug-fix + interop release after the field-test pass that followed
