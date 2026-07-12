@@ -39,7 +39,7 @@ tasks:
       - sh: command -v python3 >/dev/null 2>&1
         msg: "python3 not found; install: 'brew install python@3.12' (mac) — Ubuntu ships it"
     # Status guards skip install when each binary is present AT THE
-    # PINNED VERSION. M8.6 retro: previous `test -x` checks let cache
+    # PINNED VERSION. Previously, plain `test -x` checks let cache
     # restore-keys hits (which may carry a stale binary from a prior
     # session with a different version pin) skip install incorrectly.
     # Version-aware grep against each tool's --version output ensures
@@ -59,12 +59,12 @@ tasks:
         #
         # Two-layer retry: inner curl `--retry 5` (covers ~10s of 5xx
         # blips) + outer 3-attempt loop with 5s/10s/20s exponential
-        # backoff (covers ~35s of CDN unavailability). M8.3-A (PR #122)
-        # / M8.3-B (PR #124) / M8.6 v5 (PR #129) all hit GitHub-Releases
-        # 5xx flakes during cold-cache install:tools. Same outer-loop
-        # shape was already on trivy install before M8.6 v3 bypassed
-        # install.sh; M8.6 v5 retro promoted the pattern to actionlint
-        # + shellcheck after a 6-consecutive-502 burst broke shellcheck.
+        # backoff (covers ~35s of CDN unavailability). PRs #122, #124,
+        # and #129 all hit GitHub-Releases 5xx flakes during
+        # cold-cache install:tools. Same outer-loop shape was already
+        # on trivy install before we bypassed install.sh; the pattern
+        # was promoted to actionlint + shellcheck after a
+        # 6-consecutive-502 burst broke shellcheck.
         mkdir -p bin
         OS=$(uname -s | tr '[:upper:]' '[:lower:]')
         case "$(uname -m)" in
@@ -125,7 +125,7 @@ tasks:
         ln -sf "$(pwd)/.venv/yamllint/bin/yamllint" bin/yamllint
       - |
         # trivy: direct binary download (matches actionlint/shellcheck
-        # pattern). M8.6 retro: PR #129 first CI run had all 3 attempts
+        # pattern). PR #129's first CI run had all 3 attempts
         # of the official install.sh wrapper fail in a 35s window —
         # install.sh shells out to its own curl + tar internally that
         # our outer retry can't see, so the loop just hits the same
@@ -133,7 +133,7 @@ tasks:
         # standard `--retry 5 --retry-all-errors --retry-connrefused`
         # gives us the same retry semantics as actionlint/shellcheck.
         # Same two-layer retry (inner curl --retry 5 + outer 3-attempt
-        # loop) as actionlint/shellcheck since M8.6 v6. Trivy release
+        # loop) as actionlint/shellcheck. Trivy release
         # naming: trivy_<NUMBER>_<OS>-<ARCH>.tar.gz where NUMBER strips
         # the leading 'v' and ARCH uses 64bit/ARM64 (not x86_64/aarch64).
         mkdir -p bin

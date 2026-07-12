@@ -155,13 +155,13 @@ RSpec.describe RSpecTracer::RemoteCache::UserTasks do
     end
   end
 
-  # M8.10: missing GIT_DEFAULT_BRANCH degrades gracefully (per the
+  # Missing GIT_DEFAULT_BRANCH degrades gracefully (per the
   # `Never propagate storage errors` contract) - the remote-cache
   # rake-task surface returns false + logs a clear, actionable
   # message at warn level, rather than letting the require_env raise
   # propagate up into `bundle exec rake` as a non-zero exit. The user
   # sees the env-name in the log line and knows what to fix.
-  describe 'missing GIT_DEFAULT_BRANCH (M8.10)' do
+  describe 'missing GIT_DEFAULT_BRANCH' do
     let(:config) { build_config(remote_cache_backend_entry: [fake_backend_class, {}]) }
 
     def warn_messages

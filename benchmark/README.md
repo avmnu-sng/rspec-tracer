@@ -12,8 +12,8 @@ ratchet to catch performance regressions before they land.
 | `cache_load` | Just `Cache#populate_from_disk` + process exit | same |
 | `cold_rails` | Cold RSpec against the Rails fixture (model specs only) | `spec/fixtures/rails_app` |
 
-`file_read_hook` is in the brief but deferred to M3.2 — 1.x has no I/O
-prepend hooks to measure.
+`file_read_hook` landed later than the other scenarios -- 1.x had no
+I/O prepend hooks to measure.
 
 ## Running
 
@@ -105,8 +105,8 @@ The committed `ratchet.json` was generated on Ruby 3.3.10 / Apple M2 Max
 / macOS. **CI runs on GHA `ubuntu-latest` (~2-core VMs) are 3-5× slower
 — the CI benchmark job posts a PR comment but does NOT enforce the
 ratchet until a CI-generated baseline is committed.** Regenerating the
-ratchet on a GHA runner is a followup (touched in the M2.4 handoff
-notes).
+ratchet on a GHA runner is a followup; the manual `regen-ratchet`
+workflow is the tool for it.
 
 ## Adding a scenario
 

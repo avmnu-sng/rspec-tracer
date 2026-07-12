@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M9.0 widening-assertion spec for the
+# Widening-assertion spec for the
 # `DatabaseCleaner :truncation` strategy in an around hook.
 #
 # Real-user setup under test: a Rails project running the rspec-tracer
@@ -44,7 +44,7 @@ module WideArSchemaDbCleanerTruncationSpecHelpers
   WIDE_SPEC = 'spec/wide_schema_spec.rb'
   SCHEMA_FILE_NAME = '/db/schema.rb'
 
-  MUTATION_MARKER = "\n# rspec-tracer M9.0 wide-schema mutation marker\n"
+  MUTATION_MARKER = "\n# rspec-tracer wide-schema mutation marker\n"
 
   AR_DESCRIPTIONS = ['creates user A', 'creates user B', 'creates user C and counts'].freeze
   PURE_DESCRIPTION = 'performs only pure-Ruby computation'

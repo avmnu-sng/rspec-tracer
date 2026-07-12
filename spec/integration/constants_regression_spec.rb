@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Regression spec for KNOWN_ISSUES B10: the constants-lookup blind spot
-# in the diff-based coverage model.
+# Regression spec for the constants-lookup blind spot in the
+# diff-based coverage model.
 #
 # Scenario
 # --------
@@ -23,8 +23,9 @@
 #
 # Drives the pipeline in-process (LoadedFilesTracker + DependencyGraph +
 # ExampleRegistry + Filter) with a stubbed peek. The full end-to-end
-# test (subprocess + Open3 against a real fixture) waits for M3.6,
-# where Tracker.setup exists to orchestrate the observers.
+# test (subprocess + Open3 against a real fixture) lives in
+# spec/integration/ruby_app_spec.rb, where Tracker.setup
+# orchestrates the observers.
 require 'fileutils'
 require 'set'
 require 'tmpdir'
@@ -36,7 +37,7 @@ require 'rspec_tracer/tracker/loaded_files_tracker'
 # Composition scenarios operate on whole pipelines; splitting to
 # satisfy metric cops scatters the narrative.
 # rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength
-RSpec.describe 'constants regression (KNOWN_ISSUES B10)' do
+RSpec.describe 'constants-lookup blind-spot regression' do
   let(:tmp_base) { Dir.mktmpdir }
   let(:root) { File.join(tmp_base, 'project').tap { |p| FileUtils.mkdir_p(p) } }
 
@@ -66,7 +67,7 @@ RSpec.describe 'constants regression (KNOWN_ISSUES B10)' do
     )
   end
 
-  # Simulates what M3.6 will wire: at start_example time, the caller
+  # Simulates what the engine wires in production: at start_example time, the caller
   # snapshots loaded_set_inputs; at stop_example time, stop_example's
   # return value is the delta; union is the example's Input set.
   def simulate_run(tracker)
@@ -141,7 +142,7 @@ RSpec.describe 'constants regression (KNOWN_ISSUES B10)' do
       expect(graph.paths_for('ex_reader')).not_to include(constants_path)
     end
 
-    it 'Filter skips ex_reader when only constants.rb changes (the B10 blind spot)' do
+    it 'Filter skips ex_reader when only constants.rb changes (the constants blind spot)' do
       tracker = build_tracker(enabled: false)
       graph, registry = simulate_run(tracker)
       result = filter_result(graph, registry, change_set: Set[constants_path])

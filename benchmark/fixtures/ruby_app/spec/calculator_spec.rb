@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M5.2 benchmark: annotate one describe block with `tracks: { env: ... }`
+# Env-tracking benchmark shape: annotate one describe block with `tracks: { env: ... }`
 # so the env-snapshot code path is exercised by every benchmark scenario
 # that runs this fixture. Holds the steady-state env-tracking overhead
 # on the benchmark ratchet so regressions show up during `task benchmark:*`.

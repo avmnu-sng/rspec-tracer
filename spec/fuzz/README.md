@@ -31,9 +31,9 @@ Every run prints the PRNG seed. To replay:
 | `coverage_adapter_fuzz.rb` | `Tracker::CoverageAdapter#compute_diff` against pathological coverage maps — mixed nil / huge counts / negative ints / Hash vs Array shapes / mode flips. |
 
 `json_backend_fuzz.rb` stays focused on the `:json` decode path; it is
-the historical harness from M2.5 and runs with the highest iteration
+the original harness and runs with the highest iteration
 budget per backend. `cache_loader_fuzz.rb` extends fuzz coverage to
-the post-M3.8 backend surface (msgpack + sqlite). `coverage_adapter_fuzz.rb`
+the full backend surface (msgpack + sqlite). `coverage_adapter_fuzz.rb`
 broadens beyond storage into the tracker hot path - exercises
 `compute_diff`'s nil-tolerant + length-divergent branches that load_graph
 fuzz cannot reach.

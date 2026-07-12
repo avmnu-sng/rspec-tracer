@@ -92,11 +92,11 @@ RSpec.describe RSpecTracer::CLI::Doctor do
     end
   end
 
-  # M8.9: doctor deepening - schema-version compat, remote-cache
+  # Deeper doctor checks - schema-version compat, remote-cache
   # backend reachability, and AR-schema narrow-attribution config
   # detection. Tests use focused stubs over the live RSpecTracer
   # module since the CLI dispatches against the global module.
-  describe '.cache_schema_version_check (M8.9)' do
+  describe '.cache_schema_version_check' do
     it 'returns INFO when no last_run.json exists yet' do
       Dir.mktmpdir do |dir|
         allow(RSpecTracer).to receive(:cache_path).and_return(dir)
@@ -125,7 +125,7 @@ RSpec.describe RSpecTracer::CLI::Doctor do
     end
   end
 
-  describe '.remote_cache_check (M8.9)' do
+  describe '.remote_cache_check' do
     it 'returns INFO when no remote_cache backend is configured' do
       allow(RSpecTracer).to receive(:respond_to?).and_call_original
       allow(RSpecTracer).to receive(:respond_to?).with(:remote_cache_backend_entry).and_return(true)
@@ -150,7 +150,7 @@ RSpec.describe RSpecTracer::CLI::Doctor do
     end
   end
 
-  describe '.ar_schema_narrow_attribution_check (M8.9)' do
+  describe '.ar_schema_narrow_attribution_check' do
     before do
       allow(RSpecTracer).to receive(:respond_to?).and_call_original
       allow(RSpecTracer).to receive(:respond_to?).with(:track_ar_schema_notifications?).and_return(true)

@@ -8,7 +8,7 @@
 #     current schema_version in last_run.json
 #   - dependency + boot_set maps are populated
 #
-# Post-M5.1 there is no "legacy engine" path to compare against -
+# There is no "legacy engine" path to compare against anymore -
 # `use_v2_tracker` is gone and the v2 engine is the only engine. The
 # previous "parity with legacy" scenarios have been retired.
 

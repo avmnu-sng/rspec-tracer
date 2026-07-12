@@ -17,7 +17,7 @@
 /db/*.sqlite3
 /db/*.sqlite3-*
 
-# SimpleCov + rspec-tracer artefacts. Populated by the M4.3
+# SimpleCov + rspec-tracer artefacts. Populated by the
 # integration matrix (RSPEC_TRACER=1 runs) + the cold_rails_v2
 # benchmark scenario; never hand-committed.
 /coverage/

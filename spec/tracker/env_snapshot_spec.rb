@@ -94,7 +94,7 @@ RSpec.describe RSpecTracer::Tracker::EnvSnapshot do
     end
   end
 
-  describe 'M5.3 union of config-level + per-example concrete names' do
+  describe 'union of config-level + per-example concrete names' do
     let(:env) do
       {
         'AUTH_TOKEN' => 'literal-config',
@@ -118,8 +118,8 @@ RSpec.describe RSpecTracer::Tracker::EnvSnapshot do
 
     # Engine expands "RAILS_*" via EnvMatcher.expand before reaching
     # digest_snapshot — the persisted snapshot carries env keys, not
-    # patterns, so the shape stays Hash[name => md5_hex] per the M5.2
-    # schema (no wildcard literal survives across runs).
+    # patterns, so the shape stays Hash[name => md5_hex] per the
+    # snapshot schema (no wildcard literal survives across runs).
     it 'persists wildcard-expanded names as concrete keys' do
       result = observer.digest_snapshot(%w[RAILS_ENV RAILS_MAX_THREADS])
 

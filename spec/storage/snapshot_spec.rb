@@ -31,15 +31,15 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
       expect(snapshot.boot_set).to eq({})
     end
 
-    it 'defaults wsi_snapshot to an empty Hash (M4.3 field)' do
+    it 'defaults wsi_snapshot to an empty Hash' do
       expect(snapshot.wsi_snapshot).to eq({})
     end
 
-    it 'defaults env_snapshot to an empty Hash (M5.2 field)' do
+    it 'defaults env_snapshot to an empty Hash' do
       expect(snapshot.env_snapshot).to eq({})
     end
 
-    it 'defaults env_dependency to an empty Hash (M6.1 field)' do
+    it 'defaults env_dependency to an empty Hash' do
       expect(snapshot.env_dependency).to eq({})
     end
   end
@@ -75,7 +75,7 @@ RSpec.describe RSpecTracer::Storage::Snapshot do
       expect(a).not_to eq(b)
     end
 
-    it 'differs when env_dependency differs (M6.1)' do
+    it 'differs when env_dependency differs' do
       a = described_class.empty(schema_version: 3, run_id: 'x')
       b = described_class.empty(schema_version: 3, run_id: 'x')
       b.env_dependency = { 'ex1' => ['API_KEY'] }

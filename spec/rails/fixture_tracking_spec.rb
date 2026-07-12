@@ -9,17 +9,17 @@ require 'rspec_tracer/rails/preset'
 require 'rspec_tracer/tracker/declared_globs'
 require 'rspec_tracer/tracker/io_hooks'
 
-# Regression spec for the YAML-fixture blind-spot (KNOWN_ISSUES F4).
+# Regression spec for the YAML-fixture blind-spot.
 # Rails fixtures (spec/fixtures/**/*.{yml,yaml}) are loaded via
-# ActiveRecord::FixtureSet, which funnels through YAML.load_file. M3.2's
+# ActiveRecord::FixtureSet, which funnels through YAML.load_file. The
 # IOHooks YAML hook catches every read, so the fixture file gets
 # attributed as a :data Input on every example that loads it. In
 # parallel, Preset's `:fixtures` glob declared-walks the same files at
 # boot for a conservative suite-wide fallback.
 #
 # This spec does not introduce a new lib file - it asserts both
-# pipes see a fixture change after mutation, so the F4 regression
-# path is mechanically verifiable without reopening M4.2.
+# pipes see a fixture change after mutation, so the regression
+# path is mechanically verifiable end-to-end.
 # rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength
 RSpec.describe 'Fixture tracking regression' do
   let(:tmpdir) { Dir.mktmpdir('rspec-tracer-fixture') }

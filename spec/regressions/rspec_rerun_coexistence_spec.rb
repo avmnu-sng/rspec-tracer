@@ -24,8 +24,8 @@
 # rspec-rerun in the :development group (require: false default) so
 # the subprocess can require it on demand.
 #
-# If a real conflict surfaces here, file as M9.0-B follow-up per the
-# brief - smoke specs are non-blocking.
+# If a real conflict surfaces here, file a follow-up issue - smoke
+# specs are non-blocking.
 
 require 'bundler'
 require 'fileutils'

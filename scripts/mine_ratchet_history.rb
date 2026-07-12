@@ -17,7 +17,7 @@
 #      the multi-run baseline.
 #
 # Cutoff: only mine runs with head_sha at or after the perf-stable
-# cutoff (default: e574f6f, M8.4-A merge 2026-04-29). Earlier runs
+# cutoff (default: e574f6f, merged 2026-04-29). Earlier runs
 # represent different lib perf shape and would mis-calibrate.
 #
 # Usage:
@@ -40,7 +40,7 @@ require 'optparse'
 require 'time'
 require 'tmpdir'
 
-DEFAULT_CUTOFF_SHA = 'e574f6f' # M8.4-A merge — perf-stable baseline
+DEFAULT_CUTOFF_SHA = 'e574f6f' # perf-stable baseline merge
 DEFAULT_TARGET_RUNS = 30
 WORKFLOW_FILE = 'ci.yml'
 BENCHMARK_JOB_NAME = 'full-matrix / benchmark'

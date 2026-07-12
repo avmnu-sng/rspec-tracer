@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# M4.3 behavior-matrix integration test. Drives the reference Rails
+# Behavior-matrix integration test. Drives the reference Rails
 # fixture at `spec/fixtures/rails_app/` via subprocess RSpec runs
 # with rspec-tracer's v2 engine enabled, then mutates specific files
 # and asserts which examples the filter re-runs on the next warm run.
@@ -39,8 +39,8 @@ module RailsAppSpecHelpers
   # before any subprocess fires.
   SUBPROCESS_BUNDLE_ENV = { 'BUNDLE_FROZEN' => '1' }.freeze
 
-  MUTATION_MARKER = "\n# rspec-tracer M4.3 behavior-matrix mutation marker\n"
-  MUTATION_MARKER_VIEW = "\n<!-- rspec-tracer M4.3 behavior-matrix mutation marker -->\n"
+  MUTATION_MARKER = "\n# rspec-tracer behavior-matrix mutation marker\n"
+  MUTATION_MARKER_VIEW = "\n<!-- rspec-tracer behavior-matrix mutation marker -->\n"
 
   module_function
 
@@ -74,7 +74,7 @@ RSpec.describe 'rails_app behavior matrix' do
     @show_erb_renderers = reverse_deps.fetch('/app/views/users/show.html.erb', []).to_set
     raise 'expected show.html.erb to have cold renderers' if @show_erb_renderers.empty?
 
-    # M9.0: wide_schema_spec.rb's pure-compute describe sets
+    # wide_schema_spec.rb's pure-compute describe sets
     # `self.use_transactional_tests = false` and skips the
     # :db_cleaned around hook, so its example fires no
     # sql.active_record events and db/schema.rb is NOT in its
@@ -135,9 +135,9 @@ RSpec.describe 'rails_app behavior matrix' do
       mutate('app/models/user.rb') do
         result = warm_run
         # user.rb is pulled into every example's @loaded_set after the
-        # first factory/query fires, so the M3.7 transitive-load path
-        # attributes it broadly. Per-example narrowing waits for
-        # M5.2's `tracks:` DSL.
+        # first factory/query fires, so the transitive-load path
+        # attributes it broadly. Per-example narrowing is what the
+        # `tracks:` DSL is for.
         expect(result[:re_run].size).to be >= (all_example_ids.size * 0.9).to_i
       end
     end
@@ -170,7 +170,7 @@ RSpec.describe 'rails_app behavior matrix' do
         # use_transactional_fixtures wraps every example in an AR
         # transaction; the sql.active_record subscriber emits
         # schema.rb for every example on first query. The
-        # M9.0 wide_schema_spec.rb pure-compute describe explicitly
+        # wide_schema_spec.rb pure-compute describe explicitly
         # opts out of transactional fixtures + the :db_cleaned around
         # hook, so its example genuinely doesn't depend on the
         # schema and isn't re-run on schema mutation. Asserting
@@ -236,7 +236,7 @@ RSpec.describe 'rails_app behavior matrix' do
     it 'triggers zero re-runs (:views is not declared; NewFileDetector does not flag the add)' do
       new_template = File.join(FixtureBundleHelper::FIXTURE_ROOT, 'app/views/users/_m43_new.html.erb')
       begin
-        File.write(new_template, "<span class=\"m43\">M4.3 new template</span>\n")
+        File.write(new_template, "<span class=\"m43\">new template</span>\n")
         result = warm_run
         expect(result[:re_run]).to(be_empty, -> { diff_message(expected: Set.new, actual: result[:re_run]) })
       ensure

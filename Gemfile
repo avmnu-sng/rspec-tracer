@@ -125,14 +125,14 @@ group :development do
   # gem is only required there, never by lib/ code.
   gem 'stackprof', '~> 0.2' if RUBY_ENGINE == 'ruby'
 
-  # Coexistence smoke specs (M9.0 + M8.10). Used only by
+  # Coexistence smoke specs. Used only by
   # spec/regressions/*_coexistence_spec.rb to verify that popular
   # RSpec extensions compose with rspec-tracer's Module#prepend chain
   # on RSpec::Core::Runner / Reporter. Installed by default but never
   # required by lib/ or unit specs - the regression specs explicitly
   # require them in subprocess shape, so the outer rspec process is
-  # unaffected. M8.10 adds knapsack (free, local-only test-splitter)
-  # to round out the M9.0 retry+rerun coverage; knapsack_pro shares
+  # unaffected. knapsack (free, local-only test-splitter) rounds
+  # out the retry+rerun coverage; knapsack_pro shares
   # the same RSpec hook surface but requires an API key and a
   # network-bound service, so the smoke uses `knapsack` as the
   # composition fingerprint.

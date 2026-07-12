@@ -15,7 +15,7 @@ require 'rspec_tracer/storage/snapshot'
 #
 # New backends that break these assertions are not conformant even if
 # their own unit tests pass. The contract is behavioral, not
-# bytewise - SqliteBackend (M3.8) will include these same examples
+# bytewise - SqliteBackend includes these same examples
 # with a very different on-disk layout.
 # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength
 RSpec.shared_examples 'a Storage::Backend' do

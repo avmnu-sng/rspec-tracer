@@ -93,7 +93,7 @@ RSpec.describe RSpecTracer::Tracker::NewFileDetector do
     end
   end
 
-  describe '#new_files regression for KNOWN_ISSUES §B5' do
+  describe '#new_files regression: files added between runs were invisible in 1.x' do
     # The bug: 1.x only diffs files already in cache.all_files, so a
     # newly-added source file is invisible to the invalidation path.
     # The fix: walk declared + default globs and emit Inputs for any

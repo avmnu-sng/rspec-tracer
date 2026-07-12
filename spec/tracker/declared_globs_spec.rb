@@ -259,7 +259,7 @@ RSpec.describe RSpecTracer::Tracker::DeclaredGlobs do
   describe 'end-to-end change detection' do
     # Proves AC: a declared file's digest changes when its contents
     # change - the signal that drives "re-run everything depending on
-    # this input" in M3.5/M3.6.
+    # this input" in the filter.
     it 'returns a new digest when the declared file is modified between runs' do
       path = write_file('db/schema.rb', "v1\n")
       v1_digest = described_class.new(root: root, globs: ['db/schema.rb']).walk.first.digest

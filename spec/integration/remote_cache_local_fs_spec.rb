@@ -9,13 +9,13 @@ require 'tmpdir'
 require 'rspec_tracer/remote_cache/local_fs_backend'
 require 'rspec_tracer/storage/schema'
 
-# M8.10: Local-FS remote-cache integration spec.
+# Local-FS remote-cache integration spec.
 #
 # Mirrors `spec/integration/remote_cache_spec.rb`'s S3Backend
 # round-trip shape against a tmpdir-backed Local-FS root. The S3 +
 # Redis backends had integration coverage; LocalFs only had unit
-# tests in `spec/remote_cache/local_fs_backend_spec.rb` until M8.10
-# closed the parity gap.
+# tests in `spec/remote_cache/local_fs_backend_spec.rb` until this
+# spec closed the parity gap.
 #
 # Asserts on the content of what was uploaded / downloaded
 # (exit-status checks mask cache-persistence bugs; only content
@@ -26,7 +26,7 @@ require 'rspec_tracer/storage/schema'
 # rubocop:disable RSpec/DescribeClass, RSpec/InstanceVariable
 # rubocop:disable RSpec/BeforeAfterAll, RSpec/MultipleExpectations
 # rubocop:disable RSpec/ExampleLength
-RSpec.describe 'RemoteCache::LocalFsBackend round-trip integration (M8.10)' do
+RSpec.describe 'RemoteCache::LocalFsBackend round-trip integration' do
   let(:current_schema) { RSpecTracer::Storage::Schema::CURRENT }
 
   before(:all) do

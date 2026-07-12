@@ -69,7 +69,7 @@ RSpec.describe FeatureFlags do
     end
   end
 
-  # M5.2 per-example DSL: this describe's examples depend on the
+  # Per-example DSL: this describe's examples depend on the
   # `RAILS_APP_FORCE_REVIEW` env var (via FeatureFlags#require_review?)
   # — invisible to Coverage / IO observation because the env read
   # happens inside pure Ruby. Declaring `tracks: { env: ... }` teaches
@@ -97,14 +97,14 @@ RSpec.describe FeatureFlags do
     end
   end
 
-  # M5.3 per-example wildcard DSL: same env-branch blind spot as the
-  # M5.2 describe above, but the tracks declaration is `RAILS_APP_*`
+  # Per-example wildcard DSL: same env-branch blind spot as the
+  # literal-tracks describe above, but the declaration is `RAILS_APP_*`
   # (wildcard) rather than the literal name. EnvMatcher.expand resolves
   # the pattern at register_tracks time; the persisted env_snapshot
   # carries the concrete `RAILS_APP_FORCE_REVIEW` key (no wildcard
   # leak). The integration spec at spec/integration/per_example_dsl_spec.rb
   # asserts these examples re-run when RAILS_APP_FORCE_REVIEW flips.
-  describe '.require_review? wildcard exercise (M5.3)',
+  describe '.require_review? wildcard exercise',
            tracks: { env: 'RAILS_APP_*' } do
     around do |example|
       before = ENV['RAILS_APP_FORCE_REVIEW']

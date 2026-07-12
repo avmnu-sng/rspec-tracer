@@ -10,7 +10,7 @@ require 'rspec_tracer/reporters/coverage_json_reporter'
 
 require_relative '../contracts/reporter'
 
-# Unit + structural coverage for the M8.0 coverage.json emitter.
+# Unit + structural coverage for the coverage.json emitter.
 # Round-trip byte-equivalence vs the rails_app fixture's golden
 # lives in spec/integration/coverage_json_round_trip_spec.rb (driven
 # end-to-end through a subprocess); this file exercises the emitter

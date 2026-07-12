@@ -22,7 +22,7 @@ RSpec.describe 'RSpecTracer::Rails::Railtie' do
   # is not in the object graph. Provide a minimal stand-in that records
   # every `initializer(name, &block)` call so the spec can inspect what
   # the loaded railtie.rb registered. Full fixture-level boot happens
-  # in M4.3's integration matrix.
+  # in the Rails integration matrix.
   let(:railtie_base) do
     Class.new do
       class << self

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# M9.0 wide-AR-schema fixture spec. Three AR-touching examples + one
+# Wide-AR-schema fixture spec. Three AR-touching examples + one
 # pure-compute example designed to exercise the SAFE-BUT-WIDE schema
 # attribution under common Rails AR-cleanup setups (transactional
 # fixtures = true OR DatabaseCleaner :truncation / :deletion /

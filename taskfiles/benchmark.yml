@@ -28,7 +28,7 @@ tasks:
     # Smoke uses cold_ruby + warm_noop only — both run in the ruby_app
     # fixture. Narrowing the dep to bundle:ruby (vs bundle) lets non-MRI
     # cells run smoke without bundling the rails_app fixture. The
-    # fixture Gemfile DOES support JRuby/TruffleRuby (M8.1-B JDBC adapter
+    # fixture Gemfile DOES support JRuby/TruffleRuby (via its JDBC adapter
     # branch), but the smoke step would pay Maven download + JDBC native
     # ext build cost on first run — keeping smoke ruby_app-only on
     # non-MRI cells preserves the ~3s budget.

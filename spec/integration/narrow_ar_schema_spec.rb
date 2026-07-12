@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# M8.2-B narrow-AR-schema integration spec. Drives the rails fixture
+# Narrow-AR-schema integration spec. Drives the rails fixture
 # (spec/fixtures/rails_app/spec/narrow_schema_spec.rb) under
-# RSPEC_TRACER_RAILS_TRANSACTIONAL=false (M8.2-shipped env toggle in
+# RSPEC_TRACER_RAILS_TRANSACTIONAL=false (env toggle in
 # the fixture rails_helper.rb). With transactional fixtures off,
 # rspec-tracer's per-example schema-subscriber attribution path
 # (lib/rspec_tracer/rails/notifications.rb #record_ar_schema) becomes
@@ -23,12 +23,12 @@
 #
 # Per-example commit cleanup: sequence-based unique factories
 # (Time.now.to_f + pid suffix on User.email). DatabaseCleaner was
-# rejected in M8.2-B because its TRUNCATE / DELETE queries fire
+# rejected because its TRUNCATE / DELETE queries fire
 # sql.active_record events INSIDE the per-example bucket, which
 # would attribute db/schema.rb to every example via the subscriber -
-# defeating the very narrow-attribution behavior under test. Decision
-# revised from kickoff (d-i DatabaseCleaner) to (d-ii sequence
-# factories) once empirical evidence showed (d-i) was incompatible.
+# defeating the very narrow-attribution behavior under test. The
+# original DatabaseCleaner plan was revised to sequence factories
+# once empirical evidence showed it was incompatible.
 
 require 'bundler'
 require 'open3'
@@ -47,12 +47,12 @@ module NarrowArSchemaSpecHelpers
   }.freeze
   # See rails_app_spec.rb's SUBPROCESS_BUNDLE_ENV for rationale —
   # BUNDLE_FROZEN skips per-`bundle exec` lockfile resolve in the
-  # subprocess. Matches the M8.6-B Lever 2 pattern.
+  # subprocess. Matches rails_app_spec.rb's pattern.
   SUBPROCESS_BUNDLE_ENV = { 'BUNDLE_FROZEN' => '1' }.freeze
   NARROW_SPEC = 'spec/narrow_schema_spec.rb'
   SCHEMA_FILE_NAME = '/db/schema.rb'
 
-  MUTATION_MARKER = "\n# rspec-tracer M8.2-B narrow-schema mutation marker\n"
+  MUTATION_MARKER = "\n# rspec-tracer narrow-schema mutation marker\n"
 
   module_function
 

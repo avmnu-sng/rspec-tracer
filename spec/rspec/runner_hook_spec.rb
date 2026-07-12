@@ -261,7 +261,7 @@ RSpec.describe RSpecTracer::RSpec::RunnerHook do
       end
     end
 
-    context 'when per-example tracks metadata is present (M5.2)' do
+    context 'when per-example tracks metadata is present' do
       before do
         allow(world).to receive(:example_count).and_return(1, 1)
         allow(world).to receive(:filtered_examples).and_return(example_group => [example])

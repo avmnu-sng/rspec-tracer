@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-# M5.2 end-to-end integration for the per-example `tracks:` DSL.
+# End-to-end integration for the per-example `tracks:` DSL.
 # Drives the reference Rails fixture at `spec/fixtures/rails_app/`
 # via subprocess RSpec. The fixture's feature_flags_spec declares
 # `tracks: { env: 'RAILS_APP_FORCE_REVIEW' }` on the
 # `.require_review?` describe block (an ENV-branch blind spot that
 # Coverage / IO observation cannot see).
 #
-# Assertion philosophy matches M4.3's behavior-matrix pattern:
+# Assertion philosophy matches rails_app_spec.rb's behavior-matrix pattern:
 # assert on the set of examples that re-ran on warm (all_examples
 # minus skipped_examples), not just exit status. An env mutation
 # between cold and warm must re-run exactly the three
@@ -79,7 +79,7 @@ module PerExampleDslSpecHelpers
     ]
   end
 
-  # M5.3 wildcard exercise: the same fixture spec also has a separate
+  # Wildcard exercise: the same fixture spec also has a separate
   # describe with `tracks: { env: 'RAILS_APP_*' }`. Its two examples
   # depend on RAILS_APP_FORCE_REVIEW via the wildcard expansion path,
   # not the literal name path.
@@ -112,7 +112,7 @@ end
 
 # rubocop:disable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/InstanceVariable
 # rubocop:disable RSpec/ExampleLength, RSpec/MultipleExpectations
-RSpec.describe 'M5.2 per-example tracks DSL integration' do
+RSpec.describe 'per-example tracks DSL integration' do
   include PerExampleDslSpecHelpers
 
   before(:all) do
@@ -158,8 +158,8 @@ RSpec.describe 'M5.2 per-example tracks DSL integration' do
                                                "expected 3 env-branch examples, got #{@expected_env_branch_ids.size}"
     end
 
-    # M5.3: re-run set is the union of M5.2's literal-tracks describe
-    # (3 examples) + M5.3's wildcard-tracks describe (2 examples). Both
+    # The re-run set is the union of the literal-tracks describe
+    # (3 examples) + the wildcard-tracks describe (2 examples). Both
     # depend on RAILS_APP_FORCE_REVIEW; the wildcard `RAILS_APP_*`
     # expands to the same concrete env name at register_tracks time.
     it 're-runs exactly the literal + wildcard env-branch examples, skipping everything else' do

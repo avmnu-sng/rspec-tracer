@@ -5,9 +5,9 @@
 # cold-then-warm behaviour. This is the "our gem runs our gem's tests"
 # smoke test — the ultimate integration check.
 #
-# Reuses `benchmark/fixtures/ruby_app/`: M2.4 already built a self-
-# contained fixture with tracer wired in, so M2.5 points at it rather
-# than duplicating the same 3 app files + 3 spec files under
+# Reuses `benchmark/fixtures/ruby_app/`: the benchmark work already
+# built a self-contained fixture with tracer wired in, so this spec
+# points at it rather than duplicating the same 3 app files + 3 spec files under
 # `spec/fixtures/`.
 
 require 'bundler'

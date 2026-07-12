@@ -1,7 +1,7 @@
 ---
 name: flake-gate
 
-# Post-fix gate workflow shipped with M8.2-B's Example.from /
+# Post-fix gate workflow shipped with the Example.from /
 # parallel_tests determinism work. Drives `task test:integration:parallel`
 # 100 consecutive times on the historical-flake cell (ruby 3.1 +
 # RSPEC_VERSION='~> 3.12.0') and reports the first-fail log if any
@@ -11,7 +11,7 @@ name: flake-gate
 #   - workflow_dispatch (manual; configurable cell + iter count)
 #
 # Demoted to manual-only after 3 consecutive green runs on `main`
-# (1 historical on the M8.2-B feature branch + 2 fresh on main, all
+# (1 historical on the fix's feature branch + 2 fresh on main, all
 # passing) cleared the historical `warm_skipped != cold_examples` shape.
 # Kept available for on-demand re-targeting any cell when a future flake
 # investigation needs the 100x-iter shape.

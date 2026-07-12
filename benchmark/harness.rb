@@ -5,7 +5,7 @@
 # Measures rspec-tracer overhead across 4 scenarios and compares
 # against a committed ratchet file. Builds fail if any scenario's
 # median time exceeds the ratchet's P50 by > REGRESSION_FAIL_RATIO
-# (30% by default; 20% pre-M8.4-B before per-PR enforcement on the
+# (30% by default; 20% before per-PR enforcement on the
 # GHA baseline surfaced empirical small-sample variance in the
 # 1.20-1.22x band on microbenches). Warnings are emitted between
 # REGRESSION_WARN_RATIO (10%) and REGRESSION_FAIL_RATIO.
@@ -37,7 +37,7 @@ module BenchmarkHarness
   RAILS_FIXTURE = File.join(REPO_ROOT, 'spec/fixtures/rails_app')
 
   REGRESSION_WARN_RATIO = 1.10
-  # Bumped from 1.20 to 1.30 at M8.4-B's first per-PR GHA-gated run,
+  # Bumped from 1.20 to 1.30 at the first per-PR GHA-gated run,
   # which landed coverage_adapter (1.21x) + loaded_files_tracker
   # (1.22x) over the prior 1.20 threshold purely from GHA shared-
   # runner small-sample variance (5 iters per scenario; p50 is
@@ -130,7 +130,7 @@ module BenchmarkHarness
       smoke: true
     },
     'warm_env_mismatch' => {
-      # M5.2 env-snapshot mismatch: warmup primes the cache with the
+      # Per-example env-snapshot mismatch: warmup primes the cache with the
       # tracked env = 'baseline'; iterations run with the tracked env
       # flipped to 'changed', which forces the env-annotated describe
       # block (Calculator in calculator_spec.rb) through the env_changed
@@ -138,7 +138,7 @@ module BenchmarkHarness
       # iterations see env match the last cached value and fall back to
       # warm_noop. Scenario pinned to smoke:false so `task check`
       # stays under its fast-feedback budget.
-      desc: 'Warm run with env_snapshot mismatch on the first iteration (M5.2 overhead floor)',
+      desc: 'Warm run with env_snapshot mismatch on the first iteration (env-tracking overhead floor)',
       cwd: RUBY_FIXTURE,
       cmd: %w[bundle exec rspec --no-color],
       env: { 'RSPEC_TRACER_BENCH_ENV' => 'changed' },
@@ -146,7 +146,7 @@ module BenchmarkHarness
       smoke: false
     },
     'track_env_warm_mismatch' => {
-      # M5.3 config-level + wildcard env-snapshot mismatch. The fixture's
+      # Config-level + wildcard env-snapshot mismatch. The fixture's
       # .rspec-tracer declares `track_env 'RSPEC_TRACER_BENCH_CONFIG_*'`
       # at config level. Warmup primes the cache with
       # RSPEC_TRACER_BENCH_CONFIG_KEY = 'baseline' (matched by the
@@ -156,10 +156,10 @@ module BenchmarkHarness
       # (apply_env_filter_decisions's invalidated.intersect?(@config_*)
       # branch). Holds the steady-state config-level wildcard expansion
       # + global mark-every-example overhead on the ratchet so
-      # regressions in the M5.3 hot-path show up. smoke:false matches
+      # regressions in that hot-path show up. smoke:false matches
       # warm_env_mismatch's shape (subprocess boot dominates 3-iter
       # variance against own ratchet).
-      desc: 'Warm run with config-level wildcard env_snapshot mismatch on first iteration (M5.3)',
+      desc: 'Warm run with config-level wildcard env_snapshot mismatch on first iteration',
       cwd: RUBY_FIXTURE,
       cmd: %w[bundle exec rspec --no-color],
       env: { 'RSPEC_TRACER_BENCH_CONFIG_KEY' => 'changed' },
@@ -196,12 +196,12 @@ module BenchmarkHarness
     },
     'cold_rails_v2' => {
       # Broader Rails fixture cold-start (full spec/ tree). Eager-loads
-      # ~300+ initializer files through the coverage stack; pre-M8.0
-      # this exercised both the legacy CoverageReporter peek+diff per
-      # example AND the Engine peek+diff. Post-retirement only Engine
+      # ~300+ initializer files through the coverage stack; before the
+      # legacy-reporter retirement this exercised both the legacy
+      # CoverageReporter peek+diff per example AND the Engine peek+diff. Post-retirement only Engine
       # peeks. The wall-clock delta on this scenario is the largest
-      # single signal for M8.0's perf payoff. M4.3 handoff target was
-      # `<= 1.5x` of stock-rspec; structural Rails-boot floor caps the
+      # single signal for the retirement's perf payoff. The original
+      # target was `<= 1.5x` of stock-rspec; structural Rails-boot floor caps the
       # achievable wall-clock ratio for this per-iter-subprocess shape
       # at ~1.6x (per-example tracer optimizations barely move a
       # scenario dominated by boot cost, so Rails boot is the floor). The
@@ -266,7 +266,7 @@ module BenchmarkHarness
       smoke: false
     },
     'cache_load' => {
-      # M3.8 AC #1: 500-example cache loads fast under the lazy +
+      # Contract: 500-example cache loads fast under the lazy +
       # string-interning path. Times N Storage::JsonBackend#load_graph
       # + full field materialization against a representative
       # populated cache. smoke:false because subprocess boot dominates
@@ -478,7 +478,7 @@ module BenchmarkHarness
 
       # Effective threshold is the canonical MRI ratchet scaled by the
       # current interpreter's multiplier. On MRI multiplier=1.0 so the
-      # behavior is byte-identical to the pre-M8.1-A code; on JRuby /
+      # behavior is byte-identical to the pre-multiplier code; on JRuby /
       # TruffleRuby the threshold is scaled up to absorb interpreter
       # overhead without requiring per-interpreter ratchet entries.
       threshold = base * multiplier

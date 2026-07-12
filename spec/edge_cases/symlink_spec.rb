@@ -4,7 +4,7 @@
 # path is a distinct entry in all_files / dependency from its
 # resolved target. The storage layer treats path strings as opaque
 # keys; resolution semantics live in Tracker::CoverageAdapter
-# (M3.1) and Tracker::DependencyGraph (M3.5). This spec asserts:
+# and Tracker::DependencyGraph. This spec asserts:
 #
 #   - Storage round-trip preserves symlink + target as two distinct
 #     all_files keys (the tracker's choice of which to record is

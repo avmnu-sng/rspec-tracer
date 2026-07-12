@@ -89,7 +89,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(JSON.parse(File.read(path))).to eq('Files changed' => 3, 'No cache' => 1)
     end
 
-    it 'coerces a missing cache_hit_reason.json to {} (load tolerant of pre-M8.11 caches)' do
+    it 'coerces a missing cache_hit_reason.json to {} (load tolerant of caches predating the field)' do
       backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
       File.delete(File.join(cache_path, sample_snapshot.run_id, 'cache_hit_reason.json'))
       loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
@@ -175,7 +175,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
     end
   end
 
-  describe 'env_snapshot round-trip (M5.2)' do
+  describe 'env_snapshot round-trip' do
     it 'persists and reloads a non-empty env_snapshot' do
       backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
       loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
@@ -210,7 +210,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
     end
   end
 
-  describe 'env_dependency round-trip (M6.1)' do
+  describe 'env_dependency round-trip' do
     it 'persists and reloads a non-empty env_dependency' do
       backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
       loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
@@ -244,7 +244,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(loaded.env_dependency).to eq({})
     end
 
-    it 'survives a pre-M6.1 cache (missing env_dependency.json) without a cold re-run signal' do
+    it 'survives a cache predating env_dependency.json without a cold re-run signal' do
       backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
       File.delete(File.join(cache_path, sample_snapshot.run_id, 'env_dependency.json'))
       loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
@@ -296,7 +296,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
     end
   end
 
-  describe 'UTF-8 encoding (regression for M3.1 Encoding::InvalidByteSequenceError)' do
+  describe 'UTF-8 encoding (regression for Encoding::InvalidByteSequenceError)' do
     it 'round-trips example titles containing non-ASCII bytes' do
       snap = build_sample_snapshot('run-utf8')
       snap.all_examples = { 'ex-utf8' => { id: 'ex-utf8', description: "naïve café – \u{1F600}" } }
@@ -724,7 +724,7 @@ RSpec.describe RSpecTracer::Storage::JsonBackend do
       expect(merged.env_snapshot.keys).to include('ENV_EX1', 'ENV_EX2')
     end
 
-    it 'unions env_dependency entries per-example across peers (M6.1)' do
+    it 'unions env_dependency entries per-example across peers' do
       write_peer(peer_one_path, peer_snapshot('p1', 'ex1', '/lib/a.rb', 'digest-a'))
       write_peer(peer_two_path, peer_snapshot('p2', 'ex2', '/lib/b.rb', 'digest-b'))
 

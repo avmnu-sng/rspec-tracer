@@ -1,12 +1,12 @@
 # rspec-tracer configuration for the reference Rails 7.2+ fixture.
-# M4.3 integration matrix runs this fixture under rspec-tracer and
+# The integration matrix runs this fixture under rspec-tracer and
 # asserts the behavior matrix from docs. The :views and :schema
 # opt-outs plus `track_ar_schema_notifications` are what drive the
 # narrower "only renderers" / "only DB-touchers" semantics the
 # behavior-matrix scenarios require:
 #
-#   :views    - dropped from declared-globs; ActionView notifications
-#               (M4.2 subscribers) emit :template Inputs per rendered
+#   :views    - dropped from declared-globs; ActionView notification
+#               subscribers emit :template Inputs per rendered
 #               template, so a template edit re-runs only the examples
 #               that actually rendered it.
 #   :schema   - dropped from declared-globs; the sql.active_record
@@ -18,8 +18,8 @@
 #
 # :locales, :fixtures, :factories, :helpers, :config stay in the
 # declared-glob set - their edits fall back to the coarse-safe
-# whole-suite path, which is the conservative default until M5.2's
-# per-example metadata DSL ships.
+# whole-suite path, which is the conservative default unless the
+# per-example metadata DSL narrows it.
 RSpecTracer.configure do
   track_rails_defaults except: [:views, :schema]
   track_ar_schema_notifications
