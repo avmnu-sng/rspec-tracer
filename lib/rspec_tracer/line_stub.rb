@@ -13,8 +13,9 @@ module RSpecTracer
   # on MRI; cross-engine coverage rollup would require fork-per-engine
   # CI work that isn't justified for stub-line generation).
   #
-  # `def self.x` per feedback_mutation_friendly_modules so future
-  # mutation gating maps to the singleton form.
+  # Methods use `def self.x` (not module_function) so future mutation
+  # gating maps to the singleton form -- module_function attaches
+  # methods to an anonymous singleton that mutant cannot observe.
   module LineStub
     # Internal helper for the tracer pipeline.
     # @api private

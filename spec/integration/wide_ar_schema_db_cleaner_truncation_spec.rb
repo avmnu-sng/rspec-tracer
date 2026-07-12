@@ -15,8 +15,9 @@
 # suggests silently widens to "all DBC-wrapped examples re-run on
 # schema change."
 #
-# This is SAFE-BUT-WIDE behavior; see
-# `feedback_no_user_surprises` for the trust framing.
+# This is SAFE-BUT-WIDE behavior: over-selection re-runs more than
+# strictly needed but never silently skips an affected example, and
+# the widening is documented rather than left as a silent surprise.
 #
 # Three assertions:
 #   1. (cold) db/schema.rb is in the dependency set of every

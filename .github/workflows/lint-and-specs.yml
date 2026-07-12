@@ -453,8 +453,10 @@ jobs:
     # subjects. Combines original shards 2 + 3 (write-side and
     # init/util) since first CI showed 3-shard split was over-sharded.
     # Includes #initialize and private connection/schema/utility
-    # helpers — these are the structural-ceiling subjects per
-    # feedback_mutant_describe_label_ceiling, which is why the
+    # helpers -- mutant credits kills to the describe block whose
+    # label names the subject, and these helpers have no dedicated
+    # describes (they are exercised only through public callers), so
+    # their kill rate has a structural ceiling. That is why the
     # combined-shard gate sits at 65% (vs read-side 73%). CI wall
     # clock target ~3 min.
     runs-on: ubuntu-latest

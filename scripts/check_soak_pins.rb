@@ -7,8 +7,8 @@
 # stdout (markdown table) + $GITHUB_STEP_SUMMARY when set.
 #
 # Report-only - never opens PRs / issues / modifies pin files.
-# Maintainer reviews the weekly report and opens bump PRs by hand
-# per feedback_never_merge_prs (humans gate every bump).
+# Maintainer reviews the weekly report and opens bump PRs by hand;
+# humans gate every bump.
 #
 # Run via: ruby scripts/check_soak_pins.rb
 #

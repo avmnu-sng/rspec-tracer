@@ -1,5 +1,42 @@
 ## [Unreleased]
 
+### Added
+
+- **Soundness model documentation.** New ARCHITECTURE.md section
+  classifying what the tracer guarantees (content digests, explicit
+  declarations, env snapshots), where it is deliberately
+  conservative, where it relies on heuristics, and what it cannot
+  observe at all -- with the `tracks:` DSL as the escape hatch
+  ([#226](https://github.com/avmnu-sng/rspec-tracer/issues/226)).
+- **Cost framing for CI.** New README section with measured cold/warm
+  timings and a formula for estimating CI-minute and dollar savings
+  from your own suite's numbers and your provider's rate
+  ([#227](https://github.com/avmnu-sng/rspec-tracer/issues/227)).
+- **Maintenance and Ruby EOL policy.** New README Maintenance
+  section: each Ruby is supported until at least upstream EOL plus
+  6 months, with a per-version table
+  ([#229](https://github.com/avmnu-sng/rspec-tracer/issues/229)).
+- **COOKBOOK recipes for flaky-test detection and file-to-test
+  dependency mapping**, placed ahead of the acceleration recipes
+  ([#224](https://github.com/avmnu-sng/rspec-tracer/issues/224)).
+
+### Changed
+
+- **README restructured as a landing page**
+  ([#223](https://github.com/avmnu-sng/rspec-tracer/issues/223)):
+  measured, attributed numbers, quick start, safety summary, and
+  data-stays-local positioning
+  ([#225](https://github.com/avmnu-sng/rspec-tracer/issues/225)) up
+  front; the input-taxonomy depth moved to ARCHITECTURE.md and the
+  eager-load precision guidance to COOKBOOK.md; per-provider CI
+  cache recipes ([`docs/CI_RECIPES.md`](docs/CI_RECIPES.md)) linked
+  from the quick start
+  ([#228](https://github.com/avmnu-sng/rspec-tracer/issues/228)).
+- **Gem summary and description repositioned** to lead with
+  flaky-test detection and dependency mapping, with
+  re-run-only-what-changed as the closing step
+  ([#224](https://github.com/avmnu-sng/rspec-tracer/issues/224)).
+
 ### Fixed
 
 - **Duplicate-example drop no longer discards nested spec files**

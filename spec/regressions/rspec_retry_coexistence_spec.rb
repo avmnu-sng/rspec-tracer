@@ -23,10 +23,10 @@
 # in the :development group (require: false default) so the
 # subprocess can require it on demand.
 #
-# If a real conflict surfaces here, file as M9.0-B follow-up per the
-# brief - smoke specs are non-blocking. Per the
-# `feedback_v2_integration_exit_status` memory, the cache-state
-# assertion (not just exit-status) is the load-bearing check.
+# If a real conflict surfaces here, file a follow-up issue - smoke
+# specs are non-blocking. The cache-state assertion (not just
+# exit-status) is the load-bearing check; exit-status-only checks
+# mask cache-persistence bugs.
 
 require 'bundler'
 require 'fileutils'
