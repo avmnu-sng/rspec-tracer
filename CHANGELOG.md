@@ -19,6 +19,29 @@
 - **COOKBOOK recipes for flaky-test detection and file-to-test
   dependency mapping**, placed ahead of the acceleration recipes
   ([#224](https://github.com/avmnu-sng/rspec-tracer/issues/224)).
+- **`blast-radius` CLI sub-command.** `bundle exec rspec-tracer
+  blast-radius <file> [<file> ...]` reports how many examples a
+  change to each file would re-run (`450 examples across 12 spec
+  files`), with `--list` to enumerate them (location + description)
+  and `--json` for tooling. Multiple files compose with a
+  deduplicated total, so `git diff --name-only main | xargs bundle
+  exec rspec-tracer blast-radius` shows what a PR invalidates;
+  untracked paths report as such and exit 0 to keep that pipeline
+  unbroken. Whole-suite invalidators and boot-set files report
+  `re-runs all N examples`
+  ([#230](https://github.com/avmnu-sng/rspec-tracer/issues/230)).
+- **`explain --not-run` flag.** The skip-side view of `explain`:
+  whether the example was skipped on the last run (and the
+  derivation of why no run trigger fired), its last recorded
+  status, and what would make it run on the next invocation, plus
+  the tracked dependency files
+  ([#231](https://github.com/avmnu-sng/rspec-tracer/issues/231)).
+- **Doctor CI-environment line.** `rspec-tracer doctor` prints an
+  INFO line naming the CI env var it detected and pointing at the
+  cache-persistence recipes in
+  [`docs/CI_RECIPES.md`](docs/CI_RECIPES.md); never affects the
+  exit status
+  ([#228](https://github.com/avmnu-sng/rspec-tracer/issues/228)).
 
 ### Changed
 
@@ -38,6 +61,15 @@
   ([#224](https://github.com/avmnu-sng/rspec-tracer/issues/224)).
 
 ### Fixed
+
+- **CLI degrades cleanly when the project config itself is broken.**
+  A `.rspec-tracer` that raises at load time (including a
+  `SyntaxError`, which is not a `StandardError`) used to crash every
+  `rspec-tracer` sub-command with the raw backtrace plus a second
+  `NoMethodError` backtrace from the library's `at_exit` hook firing
+  against the half-loaded module. The binary now prints a one-line
+  `could not load configuration` message and exits 1, and `--help` /
+  `--version` answer without booting the config at all.
 
 - **Duplicate-example drop no longer discards nested spec files**
   ([#262](https://github.com/avmnu-sng/rspec-tracer/issues/262)).

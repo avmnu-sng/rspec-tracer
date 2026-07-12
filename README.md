@@ -396,16 +396,17 @@ Or override per-run via env: `RSPEC_TRACER_STORAGE=sqlite`.
 
 ## Command-line tools
 
-`rspec-tracer` exposes five sub-commands. Run them via Bundler so the
+`rspec-tracer` exposes six sub-commands. Run them via Bundler so the
 gem's executable resolves cleanly without needing `bundle binstubs
 rspec-tracer` first:
 
 ```sh
-bundle exec rspec-tracer doctor         # diagnose config + environment
-bundle exec rspec-tracer cache:info     # size, last run, invalidation stats
-bundle exec rspec-tracer cache:clear    # rm cache dirs
-bundle exec rspec-tracer report:open    # open the HTML report
-bundle exec rspec-tracer explain <id>   # why is <example_id> scheduled to (re-)run?
+bundle exec rspec-tracer doctor               # diagnose config + environment
+bundle exec rspec-tracer cache:info           # size, last run, invalidation stats
+bundle exec rspec-tracer cache:clear          # rm cache dirs
+bundle exec rspec-tracer report:open          # open the HTML report
+bundle exec rspec-tracer explain <id>         # why is <example_id> scheduled to (re-)run?
+bundle exec rspec-tracer blast-radius <file>  # which examples re-run if <file> changes?
 ```
 
 Generated binstubs (`bin/rspec-tracer …`) work too once you've run
