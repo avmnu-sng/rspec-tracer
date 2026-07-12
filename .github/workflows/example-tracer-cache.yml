@@ -5,7 +5,7 @@ name: example-tracer-cache
 # on-disk cache (`rspec_tracer_cache/`) across CI runs using GitHub
 # Actions' built-in cache. This is the same upload/download lifecycle
 # documented under "Configuring CI" in the README, but using
-# actions/cache@v5 as the storage substrate instead of an S3 bucket
+# actions/cache@v6 as the storage substrate instead of an S3 bucket
 # + the rspec_tracer:remote_cache:{download,upload} rake tasks.
 #
 # How rspec-tracer interacts with this:
@@ -54,7 +54,7 @@ jobs:
     name: cache cold->warm cycle
     runs-on: ubuntu-latest
     # 30 min comfortably exceeds the cold-cache wall clock so the
-    # post-step cache save fires on the first run. actions/cache@v5
+    # post-step cache save fires on the first run. actions/cache@v6
     # only saves on successful job completion - if a tight cap
     # cancels the cold run, no cache is written and the next run is
     # also cold (nothing to restore from).
@@ -111,7 +111,7 @@ jobs:
       # tracer's input digesting on the next run, not by key
       # invalidation.
       - name: Restore rspec-tracer cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: spec/fixtures/rails_app/rspec_tracer_cache
           key: >-
