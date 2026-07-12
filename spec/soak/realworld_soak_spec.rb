@@ -87,6 +87,16 @@ PROJECT_INVOCATIONS = {
     # at the pinned SHA (CI run 25143397673 cell `soak (solidus)`
     # passed in 4m31s with full suite).
     rspec_args: ['spec'],
+    # spec/i18n_spec.rb is a hygiene lint asserting the api engine's
+    # config/locales/*.yml are i18n-tasks-normalized. The :locale
+    # mutation kind appends comment lines to exactly those files, so
+    # any locale iter that lands on an api locale file re-selects the
+    # spec and fails it - the check working as designed, not a tracer
+    # defect. Deterministic nightly casualty: mutation seed 44 always
+    # picks api/config/locales/en.yml, so every 50-iter cron died at
+    # iter 44. A normalization lint over mutation-target files is
+    # structurally incompatible with the append-mutation model.
+    rspec_exclude: 'spec/i18n_spec.rb',
     extra_env: { 'DB' => 'sqlite' }
   },
   refinery: {
@@ -104,7 +114,17 @@ PROJECT_INVOCATIONS = {
       resources/spec/lib resources/spec/models
       dragonfly/spec/lib
     ],
-    extra_env: {}
+    # Refinery v4.1.0 ships two examples sharing one full description
+    # (images/spec/models/refinery/image_spec.rb:163 / :207, both
+    # "Refinery::Image#thumbnail_dimensions returns correctly with
+    # nil"). rspec-tracer's fail_on_duplicates gate (default true)
+    # turns that into exit 1 on an otherwise green suite, which
+    # failed every nightly iter 1 since the v4.1.0 pin. Duplicate
+    # detection + drop stay exercised (the diagnostic still logs and
+    # the colliding pair is dropped); only the exit gate is disabled
+    # because upstream description hygiene is not the soak's
+    # assertion surface.
+    extra_env: { 'RSPEC_TRACER_FAIL_ON_DUPLICATES' => 'false' }
   },
   spree: {
     gemfile_dir: 'spree/core',
@@ -456,9 +476,15 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
     # accumulated to output_buffer for the failure-case raise.
     output_buffer = +''
     status = nil
+    # --exclude-pattern is honored here because rspec_args passes
+    # DIRECTORIES (rspec filters files gathered from dir globbing);
+    # explicit positional file paths would silently bypass it.
+    exclude_args =
+      INVOCATION[:rspec_exclude] ? ['--exclude-pattern', INVOCATION[:rspec_exclude]] : []
     Bundler.with_unbundled_env do
       Open3.popen2e(env, 'bundle', 'exec', 'rspec',
                     '--no-color', '--format', 'progress',
+                    *exclude_args,
                     *INVOCATION[:rspec_args],
                     chdir: ENGINE_PATH.to_s) do |_stdin, out, wait_thr|
         out.each_line do |line|
