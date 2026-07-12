@@ -194,7 +194,7 @@ jobs:
       - name: Merge resultsets via SimpleCov.collate
         run: task coverage:merge
       - name: Push to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           files: coverage/coverage.json
           fail_ci_if_error: false
