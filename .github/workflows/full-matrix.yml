@@ -345,7 +345,7 @@ jobs:
       # skip the Maven fetch entirely.
       - name: Cache ~/.m2 (JRuby Maven plugins for activerecord-jdbcsqlite3-adapter)
         if: matrix.ruby == 'jruby-9.4'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.m2
           key: m2-${{ runner.os }}-jruby-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}
@@ -362,7 +362,7 @@ jobs:
       # bundler regenerates it cheaply when the cached gems are present.
       - name: Cache rails_app fixture bundle (JRuby gem set)
         if: matrix.ruby == 'jruby-9.4'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: spec/fixtures/rails_app/vendor/bundle
           key: fixture-bundle-rails-app-${{ runner.os }}-jruby-${{ hashFiles('spec/fixtures/rails_app/Gemfile') }}
@@ -614,7 +614,7 @@ jobs:
       # includes the Gemfile hash and the Ruby version file so a
       # toolchain bump invalidates the cache.
       - name: Cache benchmark ruby_app fixture bundle
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: benchmark/fixtures/ruby_app/vendor/bundle
           key: fixture-bundle-ruby-app-${{ runner.os }}-${{ hashFiles('.ruby-version') }}-${{ hashFiles('benchmark/fixtures/ruby_app/Gemfile') }}
@@ -627,7 +627,7 @@ jobs:
       # the matrix pin moves. simplecov is hardcoded `~> 0.22` in the
       # fixture Gemfile so it does not need to enter the cache key.
       - name: Cache rails_app fixture bundle
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: spec/fixtures/rails_app/vendor/bundle
           # Folded scalar: line breaks land inside `${{ }}` so the

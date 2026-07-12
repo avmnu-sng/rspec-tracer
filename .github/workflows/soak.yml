@@ -161,7 +161,7 @@ jobs:
           path: tmp/soak-fixtures/${{ matrix.project }}
 
       - name: Cache ${{ matrix.project }} fixture bundle
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           # Cache busts on pin SHA bump so a major version's gem set
           # doesn't contaminate the next major's resolve. Cross-project
