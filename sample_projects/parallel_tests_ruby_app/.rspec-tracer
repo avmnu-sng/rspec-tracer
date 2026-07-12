@@ -1,6 +1,0 @@
-# frozen_string_literal: true
-
-RSpecTracer.configure do
-  log_level :debug
-  coverage_track_files 'app/**/*.rb'
-end

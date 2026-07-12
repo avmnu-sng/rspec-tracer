@@ -1,8 +1,0 @@
-# frozen_string_literal: true
-
-source 'https://rubygems.org'
-
-gem 'pry'
-gem 'rspec', ENV['RSPEC_VERSION']
-gem 'rspec-tracer', path: '../../..', require: false
-gem 'simplecov', '~> 0.22'
