@@ -32,11 +32,17 @@ Every test has zero or more inputs from these buckets:
    `IO`, `YAML`, `JSON`, `Kernel`. Cost: ~100–300 ns per call.
 
 3. **Framework events** — Rails template renders, I18n lookups, etc.
-   *Observed via:* `ActiveSupport::Notifications` subscribers. Cost: already
-   paid by Rails; we just listen.
+   Concretely: template / partial / collection renders, I18n
+   translation loads, and (opt-in, via `track_ar_schema_notifications`)
+   ActiveRecord schema-touching queries.
+   *Observed via:* `ActiveSupport::Notifications` subscribers plus an
+   `I18n::Backend::Base` prepend hook. Cost: already paid by Rails; we
+   just listen.
 
 4. **Declared globs** — inputs the user explicitly tells us to track, e.g.
-   `config/locales/**/*.yml`, `db/schema.rb`, `Gemfile.lock`.
+   `config/locales/**/*.yml`, `db/schema.rb`, `Gemfile.lock`. Declared
+   through `track_files` / `track_rails_defaults` in config, or
+   per-example via the `tracks:` metadata DSL.
    *Observed via:* directory walk at boot, digest cache, declared-to-example
    attribution rules. Cost: proportional to declared files, ~O(20 ms) at
    boot.
@@ -122,77 +128,78 @@ replaceable independently.
 
 ```text
 rspec-tracer/
-├── lib/
-│   └── rspec_tracer/
-│       ├── version.rb
-│       ├── configuration.rb
-│       ├── tracker/                  ← core engine
-│       │   ├── input.rb
-│       │   ├── coverage_adapter.rb
-│       │   ├── io_hooks/
-│       │   │   ├── file.rb
-│       │   │   ├── io.rb
-│       │   │   ├── yaml.rb
-│       │   │   ├── json.rb
-│       │   │   └── kernel.rb
-│       │   ├── notifications/
-│       │   │   └── action_view.rb
-│       │   ├── declared_globs.rb
-│       │   ├── whole_suite_invalidators.rb
-│       │   ├── dependency_graph.rb
-│       │   ├── filter.rb
-│       │   └── example_registry.rb
-│       ├── storage/
-│       │   ├── backend.rb            ← protocol
-│       │   ├── json_backend.rb
-│       │   ├── sqlite_backend.rb     ← optional
-│       │   └── schema_version.rb
-│       ├── remote_cache/
-│       │   ├── backend.rb            ← protocol
-│       │   ├── s3_backend.rb
-│       │   ├── local_fs_backend.rb
-│       │   └── redis_backend.rb      ← optional
-│       ├── reporters/
-│       │   ├── base.rb
-│       │   ├── json_reporter.rb
-│       │   ├── terminal_reporter.rb
-│       │   └── html_reporter.rb
-│       ├── rspec/
-│       │   ├── runner_hook.rb
-│       │   ├── reporter_hook.rb
-│       │   ├── metadata.rb           ← per-example `tracks:` DSL
-│       │   └── parallel_tests.rb
-│       ├── rails/
-│       │   ├── preset.rb
-│       │   └── railtie.rb            ← auto-load when Rails present
-│       └── cli.rb
-├── spec/
-│   ├── spec_helper.rb
-│   ├── support/
-│   ├── tracker/
-│   ├── storage/
-│   ├── remote_cache/
-│   ├── reporters/
-│   ├── rspec/
-│   ├── rails/
-│   ├── integration/
-│   │   └── reference_rails_app_spec.rb
-│   └── benchmark/
-│       └── cold_boot_spec.rb
-├── spec/fixtures/
-│   ├── rails_app/                    ← real Rails 7.1 app, load-bearing
-│   └── ruby_app/
-├── Taskfile.yml                      ← dev loop; see DEV_LOOP.md
-├── bin/
-│   ├── rspec-tracer                  ← CLI entry
-│   ├── actionlint                    ← installed by `task install:tools`
-│   └── shellcheck                    ← installed by `task install:tools`
-├── benchmark/
-│   ├── ratchet.json                  ← committed benchmark thresholds
-│   └── harness.rb
-├── docs/
-│   └── revamp/                       ← this directory
-└── ...
+|-- lib/
+|   `-- rspec_tracer/
+|       |-- version.rb
+|       |-- configuration.rb
+|       |-- tracker/                  <- core engine
+|       |   |-- input.rb
+|       |   |-- coverage_adapter.rb
+|       |   |-- io_hooks/
+|       |   |   |-- file.rb
+|       |   |   |-- io.rb
+|       |   |   |-- yaml.rb
+|       |   |   |-- json.rb
+|       |   |   `-- kernel.rb
+|       |   |-- notifications/
+|       |   |   `-- action_view.rb
+|       |   |-- declared_globs.rb
+|       |   |-- whole_suite_invalidators.rb
+|       |   |-- dependency_graph.rb
+|       |   |-- filter.rb
+|       |   `-- example_registry.rb
+|       |-- storage/
+|       |   |-- backend.rb            <- protocol
+|       |   |-- json_backend.rb
+|       |   |-- sqlite_backend.rb     <- optional
+|       |   `-- schema_version.rb
+|       |-- remote_cache/
+|       |   |-- backend.rb            <- protocol
+|       |   |-- s3_backend.rb
+|       |   |-- local_fs_backend.rb
+|       |   `-- redis_backend.rb      <- optional
+|       |-- reporters/
+|       |   |-- base.rb
+|       |   |-- json_reporter.rb
+|       |   |-- terminal_reporter.rb
+|       |   `-- html_reporter.rb
+|       |-- rspec/
+|       |   |-- runner_hook.rb
+|       |   |-- reporter_hook.rb
+|       |   |-- metadata.rb           <- per-example `tracks:` DSL
+|       |   `-- parallel_tests.rb
+|       |-- rails/
+|       |   |-- preset.rb
+|       |   `-- railtie.rb            <- auto-load when Rails present
+|       `-- cli.rb
+|-- spec/
+|   |-- spec_helper.rb
+|   |-- support/
+|   |-- tracker/
+|   |-- storage/
+|   |-- remote_cache/
+|   |-- reporters/
+|   |-- rspec/
+|   |-- rails/
+|   |-- integration/
+|   |   `-- reference_rails_app_spec.rb
+|   `-- benchmark/
+|       `-- cold_boot_spec.rb
+|-- spec/fixtures/
+|   |-- rails_app/                    <- real Rails 7.1 app, load-bearing
+|   `-- ruby_app/
+|-- Taskfile.yml                      <- dev loop; see DEV_LOOP.md
+|-- bin/
+|   |-- rspec-tracer                  <- CLI entry
+|   |-- actionlint                    <- installed by `task install:tools`
+|   `-- shellcheck                    <- installed by `task install:tools`
+|-- benchmark/
+|   |-- ratchet.json                  <- committed benchmark thresholds
+|   `-- harness.rb
+|-- docs/
+|   |-- CI_RECIPES.md                 <- per-provider CI cache recipes
+|   `-- internals/                    <- subsystem deep-dives
+`-- ...
 ```
 
 ## Contracts between layers
@@ -292,6 +299,107 @@ start → storage.load_graph → raises or returns nil (corrupted file, bad JSON
 ```
 
 Never propagate storage errors to the caller.
+
+## Soundness model
+
+"Sound" here means: if a recorded input changes, the tracer is
+guaranteed to notice and to re-run every example that recorded it.
+Not every input type can carry that guarantee, and this section says
+exactly which ones do. The governing rule for everything the tracer
+does observe:
+
+> **When a recorded input is ambiguous, the tracer re-runs.** Doubt
+> is resolved by running the example, never by skipping it.
+
+The honest cost sits on the other side of that line: an input the
+tracer never observed cannot trigger a re-run. The tiers below
+classify every input type by which side it falls on. Independent of
+tier, examples that previously failed, were flagged flaky, were
+pending, or were interrupted are always re-run, as is any example
+with no cache entry -- skip decisions apply only to examples with a
+clean, fully-recorded history.
+
+### The four tiers
+
+| Tier | Guarantee |
+|------|-----------|
+| **Sound** | A change to the recorded input is always detected; every example that recorded it re-runs. |
+| **Conservative** | Detection is sound, but attribution over-approximates: more examples re-run than strictly necessary, never fewer (within the observed scope). |
+| **Heuristic** | Observation rides an event or hook surface that covers the common cases; an input consumed outside that surface is not recorded. |
+| **Blind spot** | Not observable at all. Declare it via the escape hatch below, or the tracer cannot see it. |
+
+### Classification by input type
+
+| Input | Mechanism | Tier | Notes |
+|-------|-----------|------|-------|
+| Whole-suite invalidators (`Gemfile.lock`, `.ruby-version`, `.rspec-tracer`, gem version) | Digest snapshot at boot, value-equality compare | Sound | Any mismatch, including a watched file appearing or disappearing, forces a full run. |
+| Project Ruby source (`.rb` under root, not filtered) | `Coverage` diff per example + loaded-files over-approximation | Sound detection, conservative attribution | Content change is always caught (SHA256). Per-example precision degrades to "every example that ran after the file loaded" for files whose use leaves no coverage delta (constant lookups, memoized state). |
+| Declared file globs (`track_files`, `tracks: { files: ... }`) | Boot-time walk + digest per run | Sound, given the declaration | The guarantee is conditional and applies to files the cache has seen: any change or deletion under a declared glob re-runs the attributed examples. Files added after the last observed run follow the "New source files" row below. |
+| Declared ENV vars (`track_env`, `tracks: { env: ... }`) | Per-run value digest, compared against the cached snapshot | Sound, two documented exceptions | (1) An unset variable and an empty string digest identically, so unset -> `""` is not a change. (2) Wildcard patterns (`RAILS_*`) re-expand against the live environment each run; a variable that disappears entirely also drops off the watch list. Prefer literal names for variables that come and go. |
+| Boot-set files (everything loaded before the first example: `spec_helper` requires, gem-loaded engine `lib/`, eager-loaded `app/`) | Digest snapshot of the boot set; any change invalidates the whole suite | Conservative | Deliberately coarse: safe under `config.eager_load = true` and constant autoload timing, at the cost of whole-suite re-runs on boot-file edits. Opt-out: `transitive_load_tracking false` (re-opens the constants-lookup blind spot). |
+| New source files | Boot-set snapshot compare + per-run re-walk of declared globs and `lib/**/*.rb` | Conservative when boot-loaded; blind spot when runtime-only | A new file that loads during boot (eager-loaded `app/`, `spec_helper` requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples -- it enters the graph on the first run that observes it. |
+| File I/O (`File.read`, `YAML.load_file`, `JSON.load_file`, `IO.read`, `Kernel#load`, ...) | `Module#prepend` hooks on class-level entry points | Heuristic | Records exactly what passes through the hooked methods, for allow-listed extensions (`.yml .yaml .json .erb .haml .slim .builder .jbuilder .ru .rake`; `.rb` for `Kernel#load`). Reads via unhooked APIs, C extensions, other extensions, or threads other than the example's are not recorded. |
+| Rails template renders | `render_{template,partial,collection}.action_view` subscribers | Heuristic | Attribution is thread-local: renders on another thread (e.g. an app server thread under browser tests) are not attributed. Malformed event payloads are skipped by design. |
+| I18n translations | Prepend on `I18n::Backend::Base#load_translations` | Heuristic | Covers backends that super-call `Base` (Simple, Chain, Cascade). A backend that never calls up is invisible; YAML-file backends are also caught by the I/O hook. |
+| ActiveRecord schema coupling (opt-in) | First `sql.active_record` event per example attributes `db/schema.rb` + `db/structure.sql` | Heuristic | A proxy, not a parse: any DB-touching example couples to the whole schema file (over-approximate per table), but only if a query event fires on the example's thread during the example. |
+| Runtime metaprogramming, monkey-patches in unexecuted or filtered files, ENV branches without declarations, refinements in unexecuted files, database contents | none | Blind spot | See below. |
+
+### What we don't detect
+
+These are the known blind spots -- inputs with no observation
+mechanism. If one of them can change an example's outcome, the tracer
+will not re-run that example on its own:
+
+- **Runtime metaprogramming.** Behavior manufactured from non-file
+  state at runtime (`define_method` / `const_set` driven by data the
+  tracer never saw as a file read).
+- **Monkey-patches in files that never execute in this process** --
+  most commonly gem code outside the project root, or paths excluded
+  by a user filter. A patched gem upgrade is still caught, but only
+  at `Gemfile.lock` granularity (whole-suite invalidator).
+- **ENV-var branches without declarations.** The tracer watches only
+  the ENV names that config or example metadata declares.
+- **Refinements in unexecuted files.** A `using` whose refinement file
+  never loads during the suite leaves no coverage or load trace.
+- **Runtime-only new files.** A file added since an example last ran
+  and consumed only at runtime cannot be in that example's recorded
+  inputs (see the "New source files" row above); boot-loaded
+  additions are caught via the boot set.
+- **State outside the filesystem.** Database rows, external services,
+  the clock: the tracer digests files, not the world. Schema files
+  are the closest observable proxy (see the opt-in row above).
+
+The escape hatch for all of these is declaration -- turning an
+unobservable input into a declared (sound-tier) one:
+
+```ruby
+# .rspec-tracer -- suite-wide
+RSpecTracer.configure do
+  track_files 'config/feature_flags/**/*.yml'
+  track_env 'FEATURE_X'
+end
+
+# or per example group, via metadata
+RSpec.describe Checkout, tracks: { files: 'db/seeds.rb',
+                                   env: 'PAYMENT_GATEWAY' } do
+  # ...
+end
+```
+
+### Reading the tiers as a user
+
+- A **sound** input needs no thought: edit it and the right examples
+  re-run.
+- A **conservative** input trades precision for safety: expect
+  occasional larger-than-necessary re-runs (a boot-file edit re-runs
+  everything), never a missed one.
+- A **heuristic** input is trustworthy inside its stated surface;
+  when your suite consumes it outside that surface (another thread,
+  an exotic backend, an unhooked read path), add a declaration.
+- A **blind spot** must be declared or accepted. When in doubt about
+  whether something is observed, declare it -- a redundant
+  declaration costs one digest per run; a missed input costs a stale
+  green.
 
 ## Schema versioning
 
