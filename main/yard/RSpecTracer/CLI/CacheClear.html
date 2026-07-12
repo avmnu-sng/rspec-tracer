@@ -890,7 +890,7 @@ skips confirmation; <code>-h</code> / <code>--help</code> prints help).</p></div
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/cache_clear.rb', line 44</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_skip_confirmation?'>skip_confirmation?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_arg'>arg</span><span class='op'>|</span> <span class='const'><span class='object_link'><a href="#SKIP_CONFIRMATION_FLAGS-constant" title="RSpecTracer::CLI::CacheClear::SKIP_CONFIRMATION_FLAGS (constant)">SKIP_CONFIRMATION_FLAGS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_arg'>arg</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+  <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_intersect?'>intersect?</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="#SKIP_CONFIRMATION_FLAGS-constant" title="RSpecTracer::CLI::CacheClear::SKIP_CONFIRMATION_FLAGS (constant)">SKIP_CONFIRMATION_FLAGS</a></span></span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -902,7 +902,7 @@ skips confirmation; <code>-h</code> / <code>--help</code> prints help).</p></div
 </div>
 
       <div id="footer">
-  Generated on Thu May 28 09:09:22 2026 by
+  Generated on Sun Jul 12 10:05:28 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
