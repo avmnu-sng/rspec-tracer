@@ -20,6 +20,13 @@ RSpec.describe RSpecTracer::CLI::Doctor do
       end
     end
 
+    it 'exits 0 silently when a downstream pipe closes early (broken pipe from `| head`)' do
+      broken = StringIO.new
+      allow(broken).to receive(:puts).and_raise(Errno::EPIPE)
+      expect(described_class.run(%w[-h], stdout: broken, stderr: stderr)).to eq(0)
+      expect(stderr.string).to be_empty
+    end
+
     it 'prints checklist with OK lines for ruby + tracer + paths in a healthy project' do
       expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
       lines = stdout.string.split("\n")
@@ -42,6 +49,13 @@ RSpec.describe RSpecTracer::CLI::Doctor do
       expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(1)
       expect(stderr.string).to include('doctor:')
       expect(stderr.string).to include('boom')
+    end
+
+    it 'always prints exactly one INFO ci: line without affecting the exit status' do
+      expect(described_class.run([], stdout: stdout, stderr: stderr)).to eq(0)
+      ci_lines = stdout.string.split("\n").select { |l| l.include?(' ci:') }
+      expect(ci_lines.size).to eq(1)
+      expect(ci_lines.first).to start_with('INFO ci:')
     end
   end
 
@@ -165,6 +179,38 @@ RSpec.describe RSpecTracer::CLI::Doctor do
       allow(RSpecTracer).to receive(:track_ar_schema_notifications?).and_return(true)
       hide_const('Rails') if defined?(Rails)
       expect(described_class.ar_schema_narrow_attribution_check).to start_with('INFO AR schema:')
+    end
+  end
+
+  describe '.ci_environment_check' do
+    around do |example|
+      saved = described_class::CI_ENV_VARS.to_h { |v| [v, ENV.fetch(v, nil)] }
+      described_class::CI_ENV_VARS.each { |v| ENV.delete(v) }
+      example.run
+    ensure
+      saved.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+    end
+
+    it 'reports detected with the matched var name and the CI recipes pointer' do
+      ENV['GITHUB_ACTIONS'] = 'true'
+      line = described_class.ci_environment_check
+      expect(line).to start_with('INFO ci:')
+      expect(line).to include('ENV[GITHUB_ACTIONS]')
+      expect(line).to include('docs/CI_RECIPES.md')
+    end
+
+    it 'reports not detected when no CI env var is set' do
+      line = described_class.ci_environment_check
+      expect(line).to start_with('INFO ci:')
+      expect(line).to include('not detected (local run)')
+      expect(line).not_to include('docs/CI_RECIPES.md')
+    end
+
+    # ENV['CI'] == "" is truthy in Ruby; a shell with `CI=` exported
+    # must not read as a CI environment.
+    it 'does not count an empty-string CI var as detected' do
+      ENV['CI'] = ''
+      expect(described_class.ci_environment_check).to include('not detected (local run)')
     end
   end
 
