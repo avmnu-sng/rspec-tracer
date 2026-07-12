@@ -114,7 +114,7 @@ jobs:
         ruby: ${{ fromJSON(needs.matrix-config.outputs.rubies) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -164,7 +164,7 @@ jobs:
       # major. No explicit pin needed.
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -208,7 +208,7 @@ jobs:
         rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -247,7 +247,7 @@ jobs:
         rspec: ${{ fromJSON(needs.matrix-config.outputs.rspecs) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -310,7 +310,7 @@ jobs:
         include: ${{ fromJSON(needs.matrix-config.outputs.rails_cells) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # JRuby 9.4 cell: install build-essential for any native ext compile
       # under JRuby's gem graph (matches the standalone `jruby:` job).
@@ -465,7 +465,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install build tools for JRuby native extensions
         run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential
@@ -528,7 +528,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -590,7 +590,7 @@ jobs:
       SQLITE3_VERSION: "~> 1.4"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
