@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: loaded_files_tracker
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "loaded_files_tracker";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: loaded_files_tracker</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>file_digest</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>input</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal Tracker — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>Tracker</span>
+    <span class='comment'># Observer #5 in the 2.0 tracker pipeline. Closes the constants-
+</span>    <span class='comment'># lookup blind spot in 1.x&#39;s coverage-diff approach.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># The bug: when file A defines constants at load time and example E2
+</span>    <span class='comment'># references them without triggering a re-require, E2&#39;s coverage
+</span>    <span class='comment'># diff is empty for A. If A changes, the filter incorrectly skips
+</span>    <span class='comment'># E2 on the next run.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># The fix: track every project file Ruby has ever loaded during the
+</span>    <span class='comment'># process, and attribute them as transitive dependencies of every
+</span>    <span class='comment'># example that runs afterward.
+</span>    <span class='comment'>#
+</span>    <span class='comment'>#   - `@boot_set`: frozen Set&lt;String&gt; captured at Tracker.setup.
+</span>    <span class='comment'>#     Files loaded before any example runs (spec_helper requires,
+</span>    <span class='comment'>#     gem boot code, constant autoloads). Changes to these are
+</span>    <span class='comment'>#     whole-suite invalidators - any modification re-runs every
+</span>    <span class='comment'>#     example.
+</span>    <span class='comment'>#   - `@loaded_set`: append-only Set&lt;String&gt;. Grows as examples run
+</span>    <span class='comment'>#     and Coverage observes new files. Before each example, the
+</span>    <span class='comment'>#     filter treats the entire @loaded_set as input to that example;
+</span>    <span class='comment'>#     after each example, any newly-loaded path is attributed
+</span>    <span class='comment'>#     specifically to the just-completed example *and* added to
+</span>    <span class='comment'>#     @loaded_set for the benefit of subsequent examples.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Rationale - why not smarter?
+</span>    <span class='comment'># ----------------------------
+</span>    <span class='comment'># The cheaper alternatives all fail correctness or cost:
+</span>    <span class='comment'>#   - TracePoint(:class, :c_return) fires on every C method call;
+</span>    <span class='comment'>#     orders-of-magnitude overhead.
+</span>    <span class='comment'>#   - Ruby-AST scans for constant references are unreliable under
+</span>    <span class='comment'>#     metaprogramming (const_get, send, autoload blocks).
+</span>    <span class='comment'>#   - Constant-table introspection doesn&#39;t tell us which *example*
+</span>    <span class='comment'>#     used which constant.
+</span>    <span class='comment'>#   - Stack-trace sampling is probabilistic - inappropriate for
+</span>    <span class='comment'>#     cache correctness.
+</span>    <span class='comment'># The &quot;loaded set&quot; approach is the cheapest correct solution. Cost:
+</span>    <span class='comment'># the test cache is slightly less selective (a lib/constants.rb
+</span>    <span class='comment'># change re-runs every example that ran after it loaded rather than
+</span>    <span class='comment'># just some subset). Correctness is the win.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Input kind reuse
+</span>    <span class='comment'># ----------------
+</span>    <span class='comment'># Emits Input values with `kind: :ruby` - every file in the
+</span>    <span class='comment'># loaded-set is a Ruby source file (`::Coverage` tracks Ruby only),
+</span>    <span class='comment'># and the dependency graph keys on path (ignoring kind) so a
+</span>    <span class='comment'># separate `:transitive_load` kind would buy nothing observable.
+</span>    <span class='comment'># Overlap with CoverageAdapter&#39;s `:ruby` emissions dedupes naturally
+</span>    <span class='comment'># at graph registration.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Digest cache
+</span>    <span class='comment'># ------------
+</span>    <span class='comment'># Each path is digested at most once per run (first time it appears
+</span>    <span class='comment'># in either the boot set or a stop_example diff). The cache backs
+</span>    <span class='comment'># both `loaded_set_inputs` and `boot_set_digest_snapshot`, so
+</span>    <span class='comment'># boot-set invalidation comparison is free after the initial capture.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Enablement flag
+</span>    <span class='comment'># ---------------
+</span>    <span class='comment'># `enabled:` (default true) threads through from
+</span>    <span class='comment'># Configuration#transitive_load_tracking. When false, every method
+</span>    <span class='comment'># degrades to a no-op that returns empty collections. This gives
+</span>    <span class='comment'># teams an opt-out for pathological suites where the transitive
+</span>    <span class='comment'># over-approximation is too aggressive.
+</span>    <span class='kw'>class</span> <span class='const'>LoadedFilesTracker</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>DEFAULT_PEEK</span> <span class='op'>=</span> <span class='tlambda'>-&gt;</span> <span class='tlambeg'>{</span> <span class='op'>::</span><span class='const'>Coverage</span><span class='period'>.</span><span class='id identifier rubyid_peek_result'>peek_result</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span> <span class='rbrace'>}</span>
+
+      <span class='comment'># boot_set is exposed as an attr_reader rather than a hand-
+</span>      <span class='comment'># rolled method so RuboCop&#39;s Style/TrivialAccessors stays quiet;
+</span>      <span class='comment'># nil is a valid &quot;not yet captured&quot; state callers rely on.
+</span>      <span class='id identifier rubyid_attr_reader'>attr_reader</span> <span class='symbol'>:root</span><span class='comma'>,</span> <span class='symbol'>:boot_set</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>root:</span><span class='comma'>,</span> <span class='label'>peek:</span> <span class='const'>DEFAULT_PEEK</span><span class='comma'>,</span> <span class='label'>enabled:</span> <span class='kw'>true</span><span class='rparen'>)</span>
+        <span class='ivar'>@root</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+        <span class='ivar'>@root_prefix</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='ivar'>@root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span>
+        <span class='ivar'>@peek</span> <span class='op'>=</span> <span class='id identifier rubyid_peek'>peek</span>
+        <span class='ivar'>@enabled</span> <span class='op'>=</span> <span class='id identifier rubyid_enabled'>enabled</span>
+        <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='kw'>nil</span>
+        <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+        <span class='ivar'>@input_cache</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='comment'># Steady-state fast-path cache for stop_example: ::Coverage&#39;s
+</span>        <span class='comment'># tracked-file set grows monotonically; if peek_result.length
+</span>        <span class='comment'># is unchanged since the last stop_example call, no new project
+</span>        <span class='comment'># files can have appeared. Skip the per-path filter loop
+</span>        <span class='comment'># entirely. Initialized to nil so the first call always falls
+</span>        <span class='comment'># through to full work + populates the cache.
+</span>        <span class='ivar'>@last_peek_length</span> <span class='op'>=</span> <span class='kw'>nil</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_enabled?'>enabled?</span>
+        <span class='ivar'>@enabled</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Capture the boot set once. Idempotent: subsequent calls return
+</span>      <span class='comment'># the frozen Set captured on the first call. When disabled,
+</span>      <span class='comment'># returns an empty frozen Set without touching ::Coverage.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Paths whose digest fails (unreadable files) are dropped on the
+</span>      <span class='comment'># floor - they stay absent from @boot_set, @loaded_set, and
+</span>      <span class='comment'># @input_cache, preserving the &quot;every tracked path has an Input&quot;
+</span>      <span class='comment'># invariant. Downstream filtering accepts the slight under-count
+</span>      <span class='comment'># (a truly-unreadable boot file was never going to be a useful
+</span>      <span class='comment'># invalidation signal anyway).
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_capture_boot_set!'>capture_boot_set!</span>
+        <span class='kw'>return</span> <span class='ivar'>@boot_set</span> <span class='kw'>unless</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='kw'>if</span> <span class='ivar'>@enabled</span>
+          <span class='id identifier rubyid_successful_paths'>successful_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_build_inputs'>build_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_filtered_peek_paths'>filtered_peek_paths</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_input'>input</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+            <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_input'>input</span><span class='period'>.</span><span class='id identifier rubyid_path'>path</span>
+          <span class='kw'>end</span>
+          <span class='comment'># Construct @loaded_set and @boot_set from distinct Set
+</span>          <span class='comment'># instances so freezing one can&#39;t poison the other -
+</span>          <span class='comment'># stop_example must be able to mutate @loaded_set forever
+</span>          <span class='comment'># while @boot_set stays frozen for invalidator comparison.
+</span>          <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='id identifier rubyid_successful_paths'>successful_paths</span>
+          <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_successful_paths'>successful_paths</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+        <span class='kw'>else</span>
+          <span class='ivar'>@loaded_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+          <span class='ivar'>@boot_set</span> <span class='op'>=</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+        <span class='kw'>end</span>
+        <span class='ivar'>@boot_set</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Hash[relative_path =&gt; sha256_hex] for every file in the boot
+</span>      <span class='comment'># set. The engine compares this against the previous run&#39;s
+</span>      <span class='comment'># stored `Snapshot.boot_set` - any inequality is a whole-suite
+</span>      <span class='comment'># invalidator.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Invariant (enforced by capture_boot_set!): every path in
+</span>      <span class='comment'># `@boot_set` has a matching `@input_cache` entry, so the fetch
+</span>      <span class='comment'># never raises. Disabled trackers produce an empty `@boot_set`,
+</span>      <span class='comment'># so the enumeration naturally returns {} without a guard.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span>
+        <span class='kw'>return</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>if</span> <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='ivar'>@boot_set</span><span class='period'>.</span><span class='id identifier rubyid_to_h'>to_h</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_relative_path'>relative_path</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='comma'>,</span> <span class='ivar'>@input_cache</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_digest'>digest</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Compare the current boot set&#39;s digest snapshot against a
+</span>      <span class='comment'># previously-stored one. `nil` previous_snapshot (first run, no
+</span>      <span class='comment'># cache) is treated as &quot;not invalidated by this signal&quot; - first
+</span>      <span class='comment'># run is already a cold run for unrelated reasons.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Disabled tracker never invalidates - the engine ORs this with
+</span>      <span class='comment'># WholeSuiteInvalidators.invalidated?, so returning false keeps
+</span>      <span class='comment'># the tracker silent when the feature is off.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_boot_set_invalidated?'>boot_set_invalidated?</span><span class='lparen'>(</span><span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
+        <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_boot_set_digest_snapshot'>boot_set_digest_snapshot</span> <span class='op'>!=</span> <span class='id identifier rubyid_previous_snapshot'>previous_snapshot</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Set&lt;Input&gt; covering the full @loaded_set. Callers merge this
+</span>      <span class='comment'># into an example&#39;s Input bucket at start_example time - every
+</span>      <span class='comment'># file loaded up to this point is a transitive dependency.
+</span>      <span class='comment'># Returns a fresh Set per call so mutation stays local.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Disabled trackers never populate @input_cache (capture_boot_set!
+</span>      <span class='comment'># skips the build_inputs pass), so no explicit enabled guard is
+</span>      <span class='comment'># needed - the enumeration naturally yields Set.new.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_inputs'>loaded_set_inputs</span>
+        <span class='ivar'>@input_cache</span><span class='period'>.</span><span class='id identifier rubyid_values'>values</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Diff-and-grow. Called after an example finishes: peeks
+</span>      <span class='comment'># ::Coverage, finds paths the tracker hadn&#39;t seen yet, digests
+</span>      <span class='comment'># them, adds them to @loaded_set + @input_cache, and returns the
+</span>      <span class='comment'># new-paths-only Input set so the caller can attribute them to
+</span>      <span class='comment'># the just-completed example.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Paths whose digest fails are dropped from both @loaded_set and
+</span>      <span class='comment'># the returned set - the next stop_example will retry them
+</span>      <span class='comment'># (useful if the failure was transient) and keeps the
+</span>      <span class='comment'># &quot;@loaded_set =&gt; @input_cache has an entry&quot; invariant.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Steady state (no new files loaded this example) is ~O(|peek|)
+</span>      <span class='comment'># with no digest work.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_stop_example'>stop_example</span><span class='lparen'>(</span><span class='id identifier rubyid__example_id'>_example_id</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>unless</span> <span class='ivar'>@enabled</span>
+
+        <span class='id identifier rubyid_new_paths'>new_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_new_filtered_paths'>new_filtered_paths</span>
+        <span class='kw'>return</span> <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span> <span class='kw'>if</span> <span class='id identifier rubyid_new_paths'>new_paths</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_new_inputs'>new_inputs</span> <span class='op'>=</span> <span class='id identifier rubyid_build_inputs'>build_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_new_paths'>new_paths</span><span class='rparen'>)</span>
+        <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_merge'>merge</span><span class='lparen'>(</span><span class='id identifier rubyid_new_inputs'>new_inputs</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='symbol'>:path</span><span class='rparen'>)</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_new_inputs'>new_inputs</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Defensive copy for external callers / property specs. Callers
+</span>      <span class='comment'># that want read-only size should use `loaded_set_size` instead -
+</span>      <span class='comment'># avoids the dup allocation.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set'>loaded_set</span>
+        <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_dup'>dup</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_loaded_set_size'>loaded_set_size</span>
+        <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+      <span class='kw'>end</span>
+
+      <span class='id identifier rubyid_private'>private</span>
+
+      <span class='comment'># Full filtered peek - returns a Set of every under-root String
+</span>      <span class='comment'># path in the peek result. Used by capture_boot_set! (no prior
+</span>      <span class='comment'># `@loaded_set` to diff against).
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_filtered_peek_paths'>filtered_peek_paths</span>
+        <span class='ivar'>@peek</span><span class='period'>.</span><span class='id identifier rubyid_call'>call</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_path'>path</span> <span class='kw'>if</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>String</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span>
+        <span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Diff-filtered peek - returns only paths not yet in @loaded_set.
+</span>      <span class='comment'># One hash lookup per peek entry (vs. the two a Set.new + Set - Set
+</span>      <span class='comment'># pipeline would pay). Halves stop_example steady-state cost.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Steady-state fast-path: ::Coverage&#39;s tracked-file set grows
+</span>      <span class='comment'># monotonically across the run, so when peek_result.length matches
+</span>      <span class='comment'># the cached length from the previous call no new project paths
+</span>      <span class='comment'># can have appeared. Returns [] without iterating - cuts the
+</span>      <span class='comment'># per-call cost from ~70 us (full filter loop over ~500 paths) to
+</span>      <span class='comment'># one Array#length comparison. A profile pass identified this
+</span>      <span class='comment'># loop as the dominant per-example cost in the engine microbench
+</span>      <span class='comment'># (16% TOTAL); the fast-path drops it to &lt;1%.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_new_filtered_paths'>new_filtered_paths</span>
+        <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='ivar'>@peek</span><span class='period'>.</span><span class='id identifier rubyid_call'>call</span>
+        <span class='kw'>return</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='kw'>if</span> <span class='ivar'>@last_peek_length</span> <span class='op'>==</span> <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span>
+
+        <span class='ivar'>@last_peek_length</span> <span class='op'>=</span> <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span>
+        <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='const'>String</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='ivar'>@loaded_set</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+
+          <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_path'>path</span>
+        <span class='kw'>end</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span>
+        <span class='lbracket'>[</span><span class='rbracket'>]</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Builds Input objects for paths not yet cached; returns the Set
+</span>      <span class='comment'># of Inputs produced for `paths` (may exclude entries whose
+</span>      <span class='comment'># digest failed). Side effect: populates @input_cache.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Callers are responsible for passing only paths absent from
+</span>      <span class='comment'># `@input_cache` (capture_boot_set! on empty cache, stop_example
+</span>      <span class='comment'># on `filtered_peek_keys - @loaded_set` where `@loaded_set`
+</span>      <span class='comment'># mirrors `@input_cache`&#39;s keys modulo digest failures).
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_build_inputs'>build_inputs</span><span class='lparen'>(</span><span class='id identifier rubyid_paths'>paths</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_each_with_object'>each_with_object</span><span class='lparen'>(</span><span class='const'>Set</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_acc'>acc</span><span class='op'>|</span>
+          <span class='id identifier rubyid_digest'>digest</span> <span class='op'>=</span> <span class='id identifier rubyid_file_digest'>file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>if</span> <span class='id identifier rubyid_digest'>digest</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+          <span class='id identifier rubyid_input'>input</span> <span class='op'>=</span> <span class='const'>Input</span><span class='period'>.</span><span class='id identifier rubyid_for_file'>for_file</span><span class='lparen'>(</span><span class='label'>path:</span> <span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='label'>kind:</span> <span class='symbol'>:ruby</span><span class='comma'>,</span> <span class='label'>digest:</span> <span class='id identifier rubyid_digest'>digest</span><span class='comma'>,</span> <span class='label'>root:</span> <span class='ivar'>@root</span><span class='rparen'>)</span>
+          <span class='ivar'>@input_cache</span><span class='lbracket'>[</span><span class='id identifier rubyid_path'>path</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='id identifier rubyid_input'>input</span>
+          <span class='id identifier rubyid_acc'>acc</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_input'>input</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_file_digest'>file_digest</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='const'>FileDigest</span><span class='period'>.</span><span class='id identifier rubyid_compute'>compute</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal method on the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_relative_path'>relative_path</span><span class='lparen'>(</span><span class='id identifier rubyid_abs_path'>abs_path</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_abs_path'>abs_path</span> <span class='kw'>unless</span> <span class='id identifier rubyid_abs_path'>abs_path</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='ivar'>@root_prefix</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_abs_path'>abs_path</span><span class='lbracket'>[</span><span class='ivar'>@root_prefix</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span><span class='op'>..</span><span class='rbracket'>]</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:34 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Module: RSpecTracer::RSpec::ParallelTests
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::RSpec::ParallelTests";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (P)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../RSpec.html" title="RSpecTracer::RSpec (module)">RSpec</a></span></span>
+     &raquo; 
+    <span class="title">ParallelTests</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Module: RSpecTracer::RSpec::ParallelTests
+  
+  
+  <span class="private note title">Private</span>
+</h1>
+<div class="box_info">
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/rspec/parallel_tests.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This module is part of a private API.</strong>
+  You should avoid using this module if possible, as it may be removed or be changed in the future.
+</p>
+<p>parallel_tests orchestration for the v2 engine.</p>
+<p>1.x scattered the parallel-worker glue across <code>lib/rspec_tracer.rb</code>
+(<code>parallel_tests_setup</code>, <code>track_parallel_tests_test_env_number</code>,
+<code>run_parallel_tests_exit_tasks</code>, <code>merge_parallel_tests_reports</code>,
+<code>parallel_tests_last_process?</code>, etc). 2.0 collapses them here and
+rewires the snapshot merge onto <code>Storage::JsonBackend#merge_from_peers</code>
+so any storage backend (including SQLite) gets the merge for free.</p>
+<p>Responsibilities:</p>
+<pre class="code ruby"><code class="ruby">- Detect `TEST_ENV_NUMBER` + `PARALLEL_TEST_GROUPS` env vars.
+- Maintain the shared `rspec_tracer.lock` file that records the
+highest TEST_ENV_NUMBER seen (last-process detection).
+- Decide the narrator: first process by env convention. Log
+rollup lines only on the narrator unless
+`RSPEC_TRACER_VERBOSE=true`.
+- On the last process, merge per-worker snapshots +
+coverage.json, purge `parallel_tests_N/` directories.
+</code></pre>
+<p>Graceful degradation: every merge / cleanup step rescues
+StandardError and logs - a partial or corrupt peer cache must
+never propagate a non-zero exit into the user's test run.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="LOCK_ENCODING-constant" class="">LOCK_ENCODING =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="BOOT_MARKER_FILENAME-constant" class="">BOOT_MARKER_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Per-worker boot/done breadcrumbs written to each worker's
+<code>parallel_tests_N/</code> cache dir. The elected worker uses these
+at finalize time to verify every booted peer has reached the
+end of its at_exit before merge + purge:</p>
+<pre class="code ruby"><code class="ruby">.boot — written at setup! time (very early, before any
+      cache write). Source-of-truth for &quot;this worker
+      ever booted past RSpecTracer.start&quot;.
+.done — written at finalize entry, AFTER per-worker
+      run_finalize + emit_coverage_json. Must be the
+      last write our code does into parallel_tests_N/
+      on the worker side - the elected reads its
+      presence as &quot;this peer is fully flushed&quot;.
+</code></pre>
+<p>Verification path: see <code>wait_for_peer_done_markers!</code>. Without
+this the elected trusted only <code>wait_for_other_processes_to_finish</code>'s
+pid-file barrier, which observed evidence on GHA Linux x86_64
+showed could return before a sibling had flushed - leaving a
+straggler <code>parallel_tests_N/</code> after purge (failing
+spec/integration/parallel_tests_spec.rb:88 intermittently).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>.rspec_tracer_boot</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="DONE_MARKER_FILENAME-constant" class="">DONE_MARKER_FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>.rspec_tracer_done</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="PEER_DONE_DEADLINE_SECONDS-constant" class="">PEER_DONE_DEADLINE_SECONDS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Bound on the elected worker's wait for missing .done markers.
+5s comfortably exceeds the at_exit tail of any well-behaved
+peer; on timeout we log + proceed (graceful degradation: a
+truly-crashed peer must not pin the elected forever).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='int'>5</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+
+
+
+  
+    <h2>
+      Class Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#active%3F-class_method" title="active? (class method)">.<strong>active?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#build_merged_run_metadata-class_method" title="build_merged_run_metadata (class method)">.<strong>build_merged_run_metadata</strong>(base_dir)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#emit_merged_reporters!-class_method" title="emit_merged_reporters! (class method)">.<strong>emit_merged_reporters!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Emit reporters against the merged top-level snapshot so the user gets one terminal summary + one JSON report + one HTML report at the canonical (non-<code>parallel_tests_N</code>) path.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#finalize!-class_method" title="finalize! (class method)">.<strong>finalize!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Called from at_exit after the per-worker snapshot has been persisted.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#last_process%3F-class_method" title="last_process? (class method)">.<strong>last_process?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Elects the worker that performs the per-run merge.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#load_merged_snapshot-class_method" title="load_merged_snapshot (class method)">.<strong>load_merged_snapshot</strong>(base_dir)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#log_rollups%3F-class_method" title="log_rollups? (class method)">.<strong>log_rollups?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>True iff this worker should emit rollup log lines.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#merge_coverage!-class_method" title="merge_coverage! (class method)">.<strong>merge_coverage!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Merge per-worker coverage.json files into a top-level coverage.json.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#merge_snapshot!-class_method" title="merge_snapshot! (class method)">.<strong>merge_snapshot!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Merge the per-worker v2 snapshots into the top-level cache.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#narrator%3F-class_method" title="narrator? (class method)">.<strong>narrator?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Narrator = first process.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#peer_dirs_missing_done-class_method" title="peer_dirs_missing_done (class method)">.<strong>peer_dirs_missing_done</strong>(base_dir)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Set difference of <code>.boot</code>-bearing peer dirs and <code>.done</code>-bearing peer dirs under <code>base_dir</code>.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#peer_dirs_with_marker-class_method" title="peer_dirs_with_marker (class method)">.<strong>peer_dirs_with_marker</strong>(base_dir, marker_filename)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#peer_paths_for-class_method" title="peer_paths_for (class method)">.<strong>peer_paths_for</strong>(base_dir)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>parallel_tests sets <code>PARALLEL_TEST_GROUPS = num_processes.to_s</code> for each child, where <code>num_processes</code> is the user-requested process count (Parallel.processor_count by default) - NOT the number of workers actually spawned.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#purge_worker_dirs!-class_method" title="purge_worker_dirs! (class method)">.<strong>purge_worker_dirs!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Sweep every <code>parallel_tests_*</code> subdirectory under each managed base path.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#remove_lock_file!-class_method" title="remove_lock_file! (class method)">.<strong>remove_lock_file!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#setup!-class_method" title="setup! (class method)">.<strong>setup!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Called from RSpecTracer.start when parallel_tests is active.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#touch_boot!-class_method" title="touch_boot! (class method)">.<strong>touch_boot!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Write <code>parallel_tests_N/.rspec_tracer_boot</code> with this worker's pid + TEST_ENV_NUMBER + timestamp.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#touch_done!-class_method" title="touch_done! (class method)">.<strong>touch_done!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Drop <code>parallel_tests_N/.rspec_tracer_done</code> as a flush-complete signal for the elected worker's verification loop.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#track_test_env_number!-class_method" title="track_test_env_number! (class method)">.<strong>track_test_env_number!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#verbose%3F-class_method" title="verbose? (class method)">.<strong>verbose?</strong>  &#x21d2; Boolean </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#wait_for_peer_done_markers!-class_method" title="wait_for_peer_done_markers! (class method)">.<strong>wait_for_peer_done_markers!</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Block until every peer that wrote <code>.boot</code> has also written <code>.done</code>, or the deadline elapses.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+
+
+  <div id="class_method_details" class="method_details_list">
+    <h2>Class Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="active?-class_method">
+  
+    .<strong>active?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+70
+71
+72
+73
+74
+75</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 70</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_active?'>active?</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>TEST_ENV_NUMBER</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>if</span> <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PARALLEL_TEST_GROUPS</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='kw'>true</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="build_merged_run_metadata-class_method">
+  
+    .<strong>build_merged_run_metadata</strong>(base_dir)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 297</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_build_merged_run_metadata'>build_merged_run_metadata</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='lbrace'>{</span>
+    <span class='label'>pid:</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span><span class='comma'>,</span>
+    <span class='label'>run_time:</span> <span class='kw'>nil</span><span class='comma'>,</span>
+    <span class='label'>started_at:</span> <span class='kw'>nil</span><span class='comma'>,</span>
+    <span class='label'>cache_path:</span> <span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span>
+    <span class='label'>parallel_tests:</span> <span class='kw'>true</span><span class='comma'>,</span>
+    <span class='label'>rails:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_rails?'><span class='object_link'><a href="../../RSpecTracer.html#rails%3F-class_method" title="RSpecTracer.rails? (method)">rails?</a></span></span>
+  <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="emit_merged_reporters!-class_method">
+  
+    .<strong>emit_merged_reporters!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Emit reporters against the merged top-level snapshot
+so the user gets one terminal summary + one JSON report + one
+HTML report at the canonical (non-<code>parallel_tests_N</code>) path.
+Wrapped in its own rescue so a failed reporter never blocks
+purge / lock cleanup downstream.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 261</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_emit_merged_reporters!'>emit_merged_reporters!</span>
+  <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='op'>==</span> <span class='symbol'>:json</span>
+
+  <span class='id identifier rubyid_base_dir'>base_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_merged_snapshot'>merged_snapshot</span> <span class='op'>=</span> <span class='id identifier rubyid_load_merged_snapshot'>load_merged_snapshot</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_merged_snapshot'>merged_snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='id identifier rubyid_top_report_dir'>top_report_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='rparen'>)</span>
+  <span class='op'>::</span><span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='id identifier rubyid_top_report_dir'>top_report_dir</span><span class='rparen'>)</span>
+
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Reporters/Registry.html" title="RSpecTracer::Reporters::Registry (class)">Registry</a></span></span><span class='period'>.</span><span class='id identifier rubyid_emit_all'><span class='object_link'><a href="../Reporters/Registry.html#emit_all-class_method" title="RSpecTracer::Reporters::Registry.emit_all (method)">emit_all</a></span></span><span class='lparen'>(</span>
+    <span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='comma'>,</span>
+    <span class='label'>snapshot:</span> <span class='id identifier rubyid_merged_snapshot'>merged_snapshot</span><span class='comma'>,</span>
+    <span class='label'>report_dir:</span> <span class='id identifier rubyid_top_report_dir'>top_report_dir</span><span class='comma'>,</span>
+    <span class='label'>run_metadata:</span> <span class='id identifier rubyid_build_merged_run_metadata'>build_merged_run_metadata</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="../Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer: merged reporter emission failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+  <span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="finalize!-class_method">
+  
+    .<strong>finalize!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Called from at_exit after the per-worker snapshot has been
+persisted. Every worker drops its <code>.done</code> marker as the very
+first step here so the elected worker's verification loop can
+observe it; non-elected workers then return. The elected
+worker waits for every booted peer's <code>.done</code> to appear,
+orchestrates the snapshot + coverage merge, emits the merged
+reporters, and purges per-worker dirs.</p>
+<p><code>touch_done!</code> MUST stay the last write our code performs into
+<code>parallel_tests_N/</code> — anything written later would land after
+the elected has decided it's safe to purge, leaving stragglers.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 151</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_finalize!'>finalize!</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_active?'>active?</span>
+
+  <span class='id identifier rubyid_touch_done!'>touch_done!</span>
+
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_last_process?'>last_process?</span>
+
+  <span class='op'>::</span><span class='const'>ParallelTests</span><span class='period'>.</span><span class='id identifier rubyid_wait_for_other_processes_to_finish'>wait_for_other_processes_to_finish</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>ParallelTests</span><span class='rparen'>)</span>
+
+  <span class='comment'># Belt-and-suspenders barrier: pid-file said everyone&#39;s done,
+</span>  <span class='comment'># but observed CI evidence (GHA Linux x86_64, Ruby 3.4 cells)
+</span>  <span class='comment'># caught a sibling&#39;s `parallel_tests_N/` reappearing post-purge
+</span>  <span class='comment'># — i.e., the pid signal returned while a peer hadn&#39;t fully
+</span>  <span class='comment'># flushed yet. Cross-check via the .boot/.done filesystem
+</span>  <span class='comment'># markers before declaring the peer set stable.
+</span>  <span class='id identifier rubyid_wait_for_peer_done_markers!'>wait_for_peer_done_markers!</span>
+
+  <span class='id identifier rubyid_merge_snapshot!'>merge_snapshot!</span>
+  <span class='id identifier rubyid_merge_coverage!'>merge_coverage!</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_simplecov?'><span class='object_link'><a href="../../RSpecTracer.html#simplecov%3F-class_method" title="RSpecTracer.simplecov? (method)">simplecov?</a></span></span>
+  <span class='comment'># Emit terminal/JSON/HTML reporters ONCE at the merged top-level
+</span>  <span class='comment'># location BEFORE purge_worker_dirs! removes the per-worker
+</span>  <span class='comment'># `parallel_tests_N` dirs. Earlier behavior had each worker emit
+</span>  <span class='comment'># reports into its `rspec_tracer_report/parallel_tests_N` dir
+</span>  <span class='comment'># and the purge then deleted them, leaving the user with zero
+</span>  <span class='comment'># usable output. Now reporters consume the just-merged
+</span>  <span class='comment'># top-level snapshot.
+</span>  <span class='id identifier rubyid_emit_merged_reporters!'>emit_merged_reporters!</span>
+  <span class='id identifier rubyid_purge_worker_dirs!'>purge_worker_dirs!</span>
+  <span class='id identifier rubyid_remove_lock_file!'>remove_lock_file!</span>
+  <span class='kw'>true</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="../Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer: parallel_tests finalize failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+  <span class='rparen'>)</span>
+  <span class='kw'>false</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="last_process?-class_method">
+  
+    .<strong>last_process?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Elects the worker that performs the per-run merge. Delegates to
+<code>::ParallelTests.first_process?</code>, which returns true iff
+<code>TEST_ENV_NUMBER.to_i &lt;= 1</code> -- i.e. for exactly one worker
+(TEST_ENV_NUMBER == '' or '1'), regardless of how many workers
+were actually spawned vs. how many CPUs the runner reports.</p>
+<p>Two historical approaches do NOT work here:</p>
+<pre class="code ruby"><code class="ruby">1. The 1.x lock-file scheme (each worker wrote its
+ TEST_ENV_NUMBER to `rspec_tracer.lock` at RSpecTracer.start
+ time; last_process? picked the max) deadlocked under CI:
+ worker 1 could finish its examples before worker 2 even
+ loaded spec_helper, observe itself as the max, and enter
+ `wait_for_other_processes_to_finish` concurrently with
+ worker 2&#39;s own self-election -- both workers spun on each
+ other&#39;s pid.
+
+2. `::ParallelTests.last_process?` compares TEST_ENV_NUMBER
+ against PARALLEL_TEST_GROUPS. parallel_rspec&#39;s CLI sets
+ PARALLEL_TEST_GROUPS to the CPU-based *intended* process
+ count, NOT the actual worker count -- so when fewer specs
+ than CPUs are present, no TEST_ENV_NUMBER ever matches
+ PARALLEL_TEST_GROUPS and the merge is silently skipped.
+</code></pre>
+<p><code>first_process?</code> avoids both: it is immutable across worker
+lifetime (set by the parent at spawn) and identifies exactly
+one worker regardless of CPU count. The elected worker still
+calls <code>wait_for_other_processes_to_finish</code> before merging, so
+peer caches are guaranteed on disk by merge time.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+352
+353
+354
+355
+356
+357</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 352</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_last_process?'>last_process?</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_active?'>active?</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>ParallelTests</span><span class='rparen'>)</span>
+
+  <span class='op'>::</span><span class='const'>ParallelTests</span><span class='period'>.</span><span class='id identifier rubyid_first_process?'>first_process?</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="load_merged_snapshot-class_method">
+  
+    .<strong>load_merged_snapshot</strong>(base_dir)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+285
+286
+287
+288
+289
+290
+291
+292
+293</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 285</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_load_merged_snapshot'>load_merged_snapshot</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/JsonBackend.html" title="RSpecTracer::Storage::JsonBackend (class)">JsonBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="../Storage/JsonBackend.html#initialize-instance_method" title="RSpecTracer::Storage::JsonBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+    <span class='label'>cache_path:</span> <span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span>
+    <span class='label'>logger:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='comma'>,</span>
+    <span class='label'>retention_local_count:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_retention_local_count'>cache_retention_local_count</span><span class='comma'>,</span>
+    <span class='label'>serializer:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_storage_backend_opts'>storage_backend_opts</span><span class='lbracket'>[</span><span class='symbol'>:serializer</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='symbol'>:json</span>
+  <span class='rparen'>)</span>
+  <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="log_rollups?-class_method">
+  
+    .<strong>log_rollups?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>True iff this worker should emit rollup log lines. Per-example
+RSpec output (dots, failures, durations) is unaffected - that's
+RSpec's own Reporter, not this module.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+97
+98
+99</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 97</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_log_rollups?'>log_rollups?</span>
+  <span class='id identifier rubyid_verbose?'>verbose?</span> <span class='op'>||</span> <span class='id identifier rubyid_narrator?'>narrator?</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="merge_coverage!-class_method">
+  
+    .<strong>merge_coverage!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Merge per-worker coverage.json files into a top-level coverage.json.
+Routed through Reporters::CoverageJsonReporter.merge_parallel
+(replaces the legacy CoverageMerger + CoverageWriter pair).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 425</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_coverage!'>merge_coverage!</span>
+  <span class='id identifier rubyid_base_dir'>base_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage_path'>coverage_path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_peer_paths'>peer_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_paths_for'>peer_paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_peer_paths'>peer_paths</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_starting'>starting</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Reporters/CoverageJsonReporter.html" title="RSpecTracer::Reporters::CoverageJsonReporter (class)">CoverageJsonReporter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_merge_parallel'><span class='object_link'><a href="../Reporters/CoverageJsonReporter.html#merge_parallel-class_method" title="RSpecTracer::Reporters::CoverageJsonReporter.merge_parallel (method)">merge_parallel</a></span></span><span class='lparen'>(</span>
+    <span class='label'>peer_paths:</span> <span class='id identifier rubyid_peer_paths'>peer_paths</span><span class='comma'>,</span>
+    <span class='label'>output_path:</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage.json</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
+    <span class='label'>logger:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span>
+  <span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_ending'>ending</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_elapsed'>elapsed</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../TimeFormatter.html" title="RSpecTracer::TimeFormatter (module)">TimeFormatter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_format_time'><span class='object_link'><a href="../TimeFormatter.html#format_time-class_method" title="RSpecTracer::TimeFormatter.format_time (method)">format_time</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_ending'>ending</span> <span class='op'>-</span> <span class='id identifier rubyid_starting'>starting</span><span class='rparen'>)</span>
+
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'><span class='object_link'><a href="../Logger.html#debug-instance_method" title="RSpecTracer::Logger#debug (method)">debug</a></span></span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer merged parallel tests coverage (took </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_elapsed'>elapsed</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_log_rollups?'>log_rollups?</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="merge_snapshot!-class_method">
+  
+    .<strong>merge_snapshot!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Merge the per-worker v2 snapshots into the top-level cache.
+SqliteBackend has no merge surface (single-file, latest-run
+only); the elected worker persists its own run via Engine
+finalize and the per-worker files accumulate next to it
+untouched. The JSON merge path stays authoritative for the
+default <code>:json</code> backend which is what parallel_tests fixtures
+exercise in CI.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 398</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_merge_snapshot!'>merge_snapshot!</span>
+  <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_storage_backend'>storage_backend</span> <span class='op'>==</span> <span class='symbol'>:json</span>
+
+  <span class='id identifier rubyid_base_dir'>base_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_peer_paths'>peer_paths</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_paths_for'>peer_paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_peer_paths'>peer_paths</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+  <span class='id identifier rubyid_starting'>starting</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_top'>top</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/JsonBackend.html" title="RSpecTracer::Storage::JsonBackend (class)">JsonBackend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_new'><span class='object_link'><a href="../Storage/JsonBackend.html#initialize-instance_method" title="RSpecTracer::Storage::JsonBackend#initialize (method)">new</a></span></span><span class='lparen'>(</span>
+    <span class='label'>cache_path:</span> <span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='comma'>,</span>
+    <span class='label'>retention_local_count:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_retention_local_count'>cache_retention_local_count</span><span class='comma'>,</span>
+    <span class='label'>warn_per_file_mb:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_per_file_mb'>cache_size_warn_per_file_mb</span><span class='comma'>,</span>
+    <span class='label'>warn_total_mb:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_size_warn_total_mb'>cache_size_warn_total_mb</span><span class='comma'>,</span>
+    <span class='label'>serializer:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_storage_backend_opts'>storage_backend_opts</span><span class='lbracket'>[</span><span class='symbol'>:serializer</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='symbol'>:json</span>
+  <span class='rparen'>)</span>
+  <span class='id identifier rubyid_top'>top</span><span class='period'>.</span><span class='id identifier rubyid_merge_from_peers'>merge_from_peers</span><span class='lparen'>(</span><span class='id identifier rubyid_peer_paths'>peer_paths</span><span class='comma'>,</span> <span class='label'>schema_version:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/Schema.html#CURRENT-constant" title="RSpecTracer::Storage::Schema::CURRENT (constant)">CURRENT</a></span></span><span class='rparen'>)</span>
+
+  <span class='id identifier rubyid_ending'>ending</span> <span class='op'>=</span> <span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_elapsed'>elapsed</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../TimeFormatter.html" title="RSpecTracer::TimeFormatter (module)">TimeFormatter</a></span></span><span class='period'>.</span><span class='id identifier rubyid_format_time'><span class='object_link'><a href="../TimeFormatter.html#format_time-class_method" title="RSpecTracer::TimeFormatter.format_time (method)">format_time</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_ending'>ending</span> <span class='op'>-</span> <span class='id identifier rubyid_starting'>starting</span><span class='rparen'>)</span>
+
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'><span class='object_link'><a href="../Logger.html#debug-instance_method" title="RSpecTracer::Logger#debug (method)">debug</a></span></span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer merged parallel tests reports (took </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_elapsed'>elapsed</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_log_rollups?'>log_rollups?</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="narrator?-class_method">
+  
+    .<strong>narrator?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Narrator = first process. TEST_ENV_NUMBER is either '' or '1'
+for the first worker under parallel_tests; otherwise '2', '3',
+etc. When the gem is not running under parallel_tests, the
+single process is its own narrator.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+81
+82
+83
+84
+85
+86</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 81</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_narrator?'>narrator?</span>
+  <span class='kw'>return</span> <span class='kw'>true</span> <span class='kw'>unless</span> <span class='id identifier rubyid_active?'>active?</span>
+
+  <span class='id identifier rubyid_value'>value</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>TEST_ENV_NUMBER</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span>
+  <span class='id identifier rubyid_value'>value</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='op'>||</span> <span class='id identifier rubyid_value'>value</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>1</span><span class='tstring_end'>&#39;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="peer_dirs_missing_done-class_method">
+  
+    .<strong>peer_dirs_missing_done</strong>(base_dir)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Set difference of <code>.boot</code>-bearing peer dirs and <code>.done</code>-bearing
+peer dirs under <code>base_dir</code>. A returned entry means &quot;this peer
+registered but hasn't signaled completion yet&quot; — either still
+mid-flush, or crashed.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+243
+244
+245
+246
+247</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 243</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_peer_dirs_missing_done'>peer_dirs_missing_done</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_boot_dirs'>boot_dirs</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_dirs_with_marker'>peer_dirs_with_marker</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="#BOOT_MARKER_FILENAME-constant" title="RSpecTracer::RSpec::ParallelTests::BOOT_MARKER_FILENAME (constant)">BOOT_MARKER_FILENAME</a></span></span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_done_dirs'>done_dirs</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_dirs_with_marker'>peer_dirs_with_marker</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="#DONE_MARKER_FILENAME-constant" title="RSpecTracer::RSpec::ParallelTests::DONE_MARKER_FILENAME (constant)">DONE_MARKER_FILENAME</a></span></span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_boot_dirs'>boot_dirs</span> <span class='op'>-</span> <span class='id identifier rubyid_done_dirs'>done_dirs</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="peer_dirs_with_marker-class_method">
+  
+    .<strong>peer_dirs_with_marker</strong>(base_dir, marker_filename)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+251
+252
+253
+254</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 251</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_peer_dirs_with_marker'>peer_dirs_with_marker</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='id identifier rubyid_marker_filename'>marker_filename</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_paths'>paths</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_glob'>glob</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>parallel_tests_*</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_marker_filename'>marker_filename</span><span class='rparen'>)</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_paths'>paths</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="peer_paths_for-class_method">
+  
+    .<strong>peer_paths_for</strong>(base_dir)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>parallel_tests sets <code>PARALLEL_TEST_GROUPS = num_processes.to_s</code>
+for each child, where <code>num_processes</code> is the user-requested
+process count (Parallel.processor_count by default) - NOT the
+number of workers actually spawned. When <code>num_processes</code> and
+the spawned-worker count diverge (e.g. when the spec count caps
+the partition below the CPU count, or when shared-runner
+cgroup throttling shifts the visible CPU count between when
+the parent computed <code>num_processes</code> and the spec count is
+observed), iterating <code>1..ENV['PARALLEL_TEST_GROUPS']</code> either
+over-iterates (cheap; rm_rf on a non-existent path is a no-op)
+or UNDER-iterates (expensive; merge skips peers + purge leaves
+<code>parallel_tests_N</code> stragglers behind, breaking the integration
+spec at <code>spec/integration/parallel_tests_spec.rb:88</code>).</p>
+<p>Glob the actual filesystem state rather than reconstructing dir
+names from an env var with surprising semantics. The directory
+IS the source of truth for which workers ran. The wait at
+<code>finalize!</code> (<code>wait_for_other_processes_to_finish</code>) guarantees
+every other worker's at_exit has flushed its <code>parallel_tests_N</code>
+tree before this method runs, so the glob captures every peer.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+385
+386
+387
+388
+389</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 385</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_peer_paths_for'>peer_paths_for</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+  <span class='op'>::</span><span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_glob'>glob</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>parallel_tests_*</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_select'>select</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+    <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="purge_worker_dirs!-class_method">
+  
+    .<strong>purge_worker_dirs!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Sweep every <code>parallel_tests_*</code> subdirectory under each managed
+base path. Globbing matches the same source-of-truth contract
+documented on <code>peer_paths_for</code>: the directories that actually
+exist are exactly the workers that ran, regardless of what
+PARALLEL_TEST_GROUPS reports.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+449
+450
+451
+452
+453
+454
+455
+456</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 449</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_purge_worker_dirs!'>purge_worker_dirs!</span>
+  <span class='lbracket'>[</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage_path'>coverage_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_path'>path</span><span class='op'>|</span>
+    <span class='id identifier rubyid_base_dir'>base_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+    <span class='op'>::</span><span class='const'>Dir</span><span class='period'>.</span><span class='id identifier rubyid_glob'>glob</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>parallel_tests_*</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_worker_dir'>worker_dir</span><span class='op'>|</span>
+      <span class='op'>::</span><span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_rf'>rm_rf</span><span class='lparen'>(</span><span class='id identifier rubyid_worker_dir'>worker_dir</span><span class='rparen'>)</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="remove_lock_file!-class_method">
+  
+    .<strong>remove_lock_file!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+361
+362
+363</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 361</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remove_lock_file!'>remove_lock_file!</span>
+  <span class='op'>::</span><span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_rm_f'>rm_f</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_lock_file'>lock_file</span><span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="setup!-class_method">
+  
+    .<strong>setup!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Called from RSpecTracer.start when parallel_tests is active.
+Writes this worker's TEST_ENV_NUMBER into the shared lock file
+under an exclusive lock so the max-seen value ends up correct
+regardless of worker boot order, then drops the .boot
+breadcrumb so the elected worker can enumerate &quot;every peer
+that booted&quot; at finalize time.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 107</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_setup!'>setup!</span>
+  <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='id identifier rubyid_active?'>active?</span>
+
+  <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>parallel_tests</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>ParallelTests</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_track_test_env_number!'>track_test_env_number!</span>
+  <span class='id identifier rubyid_touch_boot!'>touch_boot!</span>
+  <span class='kw'>true</span>
+<span class='kw'>rescue</span> <span class='const'>LoadError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_error'><span class='object_link'><a href="../Logger.html#error-instance_method" title="RSpecTracer::Logger#error (method)">error</a></span></span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>Failed to load parallel_tests gem (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='kw'>false</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="touch_boot!-class_method">
+  
+    .<strong>touch_boot!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Write <code>parallel_tests_N/.rspec_tracer_boot</code> with this worker's
+pid + TEST_ENV_NUMBER + timestamp. Source-of-truth for &quot;this
+worker booted past RSpecTracer.start&quot;, consumed by the elected
+worker's finalize-time peer enumeration. Idempotent: a re-run
+of setup! overwrites with current values.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 124</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_touch_boot!'>touch_boot!</span>
+  <span class='op'>::</span><span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span>
+    <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="#BOOT_MARKER_FILENAME-constant" title="RSpecTracer::RSpec::ParallelTests::BOOT_MARKER_FILENAME (constant)">BOOT_MARKER_FILENAME</a></span></span><span class='rparen'>)</span><span class='comma'>,</span>
+    <span class='op'>::</span><span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_generate'>generate</span><span class='lparen'>(</span>
+      <span class='label'>pid:</span> <span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_pid'>pid</span><span class='comma'>,</span>
+      <span class='label'>test_env_number:</span> <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>TEST_ENV_NUMBER</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='comma'>,</span>
+      <span class='label'>started_at:</span> <span class='op'>::</span><span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='period'>.</span><span class='id identifier rubyid_iso8601'>iso8601</span>
+    <span class='rparen'>)</span>
+  <span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="../Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer: failed to write boot marker (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+  <span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="touch_done!-class_method">
+  
+    .<strong>touch_done!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Drop <code>parallel_tests_N/.rspec_tracer_done</code> as a flush-complete
+signal for the elected worker's verification loop. The cache
+dir already exists by this point (run_finalize mkdir_p's it
+earlier in the at_exit chain); the explicit mkdir_p here is
+belt-and-suspenders for the no-examples / early-return paths.
+Graceful-degradation rescue keeps a marker-write failure from
+propagating into the user's exit status.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 195</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_touch_done!'>touch_done!</span>
+  <span class='op'>::</span><span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span>
+    <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="#DONE_MARKER_FILENAME-constant" title="RSpecTracer::RSpec::ParallelTests::DONE_MARKER_FILENAME (constant)">DONE_MARKER_FILENAME</a></span></span><span class='rparen'>)</span><span class='comma'>,</span>
+    <span class='op'>::</span><span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='period'>.</span><span class='id identifier rubyid_iso8601'>iso8601</span>
+  <span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+  <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="../Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer: failed to write done marker (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
+  <span class='rparen'>)</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="track_test_env_number!-class_method">
+  
+    .<strong>track_test_env_number!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 310</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_track_test_env_number!'>track_test_env_number!</span>
+  <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_open'>open</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_lock_file'>lock_file</span><span class='comma'>,</span> <span class='op'>::</span><span class='const'>File</span><span class='op'>::</span><span class='const'>RDWR</span> <span class='op'>|</span> <span class='op'>::</span><span class='const'>File</span><span class='op'>::</span><span class='const'>CREAT</span><span class='comma'>,</span> <span class='int'>0o644</span><span class='rparen'>)</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_f'>f</span><span class='op'>|</span>
+    <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_flock'>flock</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>File</span><span class='op'>::</span><span class='const'>LOCK_EX</span><span class='rparen'>)</span>
+
+    <span class='id identifier rubyid_test_num'>test_num</span> <span class='op'>=</span> <span class='lbracket'>[</span><span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_read'>read</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='comma'>,</span> <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>TEST_ENV_NUMBER</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_to_i'>to_i</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_max'>max</span>
+
+    <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_rewind'>rewind</span>
+    <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_test_num'>test_num</span><span class='embexpr_end'>}</span><span class='tstring_content'>\n</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_flush'>flush</span>
+    <span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_truncate'>truncate</span><span class='lparen'>(</span><span class='id identifier rubyid_f'>f</span><span class='period'>.</span><span class='id identifier rubyid_pos'>pos</span><span class='rparen'>)</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="verbose?-class_method">
+  
+    .<strong>verbose?</strong>  &#x21d2; <tt>Boolean</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>Boolean</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+90
+91
+92</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 90</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_verbose?'>verbose?</span>
+  <span class='op'>::</span><span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_VERBOSE</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span> <span class='op'>==</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>true</span><span class='tstring_end'>&#39;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="wait_for_peer_done_markers!-class_method">
+  
+    .<strong>wait_for_peer_done_markers!</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Block until every peer that wrote <code>.boot</code> has also written
+<code>.done</code>, or the deadline elapses. Polled at 50ms — fine
+enough that the typical &quot;barrier returned a tick early&quot; case
+closes within one or two polls, coarse enough not to dominate
+CPU.</p>
+<p>On timeout we log a warn and proceed: a peer that never wrote
+<code>.done</code> either crashed (then its dir is orphan content; the
+subsequent <code>purge_worker_dirs!</code> cleans it) or is genuinely
+hung (the elected can't fix that — we choose merge correctness
+over indefinite wait).</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/rspec/parallel_tests.rb', line 218</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_wait_for_peer_done_markers!'>wait_for_peer_done_markers!</span>
+  <span class='id identifier rubyid_base_dir'>base_dir</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_dirname'>dirname</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_deadline'>deadline</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span> <span class='op'>+</span> <span class='const'><span class='object_link'><a href="#PEER_DONE_DEADLINE_SECONDS-constant" title="RSpecTracer::RSpec::ParallelTests::PEER_DONE_DEADLINE_SECONDS (constant)">PEER_DONE_DEADLINE_SECONDS</a></span></span>
+
+  <span class='id identifier rubyid_loop'>loop</span> <span class='kw'>do</span>
+    <span class='id identifier rubyid_missing'>missing</span> <span class='op'>=</span> <span class='id identifier rubyid_peer_dirs_missing_done'>peer_dirs_missing_done</span><span class='lparen'>(</span><span class='id identifier rubyid_base_dir'>base_dir</span><span class='rparen'>)</span>
+    <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_missing'>missing</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+    <span class='kw'>if</span> <span class='op'>::</span><span class='const'>Process</span><span class='period'>.</span><span class='id identifier rubyid_clock_gettime'>clock_gettime</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Process</span><span class='op'>::</span><span class='const'>CLOCK_MONOTONIC</span><span class='rparen'>)</span> <span class='op'>&gt;=</span> <span class='id identifier rubyid_deadline'>deadline</span>
+      <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="../Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSpec tracer: peers booted without finishing within </span><span class='tstring_end'>&#39;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="#PEER_DONE_DEADLINE_SECONDS-constant" title="RSpecTracer::RSpec::ParallelTests::PEER_DONE_DEADLINE_SECONDS (constant)">PEER_DONE_DEADLINE_SECONDS</a></span></span><span class='embexpr_end'>}</span><span class='tstring_content'>s: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_missing'>missing</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>; </span><span class='tstring_end'>&quot;</span></span> \
+        <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>proceeding (peer dirs will be purged regardless of completion state)</span><span class='tstring_end'>&#39;</span></span>
+      <span class='rparen'>)</span>
+      <span class='kw'>return</span>
+    <span class='kw'>end</span>
+
+    <span class='id identifier rubyid_sleep'>sleep</span> <span class='float'>0.05</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:36 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

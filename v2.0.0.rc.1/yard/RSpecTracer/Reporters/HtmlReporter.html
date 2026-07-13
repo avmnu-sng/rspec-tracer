@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  Class: RSpecTracer::Reporters::HtmlReporter
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="../../css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="../../css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "RSpecTracer::Reporters::HtmlReporter";
+  relpath = '../../';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="../../js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="../../js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="../../class_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="../../_index.html">Index (H)</a> &raquo;
+    <span class='title'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span> &raquo; <span class='title'><span class='object_link'><a href="../Reporters.html" title="RSpecTracer::Reporters (module)">Reporters</a></span></span>
+     &raquo; 
+    <span class="title">HtmlReporter</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="../../class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><h1>Class: RSpecTracer::Reporters::HtmlReporter
+  
+  
+  <span class="private note title">Private</span>
+</h1>
+<div class="box_info">
+  
+  <dl>
+    <dt>Inherits:</dt>
+    <dd>
+      <span class="inheritName"><span class='object_link'><a href="Base.html" title="RSpecTracer::Reporters::Base (class)">Base</a></span></span>
+      
+        <ul class="fullTree">
+          <li>Object</li>
+          
+            <li class="next"><span class='object_link'><a href="Base.html" title="RSpecTracer::Reporters::Base (class)">Base</a></span></li>
+          
+            <li class="next">RSpecTracer::Reporters::HtmlReporter</li>
+          
+        </ul>
+        <a href="#" class="inheritanceTree">show all</a>
+      
+    </dd>
+  </dl>
+  
+
+  
+  
+  
+  
+  
+
+  
+
+  
+  <dl>
+    <dt>Defined in:</dt>
+    <dd>lib/rspec_tracer/reporters/html_reporter.rb
+</dd>
+  </dl>
+  
+</div>
+
+<h2>Overview</h2><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This class is part of a private API.</strong>
+  You should avoid using this class if possible, as it may be removed or be changed in the future.
+</p>
+<p>Renders a single-page HTML report at <code>&lt;report_dir&gt;/index.html</code>
+consuming the canonical payload built by <code>PayloadBuilder</code>
+(shared with <code>JsonReporter</code>).</p>
+<p>Build output - the frontend bundle at
+<code>lib/rspec_tracer/reporters/html/dist/</code> - is committed to the
+repo; users never run npm. At emit time this reporter:</p>
+<pre class="code ruby"><code class="ruby">1. Reads the template at `html/dist/index.html`.
+2. Replaces the `&lt;!-- RSPEC_TRACER_FALLBACK --&gt;` marker with
+ server-rendered `&lt;table&gt;` HTML for each of the 5 report
+ types (satisfies the &quot;works without JavaScript&quot; AC; the
+ Preact bundle removes these on hydrate).
+3. Replaces the body of `&lt;script id=&quot;report-data&quot;&gt;` with the
+ full payload JSON.
+4. Copies `html/dist/assets/` next to the output.
+5. Writes the finished file.
+</code></pre>
+<p>Failure modes are graceful: the Registry wraps <code>#generate</code> in
+an isolated rescue, so a template-missing or template-corrupt
+condition logs a warning and returns nil rather than propagating
+a non-zero exit into the user's test suite.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+  
+    <h2>
+      Constant Summary
+      <small><a href="#" class="constants_summary_toggle">collapse</a></small>
+    </h2>
+
+    <dl class="constants">
+      
+        <dt id="FILENAME-constant" class="">FILENAME =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>index.html</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="ASSETS_DIR-constant" class="">ASSETS_DIR =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>assets</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="FALLBACK_MARKER-constant" class="">FALLBACK_MARKER =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;!-- RSPEC_TRACER_FALLBACK --&gt;</span><span class='tstring_end'>&#39;</span></span></pre></dd>
+      
+        <dt id="REPORT_DATA_REGEX-constant" class="">REPORT_DATA_REGEX =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal constant.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='tstring'><span class='regexp_beg'>%r{</span><span class='tstring_content'>&lt;script id=&quot;report-data&quot; type=&quot;application/json&quot;&gt;.*?&lt;/script&gt;</span><span class='regexp_end'>}m</span></span></pre></dd>
+      
+        <dt id="DIST_DIR-constant" class="">DIST_DIR =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Absolute path to the committed frontend build under
+<code>lib/rspec_tracer/reporters/html/dist/</code>. Computed once at load
+time so tests can stub <code>DIST_DIR</code> if they need a different
+template root.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>html/dist</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid___dir__'>__dir__</span><span class='rparen'>)</span></pre></dd>
+      
+    </dl>
+  
+
+
+
+
+
+
+  <h2>Instance Attribute Summary</h2>
+  
+  <h3 class="inherited">Attributes inherited from <span class='object_link'><a href="Base.html" title="RSpecTracer::Reporters::Base (class)">Base</a></span></h3>
+  <p class="inherited"><span class='object_link'><a href="Base.html#logger-instance_method" title="RSpecTracer::Reporters::Base#logger (method)">#logger</a></span>, <span class='object_link'><a href="Base.html#options-instance_method" title="RSpecTracer::Reporters::Base#options (method)">#options</a></span>, <span class='object_link'><a href="Base.html#report_dir-instance_method" title="RSpecTracer::Reporters::Base#report_dir (method)">#report_dir</a></span>, <span class='object_link'><a href="Base.html#run_metadata-instance_method" title="RSpecTracer::Reporters::Base#run_metadata (method)">#run_metadata</a></span>, <span class='object_link'><a href="Base.html#snapshot-instance_method" title="RSpecTracer::Reporters::Base#snapshot (method)">#snapshot</a></span></p>
+
+
+  
+    <h2>
+      Instance Method Summary
+      <small><a href="#" class="summary_toggle">collapse</a></small>
+    </h2>
+
+    <ul class="summary">
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#generate-instance_method" title="#generate (instance method)">#<strong>generate</strong>  &#x21d2; String<sup>?</sup> </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.</p></div></span>
+  
+</li>
+
+      
+    </ul>
+    
+  
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <h3 class="inherited">Methods inherited from <span class='object_link'><a href="Base.html" title="RSpecTracer::Reporters::Base (class)">Base</a></span></h3>
+  <p class="inherited"><span class='object_link'><a href="Base.html#initialize-instance_method" title="RSpecTracer::Reporters::Base#initialize (method)">#initialize</a></span>, <span class='object_link'><a href="Base.html#no_op%3F-instance_method" title="RSpecTracer::Reporters::Base#no_op? (method)">#no_op?</a></span></p>
+<div id="constructor_details" class="method_details_list">
+  <h2>Constructor Details</h2>
+  
+    <p class="notice">This class inherits a constructor from <span class='object_link'><a href="Base.html#initialize-instance_method" title="RSpecTracer::Reporters::Base#initialize (method)">RSpecTracer::Reporters::Base</a></span></p>
+  
+</div>
+
+
+  <div id="instance_method_details" class="method_details_list">
+    <h2>Instance Method Details</h2>
+
+    
+      <div class="method_details first">
+  <h3 class="signature first" id="generate-instance_method">
+  
+    #<strong>generate</strong>  &#x21d2; <tt>String</tt><sup>?</sup> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Concrete implementation of <span class='object_link'><a href="Base.html#generate-instance_method" title="RSpecTracer::Reporters::Base#generate (method)">Base#generate</a></span>.
+Renders the bundled HTML template with the run payload and writes
+<code>index.html</code> (plus the asset directory) under <span class='object_link'><a href="Base.html#report_dir-instance_method" title="RSpecTracer::Reporters::Base#report_dir (method)">Base#report_dir</a></span>.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>String</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>absolute path of the written index, or nil
+when there is nothing to render.</p></div>
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/reporters/html_reporter.rb', line 62</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_generate'>generate</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_no_op?'>no_op?</span>
+
+  <span class='id identifier rubyid_template'>template</span> <span class='op'>=</span> <span class='id identifier rubyid_read_template'>read_template</span>
+  <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_template'>template</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+  <span class='id identifier rubyid_payload_json'>payload_json</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="PayloadBuilder.html" title="RSpecTracer::Reporters::PayloadBuilder (class)">PayloadBuilder</a></span></span><span class='period'>.</span><span class='id identifier rubyid_build'><span class='object_link'><a href="PayloadBuilder.html#build-class_method" title="RSpecTracer::Reporters::PayloadBuilder.build (method)">build</a></span></span><span class='lparen'>(</span>
+    <span class='label'>snapshot:</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span>
+    <span class='label'>run_metadata:</span> <span class='id identifier rubyid_run_metadata'>run_metadata</span><span class='comma'>,</span>
+    <span class='label'>generated_at:</span> <span class='id identifier rubyid_generated_at_override'>generated_at_override</span>
+  <span class='rparen'>)</span>
+  <span class='id identifier rubyid_rendered'>rendered</span> <span class='op'>=</span> <span class='id identifier rubyid_inject'>inject</span><span class='lparen'>(</span><span class='id identifier rubyid_template'>template</span><span class='comma'>,</span> <span class='id identifier rubyid_payload_json'>payload_json</span><span class='rparen'>)</span>
+
+  <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='id identifier rubyid_report_dir'>report_dir</span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_copy_assets'>copy_assets</span>
+  <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_report_dir'>report_dir</span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="#FILENAME-constant" title="RSpecTracer::Reporters::HtmlReporter::FILENAME (constant)">FILENAME</a></span></span><span class='rparen'>)</span>
+  <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_write'>write</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_rendered'>rendered</span><span class='comma'>,</span> <span class='label'>encoding:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>UTF-8</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_logger'>logger</span><span class='op'>&amp;.</span><span class='id identifier rubyid_debug'>debug</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: wrote HTML report to </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_path'>path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+  <span class='id identifier rubyid_path'>path</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
+
+</div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:37 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

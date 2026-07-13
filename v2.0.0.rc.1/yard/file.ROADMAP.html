@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: ROADMAP
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "ROADMAP";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: ROADMAP</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h1 id="Roadmap">Roadmap</h1>
+<p>This is the public roadmap for rspec-tracer. The <strong>live status</strong> of
+specific work items lives on the
+<a href="https://github.com/users/avmnu-sng/projects/1">rspec-tracer roadmap project board</a>.</p>
+<p>This file summarizes phases at a high level — what shipped, what's
+next, what's being considered. Detail per item lives in
+<a href="CHANGELOG.md"><code>CHANGELOG.md</code></a>, the project board, and the linked
+issues / PRs.</p>
+<hr />
+<h2 id="2_0___in_pre_release">2.0 — in pre-release</h2>
+<p>The 2.0 line is a ground-up architecture rewrite around the
+input-taxonomy mental model: every test is a pure function of its
+inputs; tracking is input identification; cache invalidation is
+input-digest mismatch. Currently on <code>2.0.0.rc.1</code>; observation
+window open before the <code>2.0.0</code> final cut.</p>
+<p>The full per-release feature list is in <a href="CHANGELOG.md"><code>CHANGELOG.md</code></a>.
+The headline themes already shipped:</p>
+<ul>
+<li><strong>Pluggable storage</strong> — JSON (default; preserves 1.x layout) or
+SQLite (single-file).</li>
+<li><strong>Pluggable remote cache</strong> — S3 (preserves 1.x layout), filesystem,
+Redis (with optional TTL + PR-branch tracking sidecar).</li>
+<li><strong>Per-example <code>tracks:</code> DSL</strong> — annotate any example with extra
+inputs the tracker can't auto-observe (config files, env-var
+branches, non-Ruby deps).</li>
+<li><strong>Rails preset + auto-detection</strong> — <code>track_rails_defaults</code> attaches
+the common Rails-side declared globs in one DSL call; the engine
+attaches view + AR notification subscribers automatically when
+Rails is detected.</li>
+<li><strong><code>bin/rspec-tracer</code> CLI</strong> — opt-in for local-dev convenience
+(<code>doctor</code> / <code>cache:info</code> / <code>cache:clear</code> / <code>report:open</code> /
+<code>explain &lt;id&gt;</code>).</li>
+<li><strong>Flaky-test detection</strong> — automatic transition into <code>:flaky</code>
+registry status on across-run and within-run-retry fail→pass
+patterns. Surfaces in the HTML reporter's Flaky tab. (Restored
+in <code>2.0.0.pre.2</code> after a regression in the early 2.0 rewrite.)</li>
+<li><strong>Stable <code>example_id</code> across cosmetic edits</strong> — no thrash on
+blank-line edits, no load-order flip across files sharing a
+<code>describe</code> name, no line-shift instability on unnamed
+<code>it { ... }</code> / <code>specify { ... }</code> matchers. (Pervasive long-standing
+bug since v1.0.0; fully closed in <code>2.0.0.pre.2</code>.)</li>
+<li><strong>Boot-time warns</strong> for two common user-trust traps (SimpleCov
+load order; <code>track_ar_schema_notifications</code> precondition).</li>
+<li><strong>Ruby 3.1+ / Rails 7.0+ floors</strong>, Rails 8.0 CI-gated, JRuby 9.4
+supported, RSpec 3.12 / 3.13 supported, Ruby HEAD + TruffleRuby
+on best-effort tier.</li>
+</ul>
+<hr />
+<h2 id="What_s_coming_before_2_0_final">What's coming before 2.0 final</h2>
+<p>The remaining work in the 2.0 line, organized by theme. Specific items
+move between rc cycles as the project board shows live; the high-level
+shape:</p>
+<h3 id="Trust___observability__the_central_focus_">Trust + observability (the central focus)</h3>
+<p>The single most-requested area from pre-release feedback. The strategic
+bet for 2.0 final is to make correctness <strong>provable</strong>, not just claim it.
+Items:</p>
+<ul>
+<li><strong>Shadow / audit mode.</strong> Run the full suite without skipping anything;
+record what <em>would</em> have been skipped and which (if any) of those
+would have failed. Designed for teams to run silently in CI for 2-3
+weeks to accumulate empirical &quot;0 missed failures across N runs&quot;
+evidence before flipping the switch. The canonical adoption ramp for
+correctness-sensitive infrastructure. Lands in <code>v2.0.0.rc.2</code>.</li>
+<li><strong>Soundness tier documentation.</strong> Explicit classification of what
+rspec-tracer guarantees: <strong>sound</strong> (file-content digests, explicit
+<code>tracks:</code>, env snapshot), <strong>conservative</strong> (boot-set whole-suite
+invalidator, Rails <code>lib/</code> engine-load fallback), <strong>heuristic</strong> (Rails
+subscriber attribution under common configs), <strong>blind spot</strong> (runtime
+metaprogramming, monkey-patches, hidden reflection -- called out
+prominently). Shipped -- see
+<a href="ARCHITECTURE.md#soundness-model">ARCHITECTURE.md</a>.</li>
+<li><strong><code>safety_mode :paranoid | :balanced | :aggressive</code> preset DSL.</strong>
+Named presets that toggle existing knobs (<code>transitive_load_tracking</code>,
+<code>whole_suite_invalidators</code>, <code>always_re_run_failed_examples</code>,
+per-example <code>tracks:</code>) so risk-averse teams can adopt in steps. The
+default stays balanced; paranoid widens invalidation; aggressive
+trusts inference more.</li>
+<li><strong><code>bin/rspec-tracer blast-radius &lt;file_path&gt;</code> CLI.</strong> Inverse of
+<code>explain</code>. Outputs <em>&quot;if you modify this file, it triggers N examples
+across M files.&quot;</em> Lets developers spot architectural drift before
+the PR review; turns the dependency graph from invisible infra into
+inspectable insight. Shipped -- see
+<a href="COOKBOOK.md#16-measure-a-files-blast-radius">COOKBOOK.md</a>.</li>
+<li><strong><code>bin/rspec-tracer explain --not-run &lt;example_id&gt;</code>.</strong> The &quot;why
+did this NOT run?&quot; inverse of the existing <code>explain</code>. Closes the
+most-requested observability gap from pre-release. Shipped -- see
+<a href="COOKBOOK.md#12-debug-why-did-this-test-re-run">COOKBOOK.md</a>.</li>
+<li><strong>Confidence scoring on per-run summary.</strong> Terminal output extends
+to show what proportion of selection decisions came from explicit
+vs inferred dependencies; surfaces invalidation hotspots.</li>
+<li><strong>Auto-fallback when self-measured confidence is low.</strong> Runtime
+decision logic that consumes the confidence score: if confidence
+drops below a configurable threshold OR N consecutive runs show
+downward drift, automatically fall back to full-suite execution
+with a clear warn line. Converts the trust story from
+<em>observe-and-report</em> to <em>observe-and-self-defend</em> — the tool
+structurally cannot skip silently when its own confidence is low.</li>
+</ul>
+<h3 id="Flaky_detection_as_first_class">Flaky detection as first-class</h3>
+<p>Building on the restored <code>:flaky</code> registry status:</p>
+<ul>
+<li><strong>Auto-quarantine for N consecutive flake observations.</strong> Configurable
+threshold; a flaky example is automatically skipped from the
+determine-failure decision until the user clears it. Reduces the
+&quot;flaky test broke our build&quot; overhead. Competitive with paid SaaS
+flaky-test analytics platforms.</li>
+<li><strong>Flaky-test trending.</strong> Which specs became flaky recently; which
+are intermittent vs persistently flaky; per-spec quarantine timeline.
+Surfaces in the HTML reporter as a first-class tab.</li>
+</ul>
+<h3 id="Rails_per_example_precision_under__eager_load___true_">Rails per-example precision under <code>eager_load = true</code></h3>
+<p>Currently when <code>config.eager_load = true</code> (Rails CI default), all
+<code>app/</code> files load at boot and any <code>app/</code> edit triggers the whole-suite
+invalidator — safe but coarser than per-example attribution.</p>
+<ul>
+<li><strong><code>track_class_attribution</code> config DSL</strong> (opt-in by default). Installs
+class-dispatch tracking via <code>TracePoint(:class)</code> at boot +
+<code>TracePoint(:call)</code> per example to trim invalidator scope to examples
+that actually touched the changed class. The <code>TracePoint</code> overhead is
+real and documented; users opt in per their cost / precision trade-off.
+<em>(Originally planned for 2.1; promoted to the 2.0 final scope because
+per-example precision under the most common Rails CI configuration is
+a trust story, not a feature story. Implementation is evidence-gated
+on shadow-mode data + reference-adopter feedback during rc.3 — if
+whole-suite invalidation under <code>eager_load = true</code> proves not to be
+the binding constraint on real-world Rails apps, the feature defers
+back to 2.1.)</em></li>
+</ul>
+<h3 id="Documentation___positioning">Documentation + positioning</h3>
+<p>The same release ramp also reshapes how rspec-tracer is presented:</p>
+<ul>
+<li><strong>README restructured</strong> as a conversion-oriented landing page (one
+benchmark number, one setup command, one safety-story sentence, then
+depth links). The 6-bucket input taxonomy and engineering-depth
+material moves to ARCHITECTURE.md / COOKBOOK.md where it already
+partially lives.</li>
+<li><strong>Cost framing in plain dollars + CI-minutes</strong> — the value made
+legible to the platform-team buyer, not just the developer adopter.</li>
+<li><strong>CI-recipes discoverability</strong> — <code>docs/CI_RECIPES.md</code> (translations
+of the GHA cache pattern to CircleCI / GitLab CI / Buildkite /
+Heroku CI) surfaced prominently in the README so teams can plug in
+without writing custom orchestration.</li>
+<li><strong>Data-stays-local positioning</strong> — explicit framing that rspec-tracer
+runs entirely inside customer infrastructure (no telemetry, no
+per-seat cost, no vendor egress). Material for regulated industries
+where commercial test-optimization SaaS isn't viable.</li>
+<li><strong>Stated Ruby support / EOL policy</strong> in the README's
+<a href="README.md#maintenance">Maintenance section</a>. Closes
+&quot;single-maintainer infrastructure on volatile tooling&quot; as an
+adoption objection.</li>
+</ul>
+<h3 id="Distribution___adoption">Distribution + adoption</h3>
+<p>Running in parallel with the engineering cycles above — not after
+2.0 ships. The recognition: after the rc cycles complete, the
+binding constraint flips from <em>&quot;is the tool trustworthy enough&quot;</em>
+to <em>&quot;does anyone know it exists and will a credible team vouch
+for it.&quot;</em> Owned as a first-class workstream rather than treated
+as an afterthought.</p>
+<ul>
+<li><strong>Reference adopter recruitment + first public case study.</strong>
+Warm-target outreach to known active users + co-authored case
+study published alongside the GA tag. Self-reported maintainer
+benchmarks are discounted by default; third-party <em>&quot;we cut CI
+from N min to M min, here's the config&quot;</em> is the artifact that
+closes adoption-side Q&amp;A loops.</li>
+<li><strong>Conference talks + technical blog series.</strong> CFP submissions
+for RubyConf / Rails World in the GA window; 3-part blog series
+anchored to the trust + soundness-ledger narrative; newsletter
+pitches to Ruby Weekly + This Week in Rails.</li>
+<li><strong>Ongoing community presence.</strong> Maintainer presence in
+3+ Ruby/Rails community real-time channels (Discord / Slack)
+with sustained ~1-2 hr/week cadence. Lower-overhead than
+conferences/blog but compounds over time.</li>
+</ul>
+<p>The distribution workstream feeds the engineering cycles too:
+reference-adopter feedback empirically validates whether
+<code>track_class_attribution</code> under <code>eager_load = true</code> is the
+binding constraint adopters care about (vs a theoretical concern),
+which influences whether that feature lands in 2.0 GA or defers
+back to 2.1.</p>
+<hr />
+<h2 id="2_0___final">2.0 — final</h2>
+<p>When the items above have shipped + observed + community feedback
+has been bucketed, <code>2.0.0</code> final tags. Target: late summer / early
+fall 2026. The &quot;what's in 2.0&quot; list at that point will be the
+shipped section above + this in-flight section consolidated.</p>
+<p>A <strong>published soundness ledger</strong> lands alongside 2.0 final: shadow
+mode run against 4-5 open-source Rails suites (Mastodon, Spree,
+Solidus, Refinery, plus 1-2 to be decided) with the false-skip count</p>
+<ul>
+<li>false-pass count + postmortems published to gh-pages under a stable
+URL. Refreshes periodically. The empirical trust artifact that
+validates the algorithm against real workloads, not maintainer
+benchmarks.</li>
+</ul>
+<hr />
+<h2 id="2_1___planned">2.1 — planned</h2>
+<p>A focused minor release adding capability + polish gathered from 2.0
+feedback. The scope below is the committed direction; the project
+board carries the live list as items firm up.</p>
+<ul>
+<li>
+<strong>Anti-pattern detection</strong> — turning the dependency graph into a
+test-health analyzer. Specific detectors:
+<ul>
+<li><strong>Order-dependent specs</strong> — compare dep graphs across <code>--order random</code> seeds; flag specs that resolve differently.</li>
+<li><strong>Invalidation hotspots</strong> — files whose edits would invalidate
+more than N% of the suite; surfaces tight coupling.</li>
+<li><strong>Over-coupled specs</strong> — examples that depend on more than N
+files; suggests refactor candidates.</li>
+</ul>
+</li>
+<li><strong>Dependency graph visualization</strong> — <code>rspec-tracer graph &lt;spec_path&gt;</code>
+for terminal-ASCII output, plus an HTML view. Same data the tracker
+already maintains, surfaced as inspectable infrastructure.</li>
+<li><strong>DatabaseCleaner strategy-aware narrowing</strong> — the residual narrow-
+attribution gap when DatabaseCleaner truncation / transaction
+strategies fire <code>sql.active_record</code> events inside the per-example
+bucket. Today's boot-time warn explains the trade-off; 2.1 closes it.</li>
+<li><strong>Polish + ergonomics gathered from 2.0 feedback</strong> — items surfaced
+via <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>
+and issue triage during the 2.0 series. The project board's
+&quot;Planned (2.1)&quot; column carries the live list.</li>
+</ul>
+<hr />
+<h2 id="2_2_and_beyond___considering">2.2 and beyond — considering</h2>
+<p>Forward-looking themes; nothing committed. Items move from
+&quot;considering&quot; to &quot;planned&quot; when there's a concrete design + a
+maintainer commitment to ship. Open a Discussion if any of these
+matter to your workflow — community signal directly informs which
+move forward.</p>
+<ul>
+<li><strong>Replay mode</strong> — <code>rspec-tracer replay &lt;commit_sha&gt;</code> for CI
+debugging investigations. Re-run the selective decision against
+a historical commit's state to understand why a past run made
+the choices it did.</li>
+<li><strong>Deeper ActiveJob / ActionMailer / initializer attribution</strong> —
+the residual Rails-specific attribution surface that 2.0 +
+<code>track_class_attribution</code> don't reach.</li>
+<li><strong>Minitest adapter.</strong> The architecture is RSpec-first today; a
+Minitest adapter is feasible as a separate gem reusing the
+Tracker / Storage / RemoteCache layers.</li>
+<li><strong>Editor-side observability</strong> — per-example &quot;explain why this
+re-ran&quot; surfaced in an LSP or VS Code extension, so the reason
+shows up next to the failing assertion.</li>
+<li><strong>Monorepo per-app cache discovery</strong> — <code>track_rails_defaults</code>
+with auto-detection of multiple Rails apps under one git root.</li>
+<li><strong>Plugin / custom-tracker extension point</strong> — first-class API for
+teams to write their own dependency-detection mechanism for the
+~5% blind spot Ruby's dynamism leaves.</li>
+</ul>
+<hr />
+<h2 id="Won_t_do">Won't do</h2>
+<p>Out of scope for the rspec-tracer line; better solved by adjacent
+tools or different products entirely.</p>
+<ul>
+<li><strong>Multi-language support</strong> (Python, JS, Go). The tracker is
+Ruby-<code>Coverage</code>-bound and the framework hooks are RSpec-bound.</li>
+<li><strong>Distributed test scheduling.</strong> That's <a href="https://docs.knapsackpro.com/">knapsack_pro</a> /
+<a href="https://github.com/Shopify/ci-queue">ci-queue</a> /
+<a href="https://buildkite.com/docs/test-splitting">buildkite-test-splitter</a>.
+rspec-tracer composes with them (the digest-partition primitive
+is exposed) but doesn't schedule.</li>
+<li><strong>General-purpose build tool.</strong> rspec-tracer is test-scoped;
+build / asset / deployment tracking is out of scope.</li>
+<li><strong>Bazel-grade soundness in a dynamic language.</strong> Ruby's
+metaprogramming makes Bazel-style declared-graph soundness
+impossible to deliver honestly. rspec-tracer's approach is
+<em>observable</em> soundness — explicit guarantees on what is and
+isn't tracked, plus shadow-mode empirical verification, plus
+opt-in <code>tracks: { ... }</code> for the residual blind spot. Trust comes
+from honesty about the limits, not from claiming Bazel parity.</li>
+<li><strong>AI-assisted test generation.</strong> Different product. Not what
+rspec-tracer is.</li>
+<li><strong>PR risk scoring + selective-review routing.</strong> Different products,
+even though the dependency graph could in principle feed them.
+rspec-tracer stays focused on test selection + test health; if
+someone wants to build the broader code-intelligence platform on
+top, the graph is exposed for that — but it's a separate project.</li>
+<li><strong>Telemetry / usage analytics.</strong> The &quot;data never leaves your
+infrastructure&quot; property is a deliberate design choice and a
+competitive differentiator. rspec-tracer will not collect
+telemetry, even anonymous opt-in. Visibility into adoption comes
+from Discussions, issues, and case studies.</li>
+</ul>
+<hr />
+<h2 id="How_to_influence_the_roadmap">How to influence the roadmap</h2>
+<ul>
+<li><strong>Bug reports + concrete feature requests</strong> → <a href="https://github.com/avmnu-sng/rspec-tracer/issues">GitHub Issues</a>.</li>
+<li><strong>&quot;Is X possible?&quot; / &quot;should rspec-tracer do Y?&quot;</strong> → <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>.</li>
+<li><strong>&quot;I want to contribute&quot;</strong> → <a href=".github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a>.</li>
+<li><strong>Sponsoring maintenance</strong> → sponsorship channels (GitHub Sponsors
+/ OpenCollective) are under consideration. Open a Discussion if
+your team would sponsor a release cadence or specific feature
+build-out — concrete commitments inform whether and how to set
+these up.</li>
+</ul>
+<hr />
+<h2 id="Maintenance___sustainability">Maintenance + sustainability</h2>
+<p>rspec-tracer is a single-maintainer project at the time of writing.
+The concrete steps taken to mitigate the bus-factor objection that
+platform teams legitimately raise on infrastructure adoption:</p>
+<ul>
+<li><strong>Stated Ruby support window.</strong> rspec-tracer commits to supporting
+Ruby versions until upstream Ruby Core reaches EOL plus 6 months.
+Currently CI-gated per the <a href="README.md#quick-start">README's Quick start</a>:
+Ruby 3.1, 3.2, 3.3, 3.4, 4.0 + JRuby 9.4. The version-by-version
+EOL table lives in the <a href="README.md#maintenance">README Maintenance section</a>.</li>
+<li><strong>Ruby HEAD + TruffleRuby on a best-effort tier.</strong> Neither is
+CI-gated on every PR, but breakage reported on a Ruby prerelease
+is treated as a high-priority bug, not a future-self problem. Goal:
+rspec-tracer should never be the reason a team can't upgrade Ruby.</li>
+<li><strong>Open governance commitment.</strong> Sponsorship channels (GitHub
+Sponsors / OpenCollective) are under consideration; if your team
+would sponsor a release cadence or specific feature build-out,
+open a Discussion. Concrete sponsorship interest informs whether
+to set these up.</li>
+<li><strong>All planning artifacts public</strong> (this roadmap + project board +
+CHANGELOG + ARCHITECTURE + soundness ledger when it ships).
+Nothing strategic lives only in the maintainer's head.</li>
+</ul>
+<p>If you're evaluating rspec-tracer for production use and the
+single-maintainer status is your blocker, <a href="https://github.com/avmnu-sng/rspec-tracer/discussions/new">open a Discussion</a> — the
+maintainer welcomes co-maintainer onboarding conversations and
+explicit governance commitments.</p></div></div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:33 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

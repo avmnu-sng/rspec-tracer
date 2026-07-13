@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: preset
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "preset";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: preset</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require_relative'>require_relative</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>../configuration</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal Rails — see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='comment'>#
+</span>  <span class='comment'># Internal Rails-integration subsystem (Railtie + ActiveSupport
+</span>  <span class='comment'># notifications + I18n hooks + the default-glob preset). Activated
+</span>  <span class='comment'># when the user&#39;s spec_helper requires `rspec_tracer/rails`.
+</span>  <span class='kw'>module</span> <span class='const'>Rails</span>
+    <span class='comment'># Default Rails glob preset - the Coverage-invisible surface that
+</span>    <span class='comment'># rspec-tracer cannot auto-observe via its standard Ruby-execution
+</span>    <span class='comment'># tracking. Enabled by `track_rails_defaults` in .rspec-tracer.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Covered categories (each toggleable via the `except:` kwarg):
+</span>    <span class='comment'>#
+</span>    <span class='comment'>#   :views     - app/views/**/* (ERB / Slim / Haml / JBuilder)
+</span>    <span class='comment'>#   :helpers   - app/helpers/**/*.rb (tracked as declared so helper
+</span>    <span class='comment'>#                files re-invalidate even before Zeitwerk loads them)
+</span>    <span class='comment'>#   :locales   - config/locales/**/*.yml (I18n data files)
+</span>    <span class='comment'>#   :config    - config/*.yml + config/routes.rb (database.yml,
+</span>    <span class='comment'>#                cable.yml, storage.yml, routes - the YAML + routes
+</span>    <span class='comment'>#                dispatcher are all config surface)
+</span>    <span class='comment'>#   :schema    - db/schema.rb + db/structure.sql
+</span>    <span class='comment'>#   :factories - spec/factories/**/*.rb + test/factories/**/*.rb
+</span>    <span class='comment'>#   :fixtures  - spec/fixtures/**/*.{yml,yaml,json} + same under test/
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Intentionally omitted:
+</span>    <span class='comment'>#   - Gemfile.lock, .ruby-version, .rspec-tracer: already tracked as
+</span>    <span class='comment'>#     whole-suite invalidators (Tracker::WholeSuiteInvalidators).
+</span>    <span class='comment'>#     Listing them as :declared would cross input-kind categories.
+</span>    <span class='comment'>#   - config/environments/*.rb, config/app_constants.rb: loaded as
+</span>    <span class='comment'>#     Ruby at Rails boot, so LoadedFilesTracker.@boot_set captures
+</span>    <span class='comment'>#     them already as transitive-load inputs.
+</span>    <span class='comment'>#
+</span>    <span class='comment'># Unknown `except:` keys raise Configuration::InvalidUsageError, same
+</span>    <span class='comment'># pattern as `storage_backend(:bogus)`.
+</span>    <span class='kw'>class</span> <span class='const'>Preset</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>DEFAULTS</span> <span class='op'>=</span> <span class='lbrace'>{</span>
+        <span class='label'>views:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>app/views/**/*</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>helpers:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>app/helpers/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>locales:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>config/locales/**/*.yml</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>config:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>config/*.yml</span><span class='words_sep'> </span><span class='tstring_content'>config/routes.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>schema:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>db/schema.rb</span><span class='words_sep'> </span><span class='tstring_content'>db/structure.sql</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>factories:</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>spec/factories/**/*.rb</span><span class='words_sep'> </span><span class='tstring_content'>test/factories/**/*.rb</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span><span class='comma'>,</span>
+        <span class='label'>fixtures:</span> <span class='qwords_beg'>%w[</span><span class='words_sep'>
+</span><span class='words_sep'>          </span><span class='tstring_content'>spec/fixtures/**/*.{yml,yaml,json}</span><span class='words_sep'>
+</span><span class='words_sep'>          </span><span class='tstring_content'>test/fixtures/**/*.{yml,yaml,json}</span><span class='words_sep'>
+</span><span class='words_sep'>        </span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>ALLOWED_KEYS</span> <span class='op'>=</span> <span class='const'>DEFAULTS</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span><span class='period'>.</span><span class='id identifier rubyid_to_set'>to_set</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_globs'>globs</span><span class='lparen'>(</span><span class='label'>except:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_excluded'>excluded</span> <span class='op'>=</span> <span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
+
+        <span class='const'>DEFAULTS</span>
+          <span class='period'>.</span><span class='id identifier rubyid_except'>except</span><span class='lparen'>(</span><span class='op'>*</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
+          <span class='period'>.</span><span class='id identifier rubyid_values'>values</span>
+          <span class='period'>.</span><span class='id identifier rubyid_flatten'>flatten</span>
+          <span class='period'>.</span><span class='id identifier rubyid_uniq'>uniq</span>
+          <span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize_excluded'>normalize_excluded</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span>
+        <span class='const'>Array</span><span class='lparen'>(</span><span class='id identifier rubyid_except'>except</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_compact'>compact</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_validate_excluded!'>validate_excluded!</span><span class='lparen'>(</span><span class='id identifier rubyid_excluded'>excluded</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_unknown'>unknown</span> <span class='op'>=</span> <span class='id identifier rubyid_excluded'>excluded</span><span class='period'>.</span><span class='id identifier rubyid_reject'>reject</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_key'>key</span><span class='op'>|</span> <span class='const'>ALLOWED_KEYS</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_key'>key</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='kw'>return</span> <span class='kw'>if</span> <span class='id identifier rubyid_unknown'>unknown</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_raise'>raise</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Configuration.html" title="RSpecTracer::Configuration (module)">Configuration</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="RSpecTracer/Configuration/InvalidUsageError.html" title="RSpecTracer::Configuration::InvalidUsageError (class)">InvalidUsageError</a></span></span><span class='comma'>,</span>
+              <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown track_rails_defaults keys: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_unknown'>unknown</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>; </span><span class='tstring_end'>&quot;</span></span> \
+              <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>allowed: </span><span class='embexpr_beg'>#{</span><span class='const'>ALLOWED_KEYS</span><span class='period'>.</span><span class='id identifier rubyid_to_a'>to_a</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:34 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

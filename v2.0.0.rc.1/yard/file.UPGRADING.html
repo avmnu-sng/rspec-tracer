@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: UPGRADING
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "UPGRADING";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: UPGRADING</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><h1 id="Upgrading">Upgrading</h1>
+<h2 id="1_x___2_0">1.x → 2.0</h2>
+<p>The 2.0 line keeps the entire 1.x user-facing surface working: the
+configuration DSL, the env vars, the <code>rake rspec_tracer:remote_cache:*</code>
+tasks, the <code>.gitignore</code> directories, the per-run JSON file layout. The
+breaking changes are all behind the gem and are documented below with a
+concrete &quot;do this, get that&quot; recipe.</p>
+<p>The upgrade ceremony for a typical user is two steps:</p>
+<pre class="code sh"><code class="sh">bundle update rspec-tracer
+bundle exec rspec
+</code></pre>
+<p>The first run is cold (the cache schema bumped; 1.x caches are not
+read by 2.0). Subsequent runs warm-skip as before.</p>
+<p>If you run a custom CI pipeline, jump to <strong>CI integration</strong> below.</p>
+<h2 id="Ruby_and_Rails_floors">Ruby and Rails floors</h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>1.x</th>
+<th>2.0</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ruby (MRI)</td>
+<td>≥ 2.5</td>
+<td><strong>≥ 3.1</strong></td>
+<td>3.2 / 3.3 / 3.4 / 4.0 are CI-gated.</td>
+</tr>
+<tr>
+<td>Ruby (JRuby)</td>
+<td>9.2+</td>
+<td><strong>9.4</strong></td>
+<td><code>JRUBY_OPTS=&quot;--debug -X+O&quot;</code> still required.</td>
+</tr>
+<tr>
+<td>Rails</td>
+<td>5+</td>
+<td><strong>7.0+</strong></td>
+<td>7.0 / 7.1 / 7.2 / 8.0 are CI-gated. <strong>Rails 8.0 needs Ruby 3.2+.</strong></td>
+</tr>
+<tr>
+<td>RSpec</td>
+<td>≥ 3.6</td>
+<td><strong>≥ 3.12</strong></td>
+<td>3.12 / 3.13 are CI-gated.</td>
+</tr>
+<tr>
+<td>SimpleCov</td>
+<td>≥ 0.17</td>
+<td><strong>≥ 0.22</strong></td>
+<td>Branch coverage now works alongside rspec-tracer (see below).</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>unsupported</td>
+<td>unsupported</td>
+<td>Never CI-gated.</td>
+</tr>
+</tbody>
+</table>
+<p>If you need Ruby ≤ 3.0 or Rails ≤ 6.x, stay on the <code>1.x</code> line.</p>
+<h2 id="Cache__one_cold_run_on_upgrade">Cache: one cold run on upgrade</h2>
+<p>The cache is now versioned (<code>schema_version</code> field in <code>last_run.json</code>).
+Loading a 1.x cache with 2.0 logs <code>cold run: cache schema_version mismatch (got X, want Y)</code> at info level and proceeds without it. This is
+expected and one-time. Second run on 2.0 returns to warm.</p>
+<p>If you upload caches to S3 (or any remote-cache backend), the first
+2.0-on-<code>main</code> run produces a fresh 2.0-shaped cache that subsequent PR
+runs warm-start from. No manual purge needed.</p>
+<p><strong>Rails major upgrades (7.x → 8.0 etc.) also invalidate the cache</strong>
+implicitly: <code>Gemfile.lock</code> is a whole-suite invalidator, so the lockfile
+delta from a Rails major bump triggers a full cold run. Same one-time
+expectation applies.</p>
+<p><strong>The 2.0.0.pre.1 → pre.2 upgrade also costs one cold run.</strong> pre.2
+reshaped how <code>example_id</code> is computed: it no longer depends on RSpec's
+load-order-dependent example-group class name or on line numbers, so
+cached ids from pre.1 no longer match. The <code>schema_version</code> bump makes a
+pre.1 cache cold-load cleanly; after that one run, cache hits are <em>more</em>
+stable than they were under pre.1 — a no-op edit that shifts line
+numbers, or loading two spec files that share a <code>describe</code> name, no
+longer flips an example's identity. As a rule of thumb from pre.2 on:
+renaming a file, <code>describe</code>, or <code>it</code> gives an example a new identity
+(one cold run); restructuring around it — blank lines, reordering,
+metadata edits — keeps it warm.</p>
+<p>One carve-out: an <strong>unnamed</strong> example (<code>it { ... }</code>, <code>specify { ... }</code>,
+<code>example { ... }</code> — no description string) has no stable name to hash,
+so its identity is its position among the unnamed examples of its
+group. Blank-line and comment edits still keep it warm, and adding or
+renaming <em>named</em> siblings doesn't disturb it — but reordering the
+unnamed examples, or inserting/removing one ahead of it, gives the
+shifted examples a new identity (one cold run). Give an example an
+explicit description for a fully reorder-stable identity.</p>
+<p><strong>The 2.0.0.pre.2 -&gt; 2.0.0.rc.1 upgrade costs no cold run.</strong> The cache
+<code>schema_version</code> is unchanged (still <code>5</code>), so a pre.2 cache carries
+forward warm. What rc.1 adds on top is CLI surface, not cache shape:
+<code>bundle exec rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]</code> reports how
+many examples a change to each file would re-run (<code>--list</code> enumerates
+them, <code>--json</code> for tooling), and <code>bundle exec rspec-tracer explain --not-run &lt;example_id&gt;</code> shows why an example was skipped on the last
+run and what would make it run on the next.</p>
+<h2 id="SimpleCov_branch_coverage_now_works">SimpleCov branch coverage now works</h2>
+<p>The 1.x README warned: <em>&quot;If you use RSpec Tracer with SimpleCov, then
+SimpleCov would not report branch coverage results even when enabled.&quot;</em></p>
+<p>This is <strong>no longer true in 2.0.</strong> rspec-tracer's coverage emission
+decoupled from SimpleCov's branch-tracking. If you turned
+<code>enable_coverage :branch</code> off when adopting rspec-tracer 1.x, you can
+re-enable it:</p>
+<pre class="code ruby"><code class="ruby"><span class='const'>SimpleCov</span><span class='period'>.</span><span class='id identifier rubyid_start'>start</span> <span class='kw'>do</span>
+  <span class='id identifier rubyid_enable_coverage'>enable_coverage</span> <span class='symbol'>:branch</span>
+<span class='kw'>end</span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
+<span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
+</code></pre>
+<p>Load order remains the same — SimpleCov first, then rspec-tracer. If
+you call <code>SimpleCov.start</code> after <code>require 'simplecov'</code> but before
+<code>RSpecTracer.start</code>, you'll see a one-line boot-time warn pointing this
+out.</p>
+<p>On the standalone (no-SimpleCov) path, rspec-tracer enables Ruby's
+<code>lines</code> coverage mode only by default. Opt into branches / methods /
+oneshot / eval via <code>coverage_modes</code>; see
+<a href="COOKBOOK.md"><code>COOKBOOK.md</code> § &quot;Coverage modes (rspec-tracer + SimpleCov interop)&quot;</a>
+for the per-mode matrix.</p>
+<h2 id="Deprecated_config___keeps_working_with_one_warning">Deprecated config — keeps working with one warning</h2>
+<p>Each entry below still functions in 2.0 and warns once at first use.
+All four are slated for removal in 3.0.</p>
+<table>
+<thead>
+<tr>
+<th>1.x</th>
+<th>2.0 replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reports_s3_path 's3://...'</code></td>
+<td><code>remote_cache_uri 's3://...'</code></td>
+</tr>
+<tr>
+<td><code>use_local_aws true</code></td>
+<td><code>remote_cache_backend :s3, local: true</code></td>
+</tr>
+<tr>
+<td><code>RSPEC_TRACER_REPORTS_S3_PATH=...</code></td>
+<td><code>RSPEC_TRACER_REMOTE_CACHE_URI=...</code></td>
+</tr>
+<tr>
+<td><code>RSPEC_TRACER_USE_LOCAL_AWS=true</code></td>
+<td>Pass via <code>remote_cache_backend</code> params instead.</td>
+</tr>
+</tbody>
+</table>
+<p>A <code>.rspec-tracer</code> file using only the old names runs identically to one
+using the new names; the warns are advisory.</p>
+<h2 id="Behavior_changes_worth_knowing">Behavior changes worth knowing</h2>
+<p>For the full classification of which invalidation decisions are
+guaranteed, conservative, or heuristic -- and what the tracer cannot
+observe at all -- see the
+<a href="ARCHITECTURE.md#soundness-model">soundness model</a>.</p>
+<h3 id="Duplicate_example_identities">Duplicate example identities</h3>
+<p>rspec-tracer identifies each example by a hash of its <code>describe</code>
+chain, description, and file, so it can carry that example's
+pass / fail / flaky history across runs. Two examples that hash to
+the <em>same</em> identity can't be tracked apart — which happens when
+examples are genuinely indistinguishable: a copy-pasted <code>it</code> with an
+identical description in the same group, or a parameterized
+<code>[...].each { it 'same description' do ... end }</code> loop.</p>
+<p>From 2.0.0.pre.2 on, rspec-tracer logs an error that <strong>names the
+colliding examples</strong> (file, line, description), <strong>drops just those
+examples</strong> from the run, and runs the rest of the suite normally.
+<code>fail_on_duplicates</code> (default <code>true</code>) then governs the exit code —
+the run still exits non-zero so the collision can't pass unnoticed in
+CI; <code>fail_on_duplicates false</code> keeps the exit code at zero. Either
+way, the fix is to give the colliding examples distinct descriptions.</p>
+<p>Unnamed <code>it { ... }</code> blocks do <em>not</em> collide this way — each gets a
+distinct position-based identity (see the cache section above).</p>
+<h3 id="_track_ar_schema_notifications__precondition"><code>track_ar_schema_notifications</code> precondition</h3>
+<p>The opt-in <code>track_ar_schema_notifications</code> DSL attaches an
+<code>sql.active_record</code> subscriber that attributes <code>db/schema.rb</code> to the
+example that touched the database. The narrow promise — &quot;schema edits
+re-run only the examples that hit the DB&quot; — only holds when <strong>no
+per-example AR cleanup mechanism fires queries inside the rspec-tracer
+per-example bucket window</strong>.</p>
+<p>The common Rails setups trip this:</p>
+<ul>
+<li><code>use_transactional_fixtures = true</code> (Rails default): per-example
+BEGIN/COMMIT fires <code>sql.active_record</code>.</li>
+<li>DatabaseCleaner <code>:truncation</code> / <code>:deletion</code> / <code>:transaction</code> in
+<code>around</code> hooks: cleanup queries fire inside the bucket.</li>
+</ul>
+<p>In all of the above, every AR-touching example gets <code>db/schema.rb</code>
+attributed → schema mutations re-run every AR-touching example. <strong>This
+is safe</strong> (re-runs more than needed, never fewer) but coarser than the
+narrow attribution the DSL implies.</p>
+<p>A boot-time warn fires when the precondition is unmet so you don't
+discover this from a confused cache-hit-rate chart later. Disable the
+warn by either fixing the precondition (set
+<code>use_transactional_fixtures = false</code> and use sequence-based factories)
+or removing the opt-in.</p>
+<h3 id="Per_example_precision_under__config_eager_load___true_">Per-example precision under <code>config.eager_load = true</code></h3>
+<p>When Rails CI tests run with <code>config.eager_load = true</code> (typical, to
+mirror prod), all <code>app/</code> files load at boot and land in rspec-tracer's
+boot set. Editing any <code>app/</code> file then triggers the whole-suite
+invalidator and re-runs every example.</p>
+<p>This is safe (no false skips) but loses the per-example precision the
+new <code>tracks:</code> DSL aims for. Two recovery paths:</p>
+<ul>
+<li><strong>Set <code>config.eager_load = false</code> in the test environment</strong> to recover
+full per-example precision.</li>
+<li><strong>Use the per-example <code>tracks:</code> DSL</strong> to narrow attribution on
+specific groups: <code>RSpec.describe AdminController, tracks: { files: 'app/policies/**/*.rb' }</code>.</li>
+</ul>
+<p>A future 2.1 enhancement (working name: <code>track_class_attribution</code>) will
+install class-dispatch tracking to trim the invalidator scope under
+eager-loaded test environments. See <a href="CHANGELOG.md"><code>CHANGELOG.md</code></a>
+&quot;Deferred to 2.1&quot; for the planned design contract.</p>
+<h2 id="CI_integration">CI integration</h2>
+<p>The 1.x flow is preserved bit-for-bit:</p>
+<pre class="code yaml"><code class="yaml">- run: bundle exec rake rspec_tracer:remote_cache:download
+- run: bundle exec rspec
+- run: bundle exec rake rspec_tracer:remote_cache:upload
+</code></pre>
+<p>Same env vars (<code>GIT_DEFAULT_BRANCH</code>, <code>GIT_BRANCH</code>, <code>TEST_SUITES</code>,
+<code>TEST_SUITE_ID</code>, <code>RSPEC_TRACER_REPORTS_S3_PATH</code> /
+<code>RSPEC_TRACER_REMOTE_CACHE_URI</code>, AWS credentials).</p>
+<p><strong>Two new things you may want to adopt:</strong></p>
+<ul>
+<li><strong>Non-S3 remote caches.</strong> <code>remote_cache_backend :local_fs, root: '/tmp/rspec-tracer-cache'</code> or <code>remote_cache_backend :redis, url: ENV['REDIS_URL']</code>. The rake-task surface is unchanged; only the
+storage substrate differs.</li>
+<li><strong>GitHub Actions native cache</strong> (no S3 needed). See
+<a href=".github/workflows/example-tracer-cache.yml"><code>.github/workflows/example-tracer-cache.yml</code></a>
+for the canonical pattern. The 4-component cache key
+(<code>runner.os</code> + <code>.ruby-version</code> + <code>lib/rspec_tracer/version.rb</code> +
+Gemfile-hash) translates 1:1 to CircleCI / GitLab CI / Buildkite /
+Heroku CI; only the YAML envelope is GHA-specific. See
+<a href="docs/CI_RECIPES.md"><code>docs/CI_RECIPES.md</code></a> for the per-provider
+recipes.</li>
+</ul>
+<h2 id="Per_Rails_major_coverage_golden_files__fixture_authors_only_">Per-Rails-major coverage golden files (fixture authors only)</h2>
+<p>If you maintain a Rails-fixture-driven test that asserts byte-equivalence
+on <code>coverage.json</code> shape, note that <strong>Rails 8.0 loads <code>config/routes.rb</code>
+AFTER <code>Coverage.start</code> fires</strong> (vs 7.x which boots before). The
+in-repo fixture ships per-Rails-major goldens
+(<code>spec/fixtures/rails_app/coverage_json.golden</code> for 7.x +
+<code>coverage_json.golden.rails8</code>). Resolve which to compare via the
+matrix-passed <code>RAILS_VERSION</code> env, or use a glob.</p>
+<p>Pin <code>CI=</code> to the empty string in the subprocess env when the golden
+asserts on the eager-load profile, so the fixture's
+<code>config.eager_load = ENV['CI'].present?</code> resolves to <code>false</code>.</p>
+<h2 id="New_surfaces_worth_adopting">New surfaces worth adopting</h2>
+<p>These are additive — your existing config keeps working without them.</p>
+<ul>
+<li><strong><code>track_files(*globs)</code></strong> — config-level: <code>track_files 'config/locales/**/*.yml', 'db/schema.rb', 'Gemfile.lock'</code>. Files
+every test depends on (the tracker can't auto-observe inputs that
+never showed up in <code>Coverage.peek_result</code>).</li>
+<li><strong><code>track_env(*names)</code></strong> — config-level: <code>track_env 'AUTH_TOKEN', 'DATABASE_URL', 'RAILS_*'</code>. Wildcards (<code>PREFIX_*</code> / <code>*_SUFFIX</code> /
+bare <code>*</code>) expand against the live ENV at config load.</li>
+<li><strong><code>tracks:</code> per-example metadata</strong> — <code>RSpec.describe AdminController, tracks: { files: 'app/policies/**/*.rb', env: 'ROLE_CONFIG' }</code>. Use
+for files / env vars that only a specific group of examples branches
+on (use <code>track_files</code> / <code>track_env</code> for the global case).</li>
+<li><strong><code>track_rails_defaults</code></strong> — Rails preset that opts in to view /
+locale / fixture / factory / helper / config attribution in one DSL
+call. Drop with <code>track_rails_defaults except: [:views, :schema]</code> to
+hand attribution off to the per-example subscribers
+(<code>render_template.action_view</code> for views; <code>sql.active_record</code>
+observer for <code>db/schema.rb</code> when paired with
+<code>track_ar_schema_notifications</code>).</li>
+<li>
+<strong><code>storage_backend :sqlite</code></strong> — single-file SQLite database instead
+of the 10-file JSON layout. Faster on cold reads when you have
+<blockquote>
+<p>5,000 examples. JRuby falls back to <code>:json</code> automatically.</p>
+</blockquote>
+</li>
+<li><strong><code>rspec-tracer</code> CLI</strong> — opt-in: <code>bundle exec rspec-tracer doctor</code>
+diagnoses config issues; <code>bundle exec rspec-tracer explain &lt;example_id&gt;</code>
+answers &quot;why did this test (re-)run?&quot; The rake-task flow remains
+first-class for CI.</li>
+</ul>
+<h2 id="Contributor_changes">Contributor changes</h2>
+<p>Users see no contributor-side change. If you contribute to rspec-tracer
+itself:</p>
+<ul>
+<li>
+<strong><code>bundle exec rake</code> is gone.</strong> The Cucumber feature-file integration
+suite is removed; RSpec subprocess specs under <code>spec/integration/</code>
+replace it. <strong><code>task</code> (Taskfile) is the canonical dev loop.</strong>
+<ul>
+<li><code>task check</code> — fast loop (lint + unit + benchmark smoke), under ~10s.</li>
+<li><code>task ci</code> — full local CI parity (lint + check + test + security +
+benchmark + integration).</li>
+<li><code>task --list</code> — full catalog.</li>
+</ul>
+</li>
+<li>See <a href=".github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a> for the full
+workflow.</li>
+</ul>
+<h2 id="Where_to_ask_questions">Where to ask questions</h2>
+<ul>
+<li><strong>Bugs:</strong> open an issue with the bug template; include Ruby / Rails /
+RSpec / SimpleCov versions and your <code>.rspec-tracer</code> config.</li>
+<li><strong>Usage questions / discussion:</strong> <a href="https://github.com/avmnu-sng/rspec-tracer/discussions">GitHub Discussions</a>.</li>
+<li><strong>Architecture deep-dive:</strong> <a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a>.</li>
+</ul></div></div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 02:01:31 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>
