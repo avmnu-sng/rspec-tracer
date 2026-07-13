@@ -17,9 +17,10 @@ name: example-tracer-cache
 #      reads last_run.json + <run_id>/ subdirs from that restored
 #      tree, and decides per-example whether dependencies have
 #      shifted (run) or are unchanged (skip).
-#   3. The post-step save (built into actions/cache@v5) writes the
-#      freshly-updated rspec_tracer_cache/ tree back under the same
-#      key for the next run to restore.
+#   3. When the job succeeds, the post-job save built into the same
+#      actions/cache "Restore" step (no separate save step is needed)
+#      writes the freshly-updated rspec_tracer_cache/ tree back under
+#      the same key for the next run to restore.
 #
 # Trigger shape: workflow_dispatch + a path-filtered push so the
 # demo only auto-fires when the workflow file itself changes (the

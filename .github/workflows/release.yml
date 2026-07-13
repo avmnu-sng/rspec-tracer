@@ -95,6 +95,16 @@ jobs:
           echo "::error::RUBYGEMS_API_KEY secret is not set. Add it under Settings \u2192 Secrets and variables \u2192 Actions."
           exit 1
 
+      - name: Compute bare gem version from the tag
+        id: version
+        # The tag carries a leading "v" (e.g. v2.0.0.rc.1) but
+        # `gem install -v` needs the bare version (2.0.0.rc.1);
+        # interpolating github.ref_name directly into the release
+        # body rendered the invalid `gem install rspec-tracer -v
+        # v2.0.0.rc.1`. This workflow only fires on tag pushes, so
+        # the fix is empirically testable at the next tag cut.
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
@@ -106,7 +116,7 @@ jobs:
             Install:
 
             ```
-            gem install rspec-tracer -v ${{ github.ref_name }}
+            gem install rspec-tracer -v ${{ steps.version.outputs.value }}
             ```
           draft: false
           prerelease: ${{ steps.prerelease.outputs.value }}
