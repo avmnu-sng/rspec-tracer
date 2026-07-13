@@ -64,10 +64,10 @@
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/cli/snapshot_helpers</span><span class='tstring_end'>&#39;</span></span>
 
 <span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
-  <span class='comment'># Internal CLI -- see {RSpecTracer} for the user-facing surface.
+  <span class='comment'># Internal CLI; see {RSpecTracer} for the user-facing surface.
 </span>  <span class='comment'># @api private
 </span>  <span class='kw'>module</span> <span class='const'>CLI</span>
-    <span class='comment'># `rspec-tracer explain &lt;example&gt;` -- show why a given example is
+    <span class='comment'># `rspec-tracer explain &lt;example&gt;`: show why a given example is
 </span>    <span class='comment'># scheduled to run or skip on the next rspec invocation. Backend-
 </span>    <span class='comment'># agnostic: dispatches through {RSpecTracer::Storage::Backend.build}
 </span>    <span class='comment'># (via {SnapshotHelpers.load_snapshot}) so `storage_backend :sqlite`
@@ -101,8 +101,8 @@
         <span class='kw'>end</span>
         <span class='int'>0</span>
       <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
-        <span class='comment'># Downstream pipe (`... | head`) closed early -- routine in
-</span>        <span class='comment'># shell pipelines, not a failure. Exit 0 silently.
+        <span class='comment'># Downstream pipe (`... | head`) closed early, which is routine
+</span>        <span class='comment'># in shell pipelines, not a failure. Exit 0 silently.
 </span>        <span class='int'>0</span>
       <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
         <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>explain: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -176,7 +176,7 @@
 
       <span class='comment'># The run-side `run reason:` value. For an example the filter
 </span>      <span class='comment'># SKIPPED on the last run, the persisted run_reason is the
-</span>      <span class='comment'># carry-forward reason seeded from an earlier snapshot -- it says
+</span>      <span class='comment'># carry-forward reason seeded from an earlier snapshot: it says
 </span>      <span class='comment'># why the example ran back then, not why it is in its current
 </span>      <span class='comment'># state. Printing it bare would misreport a skipped example as
 </span>      <span class='comment'># having a current run trigger, so flag it and point at the
@@ -187,7 +187,7 @@
         <span class='kw'>return</span> <span class='id identifier rubyid_reason'>reason</span> <span class='kw'>unless</span> <span class='id identifier rubyid_skipped'>skipped</span>
 
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_reason'>reason</span><span class='embexpr_end'>}</span><span class='tstring_content'> (carried forward from an earlier run; </span><span class='tstring_end'>&quot;</span></span> \
-          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>this example was SKIPPED last run -- use --not-run for the skip-side view)</span><span class='tstring_end'>&#39;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>this example was SKIPPED last run; use --not-run for the skip-side view)</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal helper for the tracer pipeline.
@@ -246,7 +246,7 @@
 </span>      <span class='comment'># backend that persists filter decisions (json) with an empty
 </span>      <span class='comment'># decision set means the last run recorded no decision for this
 </span>      <span class='comment'># id (a cold run persists empty sets by design, and an id absent
-</span>      <span class='comment'># from the last run has no entry either) -- only a
+</span>      <span class='comment'># from the last run has no entry either); only a
 </span>      <span class='comment'># non-persisting backend (sqlite) earns the storage-backend
 </span>      <span class='comment'># wording.
 </span>      <span class='comment'># @return [String]
@@ -254,7 +254,7 @@
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last run:     skipped (cache hit)</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_skipped?'>skipped?</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
 
         <span class='id identifier rubyid_reason'>reason</span> <span class='op'>=</span> <span class='id identifier rubyid_ran_reason'>ran_reason</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
-        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>last run:     ran -- </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_reason'>reason</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_reason'>reason</span>
+        <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>last run:     ran (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_reason'>reason</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_reason'>reason</span>
         <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last run:     &lt;not recorded by this storage backend&gt;</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_filter_persisted'>filter_persisted</span>
 
         <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>last run:     no filter decision recorded (cold run, or this example was not part of it)</span><span class='tstring_end'>&#39;</span></span>
@@ -336,7 +336,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:31 2026 by
+  Generated on Mon Jul 13 04:02:53 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

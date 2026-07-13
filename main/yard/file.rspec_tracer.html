@@ -310,7 +310,7 @@
 
       <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_debug'><span class='object_link'><a href="RSpecTracer/Logger.html#debug-instance_method" title="RSpecTracer::Logger#debug (method)">debug</a></span></span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>RSpec tracer persisted cache (took </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_elapsed'>elapsed</span><span class='embexpr_end'>}</span><span class='tstring_content'>)</span><span class='tstring_end'>&quot;</span></span>
       <span class='id identifier rubyid_snapshot'>snapshot</span>
-    <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+    <span class='kw'>rescue</span> <span class='const'>StandardError</span><span class='comma'>,</span> <span class='const'>SystemExit</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
       <span class='comment'># Graceful-degradation contract per ARCHITECTURE.md
 </span>      <span class='comment'># section Cache corruption recovery: never propagate storage errors
 </span>      <span class='comment'># into the user&#39;s test suite. Read-only cache_path, disk-full
@@ -318,6 +318,14 @@
 </span>      <span class='comment'># report emission. The caller (run_exit_tasks) checks for nil
 </span>      <span class='comment'># before calling emit_reporters; coverage / parallel_tests
 </span>      <span class='comment'># finalize paths run independently downstream.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># SystemExit is included because nothing inside finalize ever
+</span>      <span class='comment'># calls exit itself: a SystemExit here can only be a pending
+</span>      <span class='comment'># exit re-surfaced by a C extension during the at_exit persist
+</span>      <span class='comment'># (sqlite3&#39;s Statement#step re-raises rb_errinfo(), which is
+</span>      <span class='comment'># the in-flight `Kernel.exit(1)` on a failing suite). Letting
+</span>      <span class='comment'># it propagate would silently skip every remaining exit task;
+</span>      <span class='comment'># swallowing it leaves the pending exit status untouched.
 </span>      <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_logger'>logger</span><span class='period'>.</span><span class='id identifier rubyid_warn'><span class='object_link'><a href="RSpecTracer/Logger.html#warn-instance_method" title="RSpecTracer::Logger#warn (method)">warn</a></span></span><span class='lparen'>(</span>
         <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>rspec-tracer: cache persistence failed (</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_content'>); </span><span class='tstring_end'>&quot;</span></span> \
         <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>skipping report generation. Verify cache_path is writable.</span><span class='tstring_end'>&#39;</span></span>
@@ -391,7 +399,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:32 2026 by
+  Generated on Mon Jul 13 04:02:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

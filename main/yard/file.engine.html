@@ -542,7 +542,7 @@
 </span>    <span class='comment'>#   subscribers + the inline AR-schema warn at suite time.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Without the late-bind path, `track_ar_schema_notifications` was
-</span>    <span class='comment'># silently inert under the canonical README setup -- the documented
+</span>    <span class='comment'># silently inert under the canonical README setup: the documented
 </span>    <span class='comment'># `use_transactional_fixtures` warn never fired and the
 </span>    <span class='comment'># `sql.active_record` subscriber never attached.
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_install_rails_observers'>install_rails_observers</span>
@@ -629,7 +629,7 @@
 </span>    <span class='comment'>#   - DatabaseCleaner :truncation / :deletion / :transaction in
 </span>    <span class='comment'>#     around hooks: same outcome.
 </span>    <span class='comment'>#
-</span>    <span class='comment'># Eager path: defer the check to before(:suite) -- at engine.setup
+</span>    <span class='comment'># Eager path: defer the check to before(:suite), because at engine.setup
 </span>    <span class='comment'># the user has not run their RSpec.configure block yet, so
 </span>    <span class='comment'># `use_transactional_fixtures` is unset. The late-bind path
 </span>    <span class='comment'># short-circuits this method and inline-fires
@@ -1229,7 +1229,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:31 2026 by
+  Generated on Mon Jul 13 04:02:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

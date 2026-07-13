@@ -92,7 +92,7 @@
   <strong>This module is part of a private API.</strong>
   You should avoid using this module if possible, as it may be removed or be changed in the future.
 </p>
-<p><code>rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]</code> -- show which
+<p><code>rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]</code>: show which
 examples a change to each given file would re-run on the next
 rspec invocation. Reads the persisted reverse-dependency map
 (file -&gt; examples) plus the whole-suite invalidator watch list
@@ -725,7 +725,7 @@ dependents).</p>
 </p>
 <p>Enrich one example_id from the persisted all_examples meta.
 A dangling id (present in reverse_dependency but missing from
-all_examples -- stale or partially-written cache) degrades to
+all_examples, a stale or partially-written cache) degrades to
 <code>&lt;unknown&gt;</code> fields instead of raising.</p>
 
   </div>
@@ -1026,7 +1026,7 @@ all_examples -- stale or partially-written cache) degrades to
 <p>Convert a user-supplied path into the cache's file_name
 convention (project-relative with a leading <code>/</code>, absolute when
 outside the project root). Computed at command runtime against
-<code>RSpecTracer.root</code> -- <code>SourceFile.file_name</code> is unsuitable here
+<code>RSpecTracer.root</code>; <code>SourceFile.file_name</code> is unsuitable here
 because its PROJECT_ROOT_REGEX freezes the root at gem-require
 time, before the CLI loads the project's <code>.rspec-tracer</code> config.</p>
 
@@ -1515,9 +1515,9 @@ option, cache missing, or schema mismatch).</p></div>
 
   <span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='comma'>,</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
 <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
-  <span class='comment'># Downstream pipe (`... | head`, `... | jq`) closed early --
-</span>  <span class='comment'># routine in shell pipelines (the help text promotes them),
-</span>  <span class='comment'># not a failure. Exit 0 silently.
+  <span class='comment'># Downstream pipe (`... | head`, `... | jq`) closed early,
+</span>  <span class='comment'># which is routine in shell pipelines (the help text promotes
+</span>  <span class='comment'># them), not a failure. Exit 0 silently.
 </span>  <span class='int'>0</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>blast-radius: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -1589,7 +1589,7 @@ option, cache missing, or schema mismatch).</p></div>
 <p>Internal helper for the tracer pipeline.
 The untracked wording sticks to what the tracer can actually
 observe: absence of the file from the cache. It must NOT claim
-the file &quot;never loaded&quot; -- files consumed outside the hooked
+the file &quot;never loaded&quot;: files consumed outside the hooked
 surface (spec_helper.rb itself, which executes before coverage
 tracking starts; reads via unhooked APIs, C extensions, or
 other threads) load fine yet never appear in the cache. See
@@ -1632,11 +1632,11 @@ the soundness model in ARCHITECTURE.md.</p>
   <span class='id identifier rubyid_count'>count</span> <span class='op'>=</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
   <span class='kw'>case</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span>
   <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>whole_suite_invalidator</span><span class='tstring_end'>&#39;</span></span>
-    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: whole-suite invalidator -- re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: whole-suite invalidator; re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
   <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>boot_file</span><span class='tstring_end'>&#39;</span></span>
-    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: boot file -- re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: boot file; re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
   <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>untracked</span><span class='tstring_end'>&#39;</span></span>
-    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: not tracked in cache (no recorded dependents -- the tracer never </span><span class='tstring_end'>&quot;</span></span> \
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: not tracked in cache (no recorded dependents: the tracer never </span><span class='tstring_end'>&quot;</span></span> \
     <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>observed it as an input; see the soundness model in ARCHITECTURE.md)</span><span class='tstring_end'>&#39;</span></span>
   <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>no_dependents</span><span class='tstring_end'>&#39;</span></span>
     <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: 0 examples (no tracked dependents)</span><span class='tstring_end'>&quot;</span></span>
@@ -1791,7 +1791,7 @@ the soundness model in ARCHITECTURE.md.</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:33 2026 by
+  Generated on Mon Jul 13 04:02:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

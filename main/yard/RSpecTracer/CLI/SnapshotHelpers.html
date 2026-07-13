@@ -838,7 +838,7 @@ incompatible</p></div>
   <span class='id identifier rubyid_backend'>backend</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../Storage.html" title="RSpecTracer::Storage (module)">Storage</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../Storage/Backend.html" title="RSpecTracer::Storage::Backend (module)">Backend</a></span></span><span class='period'>.</span><span class='id identifier rubyid_build'><span class='object_link'><a href="../Storage/Backend.html#build-class_method" title="RSpecTracer::Storage::Backend.build (method)">build</a></span></span><span class='lparen'>(</span><span class='label'>cache_path:</span> <span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>configuration:</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='rparen'>)</span>
   <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_backend'>backend</span><span class='period'>.</span><span class='id identifier rubyid_last_run_id'>last_run_id</span>
   <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
-    <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_command'>command</span><span class='embexpr_end'>}</span><span class='tstring_content'>: no cache yet at </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='embexpr_end'>}</span><span class='tstring_content'> -- run rspec first</span><span class='tstring_end'>&quot;</span></span>
+    <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_command'>command</span><span class='embexpr_end'>}</span><span class='tstring_content'>: no cache yet at </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='embexpr_end'>}</span><span class='tstring_content'>; run rspec first</span><span class='tstring_end'>&quot;</span></span>
     <span class='kw'>return</span> <span class='kw'>nil</span>
   <span class='kw'>end</span>
 
@@ -861,7 +861,7 @@ incompatible</p></div>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:33 2026 by
+  Generated on Mon Jul 13 04:02:56 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

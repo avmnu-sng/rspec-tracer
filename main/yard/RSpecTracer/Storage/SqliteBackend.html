@@ -548,14 +548,14 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-137
 138
 139
 140
-141</pre>
+141
+142</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 137</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 138</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='label'>cache_path:</span><span class='comma'>,</span> <span class='label'>logger:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='ivar'>@cache_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
@@ -602,12 +602,12 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-133
 134
-135</pre>
+135
+136</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 133</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 134</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_cache_path'>cache_path</span>
   <span class='ivar'>@cache_path</span>
@@ -652,14 +652,14 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-205
-206
-207
-208
-209</pre>
+216
+217
+218
+219
+220</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 205</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 216</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_clear!'>clear!</span>
   <span class='kw'>return</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_directory?'>directory?</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
@@ -686,7 +686,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   <strong>This method is part of a private API.</strong>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
-<p>Internal method on the tracer pipeline.</p>
+<p>Internal method on the tracer pipeline.
+Uses <code>next</code> (not <code>return</code>) inside the with_connection block:
+the block may execute on the errinfo-isolation thread (see
+isolated_from_pending_exception), where a cross-thread
+non-local return would raise LocalJumpError.</p>
 
   </div>
 </div>
@@ -699,26 +703,26 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-145
-146
-147
-148
-149
-150
 151
 152
 153
 154
-155</pre>
+155
+156
+157
+158
+159
+160
+161</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 145</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 151</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
     <span class='id identifier rubyid_row'>row</span> <span class='op'>=</span> <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_get_first_row'>get_first_row</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>SELECT run_id FROM meta LIMIT 1</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
     <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='op'>&amp;.</span><span class='id identifier rubyid_first'>first</span>
-    <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+    <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
     <span class='id identifier rubyid_run_id'>run_id</span>
   <span class='kw'>end</span>
@@ -745,7 +749,11 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
   <strong>This method is part of a private API.</strong>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
-<p>Internal method on the tracer pipeline.</p>
+<p>Internal method on the tracer pipeline.
+Uses <code>next</code> (not <code>return</code>) inside the with_connection block:
+the block may execute on the errinfo-isolation thread (see
+isolated_from_pending_exception), where a cross-thread
+non-local return would raise LocalJumpError.</p>
 
   </div>
 </div>
@@ -758,17 +766,6 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
       <pre class="lines">
 
 
-159
-160
-161
-162
-163
-164
-165
-166
-167
-168
-169
 170
 171
 172
@@ -780,24 +777,35 @@ DB. Kept in step with Snapshot.members minus the envelope.</p>
 178
 179
 180
-181</pre>
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 159</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 170</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
-    <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta_table_exists?'>meta_table_exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
+    <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta_table_exists?'>meta_table_exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
 
     <span class='id identifier rubyid_row'>row</span> <span class='op'>=</span> <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_get_first_row'>get_first_row</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>SELECT schema_version, run_id FROM meta LIMIT 1</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-    <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_row'>row</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+    <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_row'>row</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
     <span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span>
     <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="Schema.html" title="RSpecTracer::Storage::Schema (module)">Schema</a></span></span><span class='period'>.</span><span class='id identifier rubyid_supported?'><span class='object_link'><a href="Schema.html#supported%3F-class_method" title="RSpecTracer::Storage::Schema.supported? (method)">supported?</a></span></span><span class='lparen'>(</span><span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_stored_sv'>stored_sv</span> <span class='op'>==</span> <span class='id identifier rubyid_schema_version'>schema_version</span>
       <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>schema_version mismatch (stored=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>, expected=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='embexpr_end'>}</span><span class='tstring_content'>); cold run</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
-      <span class='kw'>return</span> <span class='kw'>nil</span>
+      <span class='kw'>next</span> <span class='kw'>nil</span>
     <span class='kw'>end</span>
-    <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+    <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
     <span class='const'>LazySnapshot</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
       <span class='label'>schema_version:</span> <span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='comma'>,</span> <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span>
@@ -860,19 +868,19 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-232
-233
-234
-235
-236
-237
-238
-239
-240
-241</pre>
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 232</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 243</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_read_field'>read_field</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>unknown snapshot field: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_field'>field</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="#READABLE_FIELDS-constant" title="RSpecTracer::Storage::SqliteBackend::READABLE_FIELDS (constant)">READABLE_FIELDS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_field'>field</span><span class='rparen'>)</span>
@@ -930,26 +938,26 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-185
-186
-187
-188
-189
-190
-191
-192
-193
-194
-195
 196
 197
 198
 199
 200
-201</pre>
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 185</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 196</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_save_graph'>save_graph</span><span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>snapshot must not be nil</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1014,20 +1022,20 @@ failures on the DB itself.</p>
       <pre class="lines">
 
 
-213
-214
-215
-216
-217
-218
-219
-220
-221
-222
-223</pre>
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 213</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/storage/sqlite_backend.rb', line 224</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_transactional_save'>transactional_save</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='id identifier rubyid_block'>block</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_raise'>raise</span> <span class='const'>ArgumentError</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>block required</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_block'>block</span>
@@ -1050,7 +1058,7 @@ failures on the DB itself.</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:34 2026 by
+  Generated on Mon Jul 13 04:02:57 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

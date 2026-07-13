@@ -193,21 +193,21 @@ to the tracer.</p>
 <hr />
 <h2 id="3__Detect_flaky_tests">3. Detect flaky tests</h2>
 <p>Goal: find examples that pass and fail without their inputs
-changing -- no extra gems, no retry loops, and no test skipped in
+changing: no extra gems, no retry loops, and no test skipped in
 the process.</p>
 <p>rspec-tracer records each example's outcome alongside the inputs it
 consumed. When an example that failed on a previous run passes on a
 later one, it is flagged flaky; once flagged, it stays flagged and
 is never skipped, so every subsequent run re-investigates it.</p>
 <p>The default setup is all you need:</p>
-<pre class="code ruby"><code class="ruby"><span class='comment'># spec/spec_helper.rb -- top of file, before any application code.
-</span><span class='comment'># With SimpleCov, start SimpleCov first -- load order is part of
+<pre class="code ruby"><code class="ruby"><span class='comment'># spec/spec_helper.rb, top of file, before any application code.
+</span><span class='comment'># With SimpleCov, start SimpleCov first: load order is part of
 </span><span class='comment'># the contract.
 </span><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
 <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
 </code></pre>
-<p>Not ready to let the tracer skip anything? Run in record-only mode
--- every example still runs, and flaky detection works unchanged:</p>
+<p>Not ready to let the tracer skip anything? Run in record-only mode;
+every example still runs, and flaky detection works unchanged:</p>
 <pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
 </span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
   <span class='id identifier rubyid_run_all_examples'>run_all_examples</span> <span class='kw'>true</span>
@@ -227,8 +227,8 @@ CI dashboards.</li>
 <p><strong>One honest caveat</strong>: flaky detection needs repeated runs on
 unchanged inputs. A single run proves nothing, and if you edit code
 between runs, a fail-then-pass flip looks like a fix, not a flake.
-The strongest signal comes from re-running the same commit -- CI
-retries, or local re-runs without edits.</p>
+The strongest signal comes from re-running the same commit (CI
+retries, or local re-runs without edits).</p>
 <p>Pairing with <code>RSpec::Retry</code> so flakes don't block CI while you fix
 them? See recipe
 <a href="#13-compose-with-knapsack--rspecretry--rspecrerun">#13</a>.</p>
@@ -240,8 +240,8 @@ change it.</p>
 a file-to-examples map: for each file the suite consumed, which
 examples depend on it, and through which spec files. No config
 beyond the default:</p>
-<pre class="code ruby"><code class="ruby"><span class='comment'># spec/spec_helper.rb -- top of file, before any application code.
-</span><span class='comment'># With SimpleCov, start SimpleCov first -- load order is part of
+<pre class="code ruby"><code class="ruby"><span class='comment'># spec/spec_helper.rb, top of file, before any application code.
+</span><span class='comment'># With SimpleCov, start SimpleCov first: load order is part of
 </span><span class='comment'># the contract.
 </span><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer</span><span class='tstring_end'>&#39;</span></span>
 <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_start'><span class='object_link'><a href="RSpecTracer.html#start-class_method" title="RSpecTracer.start (method)">start</a></span></span>
@@ -259,8 +259,8 @@ spec files) for scripting.</li>
 </ul>
 <p>Want the map without enabling skipping? Use the record-only mode
 from recipe <a href="#3-detect-flaky-tests">#3</a>.</p>
-<p><strong>One honest caveat</strong>: the map shows test-to-file dependencies --
-which tests depend on which files -- not code-to-code coupling. Two
+<p><strong>One honest caveat</strong>: the map shows test-to-file dependencies
+(which tests depend on which files), not code-to-code coupling. Two
 application files that always change together show up only
 indirectly, through the examples that consume both.</p>
 <hr />
@@ -309,7 +309,7 @@ complete migration guide.</p>
 identical — only the storage substrate differs.</p>
 <p>Whichever backend you pick, the cache is plain files in
 infrastructure you own (your S3 bucket, your Redis, your
-filesystem) -- nothing ships to a vendor backend.</p>
+filesystem); nothing ships to a vendor backend.</p>
 <h3 id="S3__preserves_1_x_layout_">S3 (preserves 1.x layout)</h3>
 <pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer
 </span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
@@ -554,12 +554,12 @@ order, schema version, remote-cache reachability, AR-schema config).</p>
 <p><code>--not-run</code> flips <code>explain</code> to the skip-side view:</p>
 <pre class="code sh"><code class="sh">bundle exec rspec-tracer explain --not-run &#39;AdminController#create&#39;
 </code></pre>
-<p>Prints whether the example was skipped on the last run -- and if
+<p>Prints whether the example was skipped on the last run and, if
 so, the derivation of why no run trigger fired (no whole-suite
 invalidator, no boot-file change, no failed / flaky / pending /
 interrupted status, no changed dependency file, unchanged env
-snapshot) -- plus its last recorded status, the condition under
-which it runs next time, and its tracked dependency files. The
+snapshot). It also prints the last recorded status, the condition
+under which it runs next time, and its tracked dependency files. The
 cache keeps only the most recent snapshot, so &quot;last status&quot;
 reflects the last run, not a run history.</p>
 <hr />
@@ -679,7 +679,7 @@ tooling:</p>
 <pre class="code sh"><code class="sh">bundle exec rspec-tracer blast-radius --list app/models/user.rb
 bundle exec rspec-tracer blast-radius --json app/models/user.rb
 </code></pre>
-<p>Multiple files compose, with a deduplicated <code>total:</code> line -- so you
+<p>Multiple files compose, with a deduplicated <code>total:</code> line, so you
 can pipe a branch diff through it and see what a PR invalidates
 before review:</p>
 <pre class="code sh"><code class="sh">git diff --name-only main | xargs bundle exec rspec-tracer blast-radius
@@ -687,7 +687,7 @@ before review:</p>
 <p>Files the cache never saw (docs, CI config) report
 <code>not tracked in cache</code> and still exit 0, so the git pipeline never
 breaks on non-Ruby paths. <code>not tracked</code> means the tracer never
-observed the file as an input -- NOT that the file never loaded.
+observed the file as an input, NOT that the file never loaded.
 Files consumed outside the hooked surface land here too:
 <code>spec/spec_helper.rb</code> itself (it executes before coverage tracking
 starts), reads via unhooked APIs or C extensions, and the other
@@ -716,7 +716,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:30 2026 by
+  Generated on Mon Jul 13 04:02:53 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -109,7 +109,7 @@
   You should avoid using this class if possible, as it may be removed or be changed in the future.
 </p>
 <p>Wraps Ruby's built-in ::Coverage module. The first observer in
-the 2.0 tracker pipeline -- ingests the per-file line-coverage
+the 2.0 tracker pipeline: it ingests the per-file line-coverage
 bitmap that MRI/JRuby maintain natively, normalizes the two
 possible shapes (array vs SimpleCov-style hash) and emits
 Tracker::Input values for the files touched between two peeks.</p>
@@ -140,8 +140,8 @@ Changing the algorithm is a storage schema_version bump.</p>
   You should avoid using this constant if possible, as it may be removed or be changed in the future.
 </p>
 <p>::Coverage.peek_result returns one of two shapes:</p>
-<pre class="code ruby"><code class="ruby">:array -- { path =&gt; [hit_counts | nil, ...] }           (default)
-:hash  -- { path =&gt; { lines: [...], branches: {...} } } (SimpleCov
+<pre class="code ruby"><code class="ruby">:array -&gt; { path =&gt; [hit_counts | nil, ...] }           (default)
+:hash  -&gt; { path =&gt; { lines: [...], branches: {...} } } (SimpleCov
                                                       with branch
                                                       coverage)
 </code></pre>
@@ -344,7 +344,7 @@ Changing the algorithm is a storage schema_version bump.</p>
   <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Same shape as #peek but only filters by <code>@root_prefix</code> -- skips the user <code>filters</code> filter.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>Same shape as #peek but only filters by <code>@root_prefix</code>, skipping the user <code>filters</code> filter.</p></div></span>
   
 </li>
 
@@ -610,7 +610,7 @@ Changing the algorithm is a storage schema_version bump.</p>
 </p>
 <p>Pure function: returns Set<Input> for files whose line arrays
 changed between <code>before</code> and <code>after</code>. Handles nil line entries
-(unexecutable lines) correctly -- nil&lt;-&gt;nil is not a delta, any
+(unexecutable lines) correctly: nil&lt;-&gt;nil is not a delta, any
 other transition is.</p>
 
   </div>
@@ -679,7 +679,7 @@ other transition is.</p>
 <p>Snapshot of the current coverage state: { absolute_path =&gt;
 Array&lt;Integer|nil&gt; } for files under project root that survive
 the user filter. Hash-mode input is reduced to its :lines
-component -- 2.0 ignores branch coverage (same as 1.x; noted in
+component; 2.0 ignores branch coverage (same as 1.x; noted in
 the upgrade docs).</p>
 
   </div>
@@ -723,7 +723,7 @@ the upgrade docs).</p>
   <strong>This method is part of a private API.</strong>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
-<p>Same shape as #peek but only filters by <code>@root_prefix</code> -- skips
+<p>Same shape as #peek but only filters by <code>@root_prefix</code>, skipping
 the user <code>filters</code> filter. The coverage.json emitter
 (<code>Reporters::CoverageJsonReporter</code>) calls this at finalize to
 capture cumulative coverage matching legacy semantics: 1.x's
@@ -834,7 +834,7 @@ the storage schema.</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:35 2026 by
+  Generated on Mon Jul 13 04:02:57 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

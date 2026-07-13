@@ -372,7 +372,7 @@ tracer never observed cannot trigger a re-run. The tiers below
 classify every input type by which side it falls on. Independent of
 tier, examples that previously failed, were flagged flaky, were
 pending, or were interrupted are always re-run, as is any example
-with no cache entry -- skip decisions apply only to examples with a
+with no cache entry: skip decisions apply only to examples with a
 clean, fully-recorded history.</p>
 <h3 id="The_four_tiers">The four tiers</h3>
 <table>
@@ -446,7 +446,7 @@ clean, fully-recorded history.</p>
 <td>New source files</td>
 <td>Boot-set snapshot compare + per-run re-walk of declared globs and <code>lib/**/*.rb</code></td>
 <td>Conservative when boot-loaded; blind spot when runtime-only</td>
-<td>A new file that loads during boot (eager-loaded <code>app/</code>, <code>spec_helper</code> requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples -- it enters the graph on the first run that observes it.</td>
+<td>A new file that loads during boot (eager-loaded <code>app/</code>, <code>spec_helper</code> requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples; it enters the graph on the first run that observes it.</td>
 </tr>
 <tr>
 <td>File I/O (<code>File.read</code>, <code>YAML.load_file</code>, <code>JSON.load_file</code>, <code>IO.read</code>, <code>Kernel#load</code>, ...)</td>
@@ -481,15 +481,15 @@ clean, fully-recorded history.</p>
 </tbody>
 </table>
 <h3 id="What_we_don_t_detect">What we don't detect</h3>
-<p>These are the known blind spots -- inputs with no observation
+<p>These are the known blind spots, inputs with no observation
 mechanism. If one of them can change an example's outcome, the tracer
 will not re-run that example on its own:</p>
 <ul>
 <li><strong>Runtime metaprogramming.</strong> Behavior manufactured from non-file
 state at runtime (<code>define_method</code> / <code>const_set</code> driven by data the
 tracer never saw as a file read).</li>
-<li><strong>Monkey-patches in files that never execute in this process</strong> --
-most commonly gem code outside the project root, or paths excluded
+<li><strong>Monkey-patches in files that never execute in this process.</strong>
+Most commonly gem code outside the project root, or paths excluded
 by a user filter. A patched gem upgrade is still caught, but only
 at <code>Gemfile.lock</code> granularity (whole-suite invalidator).</li>
 <li><strong>ENV-var branches without declarations.</strong> The tracer watches only
@@ -504,9 +504,9 @@ additions are caught via the boot set.</li>
 the clock: the tracer digests files, not the world. Schema files
 are the closest observable proxy (see the opt-in row above).</li>
 </ul>
-<p>The escape hatch for all of these is declaration -- turning an
-unobservable input into a declared (sound-tier) one:</p>
-<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer -- suite-wide
+<p>The escape hatch for all of these is declaration: turning an
+unobservable input into a declared (sound-tier) one.</p>
+<pre class="code ruby"><code class="ruby"><span class='comment'># .rspec-tracer (suite-wide)
 </span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_configure'><span class='object_link'><a href="RSpecTracer/Configuration.html#configure-instance_method" title="RSpecTracer::Configuration#configure (method)">configure</a></span></span> <span class='kw'>do</span>
   <span class='id identifier rubyid_track_files'>track_files</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>config/feature_flags/**/*.yml</span><span class='tstring_end'>&#39;</span></span>
   <span class='id identifier rubyid_track_env'>track_env</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>FEATURE_X</span><span class='tstring_end'>&#39;</span></span>
@@ -529,7 +529,7 @@ everything), never a missed one.</li>
 when your suite consumes it outside that surface (another thread,
 an exotic backend, an unhooked read path), add a declaration.</li>
 <li>A <strong>blind spot</strong> must be declared or accepted. When in doubt about
-whether something is observed, declare it -- a redundant
+whether something is observed, declare it: a redundant
 declaration costs one digest per run; a missed input costs a stale
 green.</li>
 </ul>
@@ -586,7 +586,7 @@ primitive but don't schedule).</li>
 </ul></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:28 2026 by
+  Generated on Mon Jul 13 04:02:51 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

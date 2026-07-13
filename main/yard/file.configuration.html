@@ -1084,8 +1084,8 @@
 </span>    <span class='comment'># module default. 0 disables the respective check.
 </span>    <span class='comment'>#
 </span>    <span class='comment'># Duplicated body rather than factored to a private helper
-</span>    <span class='comment'># because configure&#39;s alias loop wraps every instance method --
-</span>    <span class='comment'># private helpers included -- as a public `_name` DSL surface.
+</span>    <span class='comment'># because configure&#39;s alias loop wraps every instance method,
+</span>    <span class='comment'># private helpers included, as a public `_name` DSL surface.
 </span>    <span class='comment'># rubocop:disable Metrics/PerceivedComplexity
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_cache_size_warn_per_file_mb'>cache_size_warn_per_file_mb</span><span class='lparen'>(</span><span class='id identifier rubyid_size_mb'>size_mb</span> <span class='op'>=</span> <span class='kw'>nil</span><span class='rparen'>)</span>
       <span class='kw'>return</span> <span class='ivar'>@cache_size_warn_per_file_mb</span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='ivar'>@cache_size_warn_per_file_mb</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_size_mb'>size_mb</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1528,7 +1528,7 @@
 </span><span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:31 2026 by
+  Generated on Mon Jul 13 04:02:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -94,7 +94,7 @@
   <strong>This module is part of a private API.</strong>
   You should avoid using this module if possible, as it may be removed or be changed in the future.
 </p>
-<p>Internal CLI -- see <span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> for the user-facing surface.</p>
+<p>Internal CLI; see <span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> for the user-facing surface.</p>
 
   </div>
 </div>
@@ -840,7 +840,7 @@ the program name)</p></div>
   <span class='kw'>end</span>
 <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
   <span class='comment'># A downstream pipe consumer (`rspec-tracer ... | head`) closed
-</span>  <span class='comment'># early -- routine in shell pipelines, not a failure. Exit 0
+</span>  <span class='comment'># early, which is routine in shell pipelines, not a failure. Exit 0
 </span>  <span class='comment'># without printing: writing to stderr could raise EPIPE again
 </span>  <span class='comment'># when both streams share the closed pipe.
 </span>  <span class='int'>0</span>
@@ -920,11 +920,11 @@ the duration of library boot + sub-command dispatch, restoring
 the previous value afterwards. This must wrap <span class='object_link'><a href="#load_tracer-class_method" title="RSpecTracer::CLI.load_tracer (method)">load_tracer</a></span>:
 booting the library <code>load</code>s the project + global <code>.rspec-tracer</code>
 configs, and those can write through the logger BEFORE
-<span class='object_link'><a href="#with_logger_on-class_method" title="RSpecTracer::CLI.with_logger_on (method)">with_logger_on</a></span> ever runs -- the 1.x-compat deprecation shims
+<span class='object_link'><a href="#with_logger_on-class_method" title="RSpecTracer::CLI.with_logger_on (method)">with_logger_on</a></span> ever runs: the 1.x-compat deprecation shims
 (<code>reports_s3_path</code>, <code>use_local_aws</code>) fire a one-time
 <code>logger.warn</code> at first use, and in a fresh CLI process
 &quot;one-time&quot; means every invocation. The logger's default
-destination is stdout -- the stream machine consumers parse --
+destination is stdout (the stream machine consumers parse),
 so that warning would land ahead of e.g. the <code>blast-radius --json</code> document and break <code>| jq</code>. With the default rebound,
 every logger constructed during the window binds to stderr,
 including loggers recreated mid-load when a config sets
@@ -989,15 +989,15 @@ fallback warning, JsonBackend's schema-mismatch info line).
 <span class='object_link'><a href="#with_default_logger_out-class_method" title="RSpecTracer::CLI.with_default_logger_out (method)">with_default_logger_out</a></span> already redirects loggers constructed
 during the CLI window; this layer additionally rebinds a logger
 that was memoized into <code>RSpecTracer.@logger</code> BEFORE <span class='object_link'><a href="#run-class_method" title="RSpecTracer::CLI.run (method)">run</a></span> was
-called (possible for in-process callers -- the spec suite, or a
-user embedding the CLI -- where the library booted earlier with
+called (possible for in-process callers, the spec suite or a
+user embedding the CLI, where the library booted earlier with
 the stdout default). Sub-commands like <code>blast-radius --json</code>
 promise exactly one JSON document on stdout, so a diagnostic
 line printed ahead of it breaks <code>| jq</code>; together the two layers
 keep ALL diagnostics on stderr alongside the CLI's own messages.</p>
 <p><code>RSpecTracer.logger</code> memoizes into <code>@logger</code>
 (Configuration#logger); the ivar is seeded directly because
-Configuration deliberately exposes no logger setter -- adding
+Configuration deliberately exposes no logger setter; adding
 one would leak it into the user-facing <code>configure</code> DSL surface.</p>
 
   </div>
@@ -1043,7 +1043,7 @@ one would leak it into the user-facing <code>configure</code> DSL surface.</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:32 2026 by
+  Generated on Mon Jul 13 04:02:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

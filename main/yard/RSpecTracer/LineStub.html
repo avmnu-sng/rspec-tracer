@@ -99,7 +99,7 @@ branches sit outside the tracker_coverage_gate's
 on MRI; cross-engine coverage rollup would require fork-per-engine
 CI work that isn't justified for stub-line generation).</p>
 <p>Methods use <code>def self.x</code> (not module_function) so future mutation
-gating maps to the singleton form -- module_function attaches
+gating maps to the singleton form; module_function attaches
 methods to an anonymous singleton that mutant cannot observe.</p>
 
   </div>
@@ -380,7 +380,7 @@ methods to an anonymous singleton that mutant cannot observe.</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:32 2026 by
+  Generated on Mon Jul 13 04:02:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -127,8 +127,8 @@ rspec-tracer guarantees: <strong>sound</strong> (file-content digests, explicit
 <code>tracks:</code>, env snapshot), <strong>conservative</strong> (boot-set whole-suite
 invalidator, Rails <code>lib/</code> engine-load fallback), <strong>heuristic</strong> (Rails
 subscriber attribution under common configs), <strong>blind spot</strong> (runtime
-metaprogramming, monkey-patches, hidden reflection -- called out
-prominently). Shipped -- see
+metaprogramming, monkey-patches, hidden reflection, called out
+prominently). Shipped; see
 <a href="ARCHITECTURE.md#soundness-model">ARCHITECTURE.md</a>.</li>
 <li><strong><code>safety_mode :paranoid | :balanced | :aggressive</code> preset DSL.</strong>
 Named presets that toggle existing knobs (<code>transitive_load_tracking</code>,
@@ -140,11 +140,11 @@ trusts inference more.</li>
 <code>explain</code>. Outputs <em>&quot;if you modify this file, it triggers N examples
 across M files.&quot;</em> Lets developers spot architectural drift before
 the PR review; turns the dependency graph from invisible infra into
-inspectable insight. Shipped -- see
+inspectable insight. Shipped; see
 <a href="COOKBOOK.md#16-measure-a-files-blast-radius">COOKBOOK.md</a>.</li>
 <li><strong><code>bin/rspec-tracer explain --not-run &lt;example_id&gt;</code>.</strong> The &quot;why
 did this NOT run?&quot; inverse of the existing <code>explain</code>. Closes the
-most-requested observability gap from pre-release. Shipped -- see
+most-requested observability gap from pre-release. Shipped; see
 <a href="COOKBOOK.md#12-debug-why-did-this-test-re-run">COOKBOOK.md</a>.</li>
 <li><strong>Confidence scoring on per-run summary.</strong> Terminal output extends
 to show what proportion of selection decisions came from explicit
@@ -386,7 +386,7 @@ maintainer welcomes co-maintainer onboarding conversations and
 explicit governance commitments.</p></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:30 2026 by
+  Generated on Mon Jul 13 04:02:53 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

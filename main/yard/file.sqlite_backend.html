@@ -61,6 +61,7 @@
 
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>English</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>fileutils</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>set</span><span class='tstring_end'>&#39;</span></span>
@@ -203,11 +204,16 @@
 
       <span class='comment'># Internal method on the tracer pipeline.
 </span>      <span class='comment'># @api private
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Uses `next` (not `return`) inside the with_connection block:
+</span>      <span class='comment'># the block may execute on the errinfo-isolation thread (see
+</span>      <span class='comment'># isolated_from_pending_exception), where a cross-thread
+</span>      <span class='comment'># non-local return would raise LocalJumpError.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_last_run_id'>last_run_id</span>
         <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
           <span class='id identifier rubyid_row'>row</span> <span class='op'>=</span> <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_get_first_row'>get_first_row</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>SELECT run_id FROM meta LIMIT 1</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
           <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span><span class='op'>&amp;.</span><span class='id identifier rubyid_first'>first</span>
-          <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+          <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
           <span class='id identifier rubyid_run_id'>run_id</span>
         <span class='kw'>end</span>
@@ -217,19 +223,24 @@
 
       <span class='comment'># Internal method on the tracer pipeline.
 </span>      <span class='comment'># @api private
+</span>      <span class='comment'>#
+</span>      <span class='comment'># Uses `next` (not `return`) inside the with_connection block:
+</span>      <span class='comment'># the block may execute on the errinfo-isolation thread (see
+</span>      <span class='comment'># isolated_from_pending_exception), where a cross-thread
+</span>      <span class='comment'># non-local return would raise LocalJumpError.
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_load_graph'>load_graph</span><span class='lparen'>(</span><span class='label'>schema_version:</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_with_connection'>with_connection</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_db'>db</span><span class='op'>|</span>
-          <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta_table_exists?'>meta_table_exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta_table_exists?'>meta_table_exists?</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
 
           <span class='id identifier rubyid_row'>row</span> <span class='op'>=</span> <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_get_first_row'>get_first_row</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>SELECT schema_version, run_id FROM meta LIMIT 1</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-          <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_row'>row</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+          <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_row'>row</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
 
           <span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='comma'>,</span> <span class='id identifier rubyid_run_id'>run_id</span> <span class='op'>=</span> <span class='id identifier rubyid_row'>row</span>
           <span class='kw'>unless</span> <span class='const'>Schema</span><span class='period'>.</span><span class='id identifier rubyid_supported?'>supported?</span><span class='lparen'>(</span><span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='id identifier rubyid_stored_sv'>stored_sv</span> <span class='op'>==</span> <span class='id identifier rubyid_schema_version'>schema_version</span>
             <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>schema_version mismatch (stored=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_content'>, expected=</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='embexpr_end'>}</span><span class='tstring_content'>); cold run</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
-            <span class='kw'>return</span> <span class='kw'>nil</span>
+            <span class='kw'>next</span> <span class='kw'>nil</span>
           <span class='kw'>end</span>
-          <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+          <span class='kw'>next</span> <span class='kw'>nil</span> <span class='kw'>if</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
 
           <span class='const'>LazySnapshot</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span>
             <span class='label'>schema_version:</span> <span class='id identifier rubyid_stored_sv'>stored_sv</span><span class='comma'>,</span> <span class='label'>run_id:</span> <span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span>
@@ -320,29 +331,70 @@
               <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>or switch to `storage_backend :json`.</span><span class='tstring_end'>&#39;</span></span>
       <span class='kw'>end</span>
 
+      <span class='comment'># The sqlite3 gem&#39;s Statement#step re-raises any pending Ruby
+</span>      <span class='comment'># exception it finds after stepping (statement.c checks
+</span>      <span class='comment'># rb_errinfo() to surface exceptions raised inside user-defined
+</span>      <span class='comment'># callbacks). Inside an at_exit handler after a failing suite,
+</span>      <span class='comment'># the in-flight SystemExit from RSpec&#39;s `Kernel.exit(1)` trips
+</span>      <span class='comment'># that check on the first stepped statement, so the persist
+</span>      <span class='comment'># dies with a spurious SystemExit that no StandardError rescue
+</span>      <span class='comment'># sees. Running the connection body on a fresh thread gives the
+</span>      <span class='comment'># C extension a clean per-thread errinfo without mutating the
+</span>      <span class='comment'># caller&#39;s $! (other at_exit handlers, e.g. SimpleCov&#39;s, read
+</span>      <span class='comment'># it to derive the exit status). Fast path: no pending
+</span>      <span class='comment'># exception, no thread. Blocks executed here must not use
+</span>      <span class='comment'># `return`/`break` (cross-thread non-local jumps raise
+</span>      <span class='comment'># LocalJumpError); use `next` for early block exits.
+</span>      <span class='kw'>def</span> <span class='id identifier rubyid_isolated_from_pending_exception'>isolated_from_pending_exception</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='kw'>yield</span> <span class='kw'>if</span> <span class='gvar'>$ERROR_INFO</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='const'>Thread</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='op'>&amp;</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_value'>value</span>
+      <span class='kw'>end</span>
+
       <span class='comment'># Internal method on the tracer pipeline.
 </span>      <span class='comment'># @api private
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_with_connection'>with_connection</span>
         <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_file?'>file?</span><span class='lparen'>(</span><span class='id identifier rubyid_db_path'>db_path</span><span class='rparen'>)</span>
 
-        <span class='id identifier rubyid_db'>db</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>SQLite3</span><span class='op'>::</span><span class='const'>Database</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_db_path'>db_path</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_configure_connection'>configure_connection</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
-        <span class='kw'>yield</span> <span class='id identifier rubyid_db'>db</span>
-      <span class='kw'>ensure</span>
-        <span class='id identifier rubyid_db'>db</span><span class='op'>&amp;.</span><span class='id identifier rubyid_close'>close</span>
+        <span class='id identifier rubyid_isolated_from_pending_exception'>isolated_from_pending_exception</span> <span class='kw'>do</span>
+          <span class='id identifier rubyid_db'>db</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>SQLite3</span><span class='op'>::</span><span class='const'>Database</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_db_path'>db_path</span><span class='rparen'>)</span>
+          <span class='kw'>begin</span>
+            <span class='id identifier rubyid_configure_connection'>configure_connection</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
+            <span class='kw'>yield</span> <span class='id identifier rubyid_db'>db</span>
+          <span class='kw'>ensure</span>
+            <span class='id identifier rubyid_db'>db</span><span class='op'>&amp;.</span><span class='id identifier rubyid_close'>close</span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal method on the tracer pipeline.
 </span>      <span class='comment'># @api private
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_with_write_connection'>with_write_connection</span>
         <span class='const'>FileUtils</span><span class='period'>.</span><span class='id identifier rubyid_mkdir_p'>mkdir_p</span><span class='lparen'>(</span><span class='ivar'>@cache_path</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_reset_corrupt_db_file!'>reset_corrupt_db_file!</span>
-        <span class='id identifier rubyid_db'>db</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>SQLite3</span><span class='op'>::</span><span class='const'>Database</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_db_path'>db_path</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_configure_connection'>configure_connection</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
-        <span class='id identifier rubyid_ensure_schema!'>ensure_schema!</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
-        <span class='kw'>yield</span> <span class='id identifier rubyid_db'>db</span>
+        <span class='id identifier rubyid_isolated_from_pending_exception'>isolated_from_pending_exception</span> <span class='kw'>do</span>
+          <span class='id identifier rubyid_reset_corrupt_db_file!'>reset_corrupt_db_file!</span>
+          <span class='id identifier rubyid_db'>db</span> <span class='op'>=</span> <span class='op'>::</span><span class='const'>SQLite3</span><span class='op'>::</span><span class='const'>Database</span><span class='period'>.</span><span class='id identifier rubyid_new'>new</span><span class='lparen'>(</span><span class='id identifier rubyid_db_path'>db_path</span><span class='rparen'>)</span>
+          <span class='kw'>begin</span>
+            <span class='id identifier rubyid_configure_connection'>configure_connection</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
+            <span class='id identifier rubyid_ensure_schema!'>ensure_schema!</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='rparen'>)</span>
+            <span class='kw'>yield</span> <span class='id identifier rubyid_db'>db</span>
+          <span class='kw'>ensure</span>
+            <span class='id identifier rubyid_db'>db</span><span class='op'>&amp;.</span><span class='id identifier rubyid_close'>close</span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
       <span class='kw'>ensure</span>
-        <span class='id identifier rubyid_db'>db</span><span class='op'>&amp;.</span><span class='id identifier rubyid_close'>close</span>
+        <span class='comment'># A save that dies between Database.new (which creates a
+</span>        <span class='comment'># zero-byte file) and the first committed page leaves a
+</span>        <span class='comment'># present-but-invalid db that would shadow the cache until a
+</span>        <span class='comment'># green run overwrites it. Re-probe here so a failed persist
+</span>        <span class='comment'># degrades to &quot;no cache&quot; (cold next run), never &quot;corrupt
+</span>        <span class='comment'># cache&quot;. Swallow probe errors: the original save exception
+</span>        <span class='comment'># is the informative one and must not be masked.
+</span>        <span class='kw'>begin</span>
+          <span class='id identifier rubyid_reset_corrupt_db_file!'>reset_corrupt_db_file!</span>
+        <span class='kw'>rescue</span> <span class='const'>StandardError</span>
+          <span class='kw'>nil</span>
+        <span class='kw'>end</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Probe db_path&#39;s leading bytes against SQLite&#39;s magic header.
@@ -456,14 +508,21 @@
 </span>      <span class='kw'>def</span> <span class='id identifier rubyid_write_all_tables'>write_all_tables</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>schema_version:</span><span class='rparen'>)</span>
         <span class='const'>TRUNCATE_TABLES</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_t'>t</span><span class='op'>|</span> <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>DELETE FROM </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_t'>t</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span>
 
-        <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span>
-          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INSERT INTO meta (schema_version, run_id, timestamp) VALUES (?, ?, ?)</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
-          <span class='lbracket'>[</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='period'>.</span><span class='id identifier rubyid_iso8601'>iso8601</span><span class='rbracket'>]</span>
-        <span class='rparen'>)</span>
-
         <span class='id identifier rubyid_write_example_rows'>write_example_rows</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_write_graph_rows'>write_graph_rows</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
         <span class='id identifier rubyid_write_grouped_rows'>write_grouped_rows</span><span class='lparen'>(</span><span class='id identifier rubyid_db'>db</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+
+        <span class='comment'># meta is written LAST so it doubles as the commit marker.
+</span>        <span class='comment'># sqlite3&#39;s Database#transaction only rolls back on
+</span>        <span class='comment'># StandardError (bare rescue), so a non-StandardError raised
+</span>        <span class='comment'># mid-write commits whatever rows were already inserted.
+</span>        <span class='comment'># Without a meta row, load_graph treats the file as no-cache
+</span>        <span class='comment'># and the next run cold-rewrites instead of loading partial
+</span>        <span class='comment'># data as if it were a complete snapshot.
+</span>        <span class='id identifier rubyid_db'>db</span><span class='period'>.</span><span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INSERT INTO meta (schema_version, run_id, timestamp) VALUES (?, ?, ?)</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+          <span class='lbracket'>[</span><span class='id identifier rubyid_schema_version'>schema_version</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_run_id'>run_id</span><span class='comma'>,</span> <span class='const'>Time</span><span class='period'>.</span><span class='id identifier rubyid_now'>now</span><span class='period'>.</span><span class='id identifier rubyid_utc'>utc</span><span class='period'>.</span><span class='id identifier rubyid_iso8601'>iso8601</span><span class='rbracket'>]</span>
+        <span class='rparen'>)</span>
       <span class='kw'>end</span>
 
       <span class='comment'># Internal method on the tracer pipeline.
@@ -754,7 +813,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:32 2026 by
+  Generated on Mon Jul 13 04:02:54 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -63,7 +63,7 @@
 </span>
 <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>optparse</span><span class='tstring_end'>&#39;</span></span>
 
-<span class='comment'># Only the Logger class -- NOT the full library, whose boot would
+<span class='comment'># Only the Logger class, NOT the full library, whose boot would
 </span><span class='comment'># `load` the project config. {CLI.with_default_logger_out} needs the
 </span><span class='comment'># class defined before that boot so the config-load window cannot
 </span><span class='comment'># construct a stdout-bound logger.
@@ -122,7 +122,7 @@
       <span class='kw'>end</span>
     <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
       <span class='comment'># A downstream pipe consumer (`rspec-tracer ... | head`) closed
-</span>      <span class='comment'># early -- routine in shell pipelines, not a failure. Exit 0
+</span>      <span class='comment'># early, which is routine in shell pipelines, not a failure. Exit 0
 </span>      <span class='comment'># without printing: writing to stderr could raise EPIPE again
 </span>      <span class='comment'># when both streams share the closed pipe.
 </span>      <span class='int'>0</span>
@@ -160,11 +160,11 @@
 </span>    <span class='comment'># the previous value afterwards. This must wrap {.load_tracer}:
 </span>    <span class='comment'># booting the library `load`s the project + global `.rspec-tracer`
 </span>    <span class='comment'># configs, and those can write through the logger BEFORE
-</span>    <span class='comment'># {.with_logger_on} ever runs -- the 1.x-compat deprecation shims
+</span>    <span class='comment'># {.with_logger_on} ever runs: the 1.x-compat deprecation shims
 </span>    <span class='comment'># (`reports_s3_path`, `use_local_aws`) fire a one-time
 </span>    <span class='comment'># `logger.warn` at first use, and in a fresh CLI process
 </span>    <span class='comment'># &quot;one-time&quot; means every invocation. The logger&#39;s default
-</span>    <span class='comment'># destination is stdout -- the stream machine consumers parse --
+</span>    <span class='comment'># destination is stdout (the stream machine consumers parse),
 </span>    <span class='comment'># so that warning would land ahead of e.g. the `blast-radius
 </span>    <span class='comment'># --json` document and break `| jq`. With the default rebound,
 </span>    <span class='comment'># every logger constructed during the window binds to stderr,
@@ -189,8 +189,8 @@
 </span>    <span class='comment'># {.with_default_logger_out} already redirects loggers constructed
 </span>    <span class='comment'># during the CLI window; this layer additionally rebinds a logger
 </span>    <span class='comment'># that was memoized into `RSpecTracer.@logger` BEFORE {.run} was
-</span>    <span class='comment'># called (possible for in-process callers -- the spec suite, or a
-</span>    <span class='comment'># user embedding the CLI -- where the library booted earlier with
+</span>    <span class='comment'># called (possible for in-process callers, the spec suite or a
+</span>    <span class='comment'># user embedding the CLI, where the library booted earlier with
 </span>    <span class='comment'># the stdout default). Sub-commands like `blast-radius --json`
 </span>    <span class='comment'># promise exactly one JSON document on stdout, so a diagnostic
 </span>    <span class='comment'># line printed ahead of it breaks `| jq`; together the two layers
@@ -198,7 +198,7 @@
 </span>    <span class='comment'>#
 </span>    <span class='comment'># `RSpecTracer.logger` memoizes into `@logger`
 </span>    <span class='comment'># (Configuration#logger); the ivar is seeded directly because
-</span>    <span class='comment'># Configuration deliberately exposes no logger setter -- adding
+</span>    <span class='comment'># Configuration deliberately exposes no logger setter; adding
 </span>    <span class='comment'># one would leak it into the user-facing `configure` DSL surface.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_with_logger_on'>with_logger_on</span><span class='lparen'>(</span><span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
@@ -280,7 +280,7 @@
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:31 2026 by
+  Generated on Mon Jul 13 04:02:53 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

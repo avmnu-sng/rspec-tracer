@@ -997,7 +997,7 @@ check never affects the exit status.</p>
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ci_environment_check'>ci_environment_check</span>
   <span class='id identifier rubyid_var'>var</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="#CI_ENV_VARS-constant" title="RSpecTracer::CLI::Doctor::CI_ENV_VARS (constant)">CI_ENV_VARS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_find'>find</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='op'>!</span><span class='const'>ENV</span><span class='lbracket'>[</span><span class='id identifier rubyid_v'>v</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='rbrace'>}</span>
   <span class='kw'>if</span> <span class='id identifier rubyid_var'>var</span>
-    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>INFO ci:          detected via ENV[</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_var'>var</span><span class='embexpr_end'>}</span><span class='tstring_content'>] -- cache persistence recipes: docs/CI_RECIPES.md</span><span class='tstring_end'>&quot;</span></span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>INFO ci:          detected via ENV[</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_var'>var</span><span class='embexpr_end'>}</span><span class='tstring_content'>]; cache persistence recipes: docs/CI_RECIPES.md</span><span class='tstring_end'>&quot;</span></span>
   <span class='kw'>else</span>
     <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO ci:          not detected (local run)</span><span class='tstring_end'>&#39;</span></span>
   <span class='kw'>end</span>
@@ -1851,8 +1851,8 @@ FAILed; warnings keep status 0).</p></div>
   <span class='id identifier rubyid_ok'>ok</span> <span class='op'>=</span> <span class='id identifier rubyid_checks'>checks</span><span class='period'>.</span><span class='id identifier rubyid_none?'>none?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span> <span class='id identifier rubyid_line'>line</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>FAIL</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span>
   <span class='id identifier rubyid_ok'>ok</span> <span class='op'>?</span> <span class='int'>0</span> <span class='op'>:</span> <span class='int'>1</span>
 <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
-  <span class='comment'># Downstream pipe (`... | head`) closed early -- routine in
-</span>  <span class='comment'># shell pipelines, not a failure. Exit 0 silently.
+  <span class='comment'># Downstream pipe (`... | head`) closed early, which is routine
+</span>  <span class='comment'># in shell pipelines, not a failure. Exit 0 silently.
 </span>  <span class='int'>0</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>doctor: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -2041,7 +2041,7 @@ separately from &quot;actually not installed.&quot;</p>
 </div>
 
       <div id="footer">
-  Generated on Mon Jul 13 02:01:32 2026 by
+  Generated on Mon Jul 13 04:02:55 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
