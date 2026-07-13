@@ -16,8 +16,8 @@ issues / PRs.
 The 2.0 line is a ground-up architecture rewrite around the
 input-taxonomy mental model: every test is a pure function of its
 inputs; tracking is input identification; cache invalidation is
-input-digest mismatch. Currently on `2.0.0.pre.2`; observation
-window open before the next pre-release / rc cut.
+input-digest mismatch. Currently on `2.0.0.rc.1`; observation
+window open before the `2.0.0` final cut.
 
 The full per-release feature list is in [`CHANGELOG.md`](CHANGELOG.md).
 The headline themes already shipped:

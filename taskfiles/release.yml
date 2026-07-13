@@ -31,7 +31,11 @@ tasks:
         echo "== [2/5] Forward version promises ========================"
         # Docs sometimes promise a feature for a future version; each
         # promise must still be true (or be rewritten) at tag time.
-        if git grep -InE 'lands in v[0-9]'; then
+        # Case-insensitive and tolerant of up to two punctuation
+        # characters before the version (e.g. a backtick-quoted
+        # "Lands in vN.N.N"); the example spells the version with N
+        # placeholders so this line never matches its own pattern.
+        if git grep -IinE 'lands in .{0,2}v[0-9]'; then
           echo "VERIFY-MANUALLY: re-verify each promised version above."
         else
           echo "PASS: no forward version promises found."
