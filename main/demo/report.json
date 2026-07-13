@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "run_id": "756170f0593287bd97d637125172347c",
-  "generated_at": "2026-07-13T04:07:46Z",
+  "generated_at": "2026-07-13T06:20:17Z",
   "summary": {
     "total_examples": 13,
     "passed_examples": 13,
@@ -12,9 +12,9 @@
     "flaky_examples": 0,
     "duplicate_examples": 0,
     "tracked_env_keys": 0,
-    "run_time": 288.2491,
-    "started_at": "2026-07-13T04:02:58Z",
-    "pid": 2389,
+    "run_time": 276.9302,
+    "started_at": "2026-07-13T06:15:40Z",
+    "pid": 2402,
     "parallel_tests": false
   },
   "reports": {
@@ -26,9 +26,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:03:43Z",
-          "finished_at": "2026-07-13T04:03:58Z",
-          "run_time": 14.653989364,
+          "started_at": "2026-07-13T06:16:24Z",
+          "finished_at": "2026-07-13T06:16:37Z",
+          "run_time": 13.116440888,
           "status": "passed"
         }
       },
@@ -39,9 +39,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:03:58Z",
-          "finished_at": "2026-07-13T04:04:20Z",
-          "run_time": 21.924896702,
+          "started_at": "2026-07-13T06:16:37Z",
+          "finished_at": "2026-07-13T06:16:56Z",
+          "run_time": 19.437672955,
           "status": "passed"
         }
       },
@@ -52,9 +52,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:04:20Z",
-          "finished_at": "2026-07-13T04:04:34Z",
-          "run_time": 14.233925708,
+          "started_at": "2026-07-13T06:16:56Z",
+          "finished_at": "2026-07-13T06:17:09Z",
+          "run_time": 12.720488876,
           "status": "passed"
         }
       },
@@ -65,9 +65,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:04:34Z",
-          "finished_at": "2026-07-13T04:04:56Z",
-          "run_time": 22.013335286,
+          "started_at": "2026-07-13T06:17:09Z",
+          "finished_at": "2026-07-13T06:17:29Z",
+          "run_time": 19.49955991,
           "status": "passed"
         }
       },
@@ -78,9 +78,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:04:56Z",
-          "finished_at": "2026-07-13T04:05:19Z",
-          "run_time": 23.085361977,
+          "started_at": "2026-07-13T06:17:29Z",
+          "finished_at": "2026-07-13T06:17:51Z",
+          "run_time": 21.971299975,
           "status": "passed"
         }
       },
@@ -91,9 +91,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:05:19Z",
-          "finished_at": "2026-07-13T04:05:42Z",
-          "run_time": 22.404861394,
+          "started_at": "2026-07-13T06:17:51Z",
+          "finished_at": "2026-07-13T06:18:13Z",
+          "run_time": 22.50643133,
           "status": "passed"
         }
       },
@@ -104,9 +104,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:05:42Z",
-          "finished_at": "2026-07-13T04:06:03Z",
-          "run_time": 21.162397368,
+          "started_at": "2026-07-13T06:18:13Z",
+          "finished_at": "2026-07-13T06:18:35Z",
+          "run_time": 21.70881889,
           "status": "passed"
         }
       },
@@ -117,9 +117,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:06:03Z",
-          "finished_at": "2026-07-13T04:06:24Z",
-          "run_time": 20.769516573,
+          "started_at": "2026-07-13T06:18:35Z",
+          "finished_at": "2026-07-13T06:18:56Z",
+          "run_time": 21.424629224,
           "status": "passed"
         }
       },
@@ -130,9 +130,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:06:24Z",
-          "finished_at": "2026-07-13T04:06:46Z",
-          "run_time": 22.285586663,
+          "started_at": "2026-07-13T06:18:56Z",
+          "finished_at": "2026-07-13T06:19:18Z",
+          "run_time": 21.398011968,
           "status": "passed"
         }
       },
@@ -143,9 +143,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:06:46Z",
-          "finished_at": "2026-07-13T04:07:07Z",
-          "run_time": 21.299081582,
+          "started_at": "2026-07-13T06:19:18Z",
+          "finished_at": "2026-07-13T06:19:39Z",
+          "run_time": 21.205915433,
           "status": "passed"
         }
       },
@@ -156,9 +156,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:07:07Z",
-          "finished_at": "2026-07-13T04:07:21Z",
-          "run_time": 14.157574615,
+          "started_at": "2026-07-13T06:19:39Z",
+          "finished_at": "2026-07-13T06:19:53Z",
+          "run_time": 13.766464456,
           "status": "passed"
         }
       },
@@ -169,9 +169,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:07:21Z",
-          "finished_at": "2026-07-13T04:07:38Z",
-          "run_time": 16.462885169,
+          "started_at": "2026-07-13T06:19:53Z",
+          "finished_at": "2026-07-13T06:20:08Z",
+          "run_time": 15.764307401,
           "status": "passed"
         }
       },
@@ -182,9 +182,9 @@
         "status": "passed",
         "run_reason": "Explicit run",
         "execution_result": {
-          "started_at": "2026-07-13T04:07:39Z",
-          "finished_at": "2026-07-13T04:07:46Z",
-          "run_time": 7.085755867,
+          "started_at": "2026-07-13T06:20:10Z",
+          "finished_at": "2026-07-13T06:20:17Z",
+          "run_time": 6.903291761,
           "status": "passed"
         }
       }
