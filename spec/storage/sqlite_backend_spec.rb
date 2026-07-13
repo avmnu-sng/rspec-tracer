@@ -205,6 +205,127 @@ RSpec.describe RSpecTracer::Storage::SqliteBackend do
     end
   end
 
+  # rubocop:disable RSpec/MultipleExpectations
+  describe 'persistence inside at_exit of a failing (exit 1) process' do
+    # The environment the backend sees when the tracer's at_exit
+    # persist runs after a FAILING suite: RSpec calls `Kernel.exit(1)`
+    # and the at_exit handlers execute with that SystemExit pending in
+    # the thread's rb_errinfo. sqlite3's Statement#step re-raises any
+    # pending rb_errinfo it finds after stepping (a guard meant for
+    # exceptions raised inside user-defined callbacks), which used to
+    # abort the persist with a spurious SystemExit that no
+    # StandardError rescue catches: a zero-byte database on a fresh
+    # cache dir, a silently skipped save on a warm one.
+    #
+    # rb_errinfo is only pending while an exception is genuinely in
+    # flight; a raise/rescue inside a running example restores it
+    # before the rescue body runs, so the condition cannot be
+    # simulated in-process. Reproduce it in a subprocess that
+    # registers an at_exit persist + read and then exits 1, exactly
+    # like a red suite does.
+    it 'save_graph + load_graph + read_field work despite the pending SystemExit' do
+      require 'open3'
+
+      lib_dir = File.expand_path('../../lib', __dir__)
+      script = <<~RUBY
+        require 'set'
+        require 'rspec_tracer/storage/sqlite_backend'
+        require 'rspec_tracer/storage/snapshot'
+
+        backend = RSpecTracer::Storage::SqliteBackend.new(cache_path: ARGV[0])
+        snapshot = RSpecTracer::Storage::Snapshot.new(
+          schema_version: RSpecTracer::Storage::Schema::CURRENT,
+          run_id: 'run-at-exit', all_examples: { 'ex1' => { id: 'ex1' } },
+          duplicate_examples: {}, interrupted_examples: Set.new,
+          flaky_examples: Set.new, failed_examples: Set.new(['ex1']),
+          pending_examples: Set.new, skipped_examples: Set.new,
+          all_files: {}, dependency: { 'ex1' => Set.new(['/a.rb']) },
+          reverse_dependency: {}, examples_coverage: {}, boot_set: {},
+          wsi_snapshot: {}, env_snapshot: {}, env_dependency: {}
+        )
+
+        at_exit do
+          backend.save_graph(snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+          loaded = backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+          puts "LOADED_RUN_ID=\#{loaded&.run_id} DEPS=\#{backend.read_field(:dependency)['ex1']&.to_a&.join(',')}"
+        end
+
+        exit 1
+      RUBY
+
+      out, status = Open3.capture2e(RbConfig.ruby, '-I', lib_dir, '-e', script, cache_path)
+
+      expect(status.exitstatus).to eq(1), "unexpected subprocess outcome:\n#{out}"
+      expect(out).to include('LOADED_RUN_ID=run-at-exit DEPS=/a.rb'),
+                     "at_exit persist or read did not complete:\n#{out}"
+
+      loaded = other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      expect(loaded).not_to be_nil
+      expect(loaded.run_id).to eq('run-at-exit')
+    end
+
+    # The full rb_errinfo condition needs the subprocess above, but
+    # the shield's dispatch is also directly observable in-process:
+    # $ERROR_INFO is non-nil inside a rescue clause, which selects
+    # the fresh-thread path.
+    it 'runs the connection body on a fresh thread while an exception is pending' do
+      executing_thread = nil
+      begin
+        raise 'pending exception'
+      rescue StandardError
+        executing_thread = backend.send(:isolated_from_pending_exception) { Thread.current }
+      end
+
+      expect(executing_thread).to be_a(Thread)
+      expect(executing_thread).not_to eq(Thread.current)
+    end
+
+    it 'runs the connection body inline when no exception is pending' do
+      expect(backend.send(:isolated_from_pending_exception) { Thread.current }).to eq(Thread.current)
+    end
+  end
+
+  describe 'failed persist leaves no corrupt-but-present database' do
+    it 'removes the zero-byte file created by a save that dies before the first write' do
+      allow(backend).to receive(:ensure_schema!).and_raise(SQLite3::Exception, 'simulated failure at open')
+
+      expect do
+        backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      end.to raise_error(SQLite3::Exception)
+
+      expect(File.exist?(File.join(cache_path, RSpecTracer::Storage::SqliteBackend::DB_FILENAME)))
+        .to be(false)
+    end
+
+    it 'never presents a partial commit as a complete snapshot (meta row written last)' do
+      backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      # NotImplementedError is a ScriptError: sqlite3's transaction
+      # helper only rolls back on StandardError, so a mid-write
+      # non-StandardError COMMITS the rows already inserted. The meta
+      # row is written last, so that partial commit has no meta row
+      # and the next load degrades to a cold run instead of loading
+      # partial data.
+      allow(backend).to receive(:write_grouped_rows)
+        .and_raise(NotImplementedError, 'simulated non-StandardError mid-write')
+
+      expect do
+        backend.save_graph(build_sample_snapshot('run-partial'),
+                           schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      end.to raise_error(NotImplementedError)
+
+      expect(other_backend.load_graph(schema_version: RSpecTracer::Storage::Schema::CURRENT)).to be_nil
+    end
+
+    it 'swallows a failure in the post-write probe itself instead of masking the primary error' do
+      allow(backend).to receive(:reset_corrupt_db_file!).and_raise(Errno::EACCES, 'probe denied')
+
+      expect do
+        backend.save_graph(sample_snapshot, schema_version: RSpecTracer::Storage::Schema::CURRENT)
+      end.to raise_error(Errno::EACCES, /probe denied/)
+    end
+  end
+  # rubocop:enable RSpec/MultipleExpectations
+
   describe 'missing sqlite3 gem' do
     # Intercepting `require 'sqlite3'` inside the backend constructor
     # is the only way to exercise the LoadError path when sqlite3 is

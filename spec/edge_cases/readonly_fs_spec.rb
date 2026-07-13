@@ -172,6 +172,24 @@ RSpec.describe 'Read-only filesystem — graceful degradation' do
       expect(RSpecTracer.send(:run_finalize)).to be_nil
       expect(fake_logger).to have_received(:warn).with(/cache persistence failed.*SQLite3::Exception/)
     end
+
+    # Nothing inside finalize calls exit itself, so a SystemExit here
+    # can only be a pending `Kernel.exit(1)` (failing suite) that a C
+    # extension re-surfaced during the at_exit persist (sqlite3's
+    # Statement#step re-raises rb_errinfo). Letting it propagate
+    # would silently skip every remaining exit task with no warning.
+    it 'returns nil + warns one line when engine.finalize raises SystemExit' do
+      fake_engine = instance_double(RSpecTracer::Engine)
+      fake_logger = instance_double(Logger)
+
+      allow(RSpecTracer).to receive_messages(engine: fake_engine, logger: fake_logger)
+      allow(fake_engine).to receive(:finalize).and_raise(SystemExit.new(1))
+      allow(fake_logger).to receive(:warn)
+      allow(fake_logger).to receive(:debug)
+
+      expect(RSpecTracer.send(:run_finalize)).to be_nil
+      expect(fake_logger).to have_received(:warn).with(/cache persistence failed.*SystemExit/).once
+    end
   end
 end
 # rubocop:enable RSpec/DescribeClass
