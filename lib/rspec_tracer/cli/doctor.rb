@@ -17,8 +17,6 @@ module RSpecTracer
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 
-        require 'rspec_tracer/load_config'
-
         checks = [
           ruby_version_check,
           tracer_version_check,
@@ -31,11 +29,16 @@ module RSpecTracer
           rails_check,
           cache_schema_version_check,
           remote_cache_check,
-          ar_schema_narrow_attribution_check
+          ar_schema_narrow_attribution_check,
+          ci_environment_check
         ]
         checks.each { |line| stdout.puts line }
         ok = checks.none? { |line| line.start_with?('FAIL') }
         ok ? 0 : 1
+      rescue Errno::EPIPE
+        # Downstream pipe (`... | head`) closed early -- routine in
+        # shell pipelines, not a failure. Exit 0 silently.
+        0
       rescue StandardError => e
         stderr.puts "doctor: #{e.class}: #{e.message}"
         1
@@ -250,6 +253,26 @@ module RSpecTracer
             'section "Narrow AR schema attribution".'
         else
           'OK   AR schema:   narrow attribution preconditions look good'
+        end
+      end
+
+      # Environment variables that signal a CI environment, one per
+      # major provider plus the near-universal `CI` convention.
+      CI_ENV_VARS = %w[CI GITHUB_ACTIONS GITLAB_CI CIRCLECI BUILDKITE TF_BUILD].freeze
+
+      # Surface the cache-persistence recipes exactly when the user is
+      # on CI, where a non-persisted cache silently degrades every run
+      # to a cold run. Detection requires a var that is set AND
+      # non-empty: `ENV['CI'] == ""` is truthy in Ruby (a shell with
+      # `CI=` exported would otherwise read as detected). INFO both
+      # ways - being in or out of CI is not a health state, so this
+      # check never affects the exit status.
+      def self.ci_environment_check
+        var = CI_ENV_VARS.find { |v| !ENV[v].to_s.empty? }
+        if var
+          "INFO ci:          detected via ENV[#{var}] -- cache persistence recipes: docs/CI_RECIPES.md"
+        else
+          'INFO ci:          not detected (local run)'
         end
       end
 

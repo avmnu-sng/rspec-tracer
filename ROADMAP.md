@@ -89,10 +89,12 @@ Items:
   `explain`. Outputs *"if you modify this file, it triggers N examples
   across M files."* Lets developers spot architectural drift before
   the PR review; turns the dependency graph from invisible infra into
-  inspectable insight.
+  inspectable insight. Shipped -- see
+  [COOKBOOK.md](COOKBOOK.md#16-measure-a-files-blast-radius).
 - **`bin/rspec-tracer explain --not-run <example_id>`.** The "why
   did this NOT run?" inverse of the existing `explain`. Closes the
-  most-requested observability gap from pre-release.
+  most-requested observability gap from pre-release. Shipped -- see
+  [COOKBOOK.md](COOKBOOK.md#12-debug-why-did-this-test-re-run).
 - **Confidence scoring on per-run summary.** Terminal output extends
   to show what proportion of selection decisions came from explicit
   vs inferred dependencies; surfaces invalidation hotspots.

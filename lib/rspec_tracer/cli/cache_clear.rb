@@ -18,7 +18,6 @@ module RSpecTracer
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 
-        require 'rspec_tracer/load_config'
         existing = existing_targets
         return nothing_to_remove(stdout) if existing.empty?
 
@@ -26,6 +25,10 @@ module RSpecTracer
         return aborted(stdout) unless skip_confirmation?(args) || confirm?(stdout)
 
         remove_each(stdout, existing)
+        0
+      rescue Errno::EPIPE
+        # Downstream pipe (`... | head`) closed early -- routine in
+        # shell pipelines, not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "cache:clear: #{e.class}: #{e.message}"

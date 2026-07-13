@@ -24,6 +24,7 @@ from 1.x see [`UPGRADING.md`](UPGRADING.md). For internals see
 13. [Compose with Knapsack / RSpec::Retry / RSpec::Rerun](#13-compose-with-knapsack--rspecretry--rspecrerun)
 14. [Write a custom storage backend](#14-write-a-custom-storage-backend)
 15. [Write a custom reporter](#15-write-a-custom-reporter)
+16. [Measure a file's blast radius](#16-measure-a-files-blast-radius)
 
 ---
 
@@ -583,9 +584,11 @@ bundle exec rspec-tracer explain 'AdminController#create'
 ```
 
 Prints the example's last-run status, dependency set, and the run-
-decision reason (e.g. `"Files changed: app/controllers/admin_controller.rb"`,
-`"Whole-suite invalidator changed: Gemfile.lock"`,
-`"Failed previously"`).
+decision reason (e.g. `"Files changed"`,
+`"Whole-suite invalidator changed"`,
+`"Failed previously"`). The reason names the trigger category only;
+the `dependencies:` listing underneath shows which tracked files
+are involved.
 
 For a suite-wide breakdown, the terminal output already shows the
 top-level reasons after each run:
@@ -598,6 +601,23 @@ by reason: 38 Files changed · 4 Failed previously
 For deeper config-level debugging, `bundle exec rspec-tracer doctor`
 diagnoses the boot-time state of every contract (SimpleCov load
 order, schema version, remote-cache reachability, AR-schema config).
+
+### And why did it NOT run?
+
+`--not-run` flips `explain` to the skip-side view:
+
+```sh
+bundle exec rspec-tracer explain --not-run 'AdminController#create'
+```
+
+Prints whether the example was skipped on the last run -- and if
+so, the derivation of why no run trigger fired (no whole-suite
+invalidator, no boot-file change, no failed / flaky / pending /
+interrupted status, no changed dependency file, unchanged env
+snapshot) -- plus its last recorded status, the condition under
+which it runs next time, and its tracked dependency files. The
+cache keeps only the most recent snapshot, so "last status"
+reflects the last run, not a run history.
 
 ---
 
@@ -739,6 +759,67 @@ end
 Errors inside `generate` are caught by the Registry's per-reporter
 rescue + warn — a buggy custom reporter never breaks the test
 suite. Same graceful-degradation contract as Storage backends.
+
+---
+
+## 16. Measure a file's blast radius
+
+Goal: answer "if I change this file, how much of the suite re-runs?"
+from the command line, before you change it.
+
+After at least one traced run:
+
+```sh
+bundle exec rspec-tracer blast-radius app/models/user.rb
+```
+
+```
+/app/models/user.rb: 450 examples across 12 spec files
+```
+
+`--list` enumerates the affected examples (location + description);
+`--json` emits one machine-readable JSON document to stdout for
+tooling:
+
+```sh
+bundle exec rspec-tracer blast-radius --list app/models/user.rb
+bundle exec rspec-tracer blast-radius --json app/models/user.rb
+```
+
+Multiple files compose, with a deduplicated `total:` line -- so you
+can pipe a branch diff through it and see what a PR invalidates
+before review:
+
+```sh
+git diff --name-only main | xargs bundle exec rspec-tracer blast-radius
+```
+
+Files the cache never saw (docs, CI config) report
+`not tracked in cache` and still exit 0, so the git pipeline never
+breaks on non-Ruby paths. `not tracked` means the tracer never
+observed the file as an input -- NOT that the file never loaded.
+Files consumed outside the hooked surface land here too:
+`spec/spec_helper.rb` itself (it executes before coverage tracking
+starts), reads via unhooked APIs or C extensions, and the other
+blind spots listed in
+[ARCHITECTURE.md's soundness model](ARCHITECTURE.md#soundness-model).
+
+Reading the output:
+
+- Whole-suite invalidators (`Gemfile.lock`, `.ruby-version`,
+  `.rspec-tracer`) and boot-set files report
+  `re-runs all N examples`: a change to them invalidates every
+  cached example, not just tracked dependents. The boot-set row in
+  [ARCHITECTURE.md's soundness model](ARCHITECTURE.md#soundness-model)
+  explains why.
+- The count reflects the file-change trigger only; examples that
+  always re-run for status reasons (failed / flaky / pending /
+  interrupted) are not included.
+
+A blast radius that keeps growing is architectural drift made
+visible. For the same data as a browsable per-file HTML view, see
+the Files Dependency report in recipe
+[#4](#4-map-file-to-test-dependencies-files-dependency).
 
 ---
 

@@ -22,8 +22,6 @@ module RSpecTracer
       def self.run(args, stdout: $stdout, stderr: $stderr)
         return print_help(stdout) if args.include?('-h') || args.include?('--help')
 
-        require 'rspec_tracer/load_config'
-
         cache_path = RSpecTracer.cache_path
         stdout.puts "cache_path: #{cache_path}"
         stdout.puts "size:       #{format_bytes(directory_size(cache_path))}"
@@ -37,6 +35,10 @@ module RSpecTracer
 
         stdout.puts "last_run:   #{run_id}"
         print_example_count(stdout, backend)
+        0
+      rescue Errno::EPIPE
+        # Downstream pipe (`... | head`) closed early -- routine in
+        # shell pipelines, not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "cache:info: #{e.class}: #{e.message}"

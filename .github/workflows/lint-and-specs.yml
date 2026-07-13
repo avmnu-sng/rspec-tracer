@@ -25,6 +25,10 @@ on:
         type: boolean
         required: false
         default: true
+      mut_cli:
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -543,6 +547,25 @@ jobs:
         timeout-minutes: 5
         run: task test:mutation:top-level-c
 
+  test-mutation-cli:
+    name: test-mutation-cli
+    if: ${{ inputs.mut_cli }}
+    # CLI snapshot-reading surface: BlastRadius + the shared
+    # SnapshotHelpers module (26 subjects, ~20s local; single
+    # combined mutant run, gate 87%). The other CLI sub-commands are
+    # line-coverage-only; see taskfiles/test-mutation.yml for the
+    # gating rationale.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Test -- Mutation (cli)
+        timeout-minutes: 5
+        run: task test:mutation:cli
+
   test-integration-remote:
     name: test-integration-remote
     runs-on: ubuntu-latest
@@ -641,6 +664,7 @@ jobs:
       - test-mutation-top-level-a
       - test-mutation-top-level-b
       - test-mutation-top-level-c
+      - test-mutation-cli
       - test-integration-remote
       - test-regressions-plain
     steps:

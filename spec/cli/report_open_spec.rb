@@ -21,6 +21,13 @@ RSpec.describe RSpecTracer::CLI::ReportOpen do
       end
     end
 
+    it 'exits 0 silently when a downstream pipe closes early (broken pipe from `| head`)' do
+      broken = StringIO.new
+      allow(broken).to receive(:puts).and_raise(Errno::EPIPE)
+      expect(described_class.run(%w[-h], stdout: broken, stderr: stderr)).to eq(0)
+      expect(stderr.string).to be_empty
+    end
+
     it 'returns 1 with a clear error when index.html is missing' do
       Dir.mktmpdir do |dir|
         allow(RSpecTracer).to receive(:report_path).and_return(dir)
