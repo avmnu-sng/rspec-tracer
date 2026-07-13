@@ -5,8 +5,12 @@ version: '3'
 # pinned-SHA real-world Rails+RSpec projects (Solidus / Refinery /
 # Spree) cloned into tmp/soak-fixtures/<project>/. The soak iterates
 # subprocess runs of `bundle exec rspec`, deterministic-seeded random
-# file mutation per iter (9-kind rotation), asserts memstat[N] <=
-# memstat[5] * 1.05 for N >= 6.
+# file mutation per iter (9-kind rotation), and enforces a cycle-aware
+# memory gate: every iter after the first full 9-iter mutation cycle
+# must stay under SOAK_MEMORY_BOUND (default 1.2) times the max
+# memstat of that first cycle, and the last-cycle mean must stay
+# under the same multiple of the first-cycle mean (drift check).
+# Runs shorter than two full cycles (smoke) skip enforcement.
 #
 # Pin files at .github/sha-pins/<project>.txt drive the pinned commit
 # SHA + tag + license SHA-256. Bumps are review-gated: the
@@ -250,8 +254,8 @@ tasks:
       `timeout-minutes: 240` (4 h) cap with margin. The workflow shards
       Spree into 2 matrix cells (spree-shard-1, spree-shard-2) via the
       SOAK_SHARD env; combined the shards cover 40 iter-equivalents
-      (4.4 mutation-kind cycles, 30 post-warmup memory observations
-      across shards). The `workflow_dispatch.inputs.iterations` input
+      (4.4 mutation-kind cycles, 22 post-first-cycle memory
+      observations across shards). The `workflow_dispatch.inputs.iterations` input
       overrides ITERATIONS per shard (applies to both shards).
       Unsharded local runs (`task soak:full:spree` without SOAK_SHARD)
       execute the 20-iter default with offset 0.

@@ -13,8 +13,18 @@ require 'pathname'
 # SHA, injects rspec-tracer into the project's Gemfile, bundles,
 # and db-prepares. This spec consumes the prepped fixture: subprocess
 # per iter, deterministic-seeded random file mutation rotation
-# through 9 kinds, asserts memstat[N] <= memstat[5] * 1.05 for
-# N >= 6.
+# through 9 kinds. Memory gate (cycle-aware, two checks):
+#   peak:  every iter after the first full 9-iter mutation cycle must
+#          stay <= SOAK_MEMORY_BOUND x the MAX total_memsize observed
+#          across that first cycle (each mutation kind's workload
+#          shape legitimately swings per-iter memory ~1.5x, so the
+#          baseline must cover the full rotation, not a single iter).
+#   drift: mean total_memsize over the LAST full cycle must stay
+#          <= SOAK_MEMORY_BOUND x mean over the FIRST full cycle,
+#          so a slow leak that never crosses the peak bound still
+#          trips the gate.
+# Runs shorter than two full cycles (e.g. 10-iter smoke) skip
+# enforcement.
 #
 # Driven by env:
 #   SOAK_PROJECT       - solidus | refinery | spree (REQUIRED)
@@ -29,8 +39,9 @@ require 'pathname'
 #                        slices so the combined shards cover what a
 #                        single-cell N*ITERATIONS run would have. Empty
 #                        = no offset (legacy semantics).
-#   SOAK_WARMUP_ITERS  - warm-up baseline iter (default: 5)
-#   SOAK_MEMORY_BOUND  - growth bound vs warm-up (default: 1.20)
+#   SOAK_MEMORY_BOUND  - growth bound vs the first-cycle baseline,
+#                        applied to both the peak and drift checks
+#                        (default: 1.20)
 #
 # Run via:
 #   task soak:fixture:<project>  # one-time clone + bundle + db prep
@@ -229,9 +240,9 @@ MUTATION_TARGETS = {
 # (see `.github/workflows/soak.yml`); each cell runs ITERATIONS=20
 # (~3.7 h with margin), and the cells use disjoint SHARD_OFFSETs so
 # the combined deterministic mutation-seed space across shards covers
-# 40 iter-equivalents (4.4 mutation-kind cycles, 30 post-warmup memory
-# observations across shards) — most of what the original 50-iter
-# design provided.
+# 40 iter-equivalents (4.4 mutation-kind cycles, 22 post-first-cycle
+# memory observations across shards), retaining most of what the
+# original 50-iter design provided.
 # Per-iter wall on GHA EPYC is 3-6x M2 Max for Rails-heavy suites; the
 # original 1.5-2 h docstring claim assumed M2 Max pacing.
 DEFAULT_ITERATIONS = { solidus: 50, refinery: 100, spree: 20 }.freeze
@@ -261,8 +272,11 @@ CACHE_PATH = ENGINE_PATH.join('rspec_tracer_cache')
 soak_iterations_env = ENV['SOAK_ITERATIONS'].to_s
 soak_iterations_env = nil if soak_iterations_env.empty?
 ITERATIONS = Integer(soak_iterations_env || DEFAULT_ITERATIONS.fetch(PROJECT).to_s)
-WARMUP_ITERS = Integer(ENV.fetch('SOAK_WARMUP_ITERS', '5'))
 MEMORY_BOUND = Float(ENV.fetch('SOAK_MEMORY_BOUND', '1.20'))
+# One full pass through the mutation-kind rotation. The memory
+# baseline spans a full cycle so every kind's workload shape (and
+# therefore its legitimate per-iter memory swing) is represented.
+CYCLE_ITERS = MUTATION_KINDS.size
 
 # Shard support. When `SOAK_SHARD=N` is set (1-indexed), the mutation
 # RNG seed + kind selection use `global_iter = iter + SHARD_OFFSET`
@@ -525,42 +539,56 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
   def enforce_memory_bound(memstats)
     raise 'no memstats captured' if memstats.empty?
 
-    if memstats.length < WARMUP_ITERS
-      # Smoke runs (typically 10 iters) and ad-hoc runs with
-      # SOAK_ITERATIONS < WARMUP_ITERS skip the bound assertion -
-      # there's no warm-up baseline to compare against. The full
-      # 50/100-iter cron always exceeds WARMUP_ITERS so the gate
-      # fires there. Print summary as the diagnostic artifact.
-      puts "Memory bound skipped (#{memstats.length} iters < WARMUP_ITERS=#{WARMUP_ITERS})" # rubocop:disable RSpec/Output
+    memory = compute_memory_stats(memstats)
+    if memory.nil?
+      # Smoke runs (typically 10 iters) and ad-hoc runs shorter than
+      # two full mutation cycles skip the bound assertion - the peak
+      # check needs a full first cycle as baseline and the drift check
+      # needs a disjoint last cycle to compare against. The full
+      # 50/100-iter cron (and the 20-iter Spree shards) always cover
+      # two cycles so the gate fires there. Print summary as the
+      # diagnostic artifact.
+      puts "Memory bound skipped (#{memstats.length} iters < 2 full mutation cycles = #{2 * CYCLE_ITERS} iters)" # rubocop:disable RSpec/Output
       return
     end
 
-    baseline = memstats[WARMUP_ITERS - 1].fetch('total_memsize')
-    bound = baseline * MEMORY_BOUND
-
-    growths = []
-    memstats.drop(WARMUP_ITERS).each_with_index do |stat, idx|
-      iter = WARMUP_ITERS + idx + 1
-      memsize = stat.fetch('total_memsize')
-      ratio = memsize.to_f / baseline
-      growths << [iter, memsize, ratio]
-    end
-
+    baseline = memory[:baseline_bytes]
+    growths = compute_memory_growths(memstats, baseline)
     summary = growths.map { |iter, _, ratio| "iter #{iter}: #{format('%.4f', ratio)}x" }
       .join("\n  ")
-    # The growth-ratio summary is a CI / nightly-cron diagnostic;
-    # post-merge dashboards plot it as the soak SLI signal. RSpec/Output
-    # disabled deliberately - this puts is the spec's primary
-    # observability artifact.
-    puts "Memory growth (#{PROJECT}#{SHARD_LABEL} baseline iter #{WARMUP_ITERS} = #{baseline} bytes):\n  #{summary}" # rubocop:disable RSpec/Output
+    growth_line = "Memory growth (#{PROJECT}#{SHARD_LABEL} baseline = #{baseline} bytes, " \
+                  "max of first #{CYCLE_ITERS}-iter mutation cycle):\n  #{summary}"
+    drift_line = "Memory drift (#{PROJECT}#{SHARD_LABEL}): last-cycle mean " \
+                 "#{memory[:last_cycle_mean_bytes]} bytes vs first-cycle mean " \
+                 "#{memory[:first_cycle_mean_bytes]} bytes = " \
+                 "#{format('%.4f', memory[:drift_ratio])}x (bound #{format('%.2f', MEMORY_BOUND)}x)"
+    # The growth-ratio + drift summary is a CI / nightly-cron
+    # diagnostic; post-merge dashboards plot it as the soak SLI signal.
+    # RSpec/Output disabled deliberately - this puts is the spec's
+    # primary observability artifact.
+    puts "#{growth_line}\n#{drift_line}" # rubocop:disable RSpec/Output
 
-    violations = growths.select { |_, memsize, _| memsize > bound }
-    return if violations.empty?
+    failures = memory_bound_failures(memory)
+    return if failures.empty?
 
-    raise "memory bound exceeded for #{PROJECT}#{SHARD_LABEL} (baseline #{baseline}, bound #{bound}):\n" +
-      violations.map { |iter, memsize, ratio|
-        "  iter #{iter}: #{memsize} bytes (#{format('%.4f', ratio)}x)"
-      }.join("\n")
+    raise "memory bound exceeded for #{PROJECT}#{SHARD_LABEL}:\n#{failures.join("\n")}"
+  end
+
+  def memory_bound_failures(memory)
+    failures = []
+    unless memory[:violations].empty?
+      detail = memory[:violations].map do |v|
+        "  iter #{v[:iter]}: #{v[:bytes]} bytes (#{format('%.4f', v[:ratio])}x)"
+      end.join("\n")
+      failures << "peak bound exceeded (baseline #{memory[:baseline_bytes]} = max of first " \
+                  "#{CYCLE_ITERS}-iter mutation cycle, bound #{memory[:bound_bytes]}):\n#{detail}"
+    end
+    if memory[:drift_violation]
+      failures << "drift bound exceeded: last-cycle mean #{memory[:last_cycle_mean_bytes]} bytes " \
+                  "vs first-cycle mean #{memory[:first_cycle_mean_bytes]} bytes = " \
+                  "#{format('%.4f', memory[:drift_ratio])}x > #{format('%.2f', MEMORY_BOUND)}x"
+    end
+    failures
   end
 
   # ---- summary ------------------------------------------------
@@ -630,16 +658,22 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
     }
   end
 
+  # Needs at least two full mutation cycles: the first cycle supplies
+  # the peak baseline (max total_memsize across the cycle, so every
+  # mutation kind's workload shape is represented) and the last cycle
+  # supplies the drift comparison (last-cycle mean vs first-cycle
+  # mean, catching a slow leak that stays under the peak bound).
   def compute_memory_stats(memstats)
-    return nil if memstats.length < WARMUP_ITERS
+    return nil if memstats.length < 2 * CYCLE_ITERS
 
-    baseline = memstats[WARMUP_ITERS - 1].fetch('total_memsize')
+    baseline = memstats.first(CYCLE_ITERS).map { |s| s.fetch('total_memsize') }.max
     bound = baseline * MEMORY_BOUND
     growths = compute_memory_growths(memstats, baseline)
     max_entry = growths.max_by { |_, _, ratio| ratio } || [nil, baseline, 1.0]
     violations = growths.select { |_, memsize, _| memsize > bound }
 
     {
+      cycle_iters: CYCLE_ITERS,
       baseline_bytes: baseline,
       bound_bytes: bound.to_i,
       bound_multiplier: MEMORY_BOUND,
@@ -647,12 +681,34 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
       max_growth_bytes: max_entry[1],
       max_growth_ratio: max_entry[2],
       violations: violations.map { |iter, memsize, ratio| { iter: iter, bytes: memsize, ratio: ratio } }
+    }.merge(compute_drift_stats(memstats))
+  end
+
+  # Drift check: mean total_memsize over the LAST full mutation cycle
+  # vs the FIRST. Catches a slow leak whose per-iter peaks never cross
+  # the peak bound but whose floor keeps rising.
+  def compute_drift_stats(memstats)
+    first_cycle_mean = cycle_mean(memstats.first(CYCLE_ITERS))
+    last_cycle_mean = cycle_mean(memstats.last(CYCLE_ITERS))
+    drift_ratio = last_cycle_mean / first_cycle_mean
+
+    {
+      first_cycle_mean_bytes: first_cycle_mean.round,
+      last_cycle_mean_bytes: last_cycle_mean.round,
+      drift_ratio: drift_ratio,
+      drift_violation: drift_ratio > MEMORY_BOUND
     }
   end
 
+  def cycle_mean(cycle)
+    cycle.sum { |s| s.fetch('total_memsize') }.to_f / cycle.size
+  end
+
+  # Per-iter peak ratios for every iter after the first full cycle
+  # (first-cycle iters cannot exceed a baseline defined as their max).
   def compute_memory_growths(memstats, baseline)
-    memstats.drop(WARMUP_ITERS).each_with_index.map do |stat, idx|
-      iter = WARMUP_ITERS + idx + 1
+    memstats.drop(CYCLE_ITERS).each_with_index.map do |stat, idx|
+      iter = CYCLE_ITERS + idx + 1
       memsize = stat.fetch('total_memsize')
       [iter, memsize, memsize.to_f / baseline]
     end
@@ -701,15 +757,20 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
   def render_memory_lines(memory)
     mult = format('%.2f', memory[:bound_multiplier])
     ratio = format('%.4f', memory[:max_growth_ratio])
-    out = "**Memory:** baseline (iter #{WARMUP_ITERS}) #{format_bytes(memory[:baseline_bytes])} · " \
-          "bound #{format_bytes(memory[:bound_bytes])} (#{mult}×) · " \
-          "max growth #{ratio}× (iter #{memory[:max_growth_iter] || '?'})\n\n"
-    return out if memory[:violations].empty?
+    drift = format('%.4f', memory[:drift_ratio])
+    out = "**Memory:** baseline (max of first #{memory[:cycle_iters]}-iter cycle) " \
+          "#{format_bytes(memory[:baseline_bytes])} / " \
+          "bound #{format_bytes(memory[:bound_bytes])} (#{mult}x) / " \
+          "max growth #{ratio}x (iter #{memory[:max_growth_iter] || '?'}) / " \
+          "drift #{drift}x (last-cycle mean #{format_bytes(memory[:last_cycle_mean_bytes])} " \
+          "vs first-cycle mean #{format_bytes(memory[:first_cycle_mean_bytes])})\n\n"
+    return out if memory[:violations].empty? && !memory[:drift_violation]
 
     out << "**Memory violations:**\n"
     memory[:violations].each do |v|
-      out << "  - iter #{v[:iter]}: #{format_bytes(v[:bytes])} (#{format('%.4f', v[:ratio])}×)\n"
+      out << "  - peak: iter #{v[:iter]}: #{format_bytes(v[:bytes])} (#{format('%.4f', v[:ratio])}x)\n"
     end
+    out << "  - drift: #{drift}x > #{mult}x\n" if memory[:drift_violation]
     out << "\n"
     out
   end
