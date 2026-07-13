@@ -59,7 +59,39 @@
         <div class="clear"></div>
       </div>
 
-      <div id="content"><div id='filecontents'><h2 id="_Unreleased_">[Unreleased]</h2>
+      <div id="content"><div id='filecontents'><h2 id="_2_0_0_rc_1____2026_07_13">[2.0.0.rc.1] - 2026-07-13</h2>
+<p>The first release candidate of the 2.0 line. Fixes the
+duplicate-example drop discarding spec files whose examples live in
+nested <code>describe</code> groups
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/262">#262</a>, fixed
+in <a href="https://github.com/avmnu-sng/rspec-tracer/pull/265">#265</a>); adds
+a <code>blast-radius</code> CLI sub-command
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/230">#230</a>) and an
+<code>explain --not-run</code> flag
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/231">#231</a>), both
+shipped in <a href="https://github.com/avmnu-sng/rspec-tracer/pull/273">#273</a>;
+and repositions the README and docs around the soundness model, CI
+cost framing, and maintenance policy
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/266">#266</a>, closing
+<a href="https://github.com/avmnu-sng/rspec-tracer/issues/223">#223</a>–<a href="https://github.com/avmnu-sng/rspec-tracer/issues/229">#229</a>).
+CI and maintenance hardening alongside: exact dev-tool gem pins
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/267">#267</a>), a lint
+gate against internal planning vocabulary shipping in public files
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/272">#272</a>), a weekly
+non-gating Ruby-HEAD canary
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/269">#269</a>), a
+<code>release:preflight</code> task
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/270">#270</a>), removal
+of the unused 1.x sample-project tree
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/268">#268</a>), and
+security dependency updates across the sample Rails app and CI
+actions (<a href="https://github.com/avmnu-sng/rspec-tracer/pull/257">#257</a>,
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/259">#259</a>–<a href="https://github.com/avmnu-sng/rspec-tracer/pull/261">#261</a>,
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/263">#263</a>,
+<a href="https://github.com/avmnu-sng/rspec-tracer/pull/264">#264</a>).</p>
+<p>The cache <code>schema_version</code> is unchanged at <code>5</code>: a pre.2 cache carries
+forward warm -- no cold run on this upgrade. See
+<a href="UPGRADING.md"><code>UPGRADING.md</code></a>.</p>
 <h3 id="Added">Added</h3>
 <ul>
 <li><strong>Soundness model documentation.</strong> New ARCHITECTURE.md section
@@ -127,7 +159,8 @@ A <code>.rspec-tracer</code> that raises at load time (including a
 <code>NoMethodError</code> backtrace from the library's <code>at_exit</code> hook firing
 against the half-loaded module. The binary now prints a one-line
 <code>could not load configuration</code> message and exits 1, and <code>--help</code> /
-<code>--version</code> answer without booting the config at all.</p>
+<code>--version</code> answer without booting the config at all
+(<a href="https://github.com/avmnu-sng/rspec-tracer/pull/273">#273</a>).</p>
 </li>
 <li>
 <p><strong>Duplicate-example drop no longer discards nested spec files</strong>
@@ -749,7 +782,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 01:14:39 2026 by
+  Generated on Mon Jul 13 02:01:30 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

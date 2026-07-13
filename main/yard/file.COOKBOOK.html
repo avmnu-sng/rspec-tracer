@@ -89,7 +89,7 @@ from 1.x see <a href="UPGRADING.md"><code>UPGRADING.md</code></a>. For internals
 <p>Goal: skip already-passing examples on subsequent runs.</p>
 <pre class="code ruby"><code class="ruby"><span class='comment'># Gemfile
 </span><span class='comment'># 2.0 is in pre-release; switch to &#39;~&gt; 2.0&#39; once 2.0.0 final ships.
-</span><span class='id identifier rubyid_gem'>gem</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>= 2.0.0.pre.2</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>group:</span> <span class='symbol'>:test</span><span class='comma'>,</span> <span class='label'>require:</span> <span class='kw'>false</span>
+</span><span class='id identifier rubyid_gem'>gem</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>= 2.0.0.rc.1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>group:</span> <span class='symbol'>:test</span><span class='comma'>,</span> <span class='label'>require:</span> <span class='kw'>false</span>
 </code></pre>
 <pre class="code sh"><code class="sh">bundle install
 </code></pre>
@@ -121,7 +121,7 @@ Heroku CI, plus a link to the canonical GitHub Actions workflow.</p>
 with views, locales, fixtures, schema, and per-example AR queries.</p>
 <pre class="code ruby"><code class="ruby"><span class='comment'># Gemfile (test group)
 </span><span class='comment'># 2.0 is in pre-release; switch to &#39;~&gt; 2.0&#39; once 2.0.0 final ships.
-</span><span class='id identifier rubyid_gem'>gem</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>= 2.0.0.pre.2</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>group:</span> <span class='symbol'>:test</span><span class='comma'>,</span> <span class='label'>require:</span> <span class='kw'>false</span>
+</span><span class='id identifier rubyid_gem'>gem</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>= 2.0.0.rc.1</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>group:</span> <span class='symbol'>:test</span><span class='comma'>,</span> <span class='label'>require:</span> <span class='kw'>false</span>
 </code></pre>
 <pre class="code ruby"><code class="ruby"><span class='comment'># spec/rails_helper.rb (top of file)
 </span><span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>simplecov</span><span class='tstring_end'>&#39;</span></span>   <span class='comment'># if you use it; load BEFORE rspec_tracer
@@ -716,7 +716,7 @@ with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 01:14:39 2026 by
+  Generated on Mon Jul 13 02:01:30 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

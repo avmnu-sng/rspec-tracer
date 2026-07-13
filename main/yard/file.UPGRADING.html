@@ -153,6 +153,13 @@ renaming <em>named</em> siblings doesn't disturb it — but reordering the
 unnamed examples, or inserting/removing one ahead of it, gives the
 shifted examples a new identity (one cold run). Give an example an
 explicit description for a fully reorder-stable identity.</p>
+<p><strong>The 2.0.0.pre.2 -&gt; 2.0.0.rc.1 upgrade costs no cold run.</strong> The cache
+<code>schema_version</code> is unchanged (still <code>5</code>), so a pre.2 cache carries
+forward warm. What rc.1 adds on top is CLI surface, not cache shape:
+<code>bundle exec rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]</code> reports how
+many examples a change to each file would re-run (<code>--list</code> enumerates
+them, <code>--json</code> for tooling), and <code>bundle exec rspec-tracer explain --not-run &lt;example_id&gt;</code> shows why an example was skipped on the last
+run and what would make it run on the next.</p>
 <h2 id="SimpleCov_branch_coverage_now_works">SimpleCov branch coverage now works</h2>
 <p>The 1.x README warned: <em>&quot;If you use RSpec Tracer with SimpleCov, then
 SimpleCov would not report branch coverage results even when enabled.&quot;</em></p>
@@ -359,7 +366,7 @@ RSpec / SimpleCov versions and your <code>.rspec-tracer</code> config.</li>
 </ul></div></div>
 
       <div id="footer">
-  Generated on Mon Jul 13 01:14:37 2026 by
+  Generated on Mon Jul 13 02:01:28 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
