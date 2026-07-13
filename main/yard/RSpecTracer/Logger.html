@@ -109,8 +109,8 @@
   You should avoid using this class if possible, as it may be removed or be changed in the future.
 </p>
 <p>Internal Logger — see <span class='object_link'><a href="../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span> for the user-facing surface.
-Internal logger; thin wrapper around <code>puts</code> gated on numeric log
-level. Exposed via <code>RSpecTracer.logger</code>.</p>
+Internal logger; thin wrapper around <code>IO#puts</code> gated on numeric
+log level. Exposed via <code>RSpecTracer.logger</code>.</p>
 
   </div>
 </div>
@@ -120,6 +120,36 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
 </div>
 
 
+
+  <h2>Class Attribute Summary <small><a href="#" class="summary_toggle">collapse</a></small></h2>
+  <ul class="summary">
+    
+      <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#default_out-class_method" title="default_out (class method)">.<strong>default_out</strong>  &#x21d2; IO<sup>?</sup> </a>
+    
+
+    
+  </span>
+  
+  
+  
+    
+    
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Process-wide default destination for loggers constructed without an explicit <code>out:</code>.</p></div></span>
+  
+</li>
+
+    
+  </ul>
 
 
 
@@ -201,7 +231,7 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
         <li class="public ">
   <span class="summary_signature">
     
-      <a href="#initialize-instance_method" title="#initialize (instance method)">#<strong>initialize</strong>(log_level)  &#x21d2; Logger </a>
+      <a href="#initialize-instance_method" title="#initialize (instance method)">#<strong>initialize</strong>(log_level, out: nil)  &#x21d2; Logger </a>
     
 
     
@@ -217,7 +247,7 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
   <span class="private note title">private</span>
 
   
-    <span class="summary_desc"><div class='inline'><p>Internal method on the tracer pipeline.</p></div></span>
+    <span class="summary_desc"><div class='inline'><p>A new instance of Logger.</p></div></span>
   
 </li>
 
@@ -254,7 +284,7 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
     <div class="method_details first">
   <h3 class="signature first" id="initialize-instance_method">
   
-    #<strong>initialize</strong>(log_level)  &#x21d2; <tt><span class='object_link'><a href="" title="RSpecTracer::Logger (class)">Logger</a></span></tt> 
+    #<strong>initialize</strong>(log_level, out: nil)  &#x21d2; <tt><span class='object_link'><a href="" title="RSpecTracer::Logger (class)">Logger</a></span></tt> 
   
 
   
@@ -266,12 +296,47 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
   <strong>This method is part of a private API.</strong>
   You should avoid using this method if possible, as it may be removed or be changed in the future.
 </p>
-<p>Internal method on the tracer pipeline.</p>
+<p>Returns a new instance of Logger.</p>
 
   </div>
 </div>
 <div class="tags">
+  <p class="tag_title">Parameters:</p>
+<ul class="param">
   
+    <li>
+      
+        <span class='name'>log_level</span>
+      
+      
+        <span class='type'>(<tt>Integer</tt>)</span>
+      
+      
+      
+        &mdash;
+        <div class='inline'><p>numeric level (Configuration::LOG_LEVEL)</p></div>
+      
+    </li>
+  
+    <li>
+      
+        <span class='name'>out</span>
+      
+      
+        <span class='type'>(<tt>IO</tt>, <tt>nil</tt>)</span>
+      
+      
+        <em class="default">(defaults to: <tt>nil</tt>)</em>
+      
+      
+        &mdash;
+        <div class='inline'><p>destination stream. Falls back to
+<span class='object_link'><a href="#default_out-class_method" title="RSpecTracer::Logger.default_out (method)">default_out</a></span> when nil, then to <code>$stdout</code>.</p></div>
+      
+    </li>
+  
+</ul>
+
 
 </div><table class="source_code">
   <tr>
@@ -279,15 +344,17 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
       <pre class="lines">
 
 
-12
-13
-14</pre>
+30
+31
+32
+33</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 12</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 30</span>
 
-<span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='id identifier rubyid_log_level'>log_level</span><span class='rparen'>)</span>
+<span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='id identifier rubyid_log_level'>log_level</span><span class='comma'>,</span> <span class='label'>out:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
   <span class='ivar'>@log_level</span> <span class='op'>=</span> <span class='id identifier rubyid_log_level'>log_level</span>
+  <span class='ivar'>@out</span> <span class='op'>=</span> <span class='id identifier rubyid_out'>out</span> <span class='op'>||</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='period'>.</span><span class='id identifier rubyid_default_out'>default_out</span> <span class='op'>||</span> <span class='gvar'>$stdout</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -295,6 +362,76 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
 </div>
   
 </div>
+
+  <div id="class_attr_details" class="attr_details">
+    <h2>Class Attribute Details</h2>
+    
+      
+      <span id="default_out=-class_method"></span>
+      <div class="method_details first">
+  <h3 class="signature first" id="default_out-class_method">
+  
+    .<strong>default_out</strong>  &#x21d2; <tt>IO</tt><sup>?</sup> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Process-wide default destination for loggers constructed
+without an explicit <code>out:</code>. <code>nil</code> (the norm) means <code>$stdout</code>,
+which normal <code>rspec</code> runs rely on. The <code>rspec-tracer</code> binary
+sets this to its stderr BEFORE booting the tracer library, so
+loggers constructed while the project's <code>.rspec-tracer</code> config
+loads (e.g. by the 1.x deprecation shims, or recreated after a
+config <code>log_level</code> call resets the memoized instance) already
+bind to stderr and machine-readable stdout (<code>blast-radius --json</code>) stays free of diagnostics. See <span class='object_link'><a href="CLI.html" title="RSpecTracer::CLI (module)">CLI</a></span>.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+<p class="tag_title">Returns:</p>
+<ul class="return">
+  
+    <li>
+      
+      
+        <span class='type'>(<tt>IO</tt>, <tt>nil</tt>)</span>
+      
+      
+      
+    </li>
+  
+</ul>
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+23
+24
+25</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 23</span>
+
+<span class='kw'>def</span> <span class='id identifier rubyid_default_out'>default_out</span>
+  <span class='ivar'>@default_out</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+  </div>
 
 
   <div id="instance_method_details" class="method_details_list">
@@ -329,15 +466,15 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
       <pre class="lines">
 
 
-18
-19
-20</pre>
+37
+38
+39</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 18</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 37</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_debug'>debug</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span> <span class='op'>==</span> <span class='int'>1</span>
+  <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span> <span class='op'>==</span> <span class='int'>1</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -372,15 +509,15 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
       <pre class="lines">
 
 
-36
-37
-38</pre>
+55
+56
+57</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 36</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 55</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_error'>error</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>4</span><span class='rparen'>)</span>
+  <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>4</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -415,15 +552,15 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
       <pre class="lines">
 
 
-24
-25
-26</pre>
+43
+44
+45</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 24</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 43</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>2</span><span class='rparen'>)</span>
+  <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>2</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -458,15 +595,15 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
       <pre class="lines">
 
 
-30
-31
-32</pre>
+49
+50
+51</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 30</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/logger.rb', line 49</span>
 
 <span class='kw'>def</span> <span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-  <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>3</span><span class='rparen'>)</span>
+  <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>3</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -478,7 +615,7 @@ level. Exposed via <code>RSpecTracer.logger</code>.</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:23:00 2026 by
+  Generated on Mon Jul 13 01:14:42 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

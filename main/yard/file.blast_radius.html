@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>
+  File: blast_radius
+  
+    &mdash; Documentation by YARD 0.9.44
+  
+</title>
+
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+
+  <link rel="stylesheet" href="css/common.css" type="text/css">
+
+<script type="text/javascript">
+  pathId = "blast_radius";
+  relpath = '';
+</script>
+
+
+  <script type="text/javascript" charset="utf-8" src="js/jquery.js"></script>
+
+  <script type="text/javascript" charset="utf-8" src="js/app.js"></script>
+
+
+  </head>
+  <body>
+    <div id="main_progress" aria-hidden="true"></div>
+
+    <div class="nav_wrap">
+      <iframe id="nav" src="file_list.html?1"></iframe>
+      <div id="resizer"></div>
+    </div>
+
+    <div id="main" tabindex="-1">
+      <div id="header">
+        <div id="menu">
+  
+    <a href="_index.html">Index</a> &raquo; 
+    <span class="title">File: blast_radius</span>
+  
+</div>
+
+        <div id="search">
+  
+    <a class="full_list_link" id="class_list_link"
+        href="class_list.html">
+
+        <svg width="24" height="24">
+          <rect x="0" y="4" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="12" width="24" height="4" rx="1" ry="1"></rect>
+          <rect x="0" y="20" width="24" height="4" rx="1" ry="1"></rect>
+        </svg>
+    </a>
+  
+</div>
+        <div class="clear"></div>
+      </div>
+
+      <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
+</span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>json</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/cli/snapshot_helpers</span><span class='tstring_end'>&#39;</span></span>
+<span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/tracker/whole_suite_invalidators</span><span class='tstring_end'>&#39;</span></span>
+
+<span class='kw'>module</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span>
+  <span class='comment'># Internal CLI -- see {RSpecTracer} for the user-facing surface.
+</span>  <span class='comment'># @api private
+</span>  <span class='kw'>module</span> <span class='const'>CLI</span>
+    <span class='comment'># `rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]` -- show which
+</span>    <span class='comment'># examples a change to each given file would re-run on the next
+</span>    <span class='comment'># rspec invocation. Reads the persisted reverse-dependency map
+</span>    <span class='comment'># (file -&gt; examples) plus the whole-suite invalidator watch list
+</span>    <span class='comment'># and the boot set, so whole-suite triggers (Gemfile.lock, boot
+</span>    <span class='comment'># files) report &quot;re-runs all N examples&quot; instead of under-reporting
+</span>    <span class='comment'># via a bare reverse-dependency lookup. Reports the file-change
+</span>    <span class='comment'># trigger only; examples that always re-run for status reasons
+</span>    <span class='comment'># (failed / flaky / pending / interrupted) are not included.
+</span>    <span class='comment'># Backend-agnostic: dispatches through
+</span>    <span class='comment'># {RSpecTracer::Storage::Backend.build} (via
+</span>    <span class='comment'># {SnapshotHelpers.load_snapshot}) so `storage_backend :sqlite`
+</span>    <span class='comment'># resolves the latest run from the meta table instead of the
+</span>    <span class='comment'># JsonBackend-only `last_run.json` file.
+</span>    <span class='kw'>module</span> <span class='const'>BlastRadius</span>
+      <span class='comment'># Internal constant.
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>USAGE</span> <span class='op'>=</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec-tracer blast-radius [--list|--json] &lt;file&gt; [&lt;file&gt; ...]</span><span class='tstring_end'>&#39;</span></span>
+
+      <span class='comment'># Statuses whose blast radius is the entire suite (a change to
+</span>      <span class='comment'># the file invalidates every cached example, not just tracked
+</span>      <span class='comment'># dependents).
+</span>      <span class='comment'># @api private
+</span>      <span class='const'>WHOLE_SUITE_STATUSES</span> <span class='op'>=</span> <span class='qwords_beg'>%w[</span><span class='tstring_content'>whole_suite_invalidator</span><span class='words_sep'> </span><span class='tstring_content'>boot_file</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span>
+
+      <span class='comment'># @param args [Array&lt;String&gt;] sub-command args. `--list` / `--json`
+</span>      <span class='comment'>#   flags plus one or more file paths (relative to the project
+</span>      <span class='comment'>#   root or absolute).
+</span>      <span class='comment'># @param stdout [IO]
+</span>      <span class='comment'># @param stderr [IO]
+</span>      <span class='comment'># @return [Integer] exit status (0 = radius printed, including
+</span>      <span class='comment'>#   untracked / zero-dependent files; 1 = no files given, unknown
+</span>      <span class='comment'>#   option, cache missing, or schema mismatch).
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='const'>SnapshotHelpers</span><span class='period'>.</span><span class='id identifier rubyid_help_requested?'>help_requested?</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
+
+        <span class='id identifier rubyid_parsed'>parsed</span> <span class='op'>=</span> <span class='id identifier rubyid_parse_args'>parse_args</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_unknown_option'>unknown_option</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:unknown</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span> <span class='kw'>unless</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:unknown</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_no_files'>no_files</span><span class='lparen'>(</span><span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:files</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+
+        <span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='comma'>,</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+      <span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
+        <span class='comment'># Downstream pipe (`... | head`, `... | jq`) closed early --
+</span>        <span class='comment'># routine in shell pipelines (the help text promotes them),
+</span>        <span class='comment'># not a failure. Exit 0 silently.
+</span>        <span class='int'>0</span>
+      <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>blast-radius: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_execute'>execute</span><span class='lparen'>(</span><span class='id identifier rubyid_parsed'>parsed</span><span class='comma'>,</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_loaded'>loaded</span> <span class='op'>=</span> <span class='const'>SnapshotHelpers</span><span class='period'>.</span><span class='id identifier rubyid_load_snapshot'>load_snapshot</span><span class='lparen'>(</span><span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='comma'>,</span> <span class='label'>command:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>blast-radius</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='int'>1</span> <span class='kw'>if</span> <span class='id identifier rubyid_loaded'>loaded</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
+
+        <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='op'>=</span> <span class='id identifier rubyid_loaded'>loaded</span>
+        <span class='id identifier rubyid_radii'>radii</span> <span class='op'>=</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:files</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_file'>file</span><span class='op'>|</span> <span class='id identifier rubyid_radius_for'>radius_for</span><span class='lparen'>(</span><span class='id identifier rubyid_file'>file</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:json</span><span class='rbracket'>]</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='const'>JSON</span><span class='period'>.</span><span class='id identifier rubyid_pretty_generate'>pretty_generate</span><span class='lparen'>(</span><span class='id identifier rubyid_json_payload'>json_payload</span><span class='lparen'>(</span><span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span><span class='rparen'>)</span>
+        <span class='kw'>else</span>
+          <span class='id identifier rubyid_print_report'>print_report</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>list:</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:list</span><span class='rbracket'>]</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+        <span class='int'>0</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_parse_args'>parse_args</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_parsed'>parsed</span> <span class='op'>=</span> <span class='lbrace'>{</span> <span class='label'>list:</span> <span class='kw'>false</span><span class='comma'>,</span> <span class='label'>json:</span> <span class='kw'>false</span><span class='comma'>,</span> <span class='label'>files:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='label'>unknown:</span> <span class='kw'>nil</span> <span class='rbrace'>}</span>
+        <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_arg'>arg</span><span class='op'>|</span>
+          <span class='kw'>case</span> <span class='id identifier rubyid_arg'>arg</span>
+          <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--list</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>then</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:list</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='kw'>true</span>
+          <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--json</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>then</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:json</span><span class='rbracket'>]</span> <span class='op'>=</span> <span class='kw'>true</span>
+          <span class='kw'>when</span> <span class='tstring'><span class='regexp_beg'>/</span><span class='tstring_content'>\A-</span><span class='regexp_end'>/</span></span> <span class='kw'>then</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:unknown</span><span class='rbracket'>]</span> <span class='op'>||=</span> <span class='id identifier rubyid_arg'>arg</span>
+          <span class='kw'>else</span> <span class='id identifier rubyid_parsed'>parsed</span><span class='lbracket'>[</span><span class='symbol'>:files</span><span class='rbracket'>]</span> <span class='op'>&lt;&lt;</span> <span class='id identifier rubyid_arg'>arg</span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
+        <span class='id identifier rubyid_parsed'>parsed</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_unknown_option'>unknown_option</span><span class='lparen'>(</span><span class='id identifier rubyid_arg'>arg</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>blast-radius: unknown option </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_arg'>arg</span><span class='period'>.</span><span class='id identifier rubyid_inspect'>inspect</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>  usage: </span><span class='embexpr_beg'>#{</span><span class='const'>USAGE</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_no_files'>no_files</span><span class='lparen'>(</span><span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>blast-radius: no file paths given</span><span class='tstring_end'>&#39;</span></span>
+        <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>  usage: </span><span class='embexpr_beg'>#{</span><span class='const'>USAGE</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+        <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
+<span class='tstring_content'>          Usage: </span><span class='embexpr_beg'>#{</span><span class='const'>USAGE</span><span class='embexpr_end'>}</span><span class='tstring_content'>
+</span><span class='tstring_content'>
+</span><span class='tstring_content'>          Show which examples a change to each given file would re-run on
+</span><span class='tstring_content'>          the next rspec invocation. Reports the file-change trigger only;
+</span><span class='tstring_content'>          examples that always re-run for status reasons (failed / flaky /
+</span><span class='tstring_content'>          pending / interrupted) are not included. Paths may be relative to
+</span><span class='tstring_content'>          the project root or absolute. Whole-suite invalidators
+</span><span class='tstring_content'>          (Gemfile.lock, .ruby-version, .rspec-tracer) and boot files
+</span><span class='tstring_content'>          re-run every example. Backend-aware: works under
+</span><span class='tstring_content'>          `storage_backend :json` (default) and `storage_backend :sqlite`.
+</span><span class='tstring_content'>          Requires a prior rspec run.
+</span><span class='tstring_content'>
+</span><span class='tstring_content'>          Multi-file input composes with git:
+</span><span class='tstring_content'>
+</span><span class='tstring_content'>            git diff --name-only main | xargs bundle exec rspec-tracer blast-radius
+</span><span class='tstring_content'>
+</span><span class='tstring_content'>          Options:
+</span><span class='tstring_content'>            --list    Enumerate affected examples (location + description).
+</span><span class='tstring_content'>            --json    Emit one machine-readable JSON document to stdout.
+</span><span class='heredoc_end'>        HELP
+</span>        <span class='int'>0</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Convert a user-supplied path into the cache&#39;s file_name
+</span>      <span class='comment'># convention (project-relative with a leading `/`, absolute when
+</span>      <span class='comment'># outside the project root). Computed at command runtime against
+</span>      <span class='comment'># `RSpecTracer.root` -- `SourceFile.file_name` is unsuitable here
+</span>      <span class='comment'># because its PROJECT_ROOT_REGEX freezes the root at gem-require
+</span>      <span class='comment'># time, before the CLI loads the project&#39;s `.rspec-tracer` config.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_normalize_file_name'>normalize_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_root'>root</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span>
+        <span class='id identifier rubyid_abs'>abs</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_expand_path'>expand_path</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_root'>root</span><span class='rparen'>)</span>
+        <span class='kw'>return</span> <span class='id identifier rubyid_abs'>abs</span> <span class='kw'>unless</span> <span class='id identifier rubyid_abs'>abs</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_root'>root</span><span class='embexpr_end'>}</span><span class='tstring_content'>/</span><span class='tstring_end'>&quot;</span></span><span class='rparen'>)</span>
+
+        <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>/</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_abs'>abs</span><span class='lbracket'>[</span><span class='lparen'>(</span><span class='id identifier rubyid_root'>root</span><span class='period'>.</span><span class='id identifier rubyid_length'>length</span> <span class='op'>+</span> <span class='int'>1</span><span class='rparen'>)</span><span class='op'>..</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Classify one input file and collect its affected examples.
+</span>      <span class='comment'># Precedence: whole-suite invalidator watch file, then boot file
+</span>      <span class='comment'># (boot-set changes OR into whole-suite invalidation), then
+</span>      <span class='comment'># tracked reverse dependents, then untracked / no-dependents.
+</span>      <span class='comment'># Note the key conventions: `boot_set` keys are project-relative
+</span>      <span class='comment'># (no leading slash) while `reverse_dependency` / `all_files`
+</span>      <span class='comment'># keys carry a leading slash.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_radius_for'>radius_for</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_file_name'>file_name</span> <span class='op'>=</span> <span class='id identifier rubyid_normalize_file_name'>normalize_file_name</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_relative'>relative</span> <span class='op'>=</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='period'>.</span><span class='id identifier rubyid_delete_prefix'>delete_prefix</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>/</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
+
+        <span class='kw'>if</span> <span class='const'>Tracker</span><span class='op'>::</span><span class='const'>WholeSuiteInvalidators</span><span class='op'>::</span><span class='const'>WATCH_FILES</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_relative'>relative</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_whole_suite_radius'>whole_suite_radius</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>whole_suite_invalidator</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='kw'>elsif</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_boot_set'>boot_set</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_relative'>relative</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_whole_suite_radius'>whole_suite_radius</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>boot_file</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='kw'>else</span>
+          <span class='id identifier rubyid_dependent_radius'>dependent_radius</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_whole_suite_radius'>whole_suite_radius</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='id identifier rubyid_status'>status</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_keys'>keys</span>
+        <span class='lbrace'>{</span> <span class='label'>path:</span> <span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='label'>status:</span> <span class='id identifier rubyid_status'>status</span><span class='comma'>,</span>
+          <span class='label'>examples:</span> <span class='id identifier rubyid_example_entries'>example_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_ids'>ids</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_dependent_radius'>dependent_radius</span><span class='lparen'>(</span><span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_ids'>ids</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_reverse_dependency'>reverse_dependency</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='lbracket'>[</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rbracket'>]</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
+          <span class='id identifier rubyid_status'>status</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_files'>all_files</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_key?'>key?</span><span class='lparen'>(</span><span class='id identifier rubyid_file_name'>file_name</span><span class='rparen'>)</span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>no_dependents</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>untracked</span><span class='tstring_end'>&#39;</span></span>
+          <span class='lbrace'>{</span> <span class='label'>path:</span> <span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='label'>status:</span> <span class='id identifier rubyid_status'>status</span><span class='comma'>,</span> <span class='label'>examples:</span> <span class='lbracket'>[</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+        <span class='kw'>else</span>
+          <span class='lbrace'>{</span> <span class='label'>path:</span> <span class='id identifier rubyid_path'>path</span><span class='comma'>,</span> <span class='label'>file_name:</span> <span class='id identifier rubyid_file_name'>file_name</span><span class='comma'>,</span> <span class='label'>status:</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>tracked</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+            <span class='label'>examples:</span> <span class='id identifier rubyid_example_entries'>example_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_ids'>ids</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_entries'>example_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_ids'>ids</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_all'>all</span> <span class='op'>=</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span>
+        <span class='id identifier rubyid_ids'>ids</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_id'>id</span><span class='op'>|</span> <span class='id identifier rubyid_example_entry'>example_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='comma'>,</span> <span class='id identifier rubyid_all'>all</span><span class='lbracket'>[</span><span class='id identifier rubyid_id'>id</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+          <span class='period'>.</span><span class='id identifier rubyid_sort_by'>sort_by</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span> <span class='lbracket'>[</span><span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:location</span><span class='rbracket'>]</span><span class='comma'>,</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:description</span><span class='rbracket'>]</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Enrich one example_id from the persisted all_examples meta.
+</span>      <span class='comment'># A dangling id (present in reverse_dependency but missing from
+</span>      <span class='comment'># all_examples -- stale or partially-written cache) degrades to
+</span>      <span class='comment'># `&lt;unknown&gt;` fields instead of raising.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_example_entry'>example_entry</span><span class='lparen'>(</span><span class='id identifier rubyid_id'>id</span><span class='comma'>,</span> <span class='id identifier rubyid_meta'>meta</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_meta'>meta</span> <span class='op'>=</span> <span class='lbrace'>{</span><span class='rbrace'>}</span> <span class='kw'>unless</span> <span class='id identifier rubyid_meta'>meta</span><span class='period'>.</span><span class='id identifier rubyid_is_a?'>is_a?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Hash</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_file'>file</span><span class='comma'>,</span> <span class='id identifier rubyid_line'>line</span> <span class='op'>=</span> <span class='const'>SnapshotHelpers</span><span class='period'>.</span><span class='id identifier rubyid_example_location'>example_location</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='rparen'>)</span>
+        <span class='lbrace'>{</span>
+          <span class='label'>example_id:</span> <span class='id identifier rubyid_id'>id</span><span class='comma'>,</span>
+          <span class='label'>spec_file:</span> <span class='id identifier rubyid_file'>file</span> <span class='op'>||</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;unknown&gt;</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span>
+          <span class='label'>location:</span> <span class='id identifier rubyid_file'>file</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>?</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;unknown&gt;</span><span class='tstring_end'>&#39;</span></span> <span class='op'>:</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file'>file</span><span class='embexpr_end'>}</span><span class='tstring_content'>:</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_line'>line</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span><span class='comma'>,</span>
+          <span class='label'>description:</span> <span class='const'>SnapshotHelpers</span><span class='period'>.</span><span class='id identifier rubyid_example_description'>example_description</span><span class='lparen'>(</span><span class='id identifier rubyid_meta'>meta</span><span class='rparen'>)</span> <span class='op'>||</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>&lt;unknown&gt;</span><span class='tstring_end'>&#39;</span></span>
+        <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_report'>print_report</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='comma'>,</span> <span class='label'>list:</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_radius'>radius</span><span class='op'>|</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_summary_line'>summary_line</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='rparen'>)</span>
+          <span class='kw'>next</span> <span class='kw'>unless</span> <span class='id identifier rubyid_list'>list</span>
+
+          <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span>
+            <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>  </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:location</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_content'>  </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:description</span><span class='rbracket'>]</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+          <span class='kw'>end</span>
+        <span class='kw'>end</span>
+        <span class='id identifier rubyid_print_total'>print_total</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span> <span class='op'>&gt;</span> <span class='int'>1</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># The untracked wording sticks to what the tracer can actually
+</span>      <span class='comment'># observe: absence of the file from the cache. It must NOT claim
+</span>      <span class='comment'># the file &quot;never loaded&quot; -- files consumed outside the hooked
+</span>      <span class='comment'># surface (spec_helper.rb itself, which executes before coverage
+</span>      <span class='comment'># tracking starts; reads via unhooked APIs, C extensions, or
+</span>      <span class='comment'># other threads) load fine yet never appear in the cache. See
+</span>      <span class='comment'># the soundness model in ARCHITECTURE.md.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_summary_line'>summary_line</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_file_name'>file_name</span> <span class='op'>=</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span>
+        <span class='id identifier rubyid_count'>count</span> <span class='op'>=</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+        <span class='kw'>case</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span>
+        <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>whole_suite_invalidator</span><span class='tstring_end'>&#39;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: whole-suite invalidator -- re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>boot_file</span><span class='tstring_end'>&#39;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: boot file -- re-runs all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>untracked</span><span class='tstring_end'>&#39;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: not tracked in cache (no recorded dependents -- the tracer never </span><span class='tstring_end'>&quot;</span></span> \
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>observed it as an input; see the soundness model in ARCHITECTURE.md)</span><span class='tstring_end'>&#39;</span></span>
+        <span class='kw'>when</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>no_dependents</span><span class='tstring_end'>&#39;</span></span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: 0 examples (no tracked dependents)</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>else</span>
+          <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_file_name'>file_name</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_count'>count</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples across </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_spec_file_count'>spec_file_count</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'> spec files</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_total'>print_total</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='kw'>if</span> <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_radius'>radius</span><span class='op'>|</span> <span class='const'>WHOLE_SUITE_STATUSES</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+          <span class='id identifier rubyid_total'>total</span> <span class='op'>=</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>total: all </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_total'>total</span><span class='embexpr_end'>}</span><span class='tstring_content'> examples (whole-suite invalidator)</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>else</span>
+          <span class='id identifier rubyid_union'>union</span> <span class='op'>=</span> <span class='id identifier rubyid_union_entries'>union_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_radii'>radii</span><span class='rparen'>)</span>
+          <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>total: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_union'>union</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='embexpr_end'>}</span><span class='tstring_content'> unique examples across </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_spec_file_count'>spec_file_count</span><span class='lparen'>(</span><span class='id identifier rubyid_union'>union</span><span class='rparen'>)</span><span class='embexpr_end'>}</span><span class='tstring_content'> spec files</span><span class='tstring_end'>&quot;</span></span>
+        <span class='kw'>end</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_union_entries'>union_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_radii'>radii</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_flat_map'>flat_map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_radius'>radius</span><span class='op'>|</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_uniq'>uniq</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:example_id</span><span class='rbracket'>]</span> <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_spec_file_count'>spec_file_count</span><span class='lparen'>(</span><span class='id identifier rubyid_entries'>entries</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_entries'>entries</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:spec_file</span><span class='rbracket'>]</span> <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_uniq'>uniq</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_json_payload'>json_payload</span><span class='lparen'>(</span><span class='id identifier rubyid_radii'>radii</span><span class='comma'>,</span> <span class='id identifier rubyid_snapshot'>snapshot</span><span class='rparen'>)</span>
+        <span class='id identifier rubyid_union'>union</span> <span class='op'>=</span> <span class='id identifier rubyid_union_entries'>union_entries</span><span class='lparen'>(</span><span class='id identifier rubyid_radii'>radii</span><span class='rparen'>)</span>
+        <span class='lbrace'>{</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>files</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_radius'>radius</span><span class='op'>|</span> <span class='id identifier rubyid_file_json'>file_json</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>total</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='lbrace'>{</span>
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>example_count</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_union'>union</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='comma'>,</span>
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>spec_file_count</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_spec_file_count'>spec_file_count</span><span class='lparen'>(</span><span class='id identifier rubyid_union'>union</span><span class='rparen'>)</span><span class='comma'>,</span>
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>whole_suite</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radii'>radii</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_radius'>radius</span><span class='op'>|</span> <span class='const'>WHOLE_SUITE_STATUSES</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span><span class='rparen'>)</span> <span class='rbrace'>}</span><span class='comma'>,</span>
+            <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>all_examples_count</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='lparen'>(</span><span class='id identifier rubyid_snapshot'>snapshot</span><span class='period'>.</span><span class='id identifier rubyid_all_examples'>all_examples</span> <span class='op'>||</span> <span class='lbrace'>{</span><span class='rbrace'>}</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span>
+          <span class='rbrace'>}</span>
+        <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+
+      <span class='comment'># Internal helper for the tracer pipeline.
+</span>      <span class='comment'># @api private
+</span>      <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_file_json'>file_json</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='rparen'>)</span>
+        <span class='lbrace'>{</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>path</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:path</span><span class='rbracket'>]</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>file_name</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:file_name</span><span class='rbracket'>]</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>status</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:status</span><span class='rbracket'>]</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>example_count</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_size'>size</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>spec_file_count</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_spec_file_count'>spec_file_count</span><span class='lparen'>(</span><span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='rparen'>)</span><span class='comma'>,</span>
+          <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>examples</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_radius'>radius</span><span class='lbracket'>[</span><span class='symbol'>:examples</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_map'>map</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_entry'>entry</span><span class='op'>|</span>
+            <span class='lbrace'>{</span>
+              <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>example_id</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:example_id</span><span class='rbracket'>]</span><span class='comma'>,</span>
+              <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>location</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:location</span><span class='rbracket'>]</span><span class='comma'>,</span>
+              <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>description</span><span class='tstring_end'>&#39;</span></span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_entry'>entry</span><span class='lbracket'>[</span><span class='symbol'>:description</span><span class='rbracket'>]</span>
+            <span class='rbrace'>}</span>
+          <span class='kw'>end</span>
+        <span class='rbrace'>}</span>
+      <span class='kw'>end</span>
+    <span class='kw'>end</span>
+  <span class='kw'>end</span>
+<span class='kw'>end</span></pre></div></div>
+
+      <div id="footer">
+  Generated on Mon Jul 13 01:14:39 2026 by
+  <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
+  0.9.44 (ruby-3.3.10).
+</div>
+
+    </div>
+  </body>
+</html>

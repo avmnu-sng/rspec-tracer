@@ -426,13 +426,14 @@ identically.</p>
 </code></pre>
 <p>Or override per-run via env: <code>RSPEC_TRACER_STORAGE=sqlite</code>.</p>
 <h2 id="Command_line_tools">Command-line tools</h2>
-<p><code>rspec-tracer</code> exposes five sub-commands. Run them via Bundler so the
+<p><code>rspec-tracer</code> exposes six sub-commands. Run them via Bundler so the
 gem's executable resolves cleanly without needing <code>bundle binstubs rspec-tracer</code> first:</p>
-<pre class="code sh"><code class="sh">bundle exec rspec-tracer doctor         # diagnose config + environment
-bundle exec rspec-tracer cache:info     # size, last run, invalidation stats
-bundle exec rspec-tracer cache:clear    # rm cache dirs
-bundle exec rspec-tracer report:open    # open the HTML report
-bundle exec rspec-tracer explain &lt;id&gt;   # why is &lt;example_id&gt; scheduled to (re-)run?
+<pre class="code sh"><code class="sh">bundle exec rspec-tracer doctor               # diagnose config + environment
+bundle exec rspec-tracer cache:info           # size, last run, invalidation stats
+bundle exec rspec-tracer cache:clear          # rm cache dirs
+bundle exec rspec-tracer report:open          # open the HTML report
+bundle exec rspec-tracer explain &lt;id&gt;         # why is &lt;example_id&gt; scheduled to (re-)run?
+bundle exec rspec-tracer blast-radius &lt;file&gt;  # which examples re-run if &lt;file&gt; changes?
 </code></pre>
 <p>Generated binstubs (<code>bin/rspec-tracer …</code>) work too once you've run
 <code>bundle binstubs rspec-tracer</code> in your project. The CLI is opt-in for
@@ -651,7 +652,7 @@ here's where its content lives now:</p>
 </table></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:55 2026 by
+  Generated on Mon Jul 13 01:14:37 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

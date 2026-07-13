@@ -79,6 +79,26 @@ section: each Ruby is supported until at least upstream EOL plus
 <li><strong>COOKBOOK recipes for flaky-test detection and file-to-test
 dependency mapping</strong>, placed ahead of the acceleration recipes
 (<a href="https://github.com/avmnu-sng/rspec-tracer/issues/224">#224</a>).</li>
+<li><strong><code>blast-radius</code> CLI sub-command.</strong> <code>bundle exec rspec-tracer blast-radius &lt;file&gt; [&lt;file&gt; ...]</code> reports how many examples a
+change to each file would re-run (<code>450 examples across 12 spec files</code>), with <code>--list</code> to enumerate them (location + description)
+and <code>--json</code> for tooling. Multiple files compose with a
+deduplicated total, so <code>git diff --name-only main | xargs bundle exec rspec-tracer blast-radius</code> shows what a PR invalidates;
+untracked paths report as such and exit 0 to keep that pipeline
+unbroken. Whole-suite invalidators and boot-set files report
+<code>re-runs all N examples</code>
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/230">#230</a>).</li>
+<li><strong><code>explain --not-run</code> flag.</strong> The skip-side view of <code>explain</code>:
+whether the example was skipped on the last run (and the
+derivation of why no run trigger fired), its last recorded
+status, and what would make it run on the next invocation, plus
+the tracked dependency files
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/231">#231</a>).</li>
+<li><strong>Doctor CI-environment line.</strong> <code>rspec-tracer doctor</code> prints an
+INFO line naming the CI env var it detected and pointing at the
+cache-persistence recipes in
+<a href="docs/CI_RECIPES.md"><code>docs/CI_RECIPES.md</code></a>; never affects the
+exit status
+(<a href="https://github.com/avmnu-sng/rspec-tracer/issues/228">#228</a>).</li>
 </ul>
 <h3 id="Changed">Changed</h3>
 <ul>
@@ -99,7 +119,18 @@ re-run-only-what-changed as the closing step
 </ul>
 <h3 id="Fixed">Fixed</h3>
 <ul>
-<li><strong>Duplicate-example drop no longer discards nested spec files</strong>
+<li>
+<p><strong>CLI degrades cleanly when the project config itself is broken.</strong>
+A <code>.rspec-tracer</code> that raises at load time (including a
+<code>SyntaxError</code>, which is not a <code>StandardError</code>) used to crash every
+<code>rspec-tracer</code> sub-command with the raw backtrace plus a second
+<code>NoMethodError</code> backtrace from the library's <code>at_exit</code> hook firing
+against the half-loaded module. The binary now prints a one-line
+<code>could not load configuration</code> message and exits 1, and <code>--help</code> /
+<code>--version</code> answer without booting the config at all.</p>
+</li>
+<li>
+<p><strong>Duplicate-example drop no longer discards nested spec files</strong>
 (<a href="https://github.com/avmnu-sng/rspec-tracer/issues/262">#262</a>).
 With at least one pair of colliding example identities anywhere in
 the suite, the drop path rebuilt RSpec's top-level group list by
@@ -110,7 +141,8 @@ colliding pair ran only 68 examples; with
 <code>fail_on_duplicates false</code> that under-run exited zero). The group
 filter now maps each surviving example back to its top-level
 group, so exactly the colliding examples are dropped — the
-behavior UPGRADING.md documents.</li>
+behavior UPGRADING.md documents.</p>
+</li>
 </ul>
 <h2 id="_2_0_0_pre_2____2026_05_16">[2.0.0.pre.2] - 2026-05-16</h2>
 <p>Bug-fix + interop release after the field-test pass that followed
@@ -717,7 +749,7 @@ of files changed from eight to nine, so there will be no appropriate cache to us
 </ul></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:57 2026 by
+  Generated on Mon Jul 13 01:14:39 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

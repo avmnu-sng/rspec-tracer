@@ -62,11 +62,17 @@
       <div id="content"><div id='filecontents'><pre class="code ruby"><span class='comment'># frozen_string_literal: true
 </span>
 <span class='id identifier rubyid_at_exit'>at_exit</span> <span class='kw'>do</span>
-  <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_at_exit_behavior'><span class='object_link'><a href="RSpecTracer.html#at_exit_behavior-class_method" title="RSpecTracer.at_exit_behavior (method)">at_exit_behavior</a></span></span>
+  <span class='comment'># `respond_to?` guards against a crash while `lib/rspec_tracer.rb`
+</span>  <span class='comment'># is still loading (e.g. a corrupt `.rspec-tracer` raising at
+</span>  <span class='comment'># config-load time): this hook registers before the module body
+</span>  <span class='comment'># that defines `at_exit_behavior` runs, so without the guard the
+</span>  <span class='comment'># original error would be shadowed by a NoMethodError backtrace
+</span>  <span class='comment'># from the half-loaded module.
+</span>  <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_at_exit_behavior'><span class='object_link'><a href="RSpecTracer.html#at_exit_behavior-class_method" title="RSpecTracer.at_exit_behavior (method)">at_exit_behavior</a></span></span> <span class='kw'>if</span> <span class='const'><span class='object_link'><a href="RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:at_exit_behavior</span><span class='rparen'>)</span>
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:58 2026 by
+  Generated on Mon Jul 13 01:14:40 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

@@ -82,6 +82,7 @@ from 1.x see <a href="UPGRADING.md"><code>UPGRADING.md</code></a>. For internals
 <li><a href="#13-compose-with-knapsack--rspecretry--rspecrerun">Compose with Knapsack / RSpec::Retry / RSpec::Rerun</a></li>
 <li><a href="#14-write-a-custom-storage-backend">Write a custom storage backend</a></li>
 <li><a href="#15-write-a-custom-reporter">Write a custom reporter</a></li>
+<li><a href="#16-measure-a-files-blast-radius">Measure a file's blast radius</a></li>
 </ol>
 <hr />
 <h2 id="1__Add_to_a_fresh_Ruby_gem">1. Add to a fresh Ruby gem</h2>
@@ -536,9 +537,11 @@ your Ruby version for the authoritative supported set.</p>
 <pre class="code sh"><code class="sh">bundle exec rspec-tracer explain &#39;AdminController#create&#39;
 </code></pre>
 <p>Prints the example's last-run status, dependency set, and the run-
-decision reason (e.g. <code>&quot;Files changed: app/controllers/admin_controller.rb&quot;</code>,
-<code>&quot;Whole-suite invalidator changed: Gemfile.lock&quot;</code>,
-<code>&quot;Failed previously&quot;</code>).</p>
+decision reason (e.g. <code>&quot;Files changed&quot;</code>,
+<code>&quot;Whole-suite invalidator changed&quot;</code>,
+<code>&quot;Failed previously&quot;</code>). The reason names the trigger category only;
+the <code>dependencies:</code> listing underneath shows which tracked files
+are involved.</p>
 <p>For a suite-wide breakdown, the terminal output already shows the
 top-level reasons after each run:</p>
 <pre class="code ruby"><code class="ruby">rspec-tracer: 1,820 examples · 42 re-run · 1,778 skipped (97% cached)
@@ -547,6 +550,18 @@ by reason: 38 Files changed · 4 Failed previously
 <p>For deeper config-level debugging, <code>bundle exec rspec-tracer doctor</code>
 diagnoses the boot-time state of every contract (SimpleCov load
 order, schema version, remote-cache reachability, AR-schema config).</p>
+<h3 id="And_why_did_it_NOT_run_">And why did it NOT run?</h3>
+<p><code>--not-run</code> flips <code>explain</code> to the skip-side view:</p>
+<pre class="code sh"><code class="sh">bundle exec rspec-tracer explain --not-run &#39;AdminController#create&#39;
+</code></pre>
+<p>Prints whether the example was skipped on the last run -- and if
+so, the derivation of why no run trigger fired (no whole-suite
+invalidator, no boot-file change, no failed / flaky / pending /
+interrupted status, no changed dependency file, unchanged env
+snapshot) -- plus its last recorded status, the condition under
+which it runs next time, and its tracked dependency files. The
+cache keeps only the most recent snapshot, so &quot;last status&quot;
+reflects the last run, not a run history.</p>
 <hr />
 <h2 id="13__Compose_with_Knapsack___RSpec__Retry___RSpec__Rerun">13. Compose with Knapsack / RSpec::Retry / RSpec::Rerun</h2>
 <p>These all coexist with rspec-tracer; their RSpec hooks compose with
@@ -650,13 +665,58 @@ add your backend's spec to it.</p>
 rescue + warn — a buggy custom reporter never breaks the test
 suite. Same graceful-degradation contract as Storage backends.</p>
 <hr />
+<h2 id="16__Measure_a_file_s_blast_radius">16. Measure a file's blast radius</h2>
+<p>Goal: answer &quot;if I change this file, how much of the suite re-runs?&quot;
+from the command line, before you change it.</p>
+<p>After at least one traced run:</p>
+<pre class="code sh"><code class="sh">bundle exec rspec-tracer blast-radius app/models/user.rb
+</code></pre>
+<pre class="code ruby"><code class="ruby">/app/models/user.rb: 450 examples across 12 spec files
+</code></pre>
+<p><code>--list</code> enumerates the affected examples (location + description);
+<code>--json</code> emits one machine-readable JSON document to stdout for
+tooling:</p>
+<pre class="code sh"><code class="sh">bundle exec rspec-tracer blast-radius --list app/models/user.rb
+bundle exec rspec-tracer blast-radius --json app/models/user.rb
+</code></pre>
+<p>Multiple files compose, with a deduplicated <code>total:</code> line -- so you
+can pipe a branch diff through it and see what a PR invalidates
+before review:</p>
+<pre class="code sh"><code class="sh">git diff --name-only main | xargs bundle exec rspec-tracer blast-radius
+</code></pre>
+<p>Files the cache never saw (docs, CI config) report
+<code>not tracked in cache</code> and still exit 0, so the git pipeline never
+breaks on non-Ruby paths. <code>not tracked</code> means the tracer never
+observed the file as an input -- NOT that the file never loaded.
+Files consumed outside the hooked surface land here too:
+<code>spec/spec_helper.rb</code> itself (it executes before coverage tracking
+starts), reads via unhooked APIs or C extensions, and the other
+blind spots listed in
+<a href="ARCHITECTURE.md#soundness-model">ARCHITECTURE.md's soundness model</a>.</p>
+<p>Reading the output:</p>
+<ul>
+<li>Whole-suite invalidators (<code>Gemfile.lock</code>, <code>.ruby-version</code>,
+<code>.rspec-tracer</code>) and boot-set files report
+<code>re-runs all N examples</code>: a change to them invalidates every
+cached example, not just tracked dependents. The boot-set row in
+<a href="ARCHITECTURE.md#soundness-model">ARCHITECTURE.md's soundness model</a>
+explains why.</li>
+<li>The count reflects the file-change trigger only; examples that
+always re-run for status reasons (failed / flaky / pending /
+interrupted) are not included.</li>
+</ul>
+<p>A blast radius that keeps growing is architectural drift made
+visible. For the same data as a browsable per-file HTML view, see
+the Files Dependency report in recipe
+<a href="#4-map-file-to-test-dependencies-files-dependency">#4</a>.</p>
+<hr />
 <h2 id="Got_a_recipe_to_add_">Got a recipe to add?</h2>
 <p>Open a <a href="https://github.com/avmnu-sng/rspec-tracer/discussions/categories/ideas">Discussion</a>
 with the scenario + minimum config; if it's a common pattern it'll
 land here in a future docs pass.</p></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:58 2026 by
+  Generated on Mon Jul 13 01:14:39 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

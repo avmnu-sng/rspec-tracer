@@ -65,43 +65,62 @@
   <span class='comment'># Internal Logger — see {RSpecTracer} for the user-facing surface.
 </span>  <span class='comment'># @api private
 </span>  <span class='comment'>#
-</span>  <span class='comment'># Internal logger; thin wrapper around `puts` gated on numeric log
-</span>  <span class='comment'># level. Exposed via `RSpecTracer.logger`.
+</span>  <span class='comment'># Internal logger; thin wrapper around `IO#puts` gated on numeric
+</span>  <span class='comment'># log level. Exposed via `RSpecTracer.logger`.
 </span>  <span class='kw'>class</span> <span class='const'>Logger</span>
-    <span class='comment'># Internal method on the tracer pipeline.
+    <span class='kw'>class</span> <span class='op'>&lt;&lt;</span> <span class='kw'>self</span>
+      <span class='comment'># Process-wide default destination for loggers constructed
+</span>      <span class='comment'># without an explicit `out:`. `nil` (the norm) means `$stdout`,
+</span>      <span class='comment'># which normal `rspec` runs rely on. The `rspec-tracer` binary
+</span>      <span class='comment'># sets this to its stderr BEFORE booting the tracer library, so
+</span>      <span class='comment'># loggers constructed while the project&#39;s `.rspec-tracer` config
+</span>      <span class='comment'># loads (e.g. by the 1.x deprecation shims, or recreated after a
+</span>      <span class='comment'># config `log_level` call resets the memoized instance) already
+</span>      <span class='comment'># bind to stderr and machine-readable stdout (`blast-radius
+</span>      <span class='comment'># --json`) stays free of diagnostics. See {RSpecTracer::CLI}.
+</span>      <span class='comment'>#
+</span>      <span class='comment'># @return [IO, nil]
+</span>      <span class='comment'># @api private
+</span>      <span class='id identifier rubyid_attr_accessor'>attr_accessor</span> <span class='symbol'>:default_out</span>
+    <span class='kw'>end</span>
+
+    <span class='comment'># @param log_level [Integer] numeric level (Configuration::LOG_LEVEL)
+</span>    <span class='comment'># @param out [IO, nil] destination stream. Falls back to
+</span>    <span class='comment'>#   {Logger.default_out} when nil, then to `$stdout`.
 </span>    <span class='comment'># @api private
-</span>    <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='id identifier rubyid_log_level'>log_level</span><span class='rparen'>)</span>
+</span>    <span class='kw'>def</span> <span class='id identifier rubyid_initialize'>initialize</span><span class='lparen'>(</span><span class='id identifier rubyid_log_level'>log_level</span><span class='comma'>,</span> <span class='label'>out:</span> <span class='kw'>nil</span><span class='rparen'>)</span>
       <span class='ivar'>@log_level</span> <span class='op'>=</span> <span class='id identifier rubyid_log_level'>log_level</span>
+      <span class='ivar'>@out</span> <span class='op'>=</span> <span class='id identifier rubyid_out'>out</span> <span class='op'>||</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='period'>.</span><span class='id identifier rubyid_default_out'>default_out</span> <span class='op'>||</span> <span class='gvar'>$stdout</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Internal method on the tracer pipeline.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_debug'>debug</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-      <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span> <span class='op'>==</span> <span class='int'>1</span>
+      <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span> <span class='op'>==</span> <span class='int'>1</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Internal method on the tracer pipeline.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_info'>info</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-      <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>2</span><span class='rparen'>)</span>
+      <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>2</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Internal method on the tracer pipeline.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_warn'>warn</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-      <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>3</span><span class='rparen'>)</span>
+      <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>3</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
 
     <span class='comment'># Internal method on the tracer pipeline.
 </span>    <span class='comment'># @api private
 </span>    <span class='kw'>def</span> <span class='id identifier rubyid_error'>error</span><span class='lparen'>(</span><span class='id identifier rubyid_message'>message</span><span class='rparen'>)</span>
-      <span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>4</span><span class='rparen'>)</span>
+      <span class='ivar'>@out</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_message'>message</span> <span class='kw'>if</span> <span class='ivar'>@log_level</span><span class='period'>.</span><span class='id identifier rubyid_between?'>between?</span><span class='lparen'>(</span><span class='int'>1</span><span class='comma'>,</span> <span class='int'>4</span><span class='rparen'>)</span>
     <span class='kw'>end</span>
   <span class='kw'>end</span>
 <span class='kw'>end</span></pre></div></div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:58 2026 by
+  Generated on Mon Jul 13 01:14:40 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

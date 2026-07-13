@@ -142,6 +142,28 @@ path when no opener is available.</p>
         <li class="public ">
   <span class="summary_signature">
     
+      <a href="#launch-class_method" title="launch (class method)">.<strong>launch</strong>(opener, index_path, stdout, stderr)  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Internal helper for the tracer pipeline.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
       <a href="#print_help-class_method" title="print_help (class method)">.<strong>print_help</strong>(stdout)  &#x21d2; Object </a>
     
 
@@ -246,15 +268,70 @@ users on Windows see the print-the-path fallback.</p>
       <pre class="lines">
 
 
-67
-68
-69</pre>
+75
+76
+77</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 67</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 75</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_detect_opener'>detect_opener</span>
   <span class='qwords_beg'>%w[</span><span class='tstring_content'>open</span><span class='words_sep'> </span><span class='tstring_content'>xdg-open</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_find'>find</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_bin'>bin</span><span class='op'>|</span> <span class='id identifier rubyid_which'>which</span><span class='lparen'>(</span><span class='id identifier rubyid_bin'>bin</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="launch-class_method">
+  
+    .<strong>launch</strong>(opener, index_path, stdout, stderr)  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Internal helper for the tracer pipeline.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+48
+49
+50
+51
+52
+53
+54
+55
+56</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 48</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_launch'>launch</span><span class='lparen'>(</span><span class='id identifier rubyid_opener'>opener</span><span class='comma'>,</span> <span class='id identifier rubyid_index_path'>index_path</span><span class='comma'>,</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+  <span class='kw'>if</span> <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='id identifier rubyid_opener'>opener</span><span class='comma'>,</span> <span class='id identifier rubyid_index_path'>index_path</span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
+    <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report:open: opened </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_index_path'>index_path</span><span class='embexpr_end'>}</span><span class='tstring_content'> via </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_opener'>opener</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='int'>0</span>
+  <span class='kw'>else</span>
+    <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report:open: failed to launch </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_opener'>opener</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_index_path'>index_path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+    <span class='int'>1</span>
+  <span class='kw'>end</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -289,19 +366,19 @@ users on Windows see the print-the-path fallback.</p>
       <pre class="lines">
 
 
-52
-53
-54
-55
-56
-57
-58
-59
 60
-61</pre>
+61
+62
+63
+64
+65
+66
+67
+68
+69</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 52</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 60</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
@@ -435,19 +512,13 @@ users on Windows see the print-the-path fallback.</p>
 41
 42
 43
-44
-45
-46
-47
-48</pre>
+44</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 17</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-h</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--help</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-
-  <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/load_config</span><span class='tstring_end'>&#39;</span></span>
 
   <span class='id identifier rubyid_report_path'>report_path</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span>
   <span class='id identifier rubyid_index_path'>index_path</span> <span class='op'>=</span> <span class='const'>File</span><span class='period'>.</span><span class='id identifier rubyid_join'>join</span><span class='lparen'>(</span><span class='id identifier rubyid_report_path'>report_path</span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>index.html</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
@@ -465,13 +536,11 @@ users on Windows see the print-the-path fallback.</p>
     <span class='kw'>return</span> <span class='int'>0</span>
   <span class='kw'>end</span>
 
-  <span class='kw'>if</span> <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='id identifier rubyid_opener'>opener</span><span class='comma'>,</span> <span class='id identifier rubyid_index_path'>index_path</span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
-    <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report:open: opened </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_index_path'>index_path</span><span class='embexpr_end'>}</span><span class='tstring_content'> via </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_opener'>opener</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
-    <span class='int'>0</span>
-  <span class='kw'>else</span>
-    <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report:open: failed to launch </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_opener'>opener</span><span class='embexpr_end'>}</span><span class='tstring_content'> </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_index_path'>index_path</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
-    <span class='int'>1</span>
-  <span class='kw'>end</span>
+  <span class='id identifier rubyid_launch'>launch</span><span class='lparen'>(</span><span class='id identifier rubyid_opener'>opener</span><span class='comma'>,</span> <span class='id identifier rubyid_index_path'>index_path</span><span class='comma'>,</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='comma'>,</span> <span class='id identifier rubyid_stderr'>stderr</span><span class='rparen'>)</span>
+<span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
+  <span class='comment'># Downstream pipe (`... | head`) closed early -- routine in
+</span>  <span class='comment'># shell pipelines, not a failure. Exit 0 silently.
+</span>  <span class='int'>0</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>report:open: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
   <span class='int'>1</span>
@@ -509,16 +578,16 @@ users on Windows see the print-the-path fallback.</p>
       <pre class="lines">
 
 
-73
-74
-75
-76
-77
-78
-79</pre>
+81
+82
+83
+84
+85
+86
+87</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 73</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/report_open.rb', line 81</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_which'>which</span><span class='lparen'>(</span><span class='id identifier rubyid_binary'>binary</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_found'>found</span> <span class='op'>=</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>PATH</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_split'>split</span><span class='lparen'>(</span><span class='const'>File</span><span class='op'>::</span><span class='const'>PATH_SEPARATOR</span><span class='rparen'>)</span><span class='period'>.</span><span class='id identifier rubyid_any?'>any?</span> <span class='kw'>do</span> <span class='op'>|</span><span class='id identifier rubyid_dir'>dir</span><span class='op'>|</span>
@@ -537,7 +606,7 @@ users on Windows see the print-the-path fallback.</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:59 2026 by
+  Generated on Mon Jul 13 01:14:41 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>

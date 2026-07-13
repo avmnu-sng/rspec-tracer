@@ -137,6 +137,25 @@ FAIL the gate, just surface a WARN/INFO line.</p>
   <span class='label'>redis:</span> <span class='tlambda'>-&gt;</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='tlambeg'>{</span> <span class='id identifier rubyid_remote_cache_redis_check'>remote_cache_redis_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span> <span class='rbrace'>}</span>
 <span class='rbrace'>}</span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
       
+        <dt id="CI_ENV_VARS-constant" class="">CI_ENV_VARS =
+          <div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This constant is part of a private API.</strong>
+  You should avoid using this constant if possible, as it may be removed or be changed in the future.
+</p>
+<p>Environment variables that signal a CI environment, one per
+major provider plus the near-universal <code>CI</code> convention.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div>
+        </dt>
+        <dd><pre class="code"><span class='qwords_beg'>%w[</span><span class='tstring_content'>CI</span><span class='words_sep'> </span><span class='tstring_content'>GITHUB_ACTIONS</span><span class='words_sep'> </span><span class='tstring_content'>GITLAB_CI</span><span class='words_sep'> </span><span class='tstring_content'>CIRCLECI</span><span class='words_sep'> </span><span class='tstring_content'>BUILDKITE</span><span class='words_sep'> </span><span class='tstring_content'>TF_BUILD</span><span class='tstring_end'>]</span></span><span class='period'>.</span><span class='id identifier rubyid_freeze'>freeze</span></pre></dd>
+      
     </dl>
   
 
@@ -238,6 +257,28 @@ FAIL the gate, just surface a WARN/INFO line.</p>
 
   
     <span class="summary_desc"><div class='inline'><p>Surface a 1.x-&gt;2.0 cache mismatch BEFORE the user runs rspec and watches everything re-run mysteriously.</p></div></span>
+  
+</li>
+
+      
+        <li class="public ">
+  <span class="summary_signature">
+    
+      <a href="#ci_environment_check-class_method" title="ci_environment_check (class method)">.<strong>ci_environment_check</strong>  &#x21d2; Object </a>
+    
+
+    
+  </span>
+  
+  
+  
+  
+  
+  
+  <span class="private note title">private</span>
+
+  
+    <span class="summary_desc"><div class='inline'><p>Surface the cache-persistence recipes exactly when the user is on CI, where a non-persisted cache silently degrades every run to a cold run.</p></div></span>
   
 </li>
 
@@ -689,14 +730,14 @@ FAIL the gate, just surface a WARN/INFO line.</p>
       <pre class="lines">
 
 
-258
-259
-260
-261
-262</pre>
+281
+282
+283
+284
+285</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 258</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 281</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ar_schema_enabled?'>ar_schema_enabled?</span>
   <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:track_ar_schema_notifications?</span><span class='rparen'>)</span>
@@ -744,9 +785,6 @@ full rspec run first.</p>
       <pre class="lines">
 
 
-243
-244
-245
 246
 247
 248
@@ -755,10 +793,13 @@ full rspec run first.</p>
 251
 252
 253
-254</pre>
+254
+255
+256
+257</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 243</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 246</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span>
   <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO AR schema:   track_ar_schema_notifications not enabled</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>unless</span> <span class='id identifier rubyid_ar_schema_enabled?'>ar_schema_enabled?</span>
@@ -805,12 +846,12 @@ full rspec run first.</p>
       <pre class="lines">
 
 
-76
-77
-78</pre>
+79
+80
+81</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 76</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 79</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_cache_path_check'>cache_path_check</span>
   <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>cache_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_cache_path'>cache_path</span><span class='rparen'>)</span>
@@ -854,9 +895,6 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-148
-149
-150
 151
 152
 153
@@ -875,10 +913,13 @@ the documented cold-run path, not a hard error.</p>
 166
 167
 168
-169</pre>
+169
+170
+171
+172</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 148</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 151</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_cache_schema_version_check'>cache_schema_version_check</span>
   <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/storage/schema</span><span class='tstring_end'>&#39;</span></span>
@@ -901,6 +942,65 @@ the documented cold-run path, not a hard error.</p>
   <span class='kw'>end</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>WARN schema:      could not read cache manifest: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
+<span class='kw'>end</span></pre>
+    </td>
+  </tr>
+</table>
+</div>
+    
+      <div class="method_details ">
+  <h3 class="signature " id="ci_environment_check-class_method">
+  
+    .<strong>ci_environment_check</strong>  &#x21d2; <tt>Object</tt> 
+  
+
+  
+
+  
+</h3><div class="docstring">
+  <div class="discussion">
+    <p class="note private">
+  <strong>This method is part of a private API.</strong>
+  You should avoid using this method if possible, as it may be removed or be changed in the future.
+</p>
+<p>Surface the cache-persistence recipes exactly when the user is
+on CI, where a non-persisted cache silently degrades every run
+to a cold run. Detection requires a var that is set AND
+non-empty: <code>ENV['CI'] == &quot;&quot;</code> is truthy in Ruby (a shell with
+<code>CI=</code> exported would otherwise read as detected). INFO both
+ways - being in or out of CI is not a health state, so this
+check never affects the exit status.</p>
+
+  </div>
+</div>
+<div class="tags">
+  
+
+</div><table class="source_code">
+  <tr>
+    <td>
+      <pre class="lines">
+
+
+270
+271
+272
+273
+274
+275
+276
+277</pre>
+    </td>
+    <td>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 270</span>
+
+<span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ci_environment_check'>ci_environment_check</span>
+  <span class='id identifier rubyid_var'>var</span> <span class='op'>=</span> <span class='const'><span class='object_link'><a href="#CI_ENV_VARS-constant" title="RSpecTracer::CLI::Doctor::CI_ENV_VARS (constant)">CI_ENV_VARS</a></span></span><span class='period'>.</span><span class='id identifier rubyid_find'>find</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_v'>v</span><span class='op'>|</span> <span class='op'>!</span><span class='const'>ENV</span><span class='lbracket'>[</span><span class='id identifier rubyid_v'>v</span><span class='rbracket'>]</span><span class='period'>.</span><span class='id identifier rubyid_to_s'>to_s</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span> <span class='rbrace'>}</span>
+  <span class='kw'>if</span> <span class='id identifier rubyid_var'>var</span>
+    <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>INFO ci:          detected via ENV[</span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_var'>var</span><span class='embexpr_end'>}</span><span class='tstring_content'>] -- cache persistence recipes: docs/CI_RECIPES.md</span><span class='tstring_end'>&quot;</span></span>
+  <span class='kw'>else</span>
+    <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>INFO ci:          not detected (local run)</span><span class='tstring_end'>&#39;</span></span>
+  <span class='kw'>end</span>
 <span class='kw'>end</span></pre>
     </td>
   </tr>
@@ -935,12 +1035,12 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-82
-83
-84</pre>
+85
+86
+87</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 82</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 85</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_coverage_path_check'>coverage_path_check</span>
   <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>coverage_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_coverage_path'>coverage_path</span><span class='rparen'>)</span>
@@ -978,16 +1078,16 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-104
-105
-106
 107
 108
 109
-110</pre>
+110
+111
+112
+113</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 104</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 107</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_git_check'>git_check</span>
   <span class='kw'>if</span> <span class='id identifier rubyid_system'>system</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>git</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rev-parse</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>HEAD</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='label'>out:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='comma'>,</span> <span class='label'>err:</span> <span class='const'>File</span><span class='op'>::</span><span class='const'>NULL</span><span class='rparen'>)</span>
@@ -1029,16 +1129,16 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-94
-95
-96
 97
 98
 99
-100</pre>
+100
+101
+102
+103</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 94</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 97</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='id identifier rubyid_label'>label</span><span class='comma'>,</span> <span class='id identifier rubyid_path'>path</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>FAIL </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_label'>label</span><span class='embexpr_end'>}</span><span class='tstring_content'> &lt;missing&gt;</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span> <span class='op'>||</span> <span class='id identifier rubyid_path'>path</span><span class='period'>.</span><span class='id identifier rubyid_empty?'>empty?</span>
@@ -1080,18 +1180,18 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-46
-47
-48
 49
 50
 51
 52
 53
-54</pre>
+54
+55
+56
+57</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 46</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 49</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='heredoc_beg'>&lt;&lt;~HELP</span>
@@ -1135,12 +1235,12 @@ the documented cold-run path, not a hard error.</p>
       <pre class="lines">
 
 
-70
-71
-72</pre>
+73
+74
+75</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 70</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 73</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_project_root_check'>project_root_check</span>
   <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   root:        </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_root'>root</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -1180,17 +1280,17 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-132
-133
-134
 135
 136
 137
 138
-139</pre>
+139
+140
+141
+142</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 132</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 135</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_rails_check'>rails_check</span>
   <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   Rails:       </span><span class='embexpr_beg'>#{</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='op'>::</span><span class='const'>STRING</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1246,12 +1346,12 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-266
-267
-268</pre>
+289
+290
+291</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 266</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 289</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_rails_loaded?'>rails_loaded?</span>
   <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>!</span><span class='op'>::</span><span class='const'>Rails</span><span class='op'>::</span><span class='const'>VERSION</span><span class='period'>.</span><span class='id identifier rubyid_nil?'>nil?</span>
@@ -1289,19 +1389,19 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-184
-185
-186
 187
 188
 189
 190
 191
 192
-193</pre>
+193
+194
+195
+196</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 184</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 187</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_check'>remote_cache_check</span>
   <span class='id identifier rubyid_entry'>entry</span> <span class='op'>=</span> <span class='id identifier rubyid_remote_cache_entry'>remote_cache_entry</span>
@@ -1346,14 +1446,14 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-197
-198
-199
 200
-201</pre>
+201
+202
+203
+204</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 197</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 200</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_entry'>remote_cache_entry</span>
   <span class='kw'>return</span> <span class='kw'>nil</span> <span class='kw'>unless</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:remote_cache_backend_entry</span><span class='rparen'>)</span>
@@ -1393,17 +1493,17 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-215
-216
-217
 218
 219
 220
 221
-222</pre>
+222
+223
+224
+225</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 215</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 218</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_local_fs_check'>remote_cache_local_fs_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_path'>path</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:path</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>path</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -1446,16 +1546,16 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-226
-227
-228
 229
 230
 231
-232</pre>
+232
+233
+234
+235</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 226</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 229</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_redis_check'>remote_cache_redis_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_url'>url</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:url</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>url</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='const'>ENV</span><span class='period'>.</span><span class='id identifier rubyid_fetch'>fetch</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>RSPEC_TRACER_REMOTE_CACHE_URI</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='kw'>nil</span><span class='rparen'>)</span>
@@ -1497,16 +1597,16 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-205
-206
-207
 208
 209
 210
-211</pre>
+211
+212
+213
+214</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 205</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 208</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_remote_cache_s3_check'>remote_cache_s3_check</span><span class='lparen'>(</span><span class='id identifier rubyid_opts'>opts</span><span class='rparen'>)</span>
   <span class='id identifier rubyid_bucket'>bucket</span> <span class='op'>=</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='symbol'>:bucket</span><span class='rbracket'>]</span> <span class='op'>||</span> <span class='id identifier rubyid_opts'>opts</span><span class='lbracket'>[</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>bucket</span><span class='tstring_end'>&#39;</span></span><span class='rbracket'>]</span>
@@ -1548,12 +1648,12 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-88
-89
-90</pre>
+91
+92
+93</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 88</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 91</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_report_path_check'>report_path_check</span>
   <span class='id identifier rubyid_path_check'>path_check</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>report_path:</span><span class='tstring_end'>&#39;</span></span><span class='comma'>,</span> <span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='period'>.</span><span class='id identifier rubyid_report_path'>report_path</span><span class='rparen'>)</span>
@@ -1591,12 +1691,12 @@ this process / installed but not loaded / not installed.</p>
       <pre class="lines">
 
 
-58
-59
-60</pre>
+61
+62
+63</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 58</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 61</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_ruby_version_check'>ruby_version_check</span>
   <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   ruby:        </span><span class='embexpr_beg'>#{</span><span class='const'>RUBY_DESCRIPTION</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -1721,15 +1821,16 @@ FAILed; warnings keep status 0).</p></div>
 39
 40
 41
-42</pre>
+42
+43
+44
+45</pre>
     </td>
     <td>
       <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 17</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_run'>run</span><span class='lparen'>(</span><span class='id identifier rubyid_args'>args</span><span class='comma'>,</span> <span class='label'>stdout:</span> <span class='gvar'>$stdout</span><span class='comma'>,</span> <span class='label'>stderr:</span> <span class='gvar'>$stderr</span><span class='rparen'>)</span>
   <span class='kw'>return</span> <span class='id identifier rubyid_print_help'>print_help</span><span class='lparen'>(</span><span class='id identifier rubyid_stdout'>stdout</span><span class='rparen'>)</span> <span class='kw'>if</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>-h</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='op'>||</span> <span class='id identifier rubyid_args'>args</span><span class='period'>.</span><span class='id identifier rubyid_include?'>include?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>--help</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span>
-
-  <span class='id identifier rubyid_require'>require</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>rspec_tracer/load_config</span><span class='tstring_end'>&#39;</span></span>
 
   <span class='id identifier rubyid_checks'>checks</span> <span class='op'>=</span> <span class='lbracket'>[</span>
     <span class='id identifier rubyid_ruby_version_check'>ruby_version_check</span><span class='comma'>,</span>
@@ -1743,11 +1844,16 @@ FAILed; warnings keep status 0).</p></div>
     <span class='id identifier rubyid_rails_check'>rails_check</span><span class='comma'>,</span>
     <span class='id identifier rubyid_cache_schema_version_check'>cache_schema_version_check</span><span class='comma'>,</span>
     <span class='id identifier rubyid_remote_cache_check'>remote_cache_check</span><span class='comma'>,</span>
-    <span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span>
+    <span class='id identifier rubyid_ar_schema_narrow_attribution_check'>ar_schema_narrow_attribution_check</span><span class='comma'>,</span>
+    <span class='id identifier rubyid_ci_environment_check'>ci_environment_check</span>
   <span class='rbracket'>]</span>
   <span class='id identifier rubyid_checks'>checks</span><span class='period'>.</span><span class='id identifier rubyid_each'>each</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span> <span class='id identifier rubyid_stdout'>stdout</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='id identifier rubyid_line'>line</span> <span class='rbrace'>}</span>
   <span class='id identifier rubyid_ok'>ok</span> <span class='op'>=</span> <span class='id identifier rubyid_checks'>checks</span><span class='period'>.</span><span class='id identifier rubyid_none?'>none?</span> <span class='lbrace'>{</span> <span class='op'>|</span><span class='id identifier rubyid_line'>line</span><span class='op'>|</span> <span class='id identifier rubyid_line'>line</span><span class='period'>.</span><span class='id identifier rubyid_start_with?'>start_with?</span><span class='lparen'>(</span><span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>FAIL</span><span class='tstring_end'>&#39;</span></span><span class='rparen'>)</span> <span class='rbrace'>}</span>
   <span class='id identifier rubyid_ok'>ok</span> <span class='op'>?</span> <span class='int'>0</span> <span class='op'>:</span> <span class='int'>1</span>
+<span class='kw'>rescue</span> <span class='const'>Errno</span><span class='op'>::</span><span class='const'>EPIPE</span>
+  <span class='comment'># Downstream pipe (`... | head`) closed early -- routine in
+</span>  <span class='comment'># shell pipelines, not a failure. Exit 0 silently.
+</span>  <span class='int'>0</span>
 <span class='kw'>rescue</span> <span class='const'>StandardError</span> <span class='op'>=&gt;</span> <span class='id identifier rubyid_e'>e</span>
   <span class='id identifier rubyid_stderr'>stderr</span><span class='period'>.</span><span class='id identifier rubyid_puts'>puts</span> <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>doctor: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_class'>class</span><span class='embexpr_end'>}</span><span class='tstring_content'>: </span><span class='embexpr_beg'>#{</span><span class='id identifier rubyid_e'>e</span><span class='period'>.</span><span class='id identifier rubyid_message'>message</span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
   <span class='int'>1</span>
@@ -1792,17 +1898,17 @@ separately from &quot;actually not installed.&quot;</p>
       <pre class="lines">
 
 
-120
-121
-122
 123
 124
 125
 126
-127</pre>
+127
+128
+129
+130</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 120</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 123</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_simplecov_check'>simplecov_check</span>
   <span class='kw'>return</span> <span class='tstring'><span class='tstring_beg'>&#39;</span><span class='tstring_content'>OK   SimpleCov:   loaded (interop active)</span><span class='tstring_end'>&#39;</span></span> <span class='kw'>if</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>SimpleCov</span><span class='rparen'>)</span>
@@ -1845,12 +1951,12 @@ separately from &quot;actually not installed.&quot;</p>
       <pre class="lines">
 
 
-64
-65
-66</pre>
+67
+68
+69</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 64</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 67</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_tracer_version_check'>tracer_version_check</span>
   <span class='tstring'><span class='tstring_beg'>&quot;</span><span class='tstring_content'>OK   rspec-tracer: </span><span class='embexpr_beg'>#{</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html" title="RSpecTracer (module)">RSpecTracer</a></span></span><span class='op'>::</span><span class='const'><span class='object_link'><a href="../../RSpecTracer.html#VERSION-constant" title="RSpecTracer::VERSION (constant)">VERSION</a></span></span><span class='embexpr_end'>}</span><span class='tstring_end'>&quot;</span></span>
@@ -1901,19 +2007,19 @@ separately from &quot;actually not installed.&quot;</p>
       <pre class="lines">
 
 
-272
-273
-274
-275
-276
-277
-278
-279
-280
-281</pre>
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304</pre>
     </td>
     <td>
-      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 272</span>
+      <pre class="code"><span class="info file"># File 'lib/rspec_tracer/cli/doctor.rb', line 295</span>
 
 <span class='kw'>def</span> <span class='kw'>self</span><span class='period'>.</span><span class='id identifier rubyid_transactional_fixtures_default?'>transactional_fixtures_default?</span>
   <span class='kw'>return</span> <span class='kw'>false</span> <span class='kw'>unless</span> <span class='kw'>defined?</span><span class='lparen'>(</span><span class='op'>::</span><span class='const'>RSpec</span><span class='rparen'>)</span> <span class='op'>&amp;&amp;</span> <span class='op'>::</span><span class='const'>RSpec</span><span class='period'>.</span><span class='id identifier rubyid_respond_to?'>respond_to?</span><span class='lparen'>(</span><span class='symbol'>:configuration</span><span class='rparen'>)</span>
@@ -1935,7 +2041,7 @@ separately from &quot;actually not installed.&quot;</p>
 </div>
 
       <div id="footer">
-  Generated on Sun Jul 12 16:22:59 2026 by
+  Generated on Mon Jul 13 01:14:41 2026 by
   <a href="https://yardoc.org" title="Yay! A Ruby Documentation Tool" target="_parent">yard</a>
   0.9.44 (ruby-3.3.10).
 </div>
