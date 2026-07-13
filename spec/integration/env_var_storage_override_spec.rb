@@ -19,7 +19,7 @@ require 'tmpdir'
 #              pointer lives inside the DB).
 #
 # Both contexts assert on the on-disk cache layout (filesystem
-# state), not just exit code -- exit-status-only checks mask
+# state), not just exit code; exit-status-only checks mask
 # cache-persistence bugs.
 #
 # rubocop:disable RSpec/DescribeClass, RSpec/MultipleExpectations, RSpec/ExampleLength

@@ -34,7 +34,7 @@ RSpec.describe RSpecTracer::CLI::SnapshotHelpers do
       Dir.mktmpdir do |dir|
         allow(RSpecTracer).to receive(:storage_backend).and_return(:json)
         expect(described_class.load_snapshot(dir, command: 'blast-radius', stderr: stderr)).to be_nil
-        expect(stderr.string).to include("blast-radius: no cache yet at #{dir} -- run rspec first")
+        expect(stderr.string).to include("blast-radius: no cache yet at #{dir}; run rspec first")
       end
     end
 

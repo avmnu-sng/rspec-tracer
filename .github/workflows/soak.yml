@@ -9,7 +9,7 @@ name: soak
 # parallel under fail-fast: false so one cell's failure doesn't cancel
 # the others. Per-cell timeout-minutes: 240 (4 h cap = 50% margin
 # under GHA's 6 h hard limit so the actions/cache post-hook save
-# still fires even on a slow cold-cache first run -- a job cancelled
+# still fires even on a slow cold-cache first run; a job cancelled
 # at the hard limit skips post-hooks and loses the cache save).
 #
 # 03:00 UTC schedule keeps the run off-peak relative to per-PR CI

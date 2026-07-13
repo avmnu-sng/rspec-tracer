@@ -86,7 +86,7 @@ RSpec.describe RSpecTracer::CLI do
     it 'routes logger writes fired during library boot (config load) to stderr' do
       # The `.rspec-tracer` 1.x deprecation shims (`reports_s3_path`,
       # `use_local_aws`) write through a logger constructed WHILE
-      # load_tracer boots the library -- before with_logger_on can
+      # load_tracer boots the library, before with_logger_on can
       # rebind the memoized instance. Logger.default_out must already
       # point at stderr inside that window, or the warning lands on
       # stdout ahead of machine-readable output (`blast-radius
@@ -153,7 +153,7 @@ RSpec.describe RSpecTracer::CLI do
 
     it 'catches ScriptError so a config SyntaxError cannot escape as a backtrace' do
       # SyntaxError (raised by a corrupt `.rspec-tracer` at `load`
-      # time) is a ScriptError, NOT a StandardError -- a bare
+      # time) is a ScriptError, NOT a StandardError; a bare
       # `rescue StandardError` would let it crash the binary.
       allow(described_class).to receive(:require).with('rspec_tracer').and_raise(SyntaxError, 'unexpected end')
       expect(described_class.load_tracer(stderr)).to be(false)

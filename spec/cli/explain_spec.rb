@@ -187,7 +187,7 @@ RSpec.describe RSpecTracer::CLI::Explain do
         # A cold run persists EMPTY filtered_examples/skipped_examples
         # by design (the engine computes no filter decisions without a
         # previous snapshot), and an id that was not part of the last
-        # run has no entry either -- neither is a backend limitation
+        # run has no entry either; neither is a backend limitation
         # on the json backend, which persists the field.
         expect(described_class.run(['--not-run', absent_id], stdout: stdout, stderr: stderr)).to eq(0)
         out = stdout.string
@@ -206,7 +206,7 @@ RSpec.describe RSpecTracer::CLI::Explain do
       it 'tells the truth when the example actually ran, with a run-side hint' do
         expect(described_class.run(['--not-run', ran_id], stdout: stdout, stderr: stderr)).to eq(0)
         out = stdout.string
-        expect(out).to include('last run:     ran -- Files changed')
+        expect(out).to include('last run:     ran (Files changed)')
         expect(out).to include("it was not skipped; run 'rspec-tracer explain #{ran_id}' for the run-side view")
       end
 
@@ -228,7 +228,7 @@ RSpec.describe RSpecTracer::CLI::Explain do
         out = stdout.string
         expect(out).to include(
           'run reason:   stale prior-run reason (carried forward from an earlier run; ' \
-          'this example was SKIPPED last run -- use --not-run for the skip-side view)'
+          'this example was SKIPPED last run; use --not-run for the skip-side view)'
         )
         expect(out).not_to include('last run:')
       end
@@ -380,7 +380,7 @@ RSpec.describe RSpecTracer::CLI::Explain do
       it 'reports ran with the recorded reason for a filtered id' do
         snapshot.filtered_examples = { 'ex_1' => 'No cache' }
         expect(described_class.last_run_line('ex_1', snapshot, filter_persisted: true))
-          .to eq('last run:     ran -- No cache')
+          .to eq('last run:     ran (No cache)')
       end
 
       it 'attributes an empty decision set to the run when the backend persists decisions' do

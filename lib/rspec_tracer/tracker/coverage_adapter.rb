@@ -11,7 +11,7 @@ module RSpecTracer
   # @api private
   module Tracker
     # Wraps Ruby's built-in ::Coverage module. The first observer in
-    # the 2.0 tracker pipeline -- ingests the per-file line-coverage
+    # the 2.0 tracker pipeline: it ingests the per-file line-coverage
     # bitmap that MRI/JRuby maintain natively, normalizes the two
     # possible shapes (array vs SimpleCov-style hash) and emits
     # Tracker::Input values for the files touched between two peeks.
@@ -23,8 +23,8 @@ module RSpecTracer
     # Changing the algorithm is a storage schema_version bump.
     class CoverageAdapter
       # ::Coverage.peek_result returns one of two shapes:
-      #   :array -- { path => [hit_counts | nil, ...] }           (default)
-      #   :hash  -- { path => { lines: [...], branches: {...} } } (SimpleCov
+      #   :array -> { path => [hit_counts | nil, ...] }           (default)
+      #   :hash  -> { path => { lines: [...], branches: {...} } } (SimpleCov
       #                                                           with branch
       #                                                           coverage)
       # :auto detects on the first peek by sniffing a value's type.
@@ -49,13 +49,13 @@ module RSpecTracer
       # Snapshot of the current coverage state: { absolute_path =>
       # Array<Integer|nil> } for files under project root that survive
       # the user filter. Hash-mode input is reduced to its :lines
-      # component -- 2.0 ignores branch coverage (same as 1.x; noted in
+      # component; 2.0 ignores branch coverage (same as 1.x; noted in
       # the upgrade docs).
       def peek
         peek_normalized { |path| filtered?(path) }
       end
 
-      # Same shape as #peek but only filters by `@root_prefix` -- skips
+      # Same shape as #peek but only filters by `@root_prefix`, skipping
       # the user `filters` filter. The coverage.json emitter
       # (`Reporters::CoverageJsonReporter`) calls this at finalize to
       # capture cumulative coverage matching legacy semantics: 1.x's
@@ -97,7 +97,7 @@ module RSpecTracer
 
       # Pure function: returns Set<Input> for files whose line arrays
       # changed between `before` and `after`. Handles nil line entries
-      # (unexecutable lines) correctly -- nil<->nil is not a delta, any
+      # (unexecutable lines) correctly: nil<->nil is not a delta, any
       # other transition is.
       def compute_diff(before, after)
         changed = Set.new

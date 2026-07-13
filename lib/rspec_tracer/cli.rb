@@ -2,7 +2,7 @@
 
 require 'optparse'
 
-# Only the Logger class -- NOT the full library, whose boot would
+# Only the Logger class, NOT the full library, whose boot would
 # `load` the project config. {CLI.with_default_logger_out} needs the
 # class defined before that boot so the config-load window cannot
 # construct a stdout-bound logger.
@@ -61,7 +61,7 @@ module RSpecTracer
       end
     rescue Errno::EPIPE
       # A downstream pipe consumer (`rspec-tracer ... | head`) closed
-      # early -- routine in shell pipelines, not a failure. Exit 0
+      # early, which is routine in shell pipelines, not a failure. Exit 0
       # without printing: writing to stderr could raise EPIPE again
       # when both streams share the closed pipe.
       0
@@ -99,11 +99,11 @@ module RSpecTracer
     # the previous value afterwards. This must wrap {.load_tracer}:
     # booting the library `load`s the project + global `.rspec-tracer`
     # configs, and those can write through the logger BEFORE
-    # {.with_logger_on} ever runs -- the 1.x-compat deprecation shims
+    # {.with_logger_on} ever runs: the 1.x-compat deprecation shims
     # (`reports_s3_path`, `use_local_aws`) fire a one-time
     # `logger.warn` at first use, and in a fresh CLI process
     # "one-time" means every invocation. The logger's default
-    # destination is stdout -- the stream machine consumers parse --
+    # destination is stdout (the stream machine consumers parse),
     # so that warning would land ahead of e.g. the `blast-radius
     # --json` document and break `| jq`. With the default rebound,
     # every logger constructed during the window binds to stderr,
@@ -128,8 +128,8 @@ module RSpecTracer
     # {.with_default_logger_out} already redirects loggers constructed
     # during the CLI window; this layer additionally rebinds a logger
     # that was memoized into `RSpecTracer.@logger` BEFORE {.run} was
-    # called (possible for in-process callers -- the spec suite, or a
-    # user embedding the CLI -- where the library booted earlier with
+    # called (possible for in-process callers, the spec suite or a
+    # user embedding the CLI, where the library booted earlier with
     # the stdout default). Sub-commands like `blast-radius --json`
     # promise exactly one JSON document on stdout, so a diagnostic
     # line printed ahead of it breaks `| jq`; together the two layers
@@ -137,7 +137,7 @@ module RSpecTracer
     #
     # `RSpecTracer.logger` memoizes into `@logger`
     # (Configuration#logger); the ivar is seeded directly because
-    # Configuration deliberately exposes no logger setter -- adding
+    # Configuration deliberately exposes no logger setter; adding
     # one would leak it into the user-facing `configure` DSL surface.
     # @api private
     def self.with_logger_on(stderr)

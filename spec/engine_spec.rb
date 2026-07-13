@@ -994,8 +994,8 @@ RSpec.describe RSpecTracer::Engine do
   end
 
   # Late-bind path (#192): when the user follows the canonical
-  # README setup order -- RSpecTracer.start before
-  # `require_relative '../config/environment'` -- Rails is not yet
+  # README setup order (RSpecTracer.start before
+  # `require_relative '../config/environment'`), Rails is not yet
   # loaded at engine.setup time. arm_rails_late_bind_install
   # registers a before(:suite) hook that re-checks
   # defined?(::Rails::VERSION) once Rails has had a chance to load,
@@ -1075,7 +1075,7 @@ RSpec.describe RSpecTracer::Engine do
     it 'is a no-op when Rails still has not loaded by suite-start time' do
       build_tracker(stub_configuration(rails?: false)).tap(&:setup)
       hook = captured_suite_blocks.first
-      # Intentionally do NOT stub Rails::VERSION -- the hook fires
+      # Intentionally do NOT stub Rails::VERSION: the hook fires
       # before Rails was ever required (rare but possible in pure-Ruby
       # suites that opt into track_ar_schema_notifications by mistake).
       hide_const('Rails::VERSION') if defined?(Rails::VERSION)

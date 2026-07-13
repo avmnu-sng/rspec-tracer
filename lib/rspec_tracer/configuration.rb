@@ -1023,8 +1023,8 @@ module RSpecTracer
     # module default. 0 disables the respective check.
     #
     # Duplicated body rather than factored to a private helper
-    # because configure's alias loop wraps every instance method --
-    # private helpers included -- as a public `_name` DSL surface.
+    # because configure's alias loop wraps every instance method,
+    # private helpers included, as a public `_name` DSL surface.
     # rubocop:disable Metrics/PerceivedComplexity
     def cache_size_warn_per_file_mb(size_mb = nil)
       return @cache_size_warn_per_file_mb if defined?(@cache_size_warn_per_file_mb) && size_mb.nil?

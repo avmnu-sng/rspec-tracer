@@ -35,8 +35,8 @@ module RSpecTracer
 
         launch(opener, index_path, stdout, stderr)
       rescue Errno::EPIPE
-        # Downstream pipe (`... | head`) closed early -- routine in
-        # shell pipelines, not a failure. Exit 0 silently.
+        # Downstream pipe (`... | head`) closed early, which is routine
+        # in shell pipelines, not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "report:open: #{e.class}: #{e.message}"

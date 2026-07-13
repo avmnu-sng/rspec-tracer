@@ -51,7 +51,7 @@ jobs:
         run: task lint:yaml
       - name: Lint — Node (HTML reporter frontend)
         run: task lint:node
-      - name: Lint -- Internal-nomenclature leak check
+      - name: "Lint: Internal-nomenclature leak check"
         run: task docs:leak-check
       - name: Check — Bundle
         run: task check:bundle
@@ -459,7 +459,7 @@ jobs:
     # subjects. Combines original shards 2 + 3 (write-side and
     # init/util) since first CI showed 3-shard split was over-sharded.
     # Includes #initialize and private connection/schema/utility
-    # helpers -- mutant credits kills to the describe block whose
+    # helpers: mutant credits kills to the describe block whose
     # label names the subject, and these helpers have no dedicated
     # describes (they are exercised only through public callers), so
     # their kill rate has a structural ceiling. That is why the
@@ -562,7 +562,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Test -- Mutation (cli)
+      - name: "Test: Mutation (cli)"
         timeout-minutes: 5
         run: task test:mutation:cli
 

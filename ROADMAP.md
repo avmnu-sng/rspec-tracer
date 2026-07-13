@@ -76,8 +76,8 @@ Items:
   `tracks:`, env snapshot), **conservative** (boot-set whole-suite
   invalidator, Rails `lib/` engine-load fallback), **heuristic** (Rails
   subscriber attribution under common configs), **blind spot** (runtime
-  metaprogramming, monkey-patches, hidden reflection -- called out
-  prominently). Shipped -- see
+  metaprogramming, monkey-patches, hidden reflection, called out
+  prominently). Shipped; see
   [ARCHITECTURE.md](ARCHITECTURE.md#soundness-model).
 - **`safety_mode :paranoid | :balanced | :aggressive` preset DSL.**
   Named presets that toggle existing knobs (`transitive_load_tracking`,
@@ -89,11 +89,11 @@ Items:
   `explain`. Outputs *"if you modify this file, it triggers N examples
   across M files."* Lets developers spot architectural drift before
   the PR review; turns the dependency graph from invisible infra into
-  inspectable insight. Shipped -- see
+  inspectable insight. Shipped; see
   [COOKBOOK.md](COOKBOOK.md#16-measure-a-files-blast-radius).
 - **`bin/rspec-tracer explain --not-run <example_id>`.** The "why
   did this NOT run?" inverse of the existing `explain`. Closes the
-  most-requested observability gap from pre-release. Shipped -- see
+  most-requested observability gap from pre-release. Shipped; see
   [COOKBOOK.md](COOKBOOK.md#12-debug-why-did-this-test-re-run).
 - **Confidence scoring on per-run summary.** Terminal output extends
   to show what proportion of selection decisions came from explicit

@@ -67,7 +67,7 @@ the pinned Ruby active (`.ruby-version` via rbenv).
 If publishing fails midway (for example RubyGems accepted the gem but
 the GitHub release step failed), do not retag; the tag and the gem
 version are already immutable. Do not reach for "Re-run failed jobs"
-either -- it cannot recover this state, for two reasons:
+either: it cannot recover this state, for two reasons.
 
 - A re-run executes the whole `publish` job from the top, including
   `gem push`. RubyGems rejects a repush of an already-published

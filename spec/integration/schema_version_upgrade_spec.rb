@@ -31,7 +31,7 @@ require 'rspec_tracer/storage/schema'
 #     writes a fresh schema_version-tagged manifest)
 #
 # Assert on the contract behavior (logger output + nil return +
-# post-fallback save), not just on absence-of-raise -- raise-free
+# post-fallback save), not just on absence-of-raise; raise-free
 # runs alone mask cache-persistence bugs.
 # rubocop:disable RSpec/DescribeClass, RSpec/InstanceVariable, RSpec/ContextWording
 # rubocop:disable RSpec/MultipleExpectations, RSpec/ExampleLength

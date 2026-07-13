@@ -105,9 +105,9 @@ tasks:
         echo
 
         if [ "$fail" -ne 0 ]; then
-          echo "release:preflight: FAILED -- fix the FAIL items above."
+          echo "release:preflight: FAILED. Fix the FAIL items above."
         else
-          echo "release:preflight: OK -- work through the VERIFY-MANUALLY"
+          echo "release:preflight: OK. Work through the VERIFY-MANUALLY"
           echo "items above before tagging."
         fi
         exit "$fail"

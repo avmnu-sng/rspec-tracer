@@ -97,7 +97,7 @@ tasks:
 
   test:edge-cases:
     desc: >-
-      Edge case suite -- adversarial filesystem + cache + concurrency
+      Edge case suite: adversarial filesystem + cache + concurrency
       tests under spec/edge_cases/. Excluded from the default rspec sweep
       via .rspec --exclude-pattern (note rspec silently ignores that flag
       when explicit positional paths are passed).

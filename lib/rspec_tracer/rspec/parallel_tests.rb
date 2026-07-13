@@ -322,7 +322,7 @@ module RSpecTracer
 
       # Elects the worker that performs the per-run merge. Delegates to
       # `::ParallelTests.first_process?`, which returns true iff
-      # `TEST_ENV_NUMBER.to_i <= 1` -- i.e. for exactly one worker
+      # `TEST_ENV_NUMBER.to_i <= 1`, i.e. for exactly one worker
       # (TEST_ENV_NUMBER == '' or '1'), regardless of how many workers
       # were actually spawned vs. how many CPUs the runner reports.
       #
@@ -334,13 +334,13 @@ module RSpecTracer
       #      worker 1 could finish its examples before worker 2 even
       #      loaded spec_helper, observe itself as the max, and enter
       #      `wait_for_other_processes_to_finish` concurrently with
-      #      worker 2's own self-election -- both workers spun on each
+      #      worker 2's own self-election; both workers spun on each
       #      other's pid.
       #
       #   2. `::ParallelTests.last_process?` compares TEST_ENV_NUMBER
       #      against PARALLEL_TEST_GROUPS. parallel_rspec's CLI sets
       #      PARALLEL_TEST_GROUPS to the CPU-based *intended* process
-      #      count, NOT the actual worker count -- so when fewer specs
+      #      count, NOT the actual worker count, so when fewer specs
       #      than CPUs are present, no TEST_ENV_NUMBER ever matches
       #      PARALLEL_TEST_GROUPS and the merge is silently skipped.
       #

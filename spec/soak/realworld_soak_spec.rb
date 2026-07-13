@@ -361,7 +361,7 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
   # rubocop:enable RSpec/DescribeClass, RSpec/BeforeAfterAll, RSpec/ExampleLength
   # rubocop:enable RSpec/NoExpectationExample
 
-  # -- helpers ---------------------------------------------------
+  # ---- helpers -------------------------------------------------
 
   def skip_if_jruby
     skip 'soak runs MRI-only (JRuby x Rails subprocess floor too high)' if RUBY_ENGINE != 'ruby'
@@ -432,9 +432,10 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
     end
   end
 
-  # rubocop:disable RSpec/Output -- iter-progress markers are the spec's
-  #   primary observability artifact; without them the GHA UI shows zero
-  #   activity for 30+ min which looks like a hang.
+  # Iter-progress markers are the spec's primary observability
+  # artifact; without them the GHA UI shows zero activity for 30+ min
+  # which looks like a hang.
+  # rubocop:disable RSpec/Output
   def announce_iter_start(iter)
     $stdout.write("\n=== #{PROJECT}#{SHARD_LABEL} iter #{iter}/#{ITERATIONS} starting ===\n")
     $stdout.flush
@@ -562,7 +563,7 @@ RSpec.describe "realworld soak (#{PROJECT}#{SHARD_LABEL})" do
       }.join("\n")
   end
 
-  # -- summary --------------------------------------------------
+  # ---- summary ------------------------------------------------
   #
   # write_soak_summary renders tmp/soak/summary.md +
   # tmp/soak/summary.json at the end of every soak run (success or

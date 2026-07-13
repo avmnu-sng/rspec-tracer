@@ -134,7 +134,7 @@ local on the first CI run. Precedents: `154ec27`, `10c0d67`.
 
 **Genuine gap, not a ceiling?** Add a behavior test under the natural
 describe that asserts the real contract being broken by the mutation.
-Never weaken an existing assertion to make CI green -- diagnose the
+Never weaken an existing assertion to make CI green; diagnose the
 real cause instead. Never add mutation-bait tests that
 exist only to kill mutations - the test should document a real
 contract the lib promises. If the contract is fuzzy (e.g. log-message

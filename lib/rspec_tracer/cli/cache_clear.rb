@@ -27,8 +27,8 @@ module RSpecTracer
         remove_each(stdout, existing)
         0
       rescue Errno::EPIPE
-        # Downstream pipe (`... | head`) closed early -- routine in
-        # shell pipelines, not a failure. Exit 0 silently.
+        # Downstream pipe (`... | head`) closed early, which is routine
+        # in shell pipelines, not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "cache:clear: #{e.class}: #{e.message}"
