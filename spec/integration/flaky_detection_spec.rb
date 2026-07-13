@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # End-to-end regression for #194: flaky-test detection silently
-# regressed in 2.0.0.pre.1 -- registry exposes :flaky status, the
+# regressed in 2.0.0.pre.1: registry exposes :flaky status, the
 # filter recognizes :flaky_example, and the JSON / HTML reporters
 # emit flaky_examples, but no production code path transitions an
 # example into the :flaky bucket. README pitches rspec-tracer as a

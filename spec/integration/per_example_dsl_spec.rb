@@ -92,8 +92,9 @@ module PerExampleDslSpecHelpers
 
   # Filter the all_examples map down to the env-branch describe's
   # examples by full_description prefix match.
-  # rubocop:disable Style/ArrayIntersect -- `full` is a String; include? is a
-  #   substring check here, not array membership, so intersect? doesn't apply.
+  # `full` is a String; include? is a substring check here, not array
+  # membership, so intersect? doesn't apply.
+  # rubocop:disable Style/ArrayIntersect
   def env_branch_ids(all_examples)
     all_examples.select do |_, meta|
       full = meta['full_description'] || meta[:full_description]

@@ -42,7 +42,7 @@ tasks:
       - task: soak:fixture:refinery
       - task: soak:fixture:spree
 
-  # -- Solidus ---------------------------------------------------
+  # ---- Solidus -------------------------------------------------
 
   soak:fixture:solidus:
     desc: >-
@@ -107,7 +107,7 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
 
-  # -- Refinery --------------------------------------------------
+  # ---- Refinery ------------------------------------------------
 
   soak:fixture:refinery:
     desc: >-
@@ -174,7 +174,7 @@ tasks:
     cmds:
       - bundle exec rspec --no-color spec/soak/realworld_soak_spec.rb
 
-  # -- Spree -----------------------------------------------------
+  # ---- Spree ---------------------------------------------------
 
   soak:fixture:spree:
     desc: >-

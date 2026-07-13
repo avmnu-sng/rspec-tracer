@@ -12,7 +12,7 @@ ratchet to catch performance regressions before they land.
 | `cache_load` | Just `Cache#populate_from_disk` + process exit | same |
 | `cold_rails` | Cold RSpec against the Rails fixture (model specs only) | `spec/fixtures/rails_app` |
 
-`file_read_hook` landed later than the other scenarios -- 1.x had no
+`file_read_hook` landed later than the other scenarios: 1.x had no
 I/O prepend hooks to measure.
 
 ## Running

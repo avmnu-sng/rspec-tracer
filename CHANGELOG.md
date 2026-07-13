@@ -13,7 +13,7 @@ shipped in [#273](https://github.com/avmnu-sng/rspec-tracer/pull/273);
 and repositions the README and docs around the soundness model, CI
 cost framing, and maintenance policy
 ([#266](https://github.com/avmnu-sng/rspec-tracer/pull/266), closing
-[#223](https://github.com/avmnu-sng/rspec-tracer/issues/223)–[#229](https://github.com/avmnu-sng/rspec-tracer/issues/229)).
+[#223](https://github.com/avmnu-sng/rspec-tracer/issues/223)-[#229](https://github.com/avmnu-sng/rspec-tracer/issues/229)).
 CI and maintenance hardening alongside: exact dev-tool gem pins
 ([#267](https://github.com/avmnu-sng/rspec-tracer/pull/267)), a lint
 gate against internal planning vocabulary shipping in public files
@@ -26,12 +26,12 @@ of the unused 1.x sample-project tree
 ([#268](https://github.com/avmnu-sng/rspec-tracer/pull/268)), and
 security dependency updates across the sample Rails app and CI
 actions ([#257](https://github.com/avmnu-sng/rspec-tracer/pull/257),
-[#259](https://github.com/avmnu-sng/rspec-tracer/pull/259)–[#261](https://github.com/avmnu-sng/rspec-tracer/pull/261),
+[#259](https://github.com/avmnu-sng/rspec-tracer/pull/259)-[#261](https://github.com/avmnu-sng/rspec-tracer/pull/261),
 [#263](https://github.com/avmnu-sng/rspec-tracer/pull/263),
 [#264](https://github.com/avmnu-sng/rspec-tracer/pull/264)).
 
 The cache `schema_version` is unchanged at `5`: a pre.2 cache carries
-forward warm -- no cold run on this upgrade. See
+forward warm, with no cold run on this upgrade. See
 [`UPGRADING.md`](UPGRADING.md).
 
 ### Added
@@ -40,7 +40,7 @@ forward warm -- no cold run on this upgrade. See
   classifying what the tracer guarantees (content digests, explicit
   declarations, env snapshots), where it is deliberately
   conservative, where it relies on heuristics, and what it cannot
-  observe at all -- with the `tracks:` DSL as the escape hatch
+  observe at all, with the `tracks:` DSL as the escape hatch
   ([#226](https://github.com/avmnu-sng/rspec-tracer/issues/226)).
 - **Cost framing for CI.** New README section with measured cold/warm
   timings and a formula for estimating CI-minute and dollar savings

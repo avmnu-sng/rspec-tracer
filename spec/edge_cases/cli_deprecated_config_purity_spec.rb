@@ -3,7 +3,7 @@
 # End-to-end stdout purity of the `rspec-tracer` binary when the
 # project's `.rspec-tracer` uses a deprecated 1.x DSL option. The
 # deprecation shims (`reports_s3_path`, `use_local_aws`) fire a
-# one-time `logger.warn` while the config loads -- BEFORE sub-command
+# one-time `logger.warn` while the config loads, BEFORE sub-command
 # dispatch, and in a fresh CLI process "one-time" means every
 # invocation. The logger's default destination is stdout, so before
 # the CLI rebound `Logger.default_out` around library boot the
@@ -11,7 +11,7 @@
 # broke `... --json | jq` deterministically for exactly the users the
 # compat shims exist to support.
 #
-# Subprocess-driven because the failure mode lives at library load --
+# Subprocess-driven because the failure mode lives at library load;
 # it cannot be reproduced in-process once the spec suite has loaded
 # rspec_tracer (a second `require 'rspec_tracer'` is a no-op, so the
 # config-load window never reopens).
@@ -53,7 +53,7 @@ RSpec.describe 'rspec-tracer binary with a deprecated-DSL project config' do
         {
           'BUNDLE_GEMFILE' => File.expand_path('../../Gemfile', __dir__),
           # Deleted (nil) so the subprocess cache_path stays exactly
-          # <dir>/rspec_tracer_cache -- either var appends a scope
+          # <dir>/rspec_tracer_cache; either var appends a scope
           # segment and would miss the seeded cache.
           'TEST_SUITE_ID' => nil,
           'TEST_ENV_NUMBER' => nil

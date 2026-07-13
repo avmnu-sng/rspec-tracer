@@ -481,7 +481,7 @@ module RSpecTracer
     #   subscribers + the inline AR-schema warn at suite time.
     #
     # Without the late-bind path, `track_ar_schema_notifications` was
-    # silently inert under the canonical README setup -- the documented
+    # silently inert under the canonical README setup: the documented
     # `use_transactional_fixtures` warn never fired and the
     # `sql.active_record` subscriber never attached.
     def install_rails_observers
@@ -568,7 +568,7 @@ module RSpecTracer
     #   - DatabaseCleaner :truncation / :deletion / :transaction in
     #     around hooks: same outcome.
     #
-    # Eager path: defer the check to before(:suite) -- at engine.setup
+    # Eager path: defer the check to before(:suite), because at engine.setup
     # the user has not run their RSpec.configure block yet, so
     # `use_transactional_fixtures` is unset. The late-bind path
     # short-circuits this method and inline-fires

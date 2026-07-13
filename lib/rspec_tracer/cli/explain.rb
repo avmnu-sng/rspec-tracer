@@ -3,10 +3,10 @@
 require 'rspec_tracer/cli/snapshot_helpers'
 
 module RSpecTracer
-  # Internal CLI -- see {RSpecTracer} for the user-facing surface.
+  # Internal CLI; see {RSpecTracer} for the user-facing surface.
   # @api private
   module CLI
-    # `rspec-tracer explain <example>` -- show why a given example is
+    # `rspec-tracer explain <example>`: show why a given example is
     # scheduled to run or skip on the next rspec invocation. Backend-
     # agnostic: dispatches through {RSpecTracer::Storage::Backend.build}
     # (via {SnapshotHelpers.load_snapshot}) so `storage_backend :sqlite`
@@ -40,8 +40,8 @@ module RSpecTracer
         end
         0
       rescue Errno::EPIPE
-        # Downstream pipe (`... | head`) closed early -- routine in
-        # shell pipelines, not a failure. Exit 0 silently.
+        # Downstream pipe (`... | head`) closed early, which is routine
+        # in shell pipelines, not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "explain: #{e.class}: #{e.message}"
@@ -115,7 +115,7 @@ module RSpecTracer
 
       # The run-side `run reason:` value. For an example the filter
       # SKIPPED on the last run, the persisted run_reason is the
-      # carry-forward reason seeded from an earlier snapshot -- it says
+      # carry-forward reason seeded from an earlier snapshot: it says
       # why the example ran back then, not why it is in its current
       # state. Printing it bare would misreport a skipped example as
       # having a current run trigger, so flag it and point at the
@@ -126,7 +126,7 @@ module RSpecTracer
         return reason unless skipped
 
         "#{reason} (carried forward from an earlier run; " \
-          'this example was SKIPPED last run -- use --not-run for the skip-side view)'
+          'this example was SKIPPED last run; use --not-run for the skip-side view)'
       end
 
       # Internal helper for the tracer pipeline.
@@ -185,7 +185,7 @@ module RSpecTracer
       # backend that persists filter decisions (json) with an empty
       # decision set means the last run recorded no decision for this
       # id (a cold run persists empty sets by design, and an id absent
-      # from the last run has no entry either) -- only a
+      # from the last run has no entry either); only a
       # non-persisting backend (sqlite) earns the storage-backend
       # wording.
       # @return [String]
@@ -193,7 +193,7 @@ module RSpecTracer
         return 'last run:     skipped (cache hit)' if skipped?(id, snapshot)
 
         reason = ran_reason(id, snapshot)
-        return "last run:     ran -- #{reason}" if reason
+        return "last run:     ran (#{reason})" if reason
         return 'last run:     <not recorded by this storage backend>' unless filter_persisted
 
         'last run:     no filter decision recorded (cold run, or this example was not part of it)'

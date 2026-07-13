@@ -7,8 +7,8 @@ require 'tmpdir'
 
 # Verifies the contract of `task docs:leak-check`
 # (scripts/leak_check.rb): exit zero on a clean tree, non-zero on a
-# leaked internal-nomenclature token, and -- the CHANGELOG-specific
-# section rule -- non-zero on a leak in the active [Unreleased]
+# leaked internal-nomenclature token, and, per the CHANGELOG-specific
+# section rule, non-zero on a leak in the active [Unreleased]
 # block while shipped-history sections below the first
 # released-version heading stay exempt.
 #

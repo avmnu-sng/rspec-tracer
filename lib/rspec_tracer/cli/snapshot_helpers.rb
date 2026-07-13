@@ -6,7 +6,7 @@ require 'rspec_tracer/storage/schema'
 require 'rspec_tracer/storage/sqlite_backend' if RUBY_ENGINE == 'ruby'
 
 module RSpecTracer
-  # Internal CLI -- see {RSpecTracer} for the user-facing surface.
+  # Internal CLI; see {RSpecTracer} for the user-facing surface.
   # @api private
   module CLI
     # Shared plumbing for the snapshot-reading sub-commands (Explain,
@@ -41,7 +41,7 @@ module RSpecTracer
         backend = Storage::Backend.build(cache_path: cache_path, configuration: RSpecTracer)
         run_id = backend.last_run_id
         if run_id.nil? || run_id.to_s.empty?
-          stderr.puts "#{command}: no cache yet at #{cache_path} -- run rspec first"
+          stderr.puts "#{command}: no cache yet at #{cache_path}; run rspec first"
           return nil
         end
 

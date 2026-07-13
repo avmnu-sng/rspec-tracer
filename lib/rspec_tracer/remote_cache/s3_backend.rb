@@ -286,7 +286,7 @@ module RSpecTracer
         value.empty? ? nil : value
       end
 
-      # -- Tier + key composition -------------------------
+      # ---- Tier + key composition -------------------------
 
       def pr_tier?
         @branch != @default_branch
@@ -346,7 +346,7 @@ module RSpecTracer
         segments.compact.reject { |s| s.to_s.empty? }.join('/')
       end
 
-      # -- Local-side paths -------------------------------
+      # ---- Local-side paths -------------------------------
 
       def local_last_run_path
         File.join(@cache_path, LAST_RUN_FILENAME)
@@ -374,7 +374,7 @@ module RSpecTracer
         nil
       end
 
-      # -- Tree-SHA secondary index -----------------------
+      # ---- Tree-SHA secondary index -----------------------
 
       # Build the list of (tier_prefix, ref) pairs to try, in
       # priority order:
@@ -430,7 +430,7 @@ module RSpecTracer
         FileUtils.rm_f(pointer_path) if defined?(pointer_path) && pointer_path
       end
 
-      # -- Download flow ----------------------------------
+      # ---- Download flow ----------------------------------
 
       # Download the archive for (tier, ref), extract into cache_path,
       # validate the resulting last_run.json. Returns true on validated
@@ -480,14 +480,14 @@ module RSpecTracer
         File.join(@cache_path, ".cache_#{purpose}_#{Process.pid}_#{SecureRandom.hex(4)}.tar.gz")
       end
 
-      # -- Upload flow ------------------------------------
+      # ---- Upload flow ------------------------------------
 
       def upload_file(local_path, s3_key)
         ok, _stdout, stderr = aws_cp_silent(local_path, s3_url(s3_key))
         raise S3BackendError, "Failed to upload #{local_path}: #{stderr.chomp}" unless ok
       end
 
-      # -- Retention --------------------------------------
+      # ---- Retention --------------------------------------
 
       # List refs under the backend's own tier with their last_run.json
       # LastModified. Returns Array<[ref, epoch_timestamp]>, newest first.
@@ -654,7 +654,7 @@ module RSpecTracer
         0
       end
 
-      # -- AWS CLI shell-out ------------------------------
+      # ---- AWS CLI shell-out ------------------------------
 
       def aws_cp_silent(src, dst)
         run_aws('s3', 'cp', src, dst)
@@ -695,7 +695,7 @@ module RSpecTracer
         [status.success?, stdout, stderr]
       end
 
-      # -- Logging ----------------------------------------
+      # ---- Logging ----------------------------------------
 
       def log_debug(message)
         @logger&.debug("rspec-tracer remote_cache: #{message}")

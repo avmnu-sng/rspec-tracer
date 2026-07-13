@@ -173,7 +173,7 @@ to the tracer.
 ## 3. Detect flaky tests
 
 Goal: find examples that pass and fail without their inputs
-changing -- no extra gems, no retry loops, and no test skipped in
+changing: no extra gems, no retry loops, and no test skipped in
 the process.
 
 rspec-tracer records each example's outcome alongside the inputs it
@@ -184,15 +184,15 @@ is never skipped, so every subsequent run re-investigates it.
 The default setup is all you need:
 
 ```ruby
-# spec/spec_helper.rb -- top of file, before any application code.
-# With SimpleCov, start SimpleCov first -- load order is part of
+# spec/spec_helper.rb, top of file, before any application code.
+# With SimpleCov, start SimpleCov first: load order is part of
 # the contract.
 require 'rspec_tracer'
 RSpecTracer.start
 ```
 
-Not ready to let the tracer skip anything? Run in record-only mode
--- every example still runs, and flaky detection works unchanged:
+Not ready to let the tracer skip anything? Run in record-only mode;
+every example still runs, and flaky detection works unchanged:
 
 ```ruby
 # .rspec-tracer
@@ -216,8 +216,8 @@ Where the output lives:
 **One honest caveat**: flaky detection needs repeated runs on
 unchanged inputs. A single run proves nothing, and if you edit code
 between runs, a fail-then-pass flip looks like a fix, not a flake.
-The strongest signal comes from re-running the same commit -- CI
-retries, or local re-runs without edits.
+The strongest signal comes from re-running the same commit (CI
+retries, or local re-runs without edits).
 
 Pairing with `RSpec::Retry` so flakes don't block CI while you fix
 them? See recipe
@@ -236,8 +236,8 @@ examples depend on it, and through which spec files. No config
 beyond the default:
 
 ```ruby
-# spec/spec_helper.rb -- top of file, before any application code.
-# With SimpleCov, start SimpleCov first -- load order is part of
+# spec/spec_helper.rb, top of file, before any application code.
+# With SimpleCov, start SimpleCov first: load order is part of
 # the contract.
 require 'rspec_tracer'
 RSpecTracer.start
@@ -257,8 +257,8 @@ Run the suite once (a cold run populates the map), then open
 Want the map without enabling skipping? Use the record-only mode
 from recipe [#3](#3-detect-flaky-tests).
 
-**One honest caveat**: the map shows test-to-file dependencies --
-which tests depend on which files -- not code-to-code coupling. Two
+**One honest caveat**: the map shows test-to-file dependencies
+(which tests depend on which files), not code-to-code coupling. Two
 application files that always change together show up only
 indirectly, through the examples that consume both.
 
@@ -300,7 +300,7 @@ identical — only the storage substrate differs.
 
 Whichever backend you pick, the cache is plain files in
 infrastructure you own (your S3 bucket, your Redis, your
-filesystem) -- nothing ships to a vendor backend.
+filesystem); nothing ships to a vendor backend.
 
 ### S3 (preserves 1.x layout)
 
@@ -610,12 +610,12 @@ order, schema version, remote-cache reachability, AR-schema config).
 bundle exec rspec-tracer explain --not-run 'AdminController#create'
 ```
 
-Prints whether the example was skipped on the last run -- and if
+Prints whether the example was skipped on the last run and, if
 so, the derivation of why no run trigger fired (no whole-suite
 invalidator, no boot-file change, no failed / flaky / pending /
 interrupted status, no changed dependency file, unchanged env
-snapshot) -- plus its last recorded status, the condition under
-which it runs next time, and its tracked dependency files. The
+snapshot). It also prints the last recorded status, the condition
+under which it runs next time, and its tracked dependency files. The
 cache keeps only the most recent snapshot, so "last status"
 reflects the last run, not a run history.
 
@@ -786,7 +786,7 @@ bundle exec rspec-tracer blast-radius --list app/models/user.rb
 bundle exec rspec-tracer blast-radius --json app/models/user.rb
 ```
 
-Multiple files compose, with a deduplicated `total:` line -- so you
+Multiple files compose, with a deduplicated `total:` line, so you
 can pipe a branch diff through it and see what a PR invalidates
 before review:
 
@@ -797,7 +797,7 @@ git diff --name-only main | xargs bundle exec rspec-tracer blast-radius
 Files the cache never saw (docs, CI config) report
 `not tracked in cache` and still exit 0, so the git pipeline never
 breaks on non-Ruby paths. `not tracked` means the tracer never
-observed the file as an input -- NOT that the file never loaded.
+observed the file as an input, NOT that the file never loaded.
 Files consumed outside the hooked surface land here too:
 `spec/spec_helper.rb` itself (it executes before coverage tracking
 starts), reads via unhooked APIs or C extensions, and the other

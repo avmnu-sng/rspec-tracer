@@ -47,7 +47,7 @@ LEAK_PATTERN = [
   # Word boundaries are spelled as character classes, NOT \b: BSD
   # regex (git grep -E on macOS) has no \b, so a \b-based pattern
   # silently matches nothing locally while GNU regex on Linux CI
-  # matches -- exactly the local/CI divergence this gate exists to
+  # matches: exactly the local/CI divergence this gate exists to
   # prevent. `#` is excluded from the left boundary so CSS hex
   # colors (e.g. #B00100 in fixture error pages) cannot match.
   '(^|[^[:alnum:]_#])[BQFC][0-9]+([^[:alnum:]_]|$)'

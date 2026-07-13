@@ -13,11 +13,11 @@ Gem::Specification.new do |spec|
   spec.homepage = 'https://github.com/avmnu-sng/rspec-tracer'
   spec.summary = <<-SUMMARY.strip.gsub(/\s+/, ' ')
     Test-dependency intelligence for RSpec: detect flaky tests, map code
-    coupling, and -- when you are ready -- re-run only what changed.
+    coupling, and, when you are ready, re-run only what changed.
   SUMMARY
   spec.description = <<-DESCRIPTION.strip.gsub(/\s+/, ' ')
-    RSpec Tracer records the inputs each RSpec example consumes -- using
-    Ruby's built-in coverage library plus explicit declarations -- and turns
+    RSpec Tracer records the inputs each RSpec example consumes, using
+    Ruby's built-in coverage library plus explicit declarations, and turns
     that record into a flaky-test detector, a per-example dependency map, and
     optional CI acceleration that skips the examples whose recorded inputs
     are unchanged. It never skips failed, flaky, or pending examples.

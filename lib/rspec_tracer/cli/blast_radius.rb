@@ -6,10 +6,10 @@ require 'rspec_tracer/cli/snapshot_helpers'
 require 'rspec_tracer/tracker/whole_suite_invalidators'
 
 module RSpecTracer
-  # Internal CLI -- see {RSpecTracer} for the user-facing surface.
+  # Internal CLI; see {RSpecTracer} for the user-facing surface.
   # @api private
   module CLI
-    # `rspec-tracer blast-radius <file> [<file> ...]` -- show which
+    # `rspec-tracer blast-radius <file> [<file> ...]`: show which
     # examples a change to each given file would re-run on the next
     # rspec invocation. Reads the persisted reverse-dependency map
     # (file -> examples) plus the whole-suite invalidator watch list
@@ -51,9 +51,9 @@ module RSpecTracer
 
         execute(parsed, stdout, stderr)
       rescue Errno::EPIPE
-        # Downstream pipe (`... | head`, `... | jq`) closed early --
-        # routine in shell pipelines (the help text promotes them),
-        # not a failure. Exit 0 silently.
+        # Downstream pipe (`... | head`, `... | jq`) closed early,
+        # which is routine in shell pipelines (the help text promotes
+        # them), not a failure. Exit 0 silently.
         0
       rescue StandardError => e
         stderr.puts "blast-radius: #{e.class}: #{e.message}"
@@ -137,7 +137,7 @@ module RSpecTracer
       # Convert a user-supplied path into the cache's file_name
       # convention (project-relative with a leading `/`, absolute when
       # outside the project root). Computed at command runtime against
-      # `RSpecTracer.root` -- `SourceFile.file_name` is unsuitable here
+      # `RSpecTracer.root`; `SourceFile.file_name` is unsuitable here
       # because its PROJECT_ROOT_REGEX freezes the root at gem-require
       # time, before the CLI loads the project's `.rspec-tracer` config.
       # @api private
@@ -201,7 +201,7 @@ module RSpecTracer
 
       # Enrich one example_id from the persisted all_examples meta.
       # A dangling id (present in reverse_dependency but missing from
-      # all_examples -- stale or partially-written cache) degrades to
+      # all_examples, a stale or partially-written cache) degrades to
       # `<unknown>` fields instead of raising.
       # @api private
       def self.example_entry(id, meta)
@@ -232,7 +232,7 @@ module RSpecTracer
       # Internal helper for the tracer pipeline.
       # The untracked wording sticks to what the tracer can actually
       # observe: absence of the file from the cache. It must NOT claim
-      # the file "never loaded" -- files consumed outside the hooked
+      # the file "never loaded": files consumed outside the hooked
       # surface (spec_helper.rb itself, which executes before coverage
       # tracking starts; reads via unhooked APIs, C extensions, or
       # other threads) load fine yet never appear in the cache. See
@@ -243,11 +243,11 @@ module RSpecTracer
         count = radius[:examples].size
         case radius[:status]
         when 'whole_suite_invalidator'
-          "#{file_name}: whole-suite invalidator -- re-runs all #{count} examples"
+          "#{file_name}: whole-suite invalidator; re-runs all #{count} examples"
         when 'boot_file'
-          "#{file_name}: boot file -- re-runs all #{count} examples"
+          "#{file_name}: boot file; re-runs all #{count} examples"
         when 'untracked'
-          "#{file_name}: not tracked in cache (no recorded dependents -- the tracer never " \
+          "#{file_name}: not tracked in cache (no recorded dependents: the tracer never " \
           'observed it as an input; see the soundness model in ARCHITECTURE.md)'
         when 'no_dependents'
           "#{file_name}: 0 examples (no tracked dependents)"

@@ -186,7 +186,7 @@ RSpec.describe RSpecTracer::CLI::BlastRadius do
         # outside the hooked surface (spec_helper.rb, unhooked reads)
         # load fine yet never land in the cache.
         expect(stdout.string).to include(
-          '/README.md: not tracked in cache (no recorded dependents -- the tracer never ' \
+          '/README.md: not tracked in cache (no recorded dependents: the tracer never ' \
           'observed it as an input; see the soundness model in ARCHITECTURE.md)'
         )
       end
@@ -199,12 +199,12 @@ RSpec.describe RSpecTracer::CLI::BlastRadius do
       it 'reports a whole-suite invalidator watch file as re-running everything' do
         expect(described_class.run(%w[Gemfile.lock], stdout: stdout, stderr: stderr)).to eq(0)
         expect(stdout.string)
-          .to include('/Gemfile.lock: whole-suite invalidator -- re-runs all 3 examples')
+          .to include('/Gemfile.lock: whole-suite invalidator; re-runs all 3 examples')
       end
 
       it 'reports a boot-set file as re-running everything' do
         expect(described_class.run(%w[spec/spec_helper.rb], stdout: stdout, stderr: stderr)).to eq(0)
-        expect(stdout.string).to include('/spec/spec_helper.rb: boot file -- re-runs all 3 examples')
+        expect(stdout.string).to include('/spec/spec_helper.rb: boot file; re-runs all 3 examples')
       end
 
       it 'collapses the total to the whole suite when any input is a whole-suite invalidator' do
@@ -403,9 +403,9 @@ RSpec.describe RSpecTracer::CLI::BlastRadius do
       examples = [{ example_id: 'e', spec_file: 's.rb', location: 's.rb:1', description: 'd' }]
       lines = {
         'tracked' => '/f.rb: 1 examples across 1 spec files',
-        'whole_suite_invalidator' => '/f.rb: whole-suite invalidator -- re-runs all 1 examples',
-        'boot_file' => '/f.rb: boot file -- re-runs all 1 examples',
-        'untracked' => '/f.rb: not tracked in cache (no recorded dependents -- the tracer never ' \
+        'whole_suite_invalidator' => '/f.rb: whole-suite invalidator; re-runs all 1 examples',
+        'boot_file' => '/f.rb: boot file; re-runs all 1 examples',
+        'untracked' => '/f.rb: not tracked in cache (no recorded dependents: the tracer never ' \
                        'observed it as an input; see the soundness model in ARCHITECTURE.md)',
         'no_dependents' => '/f.rb: 0 examples (no tracked dependents)'
       }

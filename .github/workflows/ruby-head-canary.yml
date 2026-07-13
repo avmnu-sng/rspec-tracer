@@ -9,19 +9,19 @@ name: ruby-head-canary
 # job never fails the run; each job's final step writes its outcome
 # to $GITHUB_STEP_SUMMARY so failures are visible on the run page.
 #
-# Wednesdays 05:30 UTC -- an off-peak slot distinct from the other
+# Wednesdays 05:30 UTC: an off-peak slot distinct from the other
 # scheduled workflows (combinations Sun 02:00, soak daily 03:00,
 # soak-bump Mon 04:00, CodeQL Mon 09:23).
 #
 # workflow_dispatch enables ad-hoc runs from the Actions UI between
 # scheduled runs. Note: `gh workflow run ruby-head-canary.yml` only
-# resolves after this file lands on the default branch -- GitHub
+# resolves after this file lands on the default branch, because GitHub
 # registers dispatchable workflows from the default branch only.
 #
 # Both interpreters install as prebuilt nightly binaries via
 # ruby/setup-ruby (ruby/ruby-dev-builder and
-# ruby/truffleruby-dev-builder), so setup costs seconds -- no source
-# build. Neither job pins Bundler or RSPEC_VERSION: a head canary
+# ruby/truffleruby-dev-builder), so setup costs seconds with no
+# source build. Neither job pins Bundler or RSPEC_VERSION: a head canary
 # should track the latest toolchain the same way it tracks the
 # latest interpreter.
 #
@@ -64,10 +64,10 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bundle -- list resolved versions
+      - name: "Bundle: list resolved versions"
         run: bundle list
 
-      - name: Test -- Unit
+      - name: "Test: Unit"
         id: unit
         run: task test:unit
 
@@ -93,7 +93,7 @@ jobs:
   truffleruby-head:
     # Runs the same task surface as full-matrix.yml's pinned
     # `truffleruby:` cell (features + edge cases) rather than
-    # `task test:unit` -- the full unit suite is only exercised on
+    # `task test:unit`; the full unit suite is only exercised on
     # MRI cells, so unit failures here would be engine noise, not
     # head signal. Benchmark smoke is intentionally omitted: a
     # weekly informational cell has no ratchet to feed.
@@ -118,14 +118,14 @@ jobs:
           version: 3.45.4
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bundle -- list resolved versions
+      - name: "Bundle: list resolved versions"
         run: bundle list
 
-      - name: Test -- Features (TruffleRuby)
+      - name: "Test: Features (TruffleRuby)"
         id: features
         run: task test:features:truffleruby
 
-      - name: Test -- Edge cases (concurrent_write + sqlite cases auto-skip)
+      - name: "Test: Edge cases (concurrent_write + sqlite cases auto-skip)"
         id: edge-cases
         if: always() && steps.setup-ruby.outcome == 'success'
         run: task test:edge-cases

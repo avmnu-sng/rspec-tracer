@@ -14,7 +14,7 @@
 #     `respond_to?`).
 #
 # Subprocess-driven because the failure mode lives at library load +
-# process exit -- it cannot be reproduced in-process once the spec
+# process exit; it cannot be reproduced in-process once the spec
 # suite has loaded rspec_tracer.
 
 require 'open3'

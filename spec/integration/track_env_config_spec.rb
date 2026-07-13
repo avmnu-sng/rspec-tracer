@@ -11,7 +11,7 @@
 #
 # Assertion philosophy matches the other integration specs: assert
 # on the set of examples that re-ran (filter decisions), not exit
-# status -- exit-status-only checks mask cache-persistence bugs.
+# status; exit-status-only checks mask cache-persistence bugs.
 
 require 'bundler'
 require 'fileutils'

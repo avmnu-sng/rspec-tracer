@@ -14,7 +14,7 @@ module RSpecTracer
   # CI work that isn't justified for stub-line generation).
   #
   # Methods use `def self.x` (not module_function) so future mutation
-  # gating maps to the singleton form -- module_function attaches
+  # gating maps to the singleton form; module_function attaches
   # methods to an anonymous singleton that mutant cannot observe.
   module LineStub
     # Internal helper for the tracer pipeline.

@@ -316,7 +316,7 @@ tracer never observed cannot trigger a re-run. The tiers below
 classify every input type by which side it falls on. Independent of
 tier, examples that previously failed, were flagged flaky, were
 pending, or were interrupted are always re-run, as is any example
-with no cache entry -- skip decisions apply only to examples with a
+with no cache entry: skip decisions apply only to examples with a
 clean, fully-recorded history.
 
 ### The four tiers
@@ -337,7 +337,7 @@ clean, fully-recorded history.
 | Declared file globs (`track_files`, `tracks: { files: ... }`) | Boot-time walk + digest per run | Sound, given the declaration | The guarantee is conditional and applies to files the cache has seen: any change or deletion under a declared glob re-runs the attributed examples. Files added after the last observed run follow the "New source files" row below. |
 | Declared ENV vars (`track_env`, `tracks: { env: ... }`) | Per-run value digest, compared against the cached snapshot | Sound, two documented exceptions | (1) An unset variable and an empty string digest identically, so unset -> `""` is not a change. (2) Wildcard patterns (`RAILS_*`) re-expand against the live environment each run; a variable that disappears entirely also drops off the watch list. Prefer literal names for variables that come and go. |
 | Boot-set files (everything loaded before the first example: `spec_helper` requires, gem-loaded engine `lib/`, eager-loaded `app/`) | Digest snapshot of the boot set; any change invalidates the whole suite | Conservative | Deliberately coarse: safe under `config.eager_load = true` and constant autoload timing, at the cost of whole-suite re-runs on boot-file edits. Opt-out: `transitive_load_tracking false` (re-opens the constants-lookup blind spot). |
-| New source files | Boot-set snapshot compare + per-run re-walk of declared globs and `lib/**/*.rb` | Conservative when boot-loaded; blind spot when runtime-only | A new file that loads during boot (eager-loaded `app/`, `spec_helper` requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples -- it enters the graph on the first run that observes it. |
+| New source files | Boot-set snapshot compare + per-run re-walk of declared globs and `lib/**/*.rb` | Conservative when boot-loaded; blind spot when runtime-only | A new file that loads during boot (eager-loaded `app/`, `spec_helper` requires) changes the boot-set snapshot and re-runs the whole suite. A new spec file's examples always run (no cache entry). But a file that is only consumed at runtime (a new locale file, a constant resolved by reflection) cannot appear in any previously-cached dependency set, so by itself it does not re-run previously-passing examples; it enters the graph on the first run that observes it. |
 | File I/O (`File.read`, `YAML.load_file`, `JSON.load_file`, `IO.read`, `Kernel#load`, ...) | `Module#prepend` hooks on class-level entry points | Heuristic | Records exactly what passes through the hooked methods, for allow-listed extensions (`.yml .yaml .json .erb .haml .slim .builder .jbuilder .ru .rake`; `.rb` for `Kernel#load`). Reads via unhooked APIs, C extensions, other extensions, or threads other than the example's are not recorded. |
 | Rails template renders | `render_{template,partial,collection}.action_view` subscribers | Heuristic | Attribution is thread-local: renders on another thread (e.g. an app server thread under browser tests) are not attributed. Malformed event payloads are skipped by design. |
 | I18n translations | Prepend on `I18n::Backend::Base#load_translations` | Heuristic | Covers backends that super-call `Base` (Simple, Chain, Cascade). A backend that never calls up is invisible; YAML-file backends are also caught by the I/O hook. |
@@ -346,15 +346,15 @@ clean, fully-recorded history.
 
 ### What we don't detect
 
-These are the known blind spots -- inputs with no observation
+These are the known blind spots, inputs with no observation
 mechanism. If one of them can change an example's outcome, the tracer
 will not re-run that example on its own:
 
 - **Runtime metaprogramming.** Behavior manufactured from non-file
   state at runtime (`define_method` / `const_set` driven by data the
   tracer never saw as a file read).
-- **Monkey-patches in files that never execute in this process** --
-  most commonly gem code outside the project root, or paths excluded
+- **Monkey-patches in files that never execute in this process.**
+  Most commonly gem code outside the project root, or paths excluded
   by a user filter. A patched gem upgrade is still caught, but only
   at `Gemfile.lock` granularity (whole-suite invalidator).
 - **ENV-var branches without declarations.** The tracer watches only
@@ -369,11 +369,11 @@ will not re-run that example on its own:
   the clock: the tracer digests files, not the world. Schema files
   are the closest observable proxy (see the opt-in row above).
 
-The escape hatch for all of these is declaration -- turning an
-unobservable input into a declared (sound-tier) one:
+The escape hatch for all of these is declaration: turning an
+unobservable input into a declared (sound-tier) one.
 
 ```ruby
-# .rspec-tracer -- suite-wide
+# .rspec-tracer (suite-wide)
 RSpecTracer.configure do
   track_files 'config/feature_flags/**/*.yml'
   track_env 'FEATURE_X'
@@ -397,7 +397,7 @@ end
   when your suite consumes it outside that surface (another thread,
   an exotic backend, an unhooked read path), add a declaration.
 - A **blind spot** must be declared or accepted. When in doubt about
-  whether something is observed, declare it -- a redundant
+  whether something is observed, declare it: a redundant
   declaration costs one digest per run; a missed input costs a stale
   green.
 
