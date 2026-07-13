@@ -249,7 +249,7 @@ module RSpecTracer
 
       RSpecTracer.logger.debug "RSpec tracer persisted cache (took #{elapsed})"
       snapshot
-    rescue StandardError => e
+    rescue StandardError, SystemExit => e
       # Graceful-degradation contract per ARCHITECTURE.md
       # section Cache corruption recovery: never propagate storage errors
       # into the user's test suite. Read-only cache_path, disk-full
@@ -257,6 +257,14 @@ module RSpecTracer
       # report emission. The caller (run_exit_tasks) checks for nil
       # before calling emit_reporters; coverage / parallel_tests
       # finalize paths run independently downstream.
+      #
+      # SystemExit is included because nothing inside finalize ever
+      # calls exit itself: a SystemExit here can only be a pending
+      # exit re-surfaced by a C extension during the at_exit persist
+      # (sqlite3's Statement#step re-raises rb_errinfo(), which is
+      # the in-flight `Kernel.exit(1)` on a failing suite). Letting
+      # it propagate would silently skip every remaining exit task;
+      # swallowing it leaves the pending exit status untouched.
       RSpecTracer.logger.warn(
         "rspec-tracer: cache persistence failed (#{e.class}: #{e.message}); " \
         'skipping report generation. Verify cache_path is writable.'

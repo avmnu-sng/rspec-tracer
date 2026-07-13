@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require 'fileutils'
 require 'json'
 require 'set'
@@ -142,11 +143,16 @@ module RSpecTracer
 
       # Internal method on the tracer pipeline.
       # @api private
+      #
+      # Uses `next` (not `return`) inside the with_connection block:
+      # the block may execute on the errinfo-isolation thread (see
+      # isolated_from_pending_exception), where a cross-thread
+      # non-local return would raise LocalJumpError.
       def last_run_id
         with_connection do |db|
           row = db.get_first_row('SELECT run_id FROM meta LIMIT 1')
           run_id = row&.first
-          return nil if run_id.nil? || run_id.to_s.empty?
+          next nil if run_id.nil? || run_id.to_s.empty?
 
           run_id
         end
@@ -156,19 +162,24 @@ module RSpecTracer
 
       # Internal method on the tracer pipeline.
       # @api private
+      #
+      # Uses `next` (not `return`) inside the with_connection block:
+      # the block may execute on the errinfo-isolation thread (see
+      # isolated_from_pending_exception), where a cross-thread
+      # non-local return would raise LocalJumpError.
       def load_graph(schema_version:)
         with_connection do |db|
-          return nil unless meta_table_exists?(db)
+          next nil unless meta_table_exists?(db)
 
           row = db.get_first_row('SELECT schema_version, run_id FROM meta LIMIT 1')
-          return nil if row.nil?
+          next nil if row.nil?
 
           stored_sv, run_id = row
           unless Schema.supported?(stored_sv) && stored_sv == schema_version
             info("schema_version mismatch (stored=#{stored_sv.inspect}, expected=#{schema_version}); cold run")
-            return nil
+            next nil
           end
-          return nil if run_id.nil? || run_id.to_s.empty?
+          next nil if run_id.nil? || run_id.to_s.empty?
 
           LazySnapshot.new(
             schema_version: stored_sv, run_id: run_id,
@@ -259,29 +270,70 @@ module RSpecTracer
               'or switch to `storage_backend :json`.'
       end
 
+      # The sqlite3 gem's Statement#step re-raises any pending Ruby
+      # exception it finds after stepping (statement.c checks
+      # rb_errinfo() to surface exceptions raised inside user-defined
+      # callbacks). Inside an at_exit handler after a failing suite,
+      # the in-flight SystemExit from RSpec's `Kernel.exit(1)` trips
+      # that check on the first stepped statement, so the persist
+      # dies with a spurious SystemExit that no StandardError rescue
+      # sees. Running the connection body on a fresh thread gives the
+      # C extension a clean per-thread errinfo without mutating the
+      # caller's $! (other at_exit handlers, e.g. SimpleCov's, read
+      # it to derive the exit status). Fast path: no pending
+      # exception, no thread. Blocks executed here must not use
+      # `return`/`break` (cross-thread non-local jumps raise
+      # LocalJumpError); use `next` for early block exits.
+      def isolated_from_pending_exception(&)
+        return yield if $ERROR_INFO.nil?
+
+        Thread.new(&).value
+      end
+
       # Internal method on the tracer pipeline.
       # @api private
       def with_connection
         return nil unless File.file?(db_path)
 
-        db = ::SQLite3::Database.new(db_path)
-        configure_connection(db)
-        yield db
-      ensure
-        db&.close
+        isolated_from_pending_exception do
+          db = ::SQLite3::Database.new(db_path)
+          begin
+            configure_connection(db)
+            yield db
+          ensure
+            db&.close
+          end
+        end
       end
 
       # Internal method on the tracer pipeline.
       # @api private
       def with_write_connection
         FileUtils.mkdir_p(@cache_path)
-        reset_corrupt_db_file!
-        db = ::SQLite3::Database.new(db_path)
-        configure_connection(db)
-        ensure_schema!(db)
-        yield db
+        isolated_from_pending_exception do
+          reset_corrupt_db_file!
+          db = ::SQLite3::Database.new(db_path)
+          begin
+            configure_connection(db)
+            ensure_schema!(db)
+            yield db
+          ensure
+            db&.close
+          end
+        end
       ensure
-        db&.close
+        # A save that dies between Database.new (which creates a
+        # zero-byte file) and the first committed page leaves a
+        # present-but-invalid db that would shadow the cache until a
+        # green run overwrites it. Re-probe here so a failed persist
+        # degrades to "no cache" (cold next run), never "corrupt
+        # cache". Swallow probe errors: the original save exception
+        # is the informative one and must not be masked.
+        begin
+          reset_corrupt_db_file!
+        rescue StandardError
+          nil
+        end
       end
 
       # Probe db_path's leading bytes against SQLite's magic header.
@@ -395,14 +447,21 @@ module RSpecTracer
       def write_all_tables(db, snapshot, schema_version:)
         TRUNCATE_TABLES.each { |t| db.execute("DELETE FROM #{t}") }
 
+        write_example_rows(db, snapshot)
+        write_graph_rows(db, snapshot)
+        write_grouped_rows(db, snapshot)
+
+        # meta is written LAST so it doubles as the commit marker.
+        # sqlite3's Database#transaction only rolls back on
+        # StandardError (bare rescue), so a non-StandardError raised
+        # mid-write commits whatever rows were already inserted.
+        # Without a meta row, load_graph treats the file as no-cache
+        # and the next run cold-rewrites instead of loading partial
+        # data as if it were a complete snapshot.
         db.execute(
           'INSERT INTO meta (schema_version, run_id, timestamp) VALUES (?, ?, ?)',
           [schema_version, snapshot.run_id, Time.now.utc.iso8601]
         )
-
-        write_example_rows(db, snapshot)
-        write_graph_rows(db, snapshot)
-        write_grouped_rows(db, snapshot)
       end
 
       # Internal method on the tracer pipeline.
