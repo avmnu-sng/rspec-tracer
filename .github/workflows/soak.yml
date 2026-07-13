@@ -58,8 +58,8 @@ jobs:
       # ITERATIONS=20 (~3.7 h) and uses SOAK_SHARD={1,2} to pick a
       # disjoint slice of the deterministic mutation-seed space, so the
       # combined shards cover ~40 iter-equivalents (4.4 mutation-kind
-      # cycles, 30 post-warmup memory observations across shards) - most
-      # of what the original single-cell 50-iter design provided.
+      # cycles, 22 post-first-cycle memory observations across shards)
+      # - most of what the original single-cell 50-iter design provided.
       # Solidus and Refinery still fit a single 4 h cell at their
       # default 50/100 iter counts.
       fail-fast: false
