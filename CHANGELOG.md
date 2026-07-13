@@ -1,4 +1,38 @@
-## [Unreleased]
+## [2.0.0.rc.1] - 2026-07-13
+
+The first release candidate of the 2.0 line. Fixes the
+duplicate-example drop discarding spec files whose examples live in
+nested `describe` groups
+([#262](https://github.com/avmnu-sng/rspec-tracer/issues/262), fixed
+in [#265](https://github.com/avmnu-sng/rspec-tracer/pull/265)); adds
+a `blast-radius` CLI sub-command
+([#230](https://github.com/avmnu-sng/rspec-tracer/issues/230)) and an
+`explain --not-run` flag
+([#231](https://github.com/avmnu-sng/rspec-tracer/issues/231)), both
+shipped in [#273](https://github.com/avmnu-sng/rspec-tracer/pull/273);
+and repositions the README and docs around the soundness model, CI
+cost framing, and maintenance policy
+([#266](https://github.com/avmnu-sng/rspec-tracer/pull/266), closing
+[#223](https://github.com/avmnu-sng/rspec-tracer/issues/223)–[#229](https://github.com/avmnu-sng/rspec-tracer/issues/229)).
+CI and maintenance hardening alongside: exact dev-tool gem pins
+([#267](https://github.com/avmnu-sng/rspec-tracer/pull/267)), a lint
+gate against internal planning vocabulary shipping in public files
+([#272](https://github.com/avmnu-sng/rspec-tracer/pull/272)), a weekly
+non-gating Ruby-HEAD canary
+([#269](https://github.com/avmnu-sng/rspec-tracer/pull/269)), a
+`release:preflight` task
+([#270](https://github.com/avmnu-sng/rspec-tracer/pull/270)), removal
+of the unused 1.x sample-project tree
+([#268](https://github.com/avmnu-sng/rspec-tracer/pull/268)), and
+security dependency updates across the sample Rails app and CI
+actions ([#257](https://github.com/avmnu-sng/rspec-tracer/pull/257),
+[#259](https://github.com/avmnu-sng/rspec-tracer/pull/259)–[#261](https://github.com/avmnu-sng/rspec-tracer/pull/261),
+[#263](https://github.com/avmnu-sng/rspec-tracer/pull/263),
+[#264](https://github.com/avmnu-sng/rspec-tracer/pull/264)).
+
+The cache `schema_version` is unchanged at `5`: a pre.2 cache carries
+forward warm -- no cold run on this upgrade. See
+[`UPGRADING.md`](UPGRADING.md).
 
 ### Added
 
@@ -69,7 +103,8 @@
   `NoMethodError` backtrace from the library's `at_exit` hook firing
   against the half-loaded module. The binary now prints a one-line
   `could not load configuration` message and exits 1, and `--help` /
-  `--version` answer without booting the config at all.
+  `--version` answer without booting the config at all
+  ([#273](https://github.com/avmnu-sng/rspec-tracer/pull/273)).
 
 - **Duplicate-example drop no longer discards nested spec files**
   ([#262](https://github.com/avmnu-sng/rspec-tracer/issues/262)).

@@ -70,6 +70,15 @@ unnamed examples, or inserting/removing one ahead of it, gives the
 shifted examples a new identity (one cold run). Give an example an
 explicit description for a fully reorder-stable identity.
 
+**The 2.0.0.pre.2 -> 2.0.0.rc.1 upgrade costs no cold run.** The cache
+`schema_version` is unchanged (still `5`), so a pre.2 cache carries
+forward warm. What rc.1 adds on top is CLI surface, not cache shape:
+`bundle exec rspec-tracer blast-radius <file> [<file> ...]` reports how
+many examples a change to each file would re-run (`--list` enumerates
+them, `--json` for tooling), and `bundle exec rspec-tracer explain
+--not-run <example_id>` shows why an example was skipped on the last
+run and what would make it run on the next.
+
 ## SimpleCov branch coverage now works
 
 The 1.x README warned: *"If you use RSpec Tracer with SimpleCov, then

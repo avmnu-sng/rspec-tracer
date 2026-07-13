@@ -53,7 +53,7 @@ is supported until at least six months past its upstream EOL -- see
 
 ```ruby
 # Gemfile -- 2.0 is in pre-release; pin explicitly until 2.0.0 final
-gem 'rspec-tracer', '= 2.0.0.pre.2', group: :test, require: false
+gem 'rspec-tracer', '= 2.0.0.rc.1', group: :test, require: false
 ```
 
 Add the tracer's working directories to your `.gitignore` before the
