@@ -18,7 +18,7 @@ group :development do
   gem 'rubocop-rake', '0.7.1'
   gem 'rubocop-rspec', '3.10.2'
 
-  gem 'simplecov', '~> 0.22'
+  gem 'simplecov', '~> 1.0'
   gem 'sprockets', '~> 4.2'
   gem 'uglifier', '~> 4.2'
   gem 'yard', '~> 0.9'
